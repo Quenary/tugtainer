@@ -1,0 +1,12 @@
+networks:
+  cardholder_pwa:
+    driver: bridge
+services:
+  app:
+    build: .
+    ports:
+      - 80:80
+    volumes:
+      - $HOME/.dockobserver:/dockobserver
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

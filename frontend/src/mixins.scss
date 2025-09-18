@@ -1,0 +1,106 @@
+// Mixins for "floating" cards like auth or register components
+@mixin floating-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+}
+@mixin floating-card-surface {
+  background-color: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface);
+  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+}
+// Mixin for password hints list
+@mixin form-password-hints {
+  padding-left: 20px;
+  margin: unset;
+  width: 100%;
+  padding-bottom: 20px;
+}
+// Mixin for main components e.g. cards, user
+// presented in main router-outlet.
+@mixin component-host {
+  display: block;
+  padding: 16px 16px 40px 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 100%;
+  position: relative;
+}
+// Mixin ofr tables in admin component
+@mixin mat-table {
+  table {
+    width: 100%;
+    table-layout: fixed;
+
+    th,
+    td {
+      padding: 0 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+// Mixin for buttons in mat-dialog
+@mixin mat-dialog-actions {
+  margin-top: auto;
+  gap: 8px;
+}
+// Mixin for flexible containers e.g. forms, card, code-examples,
+// that needs to be displayed as one/multiple "columns" on
+// different devices.
+@mixin flex-container($maxCols: 6, $breakpoint: 400px) {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  overflow: hidden;
+
+  $gap: 16px;
+  gap: $gap;
+
+  & > * {
+    width: 100%;
+    transition: width 0.15s ease-in-out;
+  }
+
+  @for $i from 1 through $maxCols - 1 {
+    $cols: $i + 1;
+    $_breakpoint: $breakpoint * $i;
+
+    @media (width > $_breakpoint) {
+      & > * {
+        width: calc(100% / #{$cols} - $gap * $i / $cols);
+      }
+    }
+  }
+}
+// Mixin for buttons of flex-container
+@mixin flex-container-buttons {
+  flex-basis: 100%;
+  display: inline-flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+// Mixin for scanner components
+@mixin scanner-host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  video {
+    width: 100%;
+    height: 100%;
+  }
+}

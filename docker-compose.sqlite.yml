@@ -1,0 +1,19 @@
+networks:
+  cardholder_pwa:
+    driver: bridge
+services:
+  app:
+    image: quenary/dockobserver:latest
+    restart: unless-stopped
+    volumes:
+      - $HOME/.dockobserver:/dockobserver
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - dockobserver
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; exit(0) if urllib.request.urlopen(\"http://localhost:8000/api/public/health\").getcode() == 200 else exit(1)'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "80:80"

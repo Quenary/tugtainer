@@ -1,0 +1,15 @@
+{
+  "GENERAL": {
+    "SAVE": "Save",
+    "CONFIRM": "Confirm",
+    "CANCEL": "Cancel"
+  },
+  "NAV": {
+    "AUTH": "Dockobserver. Authorization.",
+    "HOME": "Dockobserver. Home."
+  },
+  "NEW_PASSWORD_FORM": {
+    "PASSWORD": "Password",
+    "CONFIRM_PASSWORD": "Confirm password"
+  }
+}

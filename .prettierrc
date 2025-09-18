@@ -1,0 +1,13 @@
+{
+    "htmlWhitespaceSensitivity": "strict",
+    "angularIndentChains": true,
+    "bracketSameLine": true,
+    "singleAttributePerLine": true,
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "embeddedLanguageFormatting": "off",
+    "semi": true,
+    "quoteProps": "preserve",
+    "trailingComma": "all"
+}

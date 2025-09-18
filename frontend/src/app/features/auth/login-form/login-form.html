@@ -1,0 +1,33 @@
+<form class="form" [formGroup]="form" (submit)="onSubmit()">
+  <!-- Chrome hack -->
+  <input
+    type="text"
+    id="login_username"
+    name="login_username"
+    autocomplete="username"
+    style="display: none"
+  />
+
+  <mat-form-field class="form-field">
+    <mat-label aria-required="true">{{ 'NEW_PASSWORD_FORM.PASSWORD' | translate }}</mat-label>
+    <input
+      matInput
+      [type]="hidePassword() ? 'password' : 'text'"
+      id="new-password"
+      name="new-password"
+      autocomplete="new-password"
+      formControlName="password"
+    />
+    <mat-icon matSuffix (click)="hidePassword.set(!hidePassword())"
+      >{{ hidePassword() ? 'visibility_off' : 'visibility' }}
+    </mat-icon>
+  </mat-form-field>
+
+  <button mat-flat-button type="submit" [disabled]="isLoading()">
+    {{ 'GENERAL.SAVE' | translate }}
+    <mat-icon>login</mat-icon>
+    @if (isLoading()) {
+    <mat-icon iconPositionEnd><mat-spinner [diameter]="15"></mat-spinner></mat-icon>
+    }
+  </button>
+</form>
