@@ -19,8 +19,9 @@ from app.core.containers_core import (
     CheckStatusDict,
     check_and_update_containers,
     get_check_status,
-    STATUS_CACHE_KEY
+    STATUS_CACHE_KEY,
 )
+from app.helpers import is_self_container
 
 client = docker.from_env()
 router = APIRouter(
@@ -42,6 +43,7 @@ async def containers_list(
             ports=c.ports,
             status=c.attrs["State"]["Status"],
             health=str(c.health),
+            is_self=is_self_container(c),
         )
 
         stmt = select(ContainersModel).where(ContainersModel.name == name).limit(1)

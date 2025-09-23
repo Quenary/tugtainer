@@ -20,6 +20,7 @@ from app.db.session import _async_session_maker
 from app.core.registries import choose_registry_client, BaseRegistryClient
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
+from app.helpers import is_self_container
 
 _client = client.from_env()
 ROLLBACK_TIMEOUT = 61
@@ -281,6 +282,7 @@ async def check_and_update_containers(cache_key: str = STATUS_CACHE_KEY):
     set_check_status(cache_key, {"status": ECheckStatus.COLLECTING})
     logging.info("Start checking for updates")
     containers: list[Container] = _client.containers.list(all=True)
+    containers = [item for item in containers if not is_self_container(item)]
     containers = await filter_containers_for_check(containers)
 
     update_check_status(

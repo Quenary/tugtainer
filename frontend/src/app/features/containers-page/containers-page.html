@@ -71,25 +71,29 @@
         </ng-container>
       </td>
       <td>
-        <p-togglebutton
-          [ngModel]="container.check_enabled"
-          (ngModelChange)="onCheckEnabledChange($event, container)"
-          [onLabel]="'GENERAL.ENABLED' | translate"
-          [offLabel]="'GENERAL.DISABLED' | translate"
-          [onIcon]="'pi pi-check-circle'"
-          [offIcon]="'pi pi-circle-off'"
-        />
+        @if (!container.is_self) {
+          <p-togglebutton
+            [ngModel]="container.check_enabled"
+            (ngModelChange)="onCheckEnabledChange($event, container)"
+            [onLabel]="'GENERAL.ENABLED' | translate"
+            [offLabel]="'GENERAL.DISABLED' | translate"
+            [onIcon]="'pi pi-check-circle'"
+            [offIcon]="'pi pi-circle-off'"
+          />
+        }
       </td>
       <td>
-        <p-togglebutton
-          [disabled]="!container.check_enabled"
-          [ngModel]="container.update_enabled"
-          (ngModelChange)="onUpdateEnabledChange($event, container)"
-          [onLabel]="'GENERAL.ENABLED' | translate"
-          [offLabel]="'GENERAL.DISABLED' | translate"
-          [onIcon]="'pi pi-check-circle'"
-          [offIcon]="'pi pi-circle-off'"
-        />
+        @if (!container.is_self) {
+          <p-togglebutton
+            [disabled]="!container.check_enabled"
+            [ngModel]="container.update_enabled"
+            (ngModelChange)="onUpdateEnabledChange($event, container)"
+            [onLabel]="'GENERAL.ENABLED' | translate"
+            [offLabel]="'GENERAL.DISABLED' | translate"
+            [onIcon]="'pi pi-check-circle'"
+            [offIcon]="'pi pi-circle-off'"
+          />
+        }
       </td>
     </tr>
   </ng-template>

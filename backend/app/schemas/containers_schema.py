@@ -8,6 +8,7 @@ class ContainerGetResponseBody(BaseModel):
     ports: dict[str, Any]
     status: str
     health: str
+    is_self: bool
     check_enabled: Optional[bool] = None
     update_enabled: Optional[bool] = None
 

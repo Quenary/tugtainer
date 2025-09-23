@@ -9,6 +9,7 @@ export interface IContainer {
   };
   status: EContainerStatus;
   health: string;
+  is_self: boolean;
   check_enabled: boolean;
   update_enabled: boolean;
 }
