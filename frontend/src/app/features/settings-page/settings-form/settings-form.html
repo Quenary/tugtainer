@@ -1,0 +1,64 @@
+@for (form of formArray.controls; track form) {
+  <form class="settings-form-group" [formGroup]="form">
+    @if (form.controls.key.value; as key) {
+      <span class="settings-form-group-name">
+        {{ keyTranslates[key]?.LABEL ?? key }}
+      </span>
+
+      <p-ifta-label class="settings-form-group-field">
+        @switch (form.controls.value_type.value) {
+          @case ('int') {
+            <p-input-number fluid id="value-{{ key }}" formControlName="value"></p-input-number>
+          }
+          @case ('float') {
+            <p-input-number fluid id="value-{{ key }}" formControlName="value"></p-input-number>
+          }
+          @case ('bool') {
+            <p-toggleSwitch fluid id="value-{{ key }}" formControlName="value"></p-toggleSwitch>
+          }
+          @case ('str') {
+            <input fluid id="value-{{ key }}" type="text" pInputText formControlName="value" />
+          }
+        }
+        <label for="value-{{ key }}">
+          {{ 'SETTINGS.VALUE' | translate }}
+        </label>
+      </p-ifta-label>
+
+      <section class="settings-form-group-functions">
+        @if (keyTranslates[key]?.HINT; as hint) {
+          <p-button
+            icon="pi pi-question"
+            severity="info"
+            [pTooltip]="hint"
+            tooltipPosition="left"
+            rounded="true"
+            (onClick)="onHintClick(keyTranslates[key]?.LINK)"
+          >
+          </p-button>
+        }
+
+        @switch (key) {
+          @case (ESettingKey.NOTIFICATION_URL) {
+            <p-button
+              icon="pi pi-send"
+              severity="info"
+              rounded="true"
+              [pTooltip]="'SETTINGS.BY_KEY.NOTIFICATION_URL.TEST' | translate"
+              tooltipPosition="left"
+              (onClick)="onTestNotification()"
+            >
+            </p-button>
+          }
+        }
+      </section>
+    }
+  </form>
+}
+
+<p-button [loading]="isLoading()" [disabled]="!formArray.dirty" (onClick)="submit()">
+  <i class="pi pi-save"></i>
+  <span pButtonLabel>
+    {{ 'GENERAL.SAVE' | translate }}
+  </span>
+</p-button>

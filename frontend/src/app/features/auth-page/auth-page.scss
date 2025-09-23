@@ -1,0 +1,19 @@
+@use 'mixins' as mx;
+
+:host {
+  @include mx.floating-card;
+
+  .auth {
+    &-header {
+      color: var(--p-primary-300);
+      width: 100%;
+      text-align: center;
+      margin: unset;
+      padding-bottom: 16px;
+    }
+
+    @include mx.floating-card-surface;
+
+    // padding-bottom: ;
+  }
+}

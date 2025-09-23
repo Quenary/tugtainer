@@ -1,4 +1,5 @@
 {
     "python.terminal.activateEnvironment": true,
-    "python.venvPath": "backend/venv"
+    "python.venvPath": "backend/venv",
+    "python.languageServer": "None"
 }

@@ -1,0 +1,109 @@
+<app-containers-check-now></app-containers-check-now>
+<p-table #dt2 [globalFilterFields]="['name', 'short_id']" [value]="list()">
+  <ng-template #caption>
+    <div>
+      <p-iconfield iconPosition="left" class="ml-auto">
+        <p-inputicon>
+          <i class="pi pi-search"></i>
+        </p-inputicon>
+        <input
+          #searchInput
+          id="containers-search"
+          pInputText
+          type="text"
+          (input)="dt2.filterGlobal($event.target.value, 'contains')"
+          [placeholder]="'CONTAINERS.SEARCH_PLACEHOLDER' | translate"
+        />
+      </p-iconfield>
+    </div>
+  </ng-template>
+
+  <ng-template #header>
+    <tr>
+      <th pSortableColumn="name">
+        {{ 'CONTAINERS.NAME' | translate }}
+        <p-sortIcon field="name"></p-sortIcon>
+      </th>
+      <th pSortableColumn="short_id">
+        {{ 'CONTAINERS.SHORT_ID' | translate }}
+        <p-sortIcon field="short_id"></p-sortIcon>
+      </th>
+      <th pSortableColumn="status">
+        {{ 'CONTAINERS.STATUS' | translate }}
+        <p-sortIcon field="status"></p-sortIcon>
+      </th>
+      <th pSortableColumn="health">
+        {{ 'CONTAINERS.HEALTH' | translate }}
+        <p-sortIcon field="health"></p-sortIcon>
+      </th>
+      <th>{{ 'CONTAINERS.PORTS' | translate }}</th>
+      <th pSortableColumn="check_enabled">
+        {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
+        <p-sortIcon field="check_enabled"></p-sortIcon>
+      </th>
+      <th pSortableColumn="update_enabled">
+        {{ 'CONTAINERS.UPDATE_ENABLED' | translate }}
+        <p-sortIcon field="update_enabled"></p-sortIcon>
+      </th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-container>
+    <tr>
+      <td>{{ container.name }}</td>
+      <td>{{ container.short_id }}</td>
+      <td>
+        <p-tag
+          [severity]="EContainerStatusSeverity[container.status]"
+          [value]="container.status"
+        ></p-tag>
+      </td>
+      <td>
+        <p-tag
+          [severity]="EContainerHealthSevirity[container.health] ?? 'secondary'"
+          [value]="container.health"
+        ></p-tag>
+      </td>
+      <td>
+        <ng-container
+          [ngTemplateOutlet]="portsTemplate"
+          [ngTemplateOutletContext]="{ ports: container.ports }"
+        >
+        </ng-container>
+      </td>
+      <td>
+        <p-togglebutton
+          [ngModel]="container.check_enabled"
+          (ngModelChange)="onCheckEnabledChange($event, container)"
+          [onLabel]="'GENERAL.ENABLED' | translate"
+          [offLabel]="'GENERAL.DISABLED' | translate"
+          [onIcon]="'pi pi-check-circle'"
+          [offIcon]="'pi pi-circle-off'"
+        />
+      </td>
+      <td>
+        <p-togglebutton
+          [disabled]="!container.check_enabled"
+          [ngModel]="container.update_enabled"
+          (ngModelChange)="onUpdateEnabledChange($event, container)"
+          [onLabel]="'GENERAL.ENABLED' | translate"
+          [offLabel]="'GENERAL.DISABLED' | translate"
+          [onIcon]="'pi pi-check-circle'"
+          [offIcon]="'pi pi-circle-off'"
+        />
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<ng-template #portsTemplate let-ports="ports">
+  <section class="ports">
+    @if (ports) {
+      @for (item of ports | keyvalue; track item) {
+        @for (hp of $any(item.value); track hp) {
+          {{ hp.HostIp }}:{{ hp.HostPort }}<br />
+        }
+        <span>:{{ item.key }}</span>
+      }
+    }
+  </section>
+</ng-template>

@@ -1,1 +1,9 @@
-<router-outlet></router-outlet>
+<p-toast position="bottom-right" />
+
+@if (isMenuVisible()) {
+  <p-menubar class="app-menu" [model]="menuItems$ | async"></p-menubar>
+}
+
+<section class="app-content">
+  <router-outlet></router-outlet>
+</section>

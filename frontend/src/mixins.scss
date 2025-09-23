@@ -8,12 +8,16 @@
   padding: 0 16px;
 }
 @mixin floating-card-surface {
-  background-color: var(--mat-sys-surface-container);
-  color: var(--mat-sys-on-surface);
-  padding: 20px;
-  border-radius: 8px;
+  background-color: var(--p-surface-900);
+  color: var(--p-content-color);
+  border-radius: var(--p-border-radius-lg);
   width: 100%;
   max-width: 600px;
+  transition: width 0.3s;
+  padding: 16px;
+  @media screen and (width > 767px) {
+    width: 40%;
+  }
 }
 // Mixin for password hints list
 @mixin form-password-hints {

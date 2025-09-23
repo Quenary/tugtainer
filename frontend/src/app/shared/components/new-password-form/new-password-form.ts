@@ -1,4 +1,5 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormControl,
@@ -7,39 +8,37 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { MatButton } from '@angular/material/button';
-import { MatFormField, MatLabel, MatSuffix } from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
-import { MatInput } from '@angular/material/input';
-import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { TranslateModule } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
 import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
+import { ButtonModule } from 'primeng/button';
+import { PasswordModule } from 'primeng/password';
+import { IftaLabelModule } from 'primeng/iftalabel';
+import { Divider } from 'primeng/divider';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-new-password-form',
   imports: [
     TranslateModule,
     ReactiveFormsModule,
-    MatButton,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatIcon,
-    MatSuffix,
-    MatProgressSpinner,
+    ButtonModule,
+    PasswordModule,
+    IftaLabelModule,
+    Divider,
   ],
   templateUrl: './new-password-form.html',
   styleUrl: './new-password-form.scss',
 })
 export class NewPasswordForm {
   public readonly isLoading = input<boolean>(false);
+  public readonly fluidButton = input<boolean>(false);
   public readonly OnSubmit = output<ISetPasswordBody>();
 
   private readonly passwordMatchValidator = (
     field1 = 'password',
-    field2 = 'confirm_password'
+    field2 = 'confirm_password',
   ): ValidatorFn => {
     return (control: AbstractControl) => {
       const form = control as FormGroup;
@@ -63,16 +62,18 @@ export class NewPasswordForm {
         Validators.pattern(ERegexp.password),
       ]),
     },
-    this.passwordMatchValidator()
+    this.passwordMatchValidator(),
   );
 
-  public readonly hidePassword = signal(true);
-  public readonly hideConfirmPassword = signal(true);
+  public readonly confirmPasswordError = toSignal(
+    this.form.valueChanges.pipe(map(() => !!this.form.errors?.['passwordMatchValidator'])),
+  );
 
   public onSubmit(): void {
     if (this.form.invalid) {
       return;
     }
+    this.form.markAsPristine();
     this.OnSubmit.emit(this.form.getRawValue());
   }
 }

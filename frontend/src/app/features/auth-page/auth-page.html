@@ -1,0 +1,13 @@
+<div class="auth">
+  <h1 class="auth-header">
+    {{'GENERAL.TITLE' | translate}}
+  </h1>
+  @if (isPasswordSet()) {
+  <app-login-form [isLoading]="isLoading()" (OnSubmit)="onSubmitLogin($event)"> </app-login-form>}
+  @else {
+  <app-new-password-form
+    [isLoading]="isLoading()"
+    (OnSubmit)="onSubmitNewPassword($event)"
+  ></app-new-password-form
+  >}
+</div>

@@ -1,15 +1,71 @@
 {
   "GENERAL": {
+    "TITLE": "Dockobserver",
     "SAVE": "Save",
     "CONFIRM": "Confirm",
-    "CANCEL": "Cancel"
+    "CANCEL": "Cancel",
+    "ENABLED": "On",
+    "DISABLED": "Off",
+    "SUCCESS": "Success",
+    "ERROR": "Error"
   },
   "NAV": {
     "AUTH": "Dockobserver. Authorization.",
-    "HOME": "Dockobserver. Home."
+    "CONTAINERS": "Dockobserver. Containers.",
+    "SETTINGS": "Dockobserver. Settings."
   },
-  "NEW_PASSWORD_FORM": {
+  "MENU": {
+    "CONTAINERS": "Containers",
+    "SETTINGS": "Settings",
+    "GITHUB": "GitHub",
+    "LOGOUT": "Logout"
+  },
+  "AUTH": {
     "PASSWORD": "Password",
-    "CONFIRM_PASSWORD": "Confirm password"
+    "CONFIRM_PASSWORD": "Confirm password",
+    "SIGNIN": "Sign in",
+    "PASSWORD_PROMPT": "Choose a password",
+    "PASSWORD_STRENGTH": {
+      "WEAK": "Too simple",
+      "MEDIUM": "Average complexity",
+      "STRONG": "Complex password"
+    },
+    "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"]
+  },
+  "CONTAINERS": {
+    "SEARCH_PLACEHOLDER": "Name or Short ID",
+    "NAME": "Name",
+    "SHORT_ID": "Short ID",
+    "STATUS": "Status",
+    "PORTS": "Ports",
+    "HEALTH": "Health",
+    "CHECK_ENABLED": "Check for update",
+    "UPDATE_ENABLED": "Auto update",
+    "CHECK_NOW": {
+      "BUTTON_LABEL": "Check now",
+      "UPDATED": "Updated",
+      "AVAILABLE": "Available",
+      "FAILED": "Failed"
+    }
+  },
+  "SETTINGS": {
+    "VALUE": "Value",
+    "SECTIONS": {
+      "CHANGE_PASSWORD": "Change password",
+      "APP_SETTINGS": "App settings"
+    },
+    "BY_KEY": {
+      "CRONTAB_EXPR": {
+        "LABEL": "Crontab expression",
+        "HINT": "Crontab expression e.g. '0 4 * * *' for every day at 04:00\n\nClick for more info.",
+        "LINK": "https://crontab.guru/"
+      },
+      "NOTIFICATION_URL": {
+        "LABEL": "Notification URL",
+        "HINT": "URL for notifications via Apprise e.g. tgram://<token>/<chat_id>\n\nClick for more info.",
+        "LINK": "https://pypi.org/project/apprise/",
+        "TEST": "Send test notification"
+      }
+    }
   }
 }

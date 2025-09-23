@@ -12,20 +12,28 @@ const titleTranslate = (titleKey: string) => (): Observable<string> => {
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/home',
+    redirectTo: '/containers',
     pathMatch: 'full',
   },
   // UNAUTHORIZED
   {
     path: 'auth',
     title: titleTranslate('NAV.AUTH'),
-    loadComponent: () => import('./features/auth/auth').then((c) => c.Auth),
+    loadComponent: () => import('./features/auth-page/auth-page').then((c) => c.AuthPage),
   },
   // AUTHORIZED
   {
-    path: 'home',
-    title: titleTranslate('NAV.HOME'),
+    path: 'containers',
+    title: titleTranslate('NAV.CONTAINERS'),
     canActivate: [authGuard],
-    loadComponent: () => import('./features/home/home').then((c) => c.Home),
+    loadComponent: () =>
+      import('./features/containers-page/containers-page').then((c) => c.ContainersPage),
+  },
+  {
+    path: 'settings',
+    title: titleTranslate('NAV.SETTINGS'),
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/settings-page/settings-page').then((c) => c.SettingsPage),
   },
 ];

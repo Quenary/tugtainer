@@ -1,9 +1,0 @@
-@use 'mixins' as mx;
-
-:host {
-    @include mx.floating-card;
-
-    .auth {
-        @include mx.floating-card-surface;
-    }
-}

@@ -1,9 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
 
+@import 'primeicons/primeicons.css';
+
 html,
 body {
   height: 100%;
-  background-color: var(--mat-sys-background);
 
   * {
     box-sizing: border-box;
@@ -12,45 +13,4 @@ body {
 body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-}
-
-// Animation for cards loading
-.animated-placeholder {
-  animation-name: placeholderAnimation;
-  animation-duration: 1.5s;
-  animation-iteration-count: infinite;
-  animation-timing-function: ease-in-out;
-}
-@keyframes placeholderAnimation {
-  0%,
-  100%,
-  75% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-// MatSnackBar styling
-.mat-snack-no-overflow {
-  overflow: hidden;
-
-  .mat-mdc-snack-bar-label {
-    overflow: hidden;
-    .mat-mdc-snack-bar-label {
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-}
-.mat-snack-error {
-  --mdc-snackbar-container-color: var(--mat-sys-error);
-  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-error);
-  --mat-snack-bar-button-color: var(--mat-sys-on-error);
-}
-.mat-snack-success {
-  --mdc-snackbar-container-color: var(--mat-sys-primary);
-  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-primary);
-  --mat-snack-bar-button-color: var(--mat-sys-on-primary);
 }

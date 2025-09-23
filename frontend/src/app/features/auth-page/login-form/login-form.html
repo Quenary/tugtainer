@@ -1,0 +1,38 @@
+<form class="form" [formGroup]="form" (submit)="onSubmit()">
+  <!-- Chrome hack -->
+  <input
+    type="text"
+    id="login_username"
+    name="login_username"
+    autocomplete="username"
+    style="display: none"
+  />
+
+  <p-iftaLabel class="form-field">
+    <p-password
+      id="password"
+      autocomplete="password"
+      formControlName="password"
+      [toggleMask]="true"
+      [feedback]="false"
+      [fluid]="true"
+    >
+    </p-password>
+    <label for="password">
+      {{ 'AUTH.PASSWORD' | translate }}
+    </label>
+  </p-iftaLabel>
+
+  <p-button
+    [fluid]="true"
+    class="form-button"
+    type="submit"
+    [loading]="isLoading()"
+    [disabled]="!form.dirty"
+  >
+    <i class="pi pi-sign-in"></i>
+    <span pButtonLabel>
+      {{ 'AUTH.SIGNIN' | translate }}
+    </span>
+  </p-button>
+</form>

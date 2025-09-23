@@ -1,0 +1,39 @@
+<section class="upper-row">
+  <p-button
+    icon="pi pi-sync"
+    [label]="'CONTAINERS.CHECK_NOW.BUTTON_LABEL' | translate"
+    [loading]="isLoading()"
+    (onClick)="checkAndUpdate()"
+  >
+  </p-button>
+  @if (checkProgress(); as prog) {
+    @if (prog.updated !== undefined) {
+      <p-tag severity="success">
+        {{ 'CONTAINERS.CHECK_NOW.UPDATED' | translate }} {{ prog.updated }}
+      </p-tag>
+    }
+
+    @if (prog.not_updated !== undefined) {
+      <p-tag severity="info">
+        {{ 'CONTAINERS.CHECK_NOW.AVAILABLE' | translate }} {{ prog.not_updated }}
+      </p-tag>
+    }
+
+    @if (prog.failed) {
+      <p-tag severity="danger">
+        {{ 'CONTAINERS.CHECK_NOW.FAILED' | translate }} {{ prog.not_updated }}
+      </p-tag>
+    }
+  }
+</section>
+
+@if (checkProgress(); as prog) {
+  @if (prog.status !== ECheckStatus.DONE) {
+    <p-progress-bar
+      [style.height.px]="6"
+      [value]="prog.progress ?? 0"
+      [mode]="prog.progress ? 'determinate' : 'indeterminate'"
+    >
+    </p-progress-bar>
+  }
+}

@@ -19,7 +19,7 @@ class Config:
     def load(cls):
         if not cls._loaded:
             load_dotenv()
-            cls.LOG_LEVEL = os.getenv("LOG_LEVEL") or "warning"
+            cls.LOG_LEVEL = (os.getenv("LOG_LEVEL") or "warning").upper()
             cls.JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(
                 32
             )
