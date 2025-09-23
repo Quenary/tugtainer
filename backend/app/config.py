@@ -7,6 +7,7 @@ from typing import ClassVar
 class Config:
     _loaded: ClassVar[bool] = False
 
+    HOSTNAME: ClassVar[str]
     LOG_LEVEL: ClassVar[str]
     JWT_SECRET_KEY: ClassVar[str | bytes]
     JWT_ALGORITHM: ClassVar[str]
@@ -19,6 +20,7 @@ class Config:
     def load(cls):
         if not cls._loaded:
             load_dotenv()
+            cls.HOSTNAME = os.getenv("HOSTNAME", "")
             cls.LOG_LEVEL = (os.getenv("LOG_LEVEL") or "warning").upper()
             cls.JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(
                 32

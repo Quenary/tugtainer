@@ -1,4 +1,5 @@
 from docker.models.containers import Container
+from app.config import Config
 
 SELF_CONTAINER_ID: str | None = None
 
@@ -38,6 +39,8 @@ def _get_self_container_id() -> str | None:
     cid = _read_container_id_from_cpuset()
     if not cid:
         cid = _read_container_id_from_cgroup()
+    if not cid:
+        cid = Config.HOSTNAME
 
     SELF_CONTAINER_ID = cid
     return SELF_CONTAINER_ID
