@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NewPasswordForm } from 'src/app/shared/components/new-password-form/new-password-form';
 import { SettingsForm } from './settings-form/settings-form';
 import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
@@ -17,6 +17,7 @@ import { AccordionModule } from 'primeng/accordion';
   imports: [NewPasswordForm, SettingsForm, DividerModule, TranslateModule, AccordionModule],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsPage {
   private readonly translateService = inject(TranslateService);

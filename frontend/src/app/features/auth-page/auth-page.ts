@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
@@ -14,6 +14,7 @@ import { parseError } from 'src/app/shared/functions/parse-error.function';
   imports: [NewPasswordForm, LoginForm, TranslateModule],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthPage implements OnInit {
   private readonly authApiService = inject(AuthApiService);

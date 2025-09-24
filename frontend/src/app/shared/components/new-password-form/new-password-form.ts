@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -30,6 +30,7 @@ import { map } from 'rxjs';
   ],
   templateUrl: './new-password-form.html',
   styleUrl: './new-password-form.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewPasswordForm {
   public readonly isLoading = input<boolean>(false);

@@ -31,19 +31,17 @@ STATUS_CACHE_KEY = "check_and_update_containers"
 
 class CheckStatusDict(TypedDict):
     status: NotRequired[ECheckStatus]  # status code
-    total_for_check: NotRequired[int]  # Count of containers for check
-    updatable: NotRequired[int]  # Count of updatable containers
-    not_updated: NotRequired[int]  # Count of not updated containers (check only)
+    progress: NotRequired[int]  # progress 0-100
+    available: NotRequired[int]  # Count of not updated containers (check only)
     updated: NotRequired[int]  # count of updated containers
     failed: NotRequired[int]  # count of failed updates
-    progress: NotRequired[int]  # progress 0-100
 
 
-def set_check_status(key: str, value: CheckStatusDict):
+def _set_check_status(key: str, value: CheckStatusDict):
     STATUS_CACHE[key] = value
 
 
-def update_check_status(key: str, value: CheckStatusDict):
+def _update_check_status(key: str, value: CheckStatusDict):
     current = STATUS_CACHE.get(key) or {}
     STATUS_CACHE[key] = {
         **current,
@@ -74,9 +72,7 @@ async def filter_containers_for_check(containers: list[Container]) -> list[Conta
 async def filter_containers_for_update(containers: list[Container]) -> list[Container]:
     """Filter containers marked for update"""
     async with _async_session_maker() as session:
-        stmt = select(ContainersModel.name).where(
-            ContainersModel.update_enabled == True
-        )
+        stmt = select(ContainersModel.name).where(ContainersModel.update_enabled == True)
         result = await session.execute(stmt)
         names = result.scalars().all()
         return [c for c in containers if c.name in names]
@@ -107,7 +103,7 @@ def get_dependencies(container: Container) -> list[str]:
     return dependencies
 
 
-def sort_containers_by_dependencies(containers: list[Container]) -> list[Container]:
+def _sort_containers_by_dependencies(containers: list[Container]) -> list[Container]:
     """
     Sort containers so that those on which others depend come first.
     Use the com.docker.compose.depends_on label, if present.
@@ -160,9 +156,7 @@ def get_container_config(container: Container) -> dict[str, Any]:
             if bindings:
                 host_ports = [int(b["HostPort"]) for b in bindings if b.get("HostPort")]
                 if host_ports:
-                    ports[container_port] = (
-                        host_ports if len(host_ports) > 1 else host_ports[0]
-                    )
+                    ports[container_port] = host_ports if len(host_ports) > 1 else host_ports[0]
 
     # Volumes
     volumes = {}
@@ -209,9 +203,7 @@ def get_container_config(container: Container) -> dict[str, Any]:
     }
 
 
-def wait_for_container_healthy(
-    container: Container, timeout: int = ROLLBACK_TIMEOUT
-) -> bool:
+def wait_for_container_healthy(container: Container, timeout: int = ROLLBACK_TIMEOUT) -> bool:
     """Wait for container healthy status or timeout"""
     start = time.time()
     while time.time() - start < timeout:
@@ -259,9 +251,7 @@ def recreate_container(container: Container, new_image: str) -> Container:
         raise RuntimeError("Healthcheck failed")
 
     except Exception as e:
-        logging.warning(
-            f"Rollback: recreating {cfg['name']} with old image {old_image}: {e}"
-        )
+        logging.warning(f"Rollback: recreating {cfg['name']} with old image {old_image}: {e}")
         _client.images.pull(old_image)  # вдруг локально нет
         rolled_back = _client.containers.run(old_image, **cfg)
         for net in networks_to_connect[1:]:
@@ -279,67 +269,79 @@ async def check_and_update_containers(cache_key: str = STATUS_CACHE_KEY):
         logging.warning("Check and update process is already running.")
         return
 
-    set_check_status(cache_key, {"status": ECheckStatus.COLLECTING})
+    progress: int = 0  # General progress state
+    progress_part = 10
+    _set_check_status(cache_key, {"status": ECheckStatus.COLLECTING, "progress": progress})
     logging.info("Start checking for updates")
     containers: list[Container] = _client.containers.list(all=True)
     containers = [item for item in containers if not is_self_container(item)]
     containers = await filter_containers_for_check(containers)
 
-    update_check_status(
-        cache_key, {"status": ECheckStatus.CHECKING, "total_for_check": len(containers)}
+    progress += progress_part
+    _update_check_status(
+        cache_key,
+        {"status": ECheckStatus.CHECKING, "progress": progress},
     )
     logging.info(f"Containers for check: {containers}")
 
+    progress_part = 30
+    progress_dividor = len(containers)
     updatable: list[Container] = []
     for c in containers:
+        logging.info(f"Checking container: {c.name} {c.short_id}")
         image_spec = c.attrs["Config"]["Image"]
         registry: BaseRegistryClient = choose_registry_client(image_spec)
         local_image: Image = _client.images.get(image_spec)
         local_digest: str | None = get_local_digest(local_image)
         remote_digest: str | None = await registry.get_remote_digest()
 
-        print(local_digest)
-        print(remote_digest)
         if remote_digest and local_digest != remote_digest:
+            logging.info(f"New image found for container: {c.name} {c.short_id}")
             updatable.append(c)
 
-    update_check_status(cache_key, {"updatable": len(updatable)})
-    logging.info(f"Containers with available updates: {updatable}")
+        progress += round(progress_part / progress_dividor)
+        _update_check_status(cache_key, {"progress": progress})
 
     to_update: list[Container] = await filter_containers_for_update(updatable)
-    to_update = sort_containers_by_dependencies(to_update)
-    not_updated: list[Container] = [c for c in updatable if c not in to_update]
+    to_update = _sort_containers_by_dependencies(to_update)
+    available: list[Container] = [c for c in updatable if c not in to_update]
 
-    update_check_status(
-        cache_key, {"status": ECheckStatus.UPDATING, "not_updated": len(not_updated)}
-    )
-    logging.info(f"Containers to update: {to_update}")
+    _update_check_status(cache_key, {"status": ECheckStatus.UPDATING, "available": len(available)})
 
     updated: list[Container] = []
     failed = 0
     loop = asyncio.get_running_loop()
+    progress_part = 60
+    progress_dividor = len(to_update)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         tasks: list[Future[Container]] = [
-            loop.run_in_executor(
-                executor, recreate_container, c, c.attrs["Config"]["Image"]
-            )
+            loop.run_in_executor(executor, recreate_container, c, c.attrs["Config"]["Image"])
             for c in to_update
         ]
 
-        for i, coro in enumerate(asyncio.as_completed(tasks), start=1):
+        for coro in asyncio.as_completed(tasks):
             try:
                 res = await coro
                 updated.append(res)
-                update_check_status(cache_key, {"updated": len(updated)})
             except Exception as e:
                 failed += 1
-                update_check_status(cache_key, {"failed": failed})
                 logging.error(f"Failed to update: {e}")
+            finally:
+                progress += round(progress_part / progress_dividor)
+                _update_check_status(
+                    cache_key, {"progress": progress, "updated": len(updated), "failed": failed}
+                )
 
-    update_check_status(
+    progress = 100
+    _update_check_status(
         cache_key,
-        {"status": ECheckStatus.DONE, "updated": len(updated), "failed": failed},
+        {
+            "status": ECheckStatus.DONE,
+            "updated": len(updated),
+            "failed": failed,
+            "progress": progress,
+        },
     )
 
     # Notification
@@ -350,9 +352,9 @@ async def check_and_update_containers(cache_key: str = STATUS_CACHE_KEY):
         for c in updated:
             body += f"{c.name} {c.attrs["Config"]["Image"]}\n"
         body += "\n"
-    if not_updated:
+    if available:
         body += "Update available for:\n"
-        for c in not_updated:
+        for c in available:
             body += f"{c.name} {c.attrs["Config"]["Image"]}\n"
         body += "\n"
     if body:

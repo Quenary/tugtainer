@@ -1,4 +1,4 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import {
   AbstractControl,
   FormArray,
@@ -46,6 +46,7 @@ import { FluidModule } from 'primeng/fluid';
   ],
   templateUrl: './settings-form.html',
   styleUrl: './settings-form.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsForm {
   private readonly settingsApiService = inject(SettingsApiService);
@@ -126,11 +127,11 @@ export class SettingsForm {
       .test_notification()
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next:() => {
+        next: () => {
           this.messageService.add({
-            severity:'success',
+            severity: 'success',
             summary: this.translateService.instant('GENERAL.SUCCESS'),
-          })
+          });
         },
         error: (error) => {
           this.messageService.add({

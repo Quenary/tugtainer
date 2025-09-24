@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormGroup, FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
@@ -11,6 +11,7 @@ import { IftaLabelModule } from 'primeng/iftalabel';
   imports: [TranslateModule, ReactiveFormsModule, ButtonModule, PasswordModule, IftaLabelModule],
   templateUrl: './login-form.html',
   styleUrl: './login-form.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginForm {
   public readonly isLoading = input<boolean>(false);

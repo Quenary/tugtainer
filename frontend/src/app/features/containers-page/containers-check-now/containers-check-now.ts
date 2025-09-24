@@ -1,4 +1,11 @@
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MessageService } from 'primeng/api';
@@ -15,6 +22,7 @@ import { parseError } from 'src/app/shared/functions/parse-error.function';
   imports: [ButtonModule, ProgressBarModule, TranslateModule, TagModule],
   templateUrl: './containers-check-now.html',
   styleUrl: './containers-check-now.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContainersCheckNow {
   private readonly containersApiService = inject(ContainersApiService);

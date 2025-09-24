@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
 import { TableModule } from 'primeng/table';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -21,7 +21,6 @@ import { ContainersCheckNow } from './containers-check-now/containers-check-now'
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { NgStyle } from '@angular/common';
 
 @Component({
   selector: 'app-containers-page',
@@ -40,10 +39,10 @@ import { NgStyle } from '@angular/common';
     IconFieldModule,
     InputTextModule,
     InputIconModule,
-    NgStyle,
   ],
   templateUrl: './containers-page.html',
   styleUrl: './containers-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContainersPage {
   private readonly containersApiService = inject(ContainersApiService);

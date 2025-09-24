@@ -44,10 +44,8 @@ export enum ECheckStatus {
 }
 export interface ICheckProgress {
   status: ECheckStatus;
-  total_for_check: number;
-  updatable: number;
-  not_updated: number;
+  progress: number;
+  available: number;
   updated: number;
   failed: number;
-  progress: number;
 }
