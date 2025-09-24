@@ -5,7 +5,7 @@ from docker.models.containers import Container
 from docker.models.containers import Container
 import logging
 from docker.models.containers import Container
-from typing import Any, NotRequired, Optional, TypedDict, cast
+from typing import Any, NotRequired, TypedDict
 from docker.models.containers import Container
 from docker.models.images import Image
 from docker.models.containers import Container

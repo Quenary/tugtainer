@@ -4,10 +4,21 @@ import { ToastModule } from 'primeng/toast';
 import { MenubarModule } from 'primeng/menubar';
 import { TranslateService } from '@ngx-translate/core';
 import { AuthApiService } from './entities/auth/auth-api.service';
-import { debounceTime, finalize, map, Observable, startWith } from 'rxjs';
+import {
+  catchError,
+  combineLatest,
+  debounceTime,
+  finalize,
+  map,
+  Observable,
+  of,
+  retry,
+  startWith,
+} from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
 import { AsyncPipe } from '@angular/common';
+import { PublicApiService } from './entities/public/public-interface';
 
 @Component({
   selector: 'app-root',
@@ -19,9 +30,16 @@ export class App {
   private readonly authApiService = inject(AuthApiService);
   private readonly translateService = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly publicApiService = inject(PublicApiService);
 
-  public readonly menuItems$: Observable<MenuItem[]> = this.translateService.get('MENU').pipe(
-    map((translates) => {
+  public readonly menuItems$: Observable<MenuItem[]> = combineLatest([
+    this.translateService.get('MENU'),
+    this.publicApiService.getVersion().pipe(
+      retry({ count: 3, delay: 500 }),
+      catchError(() => of({ image_version: 'unknown' })),
+    ),
+  ]).pipe(
+    map(([translates, version]) => {
       return <MenuItem[]>[
         {
           label: translates.CONTAINERS,
@@ -32,7 +50,6 @@ export class App {
           label: translates.SETTINGS,
           routerLink: '/settings',
           icon: 'pi pi-cog',
-          routerLinkActiveOptions:{style:{background: 'red'}}
         },
         {
           label: translates.GITHUB,
@@ -41,10 +58,14 @@ export class App {
           icon: 'pi pi-github',
         },
         {
+          label: version.image_version,
+          disabled: true,
+          style: { marginLeft: 'auto' },
+        },
+        {
           label: translates.LOGOUT,
           command: () => this.logout(),
           icon: 'pi pi-sign-out',
-          style: { marginLeft: 'auto' },
         },
       ];
     }),
