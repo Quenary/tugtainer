@@ -2,13 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '@env/environment';
 
-type TypeOfBasePath<P extends string> = P extends '' ? '/api' : `/api/${P}`;
+type TypeOfBasePath<P extends string> = P extends '' ? '/api' : `/api${P}`;
 
 /**
  * Base service for all api services
  */
 @Injectable()
-export abstract class BaseApiService<Prefix extends string> {
+export abstract class BaseApiService<Prefix extends string = null> {
   /**
    * Http client
    */
@@ -16,7 +16,7 @@ export abstract class BaseApiService<Prefix extends string> {
   /**
    * Prefix for the api router.
    */
-  protected abstract readonly prefix: Prefix;
+  protected readonly prefix: Prefix = null;
   /**
    * Base path for the api service.
    *
@@ -24,9 +24,9 @@ export abstract class BaseApiService<Prefix extends string> {
    */
   protected get basePath(): TypeOfBasePath<Prefix> {
     const api = environment.api as '/api';
-    if (this.prefix === '') {
+    if (typeof this.prefix !== 'string') {
       return api as TypeOfBasePath<Prefix>;
     }
-    return `${api}/${this.prefix}` as TypeOfBasePath<Prefix>;
+    return `${api}${this.prefix}` as TypeOfBasePath<Prefix>;
   }
 }

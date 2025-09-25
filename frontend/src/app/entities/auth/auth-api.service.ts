@@ -6,14 +6,14 @@ import { ISetPasswordBody } from './auth-interface';
 @Injectable({
   providedIn: 'root',
 })
-export class AuthApiService extends BaseApiService<'auth'> {
-  protected override readonly prefix = 'auth';
+export class AuthApiService extends BaseApiService<'/auth'> {
+  protected override readonly prefix = '/auth';
 
   login(password: string): Observable<any> {
     return this.httpClient.post(
       `${this.basePath}/login`,
       {},
-      { params: { password }, withCredentials: true }
+      { params: { password }, withCredentials: true },
     );
   }
 

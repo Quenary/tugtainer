@@ -6,8 +6,8 @@ import { ICheckProgress, IContainer, IContainerPatchBody } from './containers-in
 @Injectable({
   providedIn: 'root',
 })
-export class ContainersApiService extends BaseApiService<'containers'> {
-  protected override readonly prefix: 'containers' = 'containers';
+export class ContainersApiService extends BaseApiService<'/containers'> {
+  protected override readonly prefix = '/containers';
 
   list(): Observable<IContainer[]> {
     return this.httpClient.get<IContainer[]>(`${this.basePath}/list`);

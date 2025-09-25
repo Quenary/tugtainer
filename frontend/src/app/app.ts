@@ -18,7 +18,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
 import { AsyncPipe } from '@angular/common';
-import { PublicApiService } from './entities/public/public-interface';
+import { PublicApiService } from './entities/public/public-api.service';
 
 @Component({
   selector: 'app-root',

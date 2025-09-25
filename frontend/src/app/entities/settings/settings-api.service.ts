@@ -6,8 +6,8 @@ import { ISetting, ISettingUpdate } from './settings-interface';
 @Injectable({
   providedIn: 'root',
 })
-export class SettingsApiService extends BaseApiService<'settings'> {
-  protected override readonly prefix: 'settings' = 'settings';
+export class SettingsApiService extends BaseApiService<'/settings'> {
+  protected override readonly prefix = '/settings';
 
   list(): Observable<ISetting[]> {
     return this.httpClient.get<ISetting[]>(`${this.basePath}/list`);
