@@ -21,7 +21,9 @@ async def send_notification(
         if url:
             _apprise = apprise.Apprise()
             _apprise.add(url)
-            result = _apprise.notify(title=title, body=body)
+            result = await _apprise.async_notify(
+                title=title, body=body
+            )
             if result == False:
                 message = "Failed to send notification"
                 logging.error(message)
