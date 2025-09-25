@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormArray,
@@ -10,7 +18,7 @@ import {
 } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MessageService } from 'primeng/api';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of } from 'rxjs';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import {
   ESettingKey,
@@ -29,6 +37,8 @@ import { DividerModule } from 'primeng/divider';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
 import { FluidModule } from 'primeng/fluid';
+import { NgTemplateOutlet } from '@angular/common';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 
 @Component({
   selector: 'app-settings-form',
@@ -43,6 +53,8 @@ import { FluidModule } from 'primeng/fluid';
     TranslateModule,
     TooltipModule,
     FluidModule,
+    NgTemplateOutlet,
+    AutoCompleteModule,
   ],
   templateUrl: './settings-form.html',
   styleUrl: './settings-form.scss',
@@ -60,11 +72,35 @@ export class SettingsForm {
   public readonly isLoading = signal<boolean>(false);
   public readonly formArray = new FormArray<FormGroup<TInterfaceToForm<ISetting>>>([]);
 
+  private readonly timezones = toSignal(
+    this.settingsApiService.getAvailableTimezones().pipe(catchError(() => of([]))),
+  );
+  public readonly timezonesSearch = signal<string>(null);
+  public readonly displayedTimezones = computed<string[]>(() => {
+    const timezones = this.timezones();
+    let search = this.timezonesSearch();
+    if (!search) {
+      return timezones;
+    }
+    search = search.toLocaleLowerCase();
+    return timezones.filter((t) => t.toLowerCase().includes(search));
+  });
+
   private cronValidator: ValidatorFn = (control: AbstractControl<string>) => {
     const value = control.value;
     if (!!value) {
       const cv = cronValidate(value);
       return cv.isValid() ? null : { cronValidator: true };
+    }
+    return null;
+  };
+
+  private timezoneValidator: ValidatorFn = (control: AbstractControl<string>) => {
+    const value = control.value;
+    if (!!value) {
+      const timezones = this.timezones();
+      const valid = !timezones.length || timezones.includes(value);
+      return valid ? null : { timezoneValidator: true };
     }
     return null;
   };
@@ -103,7 +139,7 @@ export class SettingsForm {
   private getFormGroup(data: ISetting): FormGroup<TInterfaceToForm<ISetting>> {
     const form = new FormGroup<TInterfaceToForm<ISetting>>({
       key: new FormControl<ESettingKey>(data.key),
-      value: new FormControl<any>(data.value, [Validators.required]),
+      value: new FormControl<any>(data.value, this.getValueValidators(data.key)),
       value_type: new FormControl<ESettingValueType>(data.value_type),
       modified_at: new FormControl<string>({ value: data.modified_at, disabled: true }),
     });
@@ -113,6 +149,17 @@ export class SettingsForm {
     }
 
     return form;
+  }
+
+  private getValueValidators(key: ESettingKey): ValidatorFn[] {
+    switch (key) {
+      case ESettingKey.CRONTAB_EXPR:
+        return [Validators.required, this.cronValidator];
+      case ESettingKey.TIMEZONE:
+        return [Validators.required, this.timezoneValidator];
+      default:
+        return [];
+    }
   }
 
   public onHintClick(link: string): void {

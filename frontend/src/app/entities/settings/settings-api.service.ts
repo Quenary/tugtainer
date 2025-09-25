@@ -20,4 +20,8 @@ export class SettingsApiService extends BaseApiService<'settings'> {
   test_notification(): Observable<any> {
     return this.httpClient.post(`${this.basePath}/test_notification`, {});
   }
+
+  getAvailableTimezones(): Observable<string[]> {
+    return this.httpClient.get<string[]>(`${this.basePath}/available_timezones`);
+  }
 }

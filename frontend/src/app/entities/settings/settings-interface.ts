@@ -17,4 +17,5 @@ export interface ISettingUpdate {
 export enum ESettingKey {
   CRONTAB_EXPR = 'CRONTAB_EXPR',
   NOTIFICATION_URL = 'NOTIFICATION_URL',
+  TIMEZONE = 'TIMEZONE',
 }

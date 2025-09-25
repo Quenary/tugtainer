@@ -6,20 +6,14 @@
       </span>
 
       <p-ifta-label class="settings-form-group-field">
-        @switch (form.controls.value_type.value) {
-          @case ('int') {
-            <p-input-number fluid id="value-{{ key }}" formControlName="value"></p-input-number>
-          }
-          @case ('float') {
-            <p-input-number fluid id="value-{{ key }}" formControlName="value"></p-input-number>
-          }
-          @case ('bool') {
-            <p-toggleSwitch fluid id="value-{{ key }}" formControlName="value"></p-toggleSwitch>
-          }
-          @case ('str') {
-            <input fluid id="value-{{ key }}" type="text" pInputText formControlName="value" />
-          }
-        }
+        <ng-container
+          [ngTemplateOutlet]="valueInputTemplate"
+          [ngTemplateOutletContext]="{
+            value_type: form.controls.value_type.value,
+            key: key,
+            control: form.controls.value,
+          }"
+        ></ng-container>
         <label for="value-{{ key }}">
           {{ 'SETTINGS.VALUE' | translate }}
         </label>
@@ -62,3 +56,30 @@
     {{ 'GENERAL.SAVE' | translate }}
   </span>
 </p-button>
+
+<ng-template #valueInputTemplate let-key="key" let-value_type="value_type" let-control="control">
+  @switch (key) {
+    @case (ESettingKey.TIMEZONE) {
+      <p-autocomplete
+        [suggestions]="displayedTimezones()"
+        [dropdown]="true"
+        (completeMethod)="timezonesSearch.set($event.query)"
+        [formControl]="control"
+      >
+      </p-autocomplete>
+    }
+    @default {
+      @switch (value_type) {
+        @case ('bool') {
+          <p-toggleSwitch fluid id="value-{{ key }}" [formControl]="control"></p-toggleSwitch>
+        }
+        @case ('str') {
+          <input fluid id="value-{{ key }}" type="text" pInputText [formControl]="control" />
+        }
+        @default {
+          <p-input-number fluid id="value-{{ key }}" [formControl]="control"></p-input-number>
+        }
+      }
+    }
+  }
+</ng-template>

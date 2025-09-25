@@ -1,4 +1,4 @@
-from typing import cast
+from zoneinfo import available_timezones
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,8 @@ from app.core.cron_manager import CronManager
 from app.enums.settings_enum import ESettingKey
 from app.enums.cron_jobs_enum import ECronJob
 from app.core.containers_core import check_and_update_containers
+
+VALID_TIMEZONES = available_timezones()
 
 router = APIRouter(
     prefix="/settings",
@@ -103,3 +105,13 @@ async def test_notification():
         "Dockobserver", "This is test notification"
     )
     return {}
+
+
+@router.get(
+    "/available_timezones",
+    status_code=200,
+    description="Get available timezones list",
+    response_model=set[str],
+)
+def get_available_timezones() -> set[str]:
+    return VALID_TIMEZONES
