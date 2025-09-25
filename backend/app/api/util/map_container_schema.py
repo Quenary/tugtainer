@@ -14,6 +14,7 @@ def map_container_schema(
     """
     _item = ContainerGetResponseBody(
         name=str(d_cont.name),
+        image=d_cont.attrs["Config"]["Image"],
         short_id=d_cont.short_id,
         ports=d_cont.ports,
         status=d_cont.attrs["State"]["Status"],

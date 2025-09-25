@@ -3,6 +3,7 @@
  */
 export interface IContainer {
   name: string;
+  image: string;
   short_id: string;
   ports: {
     [K: string]: IContainerPort[];

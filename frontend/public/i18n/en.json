@@ -44,6 +44,7 @@
       "SEARCH_PLACEHOLDER": "Name or Short ID",
       "NAME": "Name",
       "SHORT_ID": "Short ID",
+      "IMAGE": "Image",
       "UPDATE_AVAILABLE": "Update available",
       "STATUS": "Status",
       "PORTS": "Ports",

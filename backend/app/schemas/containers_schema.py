@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class ContainerGetResponseBody(BaseModel):
     name: str
+    image: str
     short_id: str
     ports: dict[str, Any]
     status: str
