@@ -18,7 +18,6 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
 
-console.log(Aura)
 const themePreset = definePreset(Aura, {
   semantic: {
     primary: {
@@ -33,7 +32,7 @@ const themePreset = definePreset(Aura, {
       800: '{cyan.800}',
       900: '{cyan.900}',
       950: '{cyan.950}',
-    }
+    },
   },
 });
 

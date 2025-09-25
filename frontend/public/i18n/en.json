@@ -36,11 +36,14 @@
     "SEARCH_PLACEHOLDER": "Name or Short ID",
     "NAME": "Name",
     "SHORT_ID": "Short ID",
+    "UPDATE_AVAILABLE": "Update available",
     "STATUS": "Status",
     "PORTS": "Ports",
     "HEALTH": "Health",
     "CHECK_ENABLED": "Check for update",
     "UPDATE_ENABLED": "Auto update",
+    "CHECKED_AT": "Last check",
+    "UPDATED_AT": "Last update",
     "CHECK_NOW": {
       "BUTTON_LABEL": "Check now",
       "UPDATED": "Updated",
@@ -65,6 +68,10 @@
         "HINT": "URL for notifications via Apprise e.g. tgram://<token>/<chat_id>\n\nClick for more info.",
         "LINK": "https://pypi.org/project/apprise/",
         "TEST": "Send test notification"
+      },
+      "TIMEZONE": {
+        "LABEL": "Timezone",
+        "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
       }
     }
   }

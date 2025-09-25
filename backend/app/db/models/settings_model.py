@@ -14,7 +14,7 @@ class SettingModel(BaseModel):
         String,
         nullable=False,
     )
-    updated_at: Mapped[datetime] = mapped_column(
+    modified_at: Mapped[datetime] = mapped_column(
         DateTime,
         server_default=text("CURRENT_TIMESTAMP"),
         server_onupdate=text("CURRENT_TIMESTAMP"),

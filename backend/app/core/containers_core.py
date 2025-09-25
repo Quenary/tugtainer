@@ -15,12 +15,12 @@ import time
 import asyncio
 import concurrent.futures
 from cachetools import TTLCache
-from app.db.models.containers_model import ContainersModel
-from app.db.session import _async_session_maker
+from app.db import ContainersModel, async_session_maker, insert_or_update_container
 from app.core.registries import choose_registry_client, BaseRegistryClient
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
-from app.helpers import is_self_container
+from app.helpers import is_self_container,now
+
 
 _client = client.from_env()
 ROLLBACK_TIMEOUT = 61
@@ -62,7 +62,7 @@ def get_local_digest(image: Image) -> str | None:
 
 async def filter_containers_for_check(containers: list[Container]) -> list[Container]:
     """Filter containers marked for check"""
-    async with _async_session_maker() as session:
+    async with async_session_maker() as session:
         stmt = select(ContainersModel.name).where(ContainersModel.check_enabled == True)
         result = await session.execute(stmt)
         names = result.scalars().all()
@@ -71,7 +71,7 @@ async def filter_containers_for_check(containers: list[Container]) -> list[Conta
 
 async def filter_containers_for_update(containers: list[Container]) -> list[Container]:
     """Filter containers marked for update"""
-    async with _async_session_maker() as session:
+    async with async_session_maker() as session:
         stmt = select(ContainersModel.name).where(ContainersModel.update_enabled == True)
         result = await session.execute(stmt)
         names = result.scalars().all()
@@ -282,7 +282,6 @@ async def check_and_update_containers(cache_key: str = STATUS_CACHE_KEY):
         cache_key,
         {"status": ECheckStatus.CHECKING, "progress": progress},
     )
-    logging.info(f"Containers for check: {containers}")
 
     progress_part = 30
     progress_dividor = len(containers)
@@ -294,6 +293,12 @@ async def check_and_update_containers(cache_key: str = STATUS_CACHE_KEY):
         local_image: Image = _client.images.get(image_spec)
         local_digest: str | None = get_local_digest(local_image)
         remote_digest: str | None = await registry.get_remote_digest()
+        update_available: bool = bool(remote_digest and local_digest != remote_digest)
+
+        async with async_session_maker() as session:
+            await insert_or_update_container(
+                session, str(c.name), {"update_available": update_available, "checked_at": now()}
+            )
 
         if remote_digest and local_digest != remote_digest:
             logging.info(f"New image found for container: {c.name} {c.short_id}")

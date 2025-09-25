@@ -1,18 +1,22 @@
 import logging
+from zoneinfo import ZoneInfo, available_timezones
 import aiocron
 from typing import Callable, Dict, cast
 from sqlalchemy import select
 from app.enums import ESettingKey, ECronJob
 from app.core.containers_core import check_and_update_containers
-from app.db.session import _async_session_maker
+from app.db.session import async_session_maker
 from app.db.models import SettingModel
+
+
+VALID_TIMEZONES = available_timezones()
 
 
 async def schedule_check_on_init():
     """
     Schedule container check and update on app init
     """
-    async with _async_session_maker() as session:
+    async with async_session_maker() as session:
         stmt = (
             select(SettingModel)
             .where(SettingModel.key == ESettingKey.CRONTAB_EXPR)
@@ -24,9 +28,18 @@ async def schedule_check_on_init():
         if not crontab_expr:
             return
 
+        stmt = (
+            select(SettingModel)
+            .where(SettingModel.key == ESettingKey.TIMEZONE)
+            .limit(1)
+        )
+        result = await session.execute(stmt)
+        tz = result.scalar_one_or_none()
+
         CronManager.schedule_job(
             ECronJob.CHECK_CONTAINERS,
             cast(str, crontab_expr.value),
+            tz.value if tz else None,
             check_and_update_containers,
         )
 
@@ -42,7 +55,15 @@ class CronManager:
         return cls._instance
 
     @classmethod
-    def schedule_job(cls, name: str, cron_expr: str, func: Callable, *args, **kwargs):
+    def schedule_job(
+        cls,
+        name: str,
+        cron_expr: str,
+        tz: str | None,
+        func: Callable,
+        *args,
+        **kwargs,
+    ):
         """
         Create or recreate cron job.
         :param name: unique name
@@ -50,11 +71,13 @@ class CronManager:
         :param func: coroutine
         """
         cls.cancel_job(name)
-
+        _tz = ZoneInfo(tz) if tz in VALID_TIMEZONES else None
         cls._jobs[name] = aiocron.crontab(
-            cron_expr, func=func, args=args, kwargs=kwargs
+            cron_expr, func=func, args=args, kwargs=kwargs, tz=_tz
         )
-        logging.info(f"[CronManager] Job '{name}' scheduled with '{cron_expr}'")
+        logging.info(
+            f"[CronManager] Job '{name}' scheduled with '{cron_expr}'"
+        )
 
     @classmethod
     def cancel_job(cls, name: str):

@@ -12,6 +12,11 @@ export interface IContainer {
   is_self: boolean;
   check_enabled: boolean;
   update_enabled: boolean;
+  update_available: boolean;
+  checked_at: string;
+  updated_at: string;
+  created_at: string;
+  modified_at: string;
 }
 export interface IContainerPort {
   HostIp: string;

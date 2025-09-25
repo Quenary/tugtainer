@@ -7,7 +7,7 @@ import {
   IContainer,
   IContainerPatchBody,
 } from 'src/app/entities/containers/containers-interface';
-import { KeyValuePipe, NgTemplateOutlet } from '@angular/common';
+import { DatePipe, KeyValuePipe, NgTemplateOutlet } from '@angular/common';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { FormsModule } from '@angular/forms';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -21,6 +21,8 @@ import { ContainersCheckNow } from './containers-check-now/containers-check-now'
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
+import { IftaLabel } from 'primeng/iftalabel';
+import { NaiveDatePipe } from '../../shared/pipes/naive-date.pipe';
 
 @Component({
   selector: 'app-containers-page',
@@ -39,6 +41,8 @@ import { InputTextModule } from 'primeng/inputtext';
     IconFieldModule,
     InputTextModule,
     InputIconModule,
+    NaiveDatePipe,
+    DatePipe,
   ],
   templateUrl: './containers-page.html',
   styleUrl: './containers-page.scss',

@@ -1,7 +1,7 @@
 import logging
 import apprise
 from sqlalchemy import select
-from app.db.session import _async_session_maker
+from app.db.session import async_session_maker
 from app.db.models.settings_model import SettingModel
 from app.enums.settings_enum import ESettingKey
 
@@ -10,7 +10,7 @@ async def send_notification(
     title: str,
     body: str,
 ):
-    async with _async_session_maker() as session:
+    async with async_session_maker() as session:
         stmt = (
             select(SettingModel.value)
             .where(SettingModel.key == ESettingKey.NOTIFICATION_URL)

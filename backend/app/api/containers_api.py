@@ -1,20 +1,19 @@
 import asyncio
-import logging
-from typing import cast
 from docker.models.containers import Container
 from fastapi import APIRouter, Depends
 import docker
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth_core import is_authorized
-from app.config import Config
 from app.schemas.containers_schema import (
     ContainerPatchRequestBody,
     ContainerGetResponseBody,
 )
-from app.db.models.settings_model import SettingModel
-from app.db.models.containers_model import ContainersModel
-from app.db.session import get_async_session
+from app.db import (
+    get_async_session,
+    ContainersModel,
+    insert_or_update_container,
+)
 from app.core.containers_core import (
     CheckStatusDict,
     check_and_update_containers,
@@ -22,37 +21,33 @@ from app.core.containers_core import (
     STATUS_CACHE_KEY,
 )
 from app.helpers import is_self_container
+from .util import map_container_schema
 
 client = docker.from_env()
 router = APIRouter(
-    prefix="/containers", tags=["containers"], dependencies=[Depends(is_authorized)]
+    prefix="/containers",
+    tags=["containers"],
+    dependencies=[Depends(is_authorized)],
 )
 
 
-@router.get(path="/list", response_model=list[ContainerGetResponseBody])
+@router.get(
+    path="/list", response_model=list[ContainerGetResponseBody]
+)
 async def containers_list(
     session: AsyncSession = Depends(get_async_session),
-):
+) -> list[ContainerGetResponseBody]:
     containers: list[Container] = client.containers.list(all=True)
     _list: list[ContainerGetResponseBody] = []
     for c in containers:
-        name = str(c.name)
-        _item = ContainerGetResponseBody(
-            name=name,
-            short_id=c.short_id,
-            ports=c.ports,
-            status=c.attrs["State"]["Status"],
-            health=str(c.health),
-            is_self=is_self_container(c),
+        stmt = (
+            select(ContainersModel)
+            .where(ContainersModel.name == str(c.name))
+            .limit(1)
         )
-
-        stmt = select(ContainersModel).where(ContainersModel.name == name).limit(1)
         result = await session.execute(stmt)
         _dbItem = result.scalar_one_or_none()
-        if _dbItem:
-            _item.check_enabled = _dbItem.check_enabled
-            _item.update_enabled = _dbItem.update_enabled
-
+        _item = map_container_schema(c, _dbItem)
         _list.append(_item)
     return _list
 
@@ -60,36 +55,26 @@ async def containers_list(
 @router.patch(
     path="/{name}",
     description="Patch container data (create db entry if not exists)",
+    response_model=ContainerGetResponseBody,
 )
 async def patch_container_data(
     name: str,
     body: ContainerPatchRequestBody,
     session: AsyncSession = Depends(get_async_session),
-):
-    stmt = select(ContainersModel).where(ContainersModel.name == name).limit(1)
-    result = await session.execute(stmt)
-    container = result.scalar_one_or_none()
-    if container:
-        for key, value in body.model_dump(exclude_unset=True).items():
-            if getattr(container, key) != value:
-                setattr(container, key, value)
-        await session.commit()
-        await session.refresh(container)
-        return container
-    else:
-        new_container = ContainersModel(**body.model_dump(), name=name)
-        session.add(new_container)
-        await session.commit()
-        await session.refresh(new_container)
-        return new_container
+) -> ContainerGetResponseBody:
+    db_cont = await insert_or_update_container(
+        session, name, body.model_dump(exclude_unset=True)
+    )
+    d_cont = client.containers.get(db_cont.name)
+    return map_container_schema(d_cont, db_cont)
 
 
 @router.post(
-    path="/check_and_update",
+    path="/update_all",
     description="Run check and update now. Returns ID of the task that can be used for monitoring.",
 )
-async def check_all():
-    task = asyncio.create_task(check_and_update_containers())
+async def update_all():
+    asyncio.create_task(check_and_update_containers())
     return STATUS_CACHE_KEY
 
 

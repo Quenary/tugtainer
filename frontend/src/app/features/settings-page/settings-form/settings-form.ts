@@ -105,7 +105,7 @@ export class SettingsForm {
       key: new FormControl<ESettingKey>(data.key),
       value: new FormControl<any>(data.value, [Validators.required]),
       value_type: new FormControl<ESettingValueType>(data.value_type),
-      updated_at: new FormControl<string>({ value: data.updated_at, disabled: true }),
+      modified_at: new FormControl<string>({ value: data.modified_at, disabled: true }),
     });
 
     if (data.key === ESettingKey.CRONTAB_EXPR) {
@@ -145,6 +145,13 @@ export class SettingsForm {
 
   public submit(): void {
     if (this.formArray.invalid) {
+      this.formArray.controls.forEach((c) => {
+        if (c.invalid) {
+          const vc = c.controls.value;
+          vc.markAsTouched();
+          vc.markAsDirty();
+        }
+      });
       return;
     }
     this.formArray.markAsPristine();

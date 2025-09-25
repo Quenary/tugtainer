@@ -8,7 +8,7 @@ export interface ISetting {
   key: ESettingKey;
   value: boolean | number | string;
   value_type: ESettingValueType;
-  updated_at: string;
+  modified_at: string;
 }
 export interface ISettingUpdate {
   key: string;

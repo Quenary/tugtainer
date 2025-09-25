@@ -20,4 +20,4 @@ class SettingsPatchRequestItem(BaseModel):
 
 class SettingsGetResponseItem(SettingsPatchRequestItem):
     value_type: str
-    updated_at: datetime
+    modified_at: datetime

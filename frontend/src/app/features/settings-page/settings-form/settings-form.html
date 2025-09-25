@@ -26,18 +26,6 @@
       </p-ifta-label>
 
       <section class="settings-form-group-functions">
-        @if (keyTranslates[key]?.HINT; as hint) {
-          <p-button
-            icon="pi pi-question"
-            severity="info"
-            [pTooltip]="hint"
-            tooltipPosition="left"
-            rounded="true"
-            (onClick)="onHintClick(keyTranslates[key]?.LINK)"
-          >
-          </p-button>
-        }
-
         @switch (key) {
           @case (ESettingKey.NOTIFICATION_URL) {
             <p-button
@@ -50,6 +38,18 @@
             >
             </p-button>
           }
+        }
+
+        @if (keyTranslates[key]?.HINT; as hint) {
+          <p-button
+            icon="pi pi-question"
+            severity="info"
+            [pTooltip]="hint"
+            tooltipPosition="left"
+            rounded="true"
+            (onClick)="onHintClick(keyTranslates[key]?.LINK)"
+          >
+          </p-button>
         }
       </section>
     }
