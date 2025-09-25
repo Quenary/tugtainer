@@ -7,7 +7,8 @@
     "ENABLED": "On",
     "DISABLED": "Off",
     "SUCCESS": "Success",
-    "ERROR": "Error"
+    "ERROR": "Error",
+    "IN_PROGRESS": "In progress"
   },
   "NAV": {
     "AUTH": "Dockobserver. Authorization.",
@@ -33,22 +34,26 @@
     "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"]
   },
   "CONTAINERS": {
-    "SEARCH_PLACEHOLDER": "Name or Short ID",
-    "NAME": "Name",
-    "SHORT_ID": "Short ID",
-    "UPDATE_AVAILABLE": "Update available",
-    "STATUS": "Status",
-    "PORTS": "Ports",
-    "HEALTH": "Health",
-    "CHECK_ENABLED": "Check for update",
-    "UPDATE_ENABLED": "Auto update",
-    "CHECKED_AT": "Last check",
-    "UPDATED_AT": "Last update",
-    "CHECK_NOW": {
-      "BUTTON_LABEL": "Check now",
+    "HEADER": {
+      "CHECK_ALL": "Check now",
       "UPDATED": "Updated",
       "AVAILABLE": "Available",
       "FAILED": "Failed"
+    },
+    "TABLE": {
+      "SEARCH_PLACEHOLDER": "Name or Short ID",
+      "NAME": "Name",
+      "SHORT_ID": "Short ID",
+      "UPDATE_AVAILABLE": "Update available",
+      "STATUS": "Status",
+      "PORTS": "Ports",
+      "HEALTH": "Health",
+      "CHECK_ENABLED": "Check",
+      "CHECK_HINT": "Periodically check for a new image.",
+      "UPDATE_ENABLED": "Update",
+      "UPDATE_HINT": "Automatically update container when a new image is detected.",
+      "CHECKED_AT": "Last check",
+      "UPDATED_AT": "Last update"
     }
   },
   "SETTINGS": {
@@ -60,7 +65,7 @@
     "BY_KEY": {
       "CRONTAB_EXPR": {
         "LABEL": "Crontab expression",
-        "HINT": "Crontab expression e.g. '0 4 * * *' for every day at 04:00\n\nClick for more info.",
+        "HINT": "Crontab expression for periodic checks e.g. \n'0 */3 * * *' for every 3 hours\n\nClick for more info.",
         "LINK": "https://crontab.guru/"
       },
       "NOTIFICATION_URL": {

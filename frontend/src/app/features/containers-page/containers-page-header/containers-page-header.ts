@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   inject,
+  output,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,17 +19,19 @@ import { ECheckStatus, ICheckProgress } from 'src/app/entities/containers/contai
 import { parseError } from 'src/app/shared/functions/parse-error.function';
 
 @Component({
-  selector: 'app-containers-check-now',
+  selector: 'app-containers-page-header',
   imports: [ButtonModule, ProgressBarModule, TranslateModule, TagModule],
-  templateUrl: './containers-check-now.html',
-  styleUrl: './containers-check-now.scss',
+  templateUrl: './containers-page-header.html',
+  styleUrl: './containers-page-header.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ContainersCheckNow {
+export class ContainersPageHeader {
   private readonly containersApiService = inject(ContainersApiService);
   private readonly messageService = inject(MessageService);
   private readonly translateService = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
+
+  public readonly onDone = output();
 
   public readonly ECheckStatus = ECheckStatus;
   public readonly checkProgress = signal<ICheckProgress>(null);
@@ -53,7 +56,7 @@ export class ContainersCheckNow {
           this.watchCheckProgress(id);
           this.messageService.add({
             severity: 'success',
-            summary: this.translateService.instant('GENERAL.SUCCESS'),
+            summary: this.translateService.instant('GENERAL.IN_PROGRESS'),
           });
         },
         error: (error) => {
@@ -77,6 +80,9 @@ export class ContainersCheckNow {
       .subscribe({
         next: (res) => {
           this.checkProgress.set(res);
+        },
+        complete: () => {
+          this.onDone.emit();
         },
       });
   }

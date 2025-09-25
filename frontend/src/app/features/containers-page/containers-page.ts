@@ -1,141 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
-import { TableModule } from 'primeng/table';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import {
-  EContainerStatus,
-  IContainer,
-  IContainerPatchBody,
-} from 'src/app/entities/containers/containers-interface';
-import { DatePipe, KeyValuePipe, NgTemplateOutlet } from '@angular/common';
-import { ToggleButtonModule } from 'primeng/togglebutton';
-import { FormsModule } from '@angular/forms';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { TagModule } from 'primeng/tag';
-import { SkeletonModule } from 'primeng/skeleton';
-import { finalize } from 'rxjs';
-import { MessageService } from 'primeng/api';
-import { parseError } from 'src/app/shared/functions/parse-error.function';
-import { ButtonModule } from 'primeng/button';
-import { ContainersCheckNow } from './containers-check-now/containers-check-now';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { IftaLabel } from 'primeng/iftalabel';
-import { NaiveDatePipe } from '../../shared/pipes/naive-date.pipe';
+import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
+import { ContainersPageHeader } from './containers-page-header/containers-page-header';
+import { ContainersPageTable } from './containers-page-table/containers-page-table';
 
 @Component({
   selector: 'app-containers-page',
-  imports: [
-    TableModule,
-    TranslateModule,
-    NgTemplateOutlet,
-    KeyValuePipe,
-    ToggleButtonModule,
-    FormsModule,
-    ProgressBarModule,
-    TagModule,
-    SkeletonModule,
-    ButtonModule,
-    ContainersCheckNow,
-    IconFieldModule,
-    InputTextModule,
-    InputIconModule,
-    NaiveDatePipe,
-    DatePipe,
-  ],
+  imports: [ContainersPageHeader, ContainersPageTable],
   templateUrl: './containers-page.html',
   styleUrl: './containers-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContainersPage {
-  private readonly containersApiService = inject(ContainersApiService);
-  private readonly messageService = inject(MessageService);
-  private readonly translateService = inject(TranslateService);
+  @ViewChild(ContainersPageTable, { static: true, read: ContainersPageTable })
+  private readonly containersPageTableRef: ContainersPageTable;
 
-  public readonly EContainerStatusSeverity: { [K in keyof typeof EContainerStatus]: string } = {
-    [EContainerStatus.created]: 'primary',
-    [EContainerStatus.paused]: 'contrast',
-    [EContainerStatus.running]: 'success',
-    [EContainerStatus.restarting]: 'info',
-    [EContainerStatus.removing]: 'warn',
-    [EContainerStatus.exited]: 'danger',
-    [EContainerStatus.dead]: 'danger',
-  };
-  public readonly EContainerHealthSevirity = {
-    healthy: 'success',
-    unhealthy: 'warn',
-  };
-
-  public readonly isLoading = signal<boolean>(false);
-  public readonly list = signal<IContainer[]>([]);
-
-  constructor() {
-    this.updateList();
-  }
-
-  private updateList(): void {
-    this.isLoading.set(true);
-    this.containersApiService
-      .list()
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (list) => {
-          this.list.set(list);
-        },
-        error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
-        },
-      });
-  }
-
-  public onCheckEnabledChange(check_enabled: boolean, container: IContainer): void {
-    this.patchContainer(container.name, { check_enabled });
-  }
-
-  public onUpdateEnabledChange(update_enabled: boolean, container: IContainer): void {
-    this.patchContainer(container.name, { update_enabled });
-  }
-
-  private patchContainer(name: string, body: IContainerPatchBody): void {
-    this.isLoading.set(true);
-    this.containersApiService
-      .patch(name, body)
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (container) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.SUCCESS'),
-          });
-          const list = this.list();
-          const index = list.findIndex((item) => item.name == container.name);
-          list[index] = {
-            ...list[index],
-            ...container,
-          };
-          this.list.set([...list]);
-        },
-        error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
-          this.updateList();
-        },
-      });
+  public onCheckDone(): void {
+    this.containersPageTableRef?.updateList();
   }
 }

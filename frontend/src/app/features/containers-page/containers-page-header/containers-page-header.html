@@ -1,7 +1,7 @@
 <section class="upper-row">
   <p-button
     icon="pi pi-sync"
-    [label]="'CONTAINERS.CHECK_NOW.BUTTON_LABEL' | translate"
+    [label]="'CONTAINERS.HEADER.CHECK_ALL' | translate"
     [loading]="isLoading()"
     (onClick)="checkAndUpdate()"
   >
@@ -9,19 +9,19 @@
   @if (checkProgress(); as prog) {
     @if (prog.updated !== undefined) {
       <p-tag [severity]="prog.updated > 0 ? 'success' : 'secondary'">
-        {{ 'CONTAINERS.CHECK_NOW.UPDATED' | translate }} {{ prog.updated }}
+        {{ 'CONTAINERS.HEADER.UPDATED' | translate }} {{ prog.updated }}
       </p-tag>
     }
 
     @if (prog.available !== undefined) {
       <p-tag [severity]="prog.available > 0 ? 'info' : 'secondary'">
-        {{ 'CONTAINERS.CHECK_NOW.AVAILABLE' | translate }} {{ prog.available }}
+        {{ 'CONTAINERS.HEADER.AVAILABLE' | translate }} {{ prog.available }}
       </p-tag>
     }
 
     @if (prog.failed !== undefined) {
       <p-tag [severity]="prog.failed > 0 ? 'danger' : 'secondary'">
-        {{ 'CONTAINERS.CHECK_NOW.FAILED' | translate }} {{ prog.failed }}
+        {{ 'CONTAINERS.HEADER.FAILED' | translate }} {{ prog.failed }}
       </p-tag>
     }
   }

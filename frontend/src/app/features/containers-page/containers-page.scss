@@ -3,47 +3,4 @@
   flex-direction: column;
   width: 100%;
   gap: 12px;
-
-  .flex-header-cell {
-    display: flex;
-    align-items: center;
-  }
-  .ports {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-
-    &-host {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
-    }
-  }
-  .extra-info {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    width: 100%;
-
-    &-item {
-      display: flex;
-      flex-direction: column;
-      width: calc(50% - 1rem);
-      gap: 0.5rem;
-
-      &-label {
-        font-size: 0.8rem;
-        color: var(--p-form-field-float-label-color);
-      }
-      &-value {
-        font-size: 1rem;
-        color: var(--p-form-field-color);
-      }
-    }
-  }
 }

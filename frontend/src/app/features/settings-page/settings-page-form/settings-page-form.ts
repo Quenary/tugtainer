@@ -41,7 +41,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 
 @Component({
-  selector: 'app-settings-form',
+  selector: 'app-settings-page-form',
   imports: [
     ReactiveFormsModule,
     ButtonModule,
@@ -56,11 +56,11 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
     NgTemplateOutlet,
     AutoCompleteModule,
   ],
-  templateUrl: './settings-form.html',
-  styleUrl: './settings-form.scss',
+  templateUrl: './settings-page-form.html',
+  styleUrl: './settings-page-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SettingsForm {
+export class SettingsPageForm {
   private readonly settingsApiService = inject(SettingsApiService);
   private readonly translateService = inject(TranslateService);
   private readonly messageService = inject(MessageService);
