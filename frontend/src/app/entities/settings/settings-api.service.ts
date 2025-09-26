@@ -17,8 +17,8 @@ export class SettingsApiService extends BaseApiService<'/settings'> {
     return this.httpClient.patch(`${this.basePath}/change`, settings);
   }
 
-  test_notification(): Observable<any> {
-    return this.httpClient.post(`${this.basePath}/test_notification`, {});
+  test_notification(url: string): Observable<any> {
+    return this.httpClient.post(`${this.basePath}/test_notification`, { url });
   }
 
   getAvailableTimezones(): Observable<string[]> {

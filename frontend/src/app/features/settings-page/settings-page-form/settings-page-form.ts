@@ -170,8 +170,10 @@ export class SettingsPageForm {
 
   public onTestNotification(): void {
     this.isLoading.set(true);
+    const url = this.formArray.value.find((item) => item.key === ESettingKey.NOTIFICATION_URL)
+      .value as string;
     this.settingsApiService
-      .test_notification()
+      .test_notification(url)
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {

@@ -24,3 +24,7 @@ class SettingsPatchRequestItem(BaseModel):
 class SettingsGetResponseItem(SettingsPatchRequestItem):
     value_type: str
     modified_at: datetime
+
+
+class TestNotificationRequestBody(BaseModel):
+    url: str

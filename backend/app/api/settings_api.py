@@ -7,6 +7,7 @@ from app.db.session import get_async_session
 from app.schemas.settings_schema import (
     SettingsGetResponseItem,
     SettingsPatchRequestItem,
+    TestNotificationRequestBody,
 )
 from app.db.models.settings_model import SettingModel
 from app.helpers.get_setting_typed_value import (
@@ -50,10 +51,10 @@ async def get_settings(
 
 @router.patch("/change")
 async def change_system_settings(
-    request: list[SettingsPatchRequestItem],
+    data: list[SettingsPatchRequestItem],
     session: AsyncSession = Depends(get_async_session),
 ):
-    for s in request:
+    for s in data:
         stmt = (
             select(SettingModel)
             .where(SettingModel.key == s.key)
@@ -76,12 +77,10 @@ async def change_system_settings(
     await session.commit()
 
     cron_expr = [
-        item
-        for item in request
-        if item.key == ESettingKey.CRONTAB_EXPR
+        item for item in data if item.key == ESettingKey.CRONTAB_EXPR
     ][0]
     timezone = [
-        item for item in request if item.key == ESettingKey.TIMEZONE
+        item for item in data if item.key == ESettingKey.TIMEZONE
     ][0]
 
     if cron_expr or timezone:
@@ -92,19 +91,22 @@ async def change_system_settings(
             check_and_update_all_containers,
         )
 
-    return {"status": "updated", "count": len(request)}
+    return {"status": "updated", "count": len(data)}
 
 
 @router.post(
     "/test_notification",
     status_code=200,
-    description="Send test notification to specified NOTIFICATION_URL",
+    description="Send test notification to specified url",
 )
-async def test_notification():
-    await send_notification(
-        "Dockobserver", "This is test notification"
-    )
-    return {}
+async def test_notification(data: TestNotificationRequestBody):
+    try:
+        await send_notification(
+            "Dockobserver", "This is test notification", data.url
+        )
+        return {}
+    except:
+        raise HTTPException(500, "Failed to send notification")
 
 
 @router.get(
