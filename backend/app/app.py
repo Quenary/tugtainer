@@ -1,11 +1,20 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.core.cron_manager import schedule_check_on_init
-from app.api import auth_router, containers_router, public_router, settings_router
+from app.api import (
+    auth_router,
+    containers_router,
+    public_router,
+    settings_router,
+)
 from app.config import Config
 import logging
 
-logging.basicConfig(level=Config.LOG_LEVEL)
+logging.basicConfig(
+    level=Config.LOG_LEVEL,
+    format="%(levelname)s %(asctime)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 @asynccontextmanager

@@ -11,7 +11,7 @@ from docker.models.containers import Container
 from docker.models.images import Image
 from docker.models.containers import Container
 from docker import client
-from sqlalchemy import select
+from sqlalchemy import and_, select
 import time
 import asyncio
 import concurrent.futures
@@ -28,6 +28,7 @@ from app.core.registries import (
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
 from app.helpers import is_self_container, now
+import traceback
 
 
 _client = client.from_env()
@@ -81,10 +82,13 @@ async def db_update_container(name: str, data: dict):
 async def filter_containers_for_check(
     containers: list[Container],
 ) -> list[Container]:
-    """Filter containers marked for check"""
+    """Filter containers marked for check only"""
     async with async_session_maker() as session:
         stmt = select(ContainersModel.name).where(
-            ContainersModel.check_enabled == True
+            and_(
+                ContainersModel.check_enabled == True,
+                ContainersModel.update_enabled == False,
+            )
         )
         result = await session.execute(stmt)
         names = result.scalars().all()
@@ -94,10 +98,13 @@ async def filter_containers_for_check(
 async def filter_containers_for_update(
     containers: list[Container],
 ) -> list[Container]:
-    """Filter containers marked for update"""
+    """Filter containers marked for check and auto update"""
     async with async_session_maker() as session:
         stmt = select(ContainersModel.name).where(
-            ContainersModel.update_enabled == True
+            and_(
+                ContainersModel.check_enabled == True,
+                ContainersModel.update_enabled == True,
+            )
         )
         result = await session.execute(stmt)
         names = result.scalars().all()
@@ -168,6 +175,10 @@ def _sort_containers_by_dependencies(
         visit(service)
 
     return result
+
+
+def _get_container_image(c: Container) -> str:
+    return c.attrs.get("Config", {}).get("Image", "")
 
 
 def get_container_config(
@@ -285,13 +296,30 @@ async def _wait_for_container_healthy(
     return False
 
 
+def _connect_to_networks(
+    container: Container, networks_to_connect: list[Any]
+) -> None:
+    """Connects container to several networks"""
+    for net in networks_to_connect:
+        logging.info(
+            f"Connecting container {container.name} to several networks..."
+        )
+        try:
+            _client.networks.get(net).connect(container)
+        except Exception as e:
+            logging.warning(
+                f"Failed to connect container {container.name} to network {net}"
+            )
+
+
 async def _recreate_container(
     container: Container,
     new_image: str,
 ) -> tuple[Container, bool]:
     """
     Recreate container with new image.
-    Returns container object (new or ralled-back) and success flag (that is, not rolled-back).
+    :returns 0: Container object (new or rolled-back)
+    :returns 1: Updated flag (that is, not rolled-back)
     Could raise an exception if recreate and rallback fails.
     """
 
@@ -323,21 +351,7 @@ async def _recreate_container(
                 lambda: _client.containers.create(new_image, **cfg),
             )
 
-            for net in networks_to_connect:
-                logging.info(
-                    f"Connecting container {name} to several networks..."
-                )
-                try:
-                    await loop.run_in_executor(
-                        executor,
-                        lambda: _client.networks.get(net).connect(
-                            new_container
-                        ),
-                    )
-                except Exception as e:
-                    logging.warning(
-                        f"Failed to connect container {name} to network {net}"
-                    )
+            _connect_to_networks(new_container, networks_to_connect)
 
             if not should_start:
                 logging.info(
@@ -373,23 +387,9 @@ async def _recreate_container(
                 executor,
                 lambda: _client.containers.run(old_image, **cfg),
             )
-            for net in networks_to_connect:
-                logging.info(
-                    f"Connecting container {name} to several networks..."
-                )
-                try:
-                    await loop.run_in_executor(
-                        executor,
-                        lambda: _client.networks.get(net).connect(
-                            rolled_back
-                        ),
-                    )
-                except Exception as e:
-                    logging.warning(
-                        f"Failed to connect container {name} to network {net}"
-                    )
-            logging.info(f"Rollback complete for {cfg['name']}.")
-            return rolled_back
+            _connect_to_networks(rolled_back, networks_to_connect)
+            logging.info(f"Rollback complete for {name}.")
+            return (rolled_back, False)
 
 
 async def _is_container_update_available(c: Container) -> bool:
@@ -406,11 +406,16 @@ async def _is_container_update_available(c: Container) -> bool:
 
 async def check_container(
     name: str, update: bool = False
-) -> Container | None:
+) -> tuple[Container | None, bool, bool, Exception | None]:
     """
     Check and update one container.
     Should not raises errors, only logging.
     :param name: name or id
+    :param update: wether to update container (only check if false)
+    :returns 0: Container if there is new one (updated or rolled-back after fail)
+    :returns 1: Available flag (new image, but not updated)
+    :returns 2: Updated flag (that is, not rolled-back)
+    :returns 3: Exception if there was any
     """
     status = get_check_status(name)
     allow_statuses = [ECheckStatus.DONE, ECheckStatus.ERROR]
@@ -418,7 +423,7 @@ async def check_container(
         logging.warning(
             f"Check and update of container {name} is already running"
         )
-        return
+        return (None, False, False, None)
 
     _set_check_status(name, {"status": ECheckStatus.PREPARING})
 
@@ -426,20 +431,15 @@ async def check_container(
     if not container:
         _update_check_status(name, {"status": ECheckStatus.DONE})
         logging.warning(
-            f"Check and update: container {name} not found"
+            f"While checking for update, container '{name}' not found"
         )
-        return None
+        return (None, False, False, None)
 
-    is_self = is_self_container(container)
-    if is_self:
-        _update_check_status(name, {"status": ECheckStatus.DONE})
-        logging.warning(
-            f"Check and update: self container cannot be updated with that func"
-        )
-        return None
-    print(get_container_config(container))
+    image = container.attrs["Config"]["Image"]
     _update_check_status(name, {"status": ECheckStatus.CHECKING})
-    logging.info(f"Start checking for updates of container {name}")
+    logging.info(
+        f"Start checking for updates of container '{name}' with image '{image}'"
+    )
     update_available: bool = await _is_container_update_available(
         container
     )
@@ -450,26 +450,36 @@ async def check_container(
             "checked_at": now(),
         },
     )
+
     if not update_available:
         _update_check_status(name, {"status": ECheckStatus.DONE})
         logging.info(
-            f"No new image was found for the container {name}"
+            f"No new image was found for the container '{name}'"
         )
-        return None
+        return (None, False, False, None)
+
+    is_self = is_self_container(container)
+    if is_self:
+        _update_check_status(name, {"status": ECheckStatus.DONE})
+        logging.warning(
+            f"Update is available, but self container cannot be updated with that func"
+        )
+        return (None, True, False, None)
+
     if not update:
         _update_check_status(name, {"status": ECheckStatus.DONE})
-        logging.info(f"Check of container {name} complete")
-        return None
+        logging.info(f"Check of container '{name}' complete")
+        return (None, True, False, None)
 
     _update_check_status(name, {"status": ECheckStatus.UPDATING})
-    logging.info(f"New image found for container: {name}")
+    logging.info(f"New image '{image}' found for container '{name}'")
 
     try:
-        container, success = await _recreate_container(
+        container, updated = await _recreate_container(
             container,
-            container.attrs["Config"]["Image"],
+            image,
         )
-        if success:
+        if updated:
             await db_update_container(
                 str(name),
                 {
@@ -478,11 +488,11 @@ async def check_container(
                 },
             )
         _update_check_status(name, {"status": ECheckStatus.DONE})
-        return container
+        return (container, False, updated, None)
     except Exception as e:
         logging.error(f"Failed to update container {name}")
         _update_check_status(name, {"status": ECheckStatus.ERROR})
-        return None
+        return (None, True, False, e)
 
 
 async def check_and_update_all_containers():
@@ -504,10 +514,9 @@ async def check_and_update_all_containers():
     )
     logging.info("Start checking for updates of all containers")
     containers: list[Container] = _client.containers.list(all=True)
-    containers = [
-        item for item in containers if not is_self_container(item)
-    ]
-    containers = await filter_containers_for_check(containers)
+    for_check = await filter_containers_for_check(containers)
+    for_update = await filter_containers_for_update(containers)
+    for_update = _sort_containers_by_dependencies(for_update)
 
     _update_check_status(
         ALL_CONTAINERS_STATUS_KEY,
@@ -515,29 +524,21 @@ async def check_and_update_all_containers():
     )
 
     available: list[Container] = []
-    for c in containers:
-        logging.info(f"Checking container: {c.name} {c.short_id}")
-        update_available: bool = await _is_container_update_available(
-            c
-        )
-        await db_update_container(
-            str(c.name),
-            {
-                "update_available": update_available,
-                "checked_at": now(),
-            },
-        )
-        if update_available:
-            logging.info(
-                f"New image found for container: {c.name} {c.short_id}"
-            )
-            available.append(c)
+    updated: list[Container] = []
+    rolledback: list[Container] = []
+    failed: list[Container] = []
+    errors: list[Exception] = []
 
-    to_update: list[Container] = await filter_containers_for_update(
-        available
-    )
-    to_update = _sort_containers_by_dependencies(to_update)
-    available = [c for c in available if c not in to_update]
+    for item in for_check:
+        _cont, _available, _updated, _exp = await check_container(
+            str(item.name), False
+        )
+        if _available:
+            available.append(item)
+        elif _exp:
+            errors.append(_exp)
+            failed.append(item)
+
     _update_check_status(
         ALL_CONTAINERS_STATUS_KEY,
         {
@@ -546,69 +547,60 @@ async def check_and_update_all_containers():
         },
     )
 
-    updated: list[Container] = []
-    rolledback: list[Container] = []
-    failed = 0
-
-    for c in to_update:
-        try:
-            cont, success = await _recreate_container(
-                c, c.attrs["Config"]["Image"]
-            )
-            if success:
-                updated.append(cont)
-                await db_update_container(
-                    str(c.name),
-                    {
-                        "update_available": False,
-                        "updated_at": now(),
-                    },
-                )
+    for item in for_update:
+        _cont, _available, _updated, _exp = await check_container(
+            str(item.name), True
+        )
+        if _cont:
+            if _updated:
+                updated.append(_cont)
             else:
-                rolledback.append(cont)
-        except Exception as e:
-            failed += 1
-            logging.error(f"Failed to update and rollback: {e}")
-        finally:
-            _update_check_status(
-                ALL_CONTAINERS_STATUS_KEY,
-                {
-                    "updated": len(updated),
-                    "failed": failed,
-                },
-            )
+                rolledback.append(_cont)
+        elif _exp:
+            errors.append(_exp)
+            failed.append(item)
 
     _update_check_status(
         ALL_CONTAINERS_STATUS_KEY,
         {
             "status": ECheckStatus.DONE,
             "updated": len(updated),
-            "failed": failed,
+            "failed": len(failed),
             "rolledback": len(rolledback),
         },
     )
 
     # Notification
-    title: str = f"Dockobserver {datetime.now()}"
-    body: str = ""
-    if updated:
-        body += "Updated:\n"
-        for c in updated:
-            body += f"{c.name} {c.attrs["Config"]["Image"]}\n"
-        body += "\n"
-    if available:
-        body += "Update available for:\n"
-        for c in available:
-            body += f"{c.name} {c.attrs["Config"]["Image"]}\n"
-        body += "\n"
-    if rolledback:
-        body += "Rolled-back after fail:\n"
-        for c in rolledback:
-            body += f"{c.name} {c.attrs["Config"]["Image"]}\n"
-    if failed:
-        body += f"Failed and not rolled-back: {failed}\n"
-    if body:
-        try:
+    try:
+        title: str = f"Dockobserver {datetime.now()}"
+        body: str = ""
+        if updated:
+            body += "Updated:\n"
+            for c in updated:
+                body += f"{c.name} {_get_container_image(c)}\n"
+            body += "\n"
+        if available:
+            body += "Update available for:\n"
+            for c in available:
+                body += f"{c.name} {_get_container_image(c)}\n"
+            body += "\n"
+        if rolledback:
+            body += "Rolled-back after fail:\n"
+            for c in rolledback:
+                body += f"{c.name} {_get_container_image(c)}\n"
+        if failed:
+            body += f"Failed and not rolled-back:\n"
+            for c in failed:
+                body += f"{c.name} {_get_container_image(c)}\n\n"
+        if errors:
+            body += f"Several errors occured:\n"
+            for e in errors:
+                tb_lines = traceback.format_exception(
+                    type(e), e, e.__traceback__
+                )
+                last_lines = tb_lines[-3:]
+                body += "".join(last_lines) + "\n"
+        if body:
             await send_notification(title, body)
-        except Exception as e:
-            logging.error(f"Error while sending notification: {e}")
+    except Exception as e:
+        logging.error(f"Error while sending notification: {e}")
