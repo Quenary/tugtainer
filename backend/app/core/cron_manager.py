@@ -4,7 +4,7 @@ import aiocron
 from typing import Callable, Dict, cast
 from sqlalchemy import select
 from app.enums import ESettingKey, ECronJob
-from app.core.containers_core import check_and_update_containers
+from app.core.containers_core import check_and_update_all_containers
 from app.db.session import async_session_maker
 from app.db.models import SettingModel
 
@@ -40,7 +40,7 @@ async def schedule_check_on_init():
             ECronJob.CHECK_CONTAINERS,
             cast(str, crontab_expr.value),
             tz.value if tz else None,
-            check_and_update_containers,
+            check_and_update_all_containers,
         )
 
 

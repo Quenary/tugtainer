@@ -17,8 +17,16 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
     return this.httpClient.patch<IContainer>(`${this.basePath}/${name}`, body);
   }
 
-  checkAndUpdate(): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/update_all`, {});
+  checkAll(): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/check/all`, {});
+  }
+
+  checkContainer(name: string): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/check/${name}`, {});
+  }
+
+  updateContainer(name: string): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/update/${name}`, {});
   }
 
   getCheckProgress(id: string): Observable<ICheckProgress> {

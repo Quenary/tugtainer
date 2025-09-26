@@ -9,31 +9,36 @@
   @if (checkProgress(); as prog) {
     @if (prog.updated !== undefined) {
       <p-tag [severity]="prog.updated > 0 ? 'success' : 'secondary'">
-        {{ 'CONTAINERS.HEADER.UPDATED' | translate }} {{ prog.updated }}
+        {{ 'CONTAINERS.HEADER.UPDATED' | translate }}: {{ prog.updated }}
       </p-tag>
     }
 
     @if (prog.available !== undefined) {
       <p-tag [severity]="prog.available > 0 ? 'info' : 'secondary'">
-        {{ 'CONTAINERS.HEADER.AVAILABLE' | translate }} {{ prog.available }}
+        {{ 'CONTAINERS.HEADER.AVAILABLE' | translate }}: {{ prog.available }}
+      </p-tag>
+    }
+
+    @if (prog.rolledback !== undefined) {
+      <p-tag [severity]="prog.rolledback > 0 ? 'warn' : 'secondary'">
+        {{ 'CONTAINERS.HEADER.ROLLEDBACK' | translate }}: {{ prog.rolledback }}
       </p-tag>
     }
 
     @if (prog.failed !== undefined) {
       <p-tag [severity]="prog.failed > 0 ? 'danger' : 'secondary'">
-        {{ 'CONTAINERS.HEADER.FAILED' | translate }} {{ prog.failed }}
+        {{ 'CONTAINERS.HEADER.FAILED' | translate }}: {{ prog.failed }}
       </p-tag>
     }
   }
 </section>
 
 @if (checkProgress(); as prog) {
-  @if (prog.status !== ECheckStatus.DONE) {
+  @if (prog.status !== ECheckStatus.DONE && prog.status !== ECheckStatus.ERROR) {
     <p-progress-bar
       [style.height.px]="6"
       [showValue]="false"
-      [value]="prog.progress ?? 0"
-      [mode]="prog.progress ? 'determinate' : 'indeterminate'"
+      mode="indeterminate"
     >
     </p-progress-bar>
   }

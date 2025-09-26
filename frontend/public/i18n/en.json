@@ -38,6 +38,7 @@
       "CHECK_ALL": "Check now",
       "UPDATED": "Updated",
       "AVAILABLE": "Available",
+      "ROLLEDBACK": "Rolled back",
       "FAILED": "Failed"
     },
     "TABLE": {
@@ -54,7 +55,11 @@
       "UPDATE_ENABLED": "Update",
       "UPDATE_HINT": "Automatically update container when a new image is detected.",
       "CHECKED_AT": "Last check",
-      "UPDATED_AT": "Last update"
+      "UPDATED_AT": "Last update",
+      "C_MENU": {
+        "UPDATE": "Update",
+        "CHECK": "Check"
+      }
     }
   },
   "SETTINGS": {

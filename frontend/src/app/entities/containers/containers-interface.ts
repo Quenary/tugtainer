@@ -43,15 +43,16 @@ export enum EContainerStatus {
 }
 
 export enum ECheckStatus {
-  COLLECTING = 'COLLECTING',
+  PREPARING = 'PREPARING',
   CHECKING = 'CHECKING',
   UPDATING = 'UPDATING',
   DONE = 'DONE',
+  ERROR = 'ERROR',
 }
 export interface ICheckProgress {
   status: ECheckStatus;
-  progress: number;
   available: number;
   updated: number;
+  rolledback: number;
   failed: number;
 }

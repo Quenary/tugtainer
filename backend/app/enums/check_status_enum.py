@@ -6,7 +6,8 @@ class ECheckStatus(str, Enum):
     Enum of available check process statuses
     """
 
-    COLLECTING = "COLLECTING"
+    PREPARING = "PREPARING"
     CHECKING = "CHECKING"
     UPDATING = "UPDATING"
     DONE = "DONE"
+    ERROR = "ERROR"

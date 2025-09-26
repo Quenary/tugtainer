@@ -10,6 +10,7 @@
   },
   "prettier": {
     "printWidth": 100,
+    "singleAttributePerLine": true,
     "singleQuote": true,
     "overrides": [
       {

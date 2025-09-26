@@ -16,9 +16,10 @@ from app.db import (
 )
 from app.core.containers_core import (
     CheckStatusDict,
-    check_and_update_containers,
+    check_and_update_all_containers,
+    check_container,
     get_check_status,
-    STATUS_CACHE_KEY,
+    ALL_CONTAINERS_STATUS_KEY,
 )
 from app.helpers import is_self_container
 from .util import map_container_schema
@@ -70,12 +71,32 @@ async def patch_container_data(
 
 
 @router.post(
-    path="/update_all",
+    path="/check/all",
     description="Run check and update now. Returns ID of the task that can be used for monitoring.",
 )
 async def update_all():
-    asyncio.create_task(check_and_update_containers())
-    return STATUS_CACHE_KEY
+    asyncio.create_task(
+        check_and_update_all_containers()
+    )
+    return ALL_CONTAINERS_STATUS_KEY
+
+
+@router.post(
+    path="/check/{name}",
+    description="Check specific container. Returns ID of the task that can be used for monitoring.",
+)
+async def check_container_ep(name: str) -> str:
+    asyncio.create_task(check_container(name))
+    return name
+
+
+@router.post(
+    path="/update/{name}",
+    description="Check and update specific container. Returns ID of the task that can be used for monitoring.",
+)
+async def update_container(name: str) -> str:
+    asyncio.create_task(check_container(name, True))
+    return name
 
 
 @router.get(

@@ -1,4 +1,9 @@
-<p-table #dt2 [globalFilterFields]="['name', 'short_id']" dataKey="name" [value]="list()">
+<p-table
+  #dt2
+  [globalFilterFields]="['name', 'short_id']"
+  dataKey="name"
+  [value]="list()"
+>
   <ng-template #caption>
     <div style="padding-left: 5rem">
       <p-iconfield iconPosition="left">
@@ -52,9 +57,16 @@
         ></i>
         <p-sortIcon field="update_enabled"></p-sortIcon>
       </th>
+      <th>
+        <!-- For menu -->
+      </th>
     </tr>
   </ng-template>
-  <ng-template #body let-container let-expanded="expanded">
+  <ng-template
+    #body
+    let-container
+    let-expanded="expanded"
+  >
     <tr>
       <td>
         <p-button
@@ -105,11 +117,51 @@
           />
         }
       </td>
+      <td>
+        @if (!container.is_self) {
+          <p-menu
+            #menu
+            [model]="container.menu"
+            [popup]="true"
+          />
+          <p-button
+            (click)="menu.toggle($event)"
+            severity="secondary"
+            icon="pi pi-ellipsis-h"
+            [badge]="container.update_available ? 'a' : ''"
+            [label]="container.update_available ? ' ' : ''"
+            badgeSeverity="success"
+          ></p-button>
+        }
+      </td>
     </tr>
-    <ng-template #expandedrow let-container>
+
+    @if (
+      container.checkStatus &&
+      container.checkStatus !== ECheckStatus.DONE &&
+      container.checkStatus !== ECheckStatus.ERROR
+    ) {
       <tr>
-        <td colspan="6">
-          <div class="extra-info" style="padding-left: 5rem">
+        <td colspan="7">
+          <p-progress-bar
+            [style.height.px]="6"
+            [showValue]="false"
+            mode="indeterminate"
+          ></p-progress-bar>
+        </td>
+      </tr>
+    }
+
+    <ng-template
+      #expandedrow
+      let-container
+    >
+      <tr>
+        <td colspan="7">
+          <div
+            class="extra-info"
+            style="padding-left: 5rem"
+          >
             <div class="extra-info-item">
               <span class="extra-info-item-label">
                 {{ 'CONTAINERS.TABLE.IMAGE' | translate }}
@@ -150,7 +202,7 @@
                 {{ 'CONTAINERS.TABLE.UPDATED_AT' | translate }}
               </span>
               <span class="extra-info-item-value">
-                {{ container.updated_at }}
+                {{ container.updated_at | naiveDate | date: 'medium' }}
               </span>
             </div>
           </div>
@@ -160,7 +212,10 @@
   </ng-template>
 </p-table>
 
-<ng-template #portsTemplate let-ports="ports">
+<ng-template
+  #portsTemplate
+  let-ports="ports"
+>
   <section class="ports">
     @if (ports) {
       @for (item of ports | keyvalue; track item) {

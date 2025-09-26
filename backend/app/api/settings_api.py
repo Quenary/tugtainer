@@ -16,7 +16,7 @@ from app.core.notifications_core import send_notification
 from app.core.cron_manager import CronManager
 from app.enums.settings_enum import ESettingKey
 from app.enums.cron_jobs_enum import ECronJob
-from app.core.containers_core import check_and_update_containers
+from app.core.containers_core import check_and_update_all_containers
 
 VALID_TIMEZONES = available_timezones()
 
@@ -89,7 +89,7 @@ async def change_system_settings(
             ECronJob.CHECK_CONTAINERS,
             str(cron_expr.value),
             str(timezone.value),
-            check_and_update_containers,
+            check_and_update_all_containers,
         )
 
     return {"status": "updated", "count": len(request)}

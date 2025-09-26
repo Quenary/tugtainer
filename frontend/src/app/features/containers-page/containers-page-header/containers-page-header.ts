@@ -45,7 +45,7 @@ export class ContainersPageHeader {
   public checkAndUpdate(): void {
     this._isLoading.set(true);
     this.containersApiService
-      .checkAndUpdate()
+      .checkAll()
       .pipe(
         finalize(() => {
           this._isLoading.set(false);

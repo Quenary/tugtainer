@@ -1,8 +1,8 @@
 import { NgTemplateOutlet, KeyValuePipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MessageService } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
@@ -12,16 +12,24 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { finalize } from 'rxjs';
+import { finalize, repeat, takeWhile } from 'rxjs';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
 import {
+  ECheckStatus,
   EContainerStatus,
   IContainer,
   IContainerPatchBody,
 } from 'src/app/entities/containers/containers-interface';
 import { parseError } from 'src/app/shared/functions/parse-error.function';
 import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
-import { Tooltip } from "primeng/tooltip";
+import { Tooltip } from 'primeng/tooltip';
+import { MenuModule } from 'primeng/menu';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+type TContainer = IContainer & {
+  menu: MenuItem[];
+  checkStatus?: ECheckStatus;
+};
 
 @Component({
   selector: 'app-containers-page-table',
@@ -41,8 +49,9 @@ import { Tooltip } from "primeng/tooltip";
     InputIconModule,
     NaiveDatePipe,
     DatePipe,
-    Tooltip
-],
+    Tooltip,
+    MenuModule,
+  ],
   templateUrl: './containers-page-table.html',
   styleUrl: './containers-page-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +60,7 @@ export class ContainersPageTable {
   private readonly containersApiService = inject(ContainersApiService);
   private readonly messageService = inject(MessageService);
   private readonly translateService = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public readonly EContainerStatusSeverity: { [K in keyof typeof EContainerStatus]: string } = {
     [EContainerStatus.created]: 'primary',
@@ -61,13 +71,15 @@ export class ContainersPageTable {
     [EContainerStatus.exited]: 'danger',
     [EContainerStatus.dead]: 'danger',
   };
+  public readonly ECheckStatus = ECheckStatus;
   public readonly EContainerHealthSevirity = {
     healthy: 'success',
     unhealthy: 'danger',
   };
+  private readonly menuTranslates = this.translateService.instant('CONTAINERS.TABLE.C_MENU');
 
   public readonly isLoading = signal<boolean>(false);
-  public readonly list = signal<IContainer[]>([]);
+  public readonly list = signal<Array<TContainer>>([]);
 
   constructor() {
     this.updateList();
@@ -84,7 +96,24 @@ export class ContainersPageTable {
       )
       .subscribe({
         next: (list) => {
-          this.list.set(list);
+          const _list = list.map((item) => {
+            const menu: MenuItem[] = [
+              {
+                label: this.menuTranslates.CHECK,
+                command: () => this.checkContainer(item.name),
+              },
+              {
+                label: this.menuTranslates.UPDATE,
+                command: () => this.checkContainer(item.name, true),
+                disabled: !item.update_available,
+                ...(item.update_available
+                  ? { badge: 'available', badgeStyleClass: 'p-badge-success' }
+                  : {}),
+              },
+            ];
+            return { ...item, menu };
+          });
+          this.list.set(_list);
         },
         error: (error) => {
           this.messageService.add({
@@ -133,6 +162,62 @@ export class ContainersPageTable {
             summary: this.translateService.instant('GENERAL.ERROR'),
             detail: parseError(error),
           });
+          this.updateList();
+        },
+      });
+  }
+
+  private checkContainer(name: string, update: boolean = false): void {
+    this.isLoading.set(true);
+    const req$ = update
+      ? this.containersApiService.updateContainer(name)
+      : this.containersApiService.checkContainer(name);
+    req$
+      .pipe(
+        finalize(() => {
+          this.isLoading.set(false);
+        }),
+      )
+      .subscribe({
+        next: (id) => {
+          this.watchCheckProgress(id, name);
+          this.messageService.add({
+            severity: 'success',
+            summary: this.translateService.instant('GENERAL.IN_PROGRESS'),
+          });
+        },
+        error: (error) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: this.translateService.instant('GENERAL.ERROR'),
+            detail: parseError(error),
+          });
+        },
+      });
+  }
+
+  private watchCheckProgress(id: string, name: string): void {
+    this.containersApiService
+      .getCheckProgress(id)
+      .pipe(
+        repeat({ delay: 500 }),
+        takeWhile((res) => res.status !== ECheckStatus.DONE, true),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (res) => {
+          const list = this.list();
+          const index = list.findIndex((item) => [id, name].includes(item.name));
+          if (index > -1) {
+            const _list = [...list];
+            _list[index] = {
+              ...list[index],
+              checkStatus: res.status,
+            };
+            this.list.set(_list);
+          }
+        },
+        complete: () => {
           this.updateList();
         },
       });
