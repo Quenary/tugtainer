@@ -172,9 +172,12 @@ def _sort_containers_by_dependencies(
 
 def get_container_config(
     container: Container,
-) -> tuple[dict[str, Any], list[Any]]:
+) -> tuple[dict[str, Any], list[Any], bool]:
     """
     Get container config ready to be used for recreation.
+    :returns 0: container config dict
+    :returns 1: additional networks to connect after creation
+    :returns 2: should the container be started after creation
     """
     attrs: dict[str, Any] = container.attrs
     config: dict[str, Any] = attrs["Config"]
@@ -257,6 +260,8 @@ def get_container_config(
             "extra_hosts": host_config.get("ExtraHosts"),
         },
         networks[1:],
+        container.attrs.get("State", {}).get("Status", "")
+        == "running",
     )
 
 
@@ -291,7 +296,9 @@ async def _recreate_container(
     """
 
     old_image = container.attrs["Config"]["Image"]
-    cfg, networks_to_connect = get_container_config(container)
+    cfg, networks_to_connect, should_start = get_container_config(
+        container
+    )
     name = cfg["name"]
 
     loop = asyncio.get_running_loop()
@@ -331,6 +338,12 @@ async def _recreate_container(
                     logging.warning(
                         f"Failed to connect container {name} to network {net}"
                     )
+
+            if not should_start:
+                logging.info(
+                    f"Container {name} was not running before update, so leave it as is..."
+                )
+                return (new_container, True)
 
             logging.info(f"Starting new container {name}...")
             await loop.run_in_executor(executor, new_container.start)
