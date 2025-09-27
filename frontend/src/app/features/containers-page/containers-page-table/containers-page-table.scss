@@ -1,5 +1,6 @@
 :host {
   width: 100%;
+  overflow-y: auto;
 
   .ports {
     display: flex;
