@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "dockobserver": {
+    "tugtainer": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -73,10 +73,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "dockobserver:build:production"
+              "buildTarget": "tugtainer:build:production"
             },
             "development": {
-              "buildTarget": "dockobserver:build:development"
+              "buildTarget": "tugtainer:build:development"
             }
           },
           "defaultConfiguration": "development"

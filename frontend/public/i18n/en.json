@@ -1,6 +1,6 @@
 {
   "GENERAL": {
-    "TITLE": "Dockobserver",
+    "TITLE": "Tugtainer",
     "SAVE": "Save",
     "CONFIRM": "Confirm",
     "CANCEL": "Cancel",
@@ -10,16 +10,25 @@
     "ERROR": "Error",
     "IN_PROGRESS": "In progress"
   },
+  "LOGO": {
+    "0": "Tug",
+    "1": "tainer"
+  },
   "NAV": {
-    "AUTH": "Dockobserver. Authorization.",
-    "CONTAINERS": "Dockobserver. Containers.",
-    "SETTINGS": "Dockobserver. Settings."
+    "AUTH": "Tugtainer. Authorization.",
+    "CONTAINERS": "Tugtainer. Containers.",
+    "SETTINGS": "Tugtainer. Settings."
   },
   "MENU": {
     "CONTAINERS": "Containers",
     "SETTINGS": "Settings",
     "GITHUB": "GitHub",
-    "LOGOUT": "Logout"
+    "UPDATE": "Update available",
+    "UPDATE_NOTES": [
+      "Due to container limitations, it cannot be updated from itself.",
+      "You can update it manually or, say, from Portainer.",
+      "Here are the commands you'll need. Check all the parameters in case you have changed any."
+    ]
   },
   "AUTH": {
     "PASSWORD": "Password",
@@ -35,7 +44,7 @@
   },
   "CONTAINERS": {
     "HEADER": {
-      "CHECK_ALL": "Check now",
+      "CHECK_ALL": "Check all",
       "UPDATED": "Updated",
       "AVAILABLE": "Available",
       "ROLLEDBACK": "Rolled back",
@@ -71,7 +80,7 @@
     "BY_KEY": {
       "CRONTAB_EXPR": {
         "LABEL": "Crontab expression",
-        "HINT": "Crontab expression for periodic checks e.g. \n'0 */3 * * *' for every 3 hours\n\nClick for more info.",
+        "HINT": "Crontab expression for periodic checks e.g. \n'0 */1 * * *' for every hour\n\nClick for more info.",
         "LINK": "https://crontab.guru/"
       },
       "NOTIFICATION_URL": {

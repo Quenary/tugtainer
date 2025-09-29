@@ -1,0 +1,10 @@
+:host {
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+
+  .first {
+    color: var(--p-primary-500);
+  }
+}

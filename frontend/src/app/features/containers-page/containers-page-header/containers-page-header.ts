@@ -74,7 +74,7 @@ export class ContainersPageHeader {
       .getCheckProgress(id)
       .pipe(
         repeat({ delay: 500 }),
-        takeWhile((res) => res.status !== ECheckStatus.DONE, true),
+        takeWhile((res) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(res.status), true),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({

@@ -1,9 +1,76 @@
 <p-toast position="bottom-right" />
 
-@if (isMenuVisible()) {
-  <p-menubar class="app-menu" [model]="menuItems$ | async"></p-menubar>
+<p-drawer
+  [visible]="menuOpened()"
+  (visibleChange)="menuOpened.set($event)"
+>
+  <ng-template #header>
+    <app-logo></app-logo>
+  </ng-template>
+  <p-panel-menu
+    [model]="menuItems$ | async"
+    (click)="menuOpened.set(false)"
+  ></p-panel-menu>
+</p-drawer>
+
+@if (isToolbarVisible()) {
+  <p-toolbar>
+    <ng-template #start>
+      <p-button
+        icon="pi pi-bars"
+        text
+        severity="contrast"
+        (onClick)="menuOpened.set(true)"
+      ></p-button>
+      <app-logo></app-logo>
+    </ng-template>
+    <ng-template #end>
+      <section class="app-menu-end">
+        <span class="app-menu-end-version"> </span>
+        @if (version$ | async; as version) {
+          <p-tag severity="contrast">
+            {{ version.image_version }}
+          </p-tag>
+        }
+        @if (isUpdateAvailable$ | async) {
+          <p-tag
+            severity="success"
+            (click)="showNewVersionDialog.set(true)"
+          >
+            {{ 'MENU.UPDATE' | translate }}
+          </p-tag>
+        }
+        <p-button
+          severity="contrast"
+          icon="pi pi-sign-out"
+          text
+          (onClick)="logout()"
+        ></p-button>
+      </section>
+    </ng-template>
+  </p-toolbar>
 }
 
 <section class="app-content">
   <router-outlet></router-outlet>
 </section>
+
+@defer {
+  <p-dialog
+    [header]="'MENU.UPDATE' | translate"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '35rem' }"
+    [visible]="showNewVersionDialog()"
+    (visibleChange)="showNewVersionDialog.set($event)"
+  >
+    @for (item of 'MENU.UPDATE_NOTES' | translate; track item) {
+      <span>
+        {{ item }}
+      </span>
+    }
+    <pre>
+      {{ newVersionDialogText }}
+    </pre>
+  </p-dialog>
+}

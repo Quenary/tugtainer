@@ -32,4 +32,8 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
   getCheckProgress(id: string): Observable<ICheckProgress> {
     return this.httpClient.get<ICheckProgress>(`${this.basePath}/check_progress/${id}`);
   }
+
+  isUpdateAvailableSelf(): Observable<boolean> {
+    return this.httpClient.get<boolean>(`${this.basePath}/update_available/self`);
+  }
 }

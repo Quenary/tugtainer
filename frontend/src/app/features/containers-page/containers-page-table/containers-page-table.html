@@ -2,10 +2,11 @@
   #dt2
   [globalFilterFields]="['name', 'short_id']"
   dataKey="name"
+  sortField="name"
   [value]="list()"
 >
   <ng-template #caption>
-    <div style="padding-left: 5rem">
+    <div>
       <p-iconfield iconPosition="left">
         <p-inputicon>
           <i class="pi pi-search"></i>
@@ -119,19 +120,11 @@
       </td>
       <td>
         @if (!container.is_self) {
-          <p-menu
-            #menu
-            [model]="container.menu"
-            [popup]="true"
-          />
-          <p-button
-            (click)="menu.toggle($event)"
-            severity="secondary"
-            icon="pi pi-ellipsis-h"
-            [badge]="container.update_available ? 'a' : ''"
-            [label]="container.update_available ? ' ' : ''"
-            badgeSeverity="success"
-          ></p-button>
+          <p-split-button
+            [label]="'CONTAINERS.TABLE.C_MENU.CHECK' | translate"
+            [model]="container.splitButtonMenu"
+            (onClick)="checkContainer(container.name, false)"
+          ></p-split-button>
         }
       </td>
     </tr>

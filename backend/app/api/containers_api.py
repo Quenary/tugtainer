@@ -19,12 +19,12 @@ from app.core.containers_core import (
     check_and_update_all_containers,
     check_container,
     get_check_status,
-    ALL_CONTAINERS_STATUS_KEY,
+    _ALL_CONTAINERS_STATUS_KEY,
 )
 from app.helpers import is_self_container
 from .util import map_container_schema
 
-client = docker.from_env()
+_client = docker.from_env()
 router = APIRouter(
     prefix="/containers",
     tags=["containers"],
@@ -38,7 +38,7 @@ router = APIRouter(
 async def containers_list(
     session: AsyncSession = Depends(get_async_session),
 ) -> list[ContainerGetResponseBody]:
-    containers: list[Container] = client.containers.list(all=True)
+    containers: list[Container] = _client.containers.list(all=True)
     _list: list[ContainerGetResponseBody] = []
     for c in containers:
         stmt = (
@@ -66,7 +66,7 @@ async def patch_container_data(
     db_cont = await insert_or_update_container(
         session, name, body.model_dump(exclude_unset=True)
     )
-    d_cont = client.containers.get(db_cont.name)
+    d_cont = _client.containers.get(db_cont.name)
     return map_container_schema(d_cont, db_cont)
 
 
@@ -75,10 +75,8 @@ async def patch_container_data(
     description="Run check and update now. Returns ID of the task that can be used for monitoring.",
 )
 async def update_all():
-    asyncio.create_task(
-        check_and_update_all_containers()
-    )
-    return ALL_CONTAINERS_STATUS_KEY
+    asyncio.create_task(check_and_update_all_containers())
+    return _ALL_CONTAINERS_STATUS_KEY
 
 
 @router.post(
@@ -106,3 +104,23 @@ async def update_container(name: str) -> str:
 )
 def check_progress(id: str) -> CheckStatusDict | None:
     return get_check_status(id)
+
+
+@router.get(
+    path="/update_available/self",
+    description="Get new version availability for self container",
+    response_model=bool,
+)
+async def is_update_available_self(
+    session: AsyncSession = Depends(get_async_session),
+):
+    containers: list[Container] = _client.containers.list()
+    self_c = [item for item in containers if is_self_container(item)]
+    if not self_c:
+        return False
+    stmt = select(ContainersModel.update_available).where(
+        ContainersModel.name == self_c[0].name
+    )
+    result = await session.execute(stmt)
+    update_available = result.scalar_one_or_none()
+    return bool(update_available)

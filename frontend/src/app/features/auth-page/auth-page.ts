@@ -8,10 +8,11 @@ import { LoginForm } from './login-form/login-form';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MessageService } from 'primeng/api';
 import { parseError } from 'src/app/shared/functions/parse-error.function';
+import { Logo } from 'src/app/shared/components/logo/logo';
 
 @Component({
   selector: 'app-auth',
-  imports: [NewPasswordForm, LoginForm, TranslateModule],
+  imports: [NewPasswordForm, LoginForm, TranslateModule, Logo],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,28 +1,39 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { MenubarModule } from 'primeng/menubar';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthApiService } from './entities/auth/auth-api.service';
-import {
-  catchError,
-  combineLatest,
-  debounceTime,
-  finalize,
-  map,
-  Observable,
-  of,
-  retry,
-  startWith,
-} from 'rxjs';
+import { catchError, debounceTime, finalize, map, Observable, of, retry, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
 import { AsyncPipe } from '@angular/common';
 import { PublicApiService } from './entities/public/public-api.service';
+import { ContainersApiService } from './entities/containers/containers-api.service';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { TagModule } from 'primeng/tag';
+import { DialogModule } from 'primeng/dialog';
+import { Logo } from './shared/components/logo/logo';
+import { DrawerModule } from 'primeng/drawer';
+import { PanelMenuModule } from 'primeng/panelmenu';
+import { ToolbarModule } from 'primeng/toolbar';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastModule, AsyncPipe, MenubarModule],
+  imports: [
+    RouterOutlet,
+    ToastModule,
+    AsyncPipe,
+    ButtonModule,
+    TranslateModule,
+    TagModule,
+    DialogModule,
+    Logo,
+    DrawerModule,
+    PanelMenuModule,
+    ToolbarModule,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -31,15 +42,33 @@ export class App {
   private readonly translateService = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly publicApiService = inject(PublicApiService);
+  private readonly containersApiService = inject(ContainersApiService);
 
-  public readonly menuItems$: Observable<MenuItem[]> = combineLatest([
-    this.translateService.get('MENU'),
-    this.publicApiService.getVersion().pipe(
-      retry({ count: 3, delay: 500 }),
-      catchError(() => of({ image_version: 'unknown' })),
-    ),
-  ]).pipe(
-    map(([translates, version]) => {
+  public readonly showNewVersionDialog = signal<boolean>(false);
+  public readonly newVersionDialogText = `
+docker stop tugtainer
+
+docker rm tugtainer
+
+docker pull quenary/tugtainer:latest
+
+docker run -d -p 9412:80 \\
+  --name=tugtainer \\
+  --restart=unless-stopped \\
+  -v tugtainer_data:/tugtainer \\
+  --health-cmd "python -c 'import urllib.request; exit(0) if urllib.request.urlopen(\"http://localhost:8000/api/public/health\").getcode() == 200 else exit(1)'" \\
+  quenary/tugtainer:latest
+`;
+  public readonly version$ = this.publicApiService.getVersion().pipe(
+    retry({ count: 3, delay: 500 }),
+    catchError(() => of({ image_version: 'unknown' })),
+  );
+  public readonly isUpdateAvailable$ = this.containersApiService.isUpdateAvailableSelf().pipe(
+    retry({ count: 3, delay: 500 }),
+    catchError(() => of(false)),
+  );
+  public readonly menuItems$: Observable<MenuItem[]> = this.translateService.get('MENU').pipe(
+    map((translates) => {
       return <MenuItem[]>[
         {
           label: translates.CONTAINERS,
@@ -53,25 +82,16 @@ export class App {
         },
         {
           label: translates.GITHUB,
-          url: 'https://github.com/Quenary/dockobserver',
+          url: 'https://github.com/Quenary/tugtainer',
           target: '_blank',
           icon: 'pi pi-github',
-        },
-        {
-          label: version.image_version,
-          disabled: true,
-          style: { marginLeft: 'auto' },
-        },
-        {
-          label: translates.LOGOUT,
-          command: () => this.logout(),
-          icon: 'pi pi-sign-out',
         },
       ];
     }),
   );
+  public readonly menuOpened = signal<boolean>(false);
 
-  public readonly isMenuVisible = toSignal<boolean>(
+  public readonly isToolbarVisible = toSignal<boolean>(
     this.router.events.pipe(
       debounceTime(100),
       map(() => {

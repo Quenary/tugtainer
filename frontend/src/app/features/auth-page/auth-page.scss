@@ -3,17 +3,13 @@
 :host {
   @include mx.floating-card;
 
+  .logo {
+    width: 100%;
+    display: block;
+    padding-bottom: 16px;
+  }
+
   .auth {
-    &-header {
-      color: var(--p-primary-300);
-      width: 100%;
-      text-align: center;
-      margin: unset;
-      padding-bottom: 16px;
-    }
-
     @include mx.floating-card-surface;
-
-    // padding-bottom: ;
   }
 }

@@ -1,16 +1,10 @@
-from _asyncio import Future
 from datetime import datetime
-from docker.models.containers import Container
-from docker.models.images import Image
-from docker.models.containers import Container
-from docker.models.containers import Container
-import logging
-from docker.models.containers import Container
-from typing import Any, Callable, NotRequired, TypedDict
-from docker.models.containers import Container
-from docker.models.images import Image
-from docker.models.containers import Container
 from docker import client
+from docker.models.containers import Container
+from docker.models.images import Image
+from docker.types import DriverConfig, Mount
+import logging
+from typing import Any, Literal, NotRequired, TypedDict
 from sqlalchemy import and_, select
 import time
 import asyncio
@@ -27,15 +21,20 @@ from app.core.registries import (
 )
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
-from app.helpers import is_self_container, now
+from app.helpers import (
+    is_self_container,
+    now,
+    env_to_dict,
+    subtract_dict,
+)
 import traceback
 
 
-_client = client.from_env()
-ROLLBACK_TIMEOUT = 61
+_DOCKER = client.from_env()
+_ROLLBACK_TIMEOUT = 60
 
-STATUS_CACHE = TTLCache(maxsize=10, ttl=600)
-ALL_CONTAINERS_STATUS_KEY = "check_and_update_all_containers"
+_STATUS_CACHE = TTLCache(maxsize=10, ttl=600)
+_ALL_CONTAINERS_STATUS_KEY = "check_and_update_all_containers"
 
 
 class CheckStatusDict(TypedDict):
@@ -49,22 +48,25 @@ class CheckStatusDict(TypedDict):
 
 
 def _set_check_status(key: str, value: CheckStatusDict):
-    STATUS_CACHE[key] = value
+    """Set new check status"""
+    _STATUS_CACHE[key] = value
 
 
 def _update_check_status(key: str, value: CheckStatusDict):
-    current = STATUS_CACHE.get(key) or {}
-    STATUS_CACHE[key] = {
+    """Update existing check status"""
+    current = _STATUS_CACHE.get(key) or {}
+    _STATUS_CACHE[key] = {
         **current,
         **value,
     }
 
 
 def get_check_status(key: str) -> CheckStatusDict | None:
-    return STATUS_CACHE.get(key)
+    """Get check status"""
+    return _STATUS_CACHE.get(key)
 
 
-def get_local_digest(image: Image) -> str | None:
+def _get_local_digest(image: Image) -> str | None:
     repo_digests = image.attrs.get("RepoDigests", [])
     if repo_digests:
         return repo_digests[0].split("@")[1]
@@ -82,7 +84,10 @@ async def db_update_container(name: str, data: dict):
 async def filter_containers_for_check(
     containers: list[Container],
 ) -> list[Container]:
-    """Filter containers marked for check only"""
+    """
+    Filter containers marked for check only
+    as well as self container
+    """
     async with async_session_maker() as session:
         stmt = select(ContainersModel.name).where(
             and_(
@@ -92,7 +97,11 @@ async def filter_containers_for_check(
         )
         result = await session.execute(stmt)
         names = result.scalars().all()
-        return [c for c in containers if c.name in names]
+        res: list[Container] = []
+        for c in containers:
+            if c.name in names or is_self_container(c):
+                res.append(c)
+        return res
 
 
 async def filter_containers_for_update(
@@ -177,32 +186,83 @@ def _sort_containers_by_dependencies(
     return result
 
 
-def _get_container_image(c: Container) -> str:
+def _get_container_image_spec(c: Container) -> str:
     return c.attrs.get("Config", {}).get("Image", "")
 
 
-def get_container_config(
-    container: Container,
-) -> tuple[dict[str, Any], list[Any], bool]:
-    """
-    Get container config ready to be used for recreation.
-    :returns 0: container config dict
-    :returns 1: additional networks to connect after creation
-    :returns 2: should the container be started after creation
-    """
-    attrs: dict[str, Any] = container.attrs
-    config: dict[str, Any] = attrs["Config"]
-    host_config: dict[str, Any] = attrs["HostConfig"]
-    networking_config: dict[str, Any] = attrs.get(
-        "NetworkSettings", {}
-    )
+def merge_env(old_env: dict, new_env: dict) -> dict:
+    """Сливает переменные окружения, приоритет за старыми (пользовательскими)."""
+    result = dict(new_env)  # берем дефолты из образа
+    result.update(old_env)  # перезаписываем пользовательскими
+    return result
 
-    # Ports
-    ports = {}
-    if networking_config.get("Ports"):
-        for container_port, bindings in networking_config[
-            "Ports"
-        ].items():
+
+def _raw_mounts_to_cfg(
+    mounts_config: list[dict[str, Any]],
+) -> list[Mount]:
+    """
+    Map raw mounts from HostConfig to ones that can be used to create container
+    """
+    docker_mounts = []
+
+    for mount in mounts_config:
+        mount_type = mount.get("Type", "volume")
+        source = mount.get("Source", "")
+        target = mount.get("Destination", "")
+        read_only = not mount.get("RW", True)
+
+        mount_kwargs = {
+            "target": target,
+            "source": source,
+            "type": mount_type,
+            "read_only": read_only,
+        }
+
+        mode = mount.get("Mode", "")
+        mode_parts = mode.split(",") if mode else []
+
+        if mount_type == "bind":
+            for consistency_mode in [
+                "delegated",
+                "cached",
+                "consistent",
+            ]:
+                if consistency_mode in mode_parts:
+                    mount_kwargs["consistency"] = consistency_mode
+                    break
+            propagation = mount.get("Propagation", "")
+            if propagation:
+                mount_kwargs["propagation"] = propagation
+
+        if mount_type == "volume":
+            name = mount.get("Name")
+            if name:
+                mount_kwargs["source"] = name
+            driver = mount.get("Driver", "local")
+            driver_options = mount.get("DriverOptions", {})
+
+            volume_options = {}
+            if driver != "local":
+                volume_options["driver"] = driver
+            if driver_options:
+                volume_options["driver_config"] = driver_options
+
+            if volume_options:
+                mount_kwargs["volume_options"] = volume_options
+
+        mount_obj = Mount(**mount_kwargs)
+        docker_mounts.append(mount_obj)
+
+    return docker_mounts
+
+
+def _raw_ports_to_cfg(ports: dict) -> dict:
+    """
+    Map raw ports from network settings to ones that can be used to create container
+    """
+    _ports = {}
+    if ports:
+        for container_port, bindings in ports.items():
             if bindings:
                 host_ports = [
                     int(b["HostPort"])
@@ -213,71 +273,156 @@ def get_container_config(
                     # There may be several different ports binded
                     # But also there may be two same ports (for imv4 and ipv6)
                     host_ports = list(set(host_ports))
-                    ports[container_port] = (
+                    _ports[container_port] = (
                         host_ports
                         if len(host_ports) > 1
                         else host_ports[0]
                     )
+    return _ports
 
-    # Volumes
-    volumes = {}
-    for mount in attrs.get("Mounts", []):
-        bind = {
-            "bind": mount["Destination"],
-            "mode": mount.get("Mode", "rw"),
-        }
-        if mount["Type"] == "volume":
-            volumes[mount["Name"]] = bind
-        elif mount["Type"] == "bind":
-            volumes[mount["Source"]] = bind
 
-    # Env
-    environment = {}
-    for env in config.get("Env", []):
-        if "=" in env:
-            k, v = env.split("=", 1)
-            environment[k] = v
+def get_container_config(
+    container: Container,
+) -> tuple[dict[str, Any], list[Any]]:
+    """
+    Get container config ready to be used for recreation.
+    :returns 0: container config dict
+    :returns 1: additional networks to connect after creation
+    """
+    ID = container.short_id
+    ATTRS: dict[str, Any] = container.attrs
+    CONFIG: dict[str, Any] = ATTRS["Config"]
+    HOST_CONFIG: dict[str, Any] = ATTRS["HostConfig"]
+    NETWORK_SETTINGS: dict[str, Any] = ATTRS.get(
+        "NetworkSettings", {}
+    )
+
+    HOSTNAME: str | None = CONFIG.get("Hostname")
+    if HOSTNAME == ID:
+        HOSTNAME = None
+
+    MOUNTS = _raw_mounts_to_cfg(ATTRS.get("Mounts", []))
+
+    ENVIRONMENT = env_to_dict(CONFIG.get("Env", []))
+
+    PORTS = _raw_ports_to_cfg(NETWORK_SETTINGS.get("Ports", {}))
 
     # Networks
-    networks = list(networking_config.get("Networks", {}).keys())
-    network_mode = host_config.get("NetworkMode")
-    network_mode = (
-        network_mode
-        if network_mode and network_mode != "default"
-        else None
+    NETWORKS: list[str] = list(
+        NETWORK_SETTINGS.get("Networks", {}).keys()
     )
+    # Possible values: bridge | none | container:<name|id> (named network) | host
+    NETWORK_MODE: str | None = HOST_CONFIG.get("NetworkMode")
+    if NETWORK_MODE == "default":
+        NETWORK_MODE = None
+    NETWORK: str | None = None
+    if not NETWORK_MODE and NETWORKS:
+        NETWORK = NETWORKS[0]
+
+    # Remove any ports coz those are not supported in host network mode
+    if NETWORK_MODE == "host":
+        PORTS = None
+
+    # Extra networks to connect later
+    NETWORKS_TO_CONNECT = NETWORKS[1:]
+
+    CONFIG = {
+        "name": container.name,
+        "detach": True,
+        "auto_remove": HOST_CONFIG.get("AutoRemove") or None,
+        "blkio_weight_device": HOST_CONFIG.get("BlkioWeightDevice")
+        or None,
+        "blkio_weight": HOST_CONFIG.get("BlkioWeight") or None,
+        "command": CONFIG.get("Cmd") or None,
+        "cap_add": HOST_CONFIG.get("CapAdd") or None,
+        "cap_drop": HOST_CONFIG.get("CapDrop") or None,
+        "cgroup_parent": HOST_CONFIG.get("CgroupParent") or None,
+        "cgroupns": HOST_CONFIG.get("CgroupnsMode") or None,
+        "cpu_count": HOST_CONFIG.get("CpuCount") or None,
+        "cpu_percent": HOST_CONFIG.get("CpuPercent") or None,
+        "cpu_period": HOST_CONFIG.get("CpuPeriod") or None,
+        "cpu_quota": HOST_CONFIG.get("CpuQuota") or None,
+        "cpu_rt_period": HOST_CONFIG.get("CpuRealtimePeriod") or None,
+        "cpu_rt_runtime": HOST_CONFIG.get("CpuRealtimeRuntime")
+        or None,
+        "cpu_shares": HOST_CONFIG.get("CpuShares") or None,
+        "cpuset_cpus": HOST_CONFIG.get("CpusetCpus") or None,
+        "cpuset_mems": HOST_CONFIG.get("CpusetMems") or None,
+        "device_cgroup_rules": HOST_CONFIG.get("DeviceCgroupRules")
+        or None,
+        "device_read_bps": HOST_CONFIG.get("BlkioDeviceReadBps")
+        or None,
+        "device_read_iops": HOST_CONFIG.get("BlkioDeviceReadIOps")
+        or None,
+        "device_write_bps": HOST_CONFIG.get("BlkioDeviceWriteBps")
+        or None,
+        "device_write_iops": HOST_CONFIG.get("BlkioDeviceWriteIOps")
+        or None,
+        "devices": HOST_CONFIG.get("Devices") or None,
+        "device_requests": HOST_CONFIG.get("DeviceRequests") or None,
+        "dns": HOST_CONFIG.get("Dns") or None,
+        "dns_opt": HOST_CONFIG.get("DnsOptions") or None,
+        "dns_search": HOST_CONFIG.get("DnsSearch") or None,
+        "domainname": CONFIG.get("Domainname") or None,
+        "entrypoint": CONFIG.get("Entrypoint") or None,
+        "environment": ENVIRONMENT or None,
+        "extra_hosts": HOST_CONFIG.get("ExtraHosts") or None,
+        "group_add": HOST_CONFIG.get("GroupAdd") or None,
+        "healthcheck": CONFIG.get("Healthcheck") or None,
+        # Check if it is short_id or something else (and keep)?
+        "hostname": HOSTNAME or None,
+        "ipc_mode": HOST_CONFIG.get("IpcMode") or None,
+        "isolation": HOST_CONFIG.get("Isolation") or None,
+        "labels": CONFIG.get("Labels") or None,
+        "links": HOST_CONFIG.get("Links") or None,
+        "log_config": HOST_CONFIG.get("LogConfig") or None,
+        # Add setting to keep mac?
+        # "mac_address": network_settings.get("MacAddress") or None,
+        "mem_limit": HOST_CONFIG.get("Memory") or None,
+        "mem_reservation": HOST_CONFIG.get("MemoryReservation")
+        or None,
+        "mem_swappiness": HOST_CONFIG.get("MemorySwappiness") or None,
+        "memswap_limit": HOST_CONFIG.get("MemorySwap") or None,
+        "mounts": MOUNTS or None,
+        "nano_cpus": HOST_CONFIG.get("NanoCpus") or None,
+        "network": NETWORK,
+        "network_mode": NETWORK_MODE,
+        "oom_kill_disable": HOST_CONFIG.get("OomKillDisable") or None,
+        "oom_score_adj": HOST_CONFIG.get("OomScoreAdj") or None,
+        "pid_mode": HOST_CONFIG.get("PidMode") or None,
+        "pids_limit": HOST_CONFIG.get("PidsLimit") or None,
+        "ports": PORTS or None,
+        "privileged": HOST_CONFIG.get("Privileged", False) or None,
+        "publish_all_ports": HOST_CONFIG.get("PublishAllPorts")
+        or None,
+        "read_only": HOST_CONFIG.get("ReadonlyRootfs") or None,
+        "restart_policy": HOST_CONFIG.get("RestartPolicy") or None,
+        "runtime": HOST_CONFIG.get("Runtime") or None,
+        "security_opt": HOST_CONFIG.get("SecurityOpt") or None,
+        "shm_size": HOST_CONFIG.get("ShmSize") or None,
+        "tmpfs": HOST_CONFIG.get("Tmpfs") or None,
+        "ulimits": HOST_CONFIG.get("Ulimits") or None,
+        "user": CONFIG.get("User") or None,
+        "userns_mode": HOST_CONFIG.get("userns_mode") or None,
+        "uts_mode": HOST_CONFIG.get("UTSMode") or None,
+        "volume_driver": HOST_CONFIG.get("VolumeDriver") or None,
+        "volumes_from": HOST_CONFIG.get("VolumesFrom") or None,
+        "working_dir": CONFIG.get("WorkingDir") or None,
+    }
+    CONFIG = {k: v for k, v in CONFIG.items() if v is not None}
 
     return (
-        {
-            "name": container.name,
-            "detach": True,
-            "environment": environment or None,
-            "ports": ports or None,
-            "volumes": volumes or None,
-            "entrypoint": config.get("Entrypoint"),
-            "command": config.get("Cmd"),
-            "restart_policy": host_config.get("RestartPolicy"),
-            "network": network_mode
-            or (networks[0] if networks else None),
-            "hostname": config.get("Hostname"),
-            "domainname": config.get("Domainname"),
-            "user": config.get("User"),
-            "working_dir": config.get("WorkingDir"),
-            "labels": config.get("Labels"),
-            "privileged": host_config.get("Privileged", False),
-            "cap_add": host_config.get("CapAdd"),
-            "cap_drop": host_config.get("CapDrop"),
-            "dns": host_config.get("Dns"),
-            "extra_hosts": host_config.get("ExtraHosts"),
-        },
-        networks[1:],
-        container.attrs.get("State", {}).get("Status", "")
-        == "running",
+        CONFIG,
+        NETWORKS_TO_CONNECT,
     )
+
+
+def _get_container_status_str(c: Container) -> str:
+    return c.attrs.get("State", {}).get("Status", "")
 
 
 async def _wait_for_container_healthy(
-    container: Container, timeout: int = ROLLBACK_TIMEOUT
+    container: Container, timeout: int = _ROLLBACK_TIMEOUT
 ) -> bool:
     """Wait for container healthy status or timeout"""
     start = time.time()
@@ -305,7 +450,7 @@ def _connect_to_networks(
             f"Connecting container {container.name} to several networks..."
         )
         try:
-            _client.networks.get(net).connect(container)
+            _DOCKER.networks.get(net).connect(container)
         except Exception as e:
             logging.warning(
                 f"Failed to connect container {container.name} to network {net}"
@@ -313,82 +458,131 @@ def _connect_to_networks(
 
 
 async def _recreate_container(
-    container: Container,
-    new_image: str,
+    existing_container: Container,
 ) -> tuple[Container, bool]:
     """
     Recreate container with new image.
+    :param container: container object
+    :param new_image: new image name
     :returns 0: Container object (new or rolled-back)
     :returns 1: Updated flag (that is, not rolled-back)
     Could raise an exception if recreate and rallback fails.
     """
 
-    old_image = container.attrs["Config"]["Image"]
-    cfg, networks_to_connect, should_start = get_container_config(
-        container
+    IMAGE_SPEC = _get_container_image_spec(existing_container)
+    OLD_IMAGE = _DOCKER.images.get(IMAGE_SPEC)
+    CFG, NETWORKS_TO_CONNECT = get_container_config(
+        existing_container
     )
-    name = cfg["name"]
+    SHOULD_START = (
+        _get_container_status_str(existing_container) == "running"
+    )
+    CFG_ENV: dict = CFG.pop("environment", {})
+    CFG_LABELS: dict = CFG.pop("labels", {})
+    NAME = CFG["name"]
 
     loop = asyncio.get_running_loop()
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=1
     ) as executor:
         try:
-            logging.info(f"Stopping container {name}...")
-            await loop.run_in_executor(executor, container.stop)
-
-            logging.info(f"Removing container {name}...")
-            await loop.run_in_executor(executor, container.remove)
-
-            logging.info(f"Pulling new image {new_image}...")
+            logging.info(f"Stopping container {NAME}...")
             await loop.run_in_executor(
-                executor, lambda: _client.images.pull(new_image)
+                executor, existing_container.stop
             )
 
-            logging.info(f"Creating new container {name}...")
+            logging.info(f"Removing container {NAME}...")
+            await loop.run_in_executor(
+                executor, existing_container.remove
+            )
+
+            logging.info(f"Pulling new image {IMAGE_SPEC}...")
+            image = await loop.run_in_executor(
+                executor, lambda: _DOCKER.images.pull(IMAGE_SPEC)
+            )
+
+            logging.info(f"Merging container and new image values")
+            image_cfg: dict = image.attrs.get("Config", {})
+            image_env: dict = env_to_dict(image_cfg.get("Env", []))
+            image_labels = image_cfg.get("Labels", {})
+            environment = subtract_dict(CFG_ENV, image_env) or None
+            labels = subtract_dict(CFG_LABELS, image_labels) or None
+
+            logging.info(f"Creating new container {NAME}...")
             new_container = await loop.run_in_executor(
                 executor,
-                lambda: _client.containers.create(new_image, **cfg),
+                lambda: _DOCKER.containers.create(
+                    IMAGE_SPEC,
+                    environment=environment,
+                    labels=labels,
+                    **CFG,
+                ),
             )
+            _connect_to_networks(new_container, NETWORKS_TO_CONNECT)
 
-            _connect_to_networks(new_container, networks_to_connect)
-
-            if not should_start:
+            if not SHOULD_START:
                 logging.info(
-                    f"Container {name} was not running before update, so leave it as is..."
+                    f"Container {NAME} was not running before update, so leave it as is..."
                 )
                 return (new_container, True)
 
-            logging.info(f"Starting new container {name}...")
+            logging.info(f"Starting new container {NAME}...")
             await loop.run_in_executor(executor, new_container.start)
 
-            logging.info(f"Waiting for healthchecks of {name}")
+            logging.info(f"Waiting for healthchecks of {NAME}")
             if await _wait_for_container_healthy(new_container):
                 logging.info(
-                    f"Container {name} is healthy. Update successful."
+                    f"Container {NAME} is healthy. Update successful."
                 )
                 return (new_container, True)
 
             logging.warning(
-                f"Container {name} failed healthcheck. Rolling back..."
+                f"Container {NAME} failed healthcheck. Rolling back..."
             )
-            await loop.run_in_executor(executor, container.stop)
-            await loop.run_in_executor(executor, container.remove)
+            await loop.run_in_executor(executor, new_container.stop)
+            await loop.run_in_executor(executor, new_container.remove)
             raise RuntimeError("Healthcheck failed")
         except Exception as e:
             logging.warning(e)
             logging.warning(
-                f"Rollback: recreating {name} with old image {old_image}"
+                f"Rolling back {NAME} with previous image"
+            )
+            try:
+                # In case failed container was not removed
+                failed_cont = _DOCKER.containers.get(NAME)
+                if failed_cont:
+                    await loop.run_in_executor(
+                        executor, failed_cont.stop
+                    )
+                    await loop.run_in_executor(
+                        executor, failed_cont.remove
+                    )
+            except:
+                pass
+
+            logging.warning(
+                f"Tagging previous image with spec: {IMAGE_SPEC}"
             )
             await loop.run_in_executor(
-                executor, lambda: _client.images.pull(old_image)
+                executor, lambda: OLD_IMAGE.tag(IMAGE_SPEC)
             )
+            logging.warning(f"Creating container with previous image")
             rolled_back = await loop.run_in_executor(
                 executor,
-                lambda: _client.containers.run(old_image, **cfg),
+                lambda: _DOCKER.containers.create(
+                    image=IMAGE_SPEC,
+                    environment=CFG_ENV,
+                    labels=CFG_LABELS,
+                    **CFG,
+                ),
             )
-            _connect_to_networks(rolled_back, networks_to_connect)
-            logging.info(f"Rollback complete for {name}.")
+            _connect_to_networks(rolled_back, NETWORKS_TO_CONNECT)
+            if SHOULD_START:
+                logging.info(f"Starting rolled-back container")
+                await loop.run_in_executor(
+                    executor, rolled_back.start
+                )
+            logging.info(f"Rollback complete for {NAME}.")
             return (rolled_back, False)
 
 
@@ -396,10 +590,10 @@ async def _is_container_update_available(c: Container) -> bool:
     """
     Compare digests and define is there new image
     """
-    image_spec = c.attrs["Config"]["Image"]
+    image_spec = _get_container_image_spec(c)
     registry: BaseRegistryClient = choose_registry_client(image_spec)
-    local_image: Image = _client.images.get(image_spec)
-    local_digest: str | None = get_local_digest(local_image)
+    local_image: Image = _DOCKER.images.get(image_spec)
+    local_digest: str | None = _get_local_digest(local_image)
     remote_digest: str | None = await registry.get_remote_digest()
     return bool(remote_digest and local_digest != remote_digest)
 
@@ -427,7 +621,7 @@ async def check_container(
 
     _set_check_status(name, {"status": ECheckStatus.PREPARING})
 
-    container = _client.containers.get(name)
+    container = _DOCKER.containers.get(name)
     if not container:
         _update_check_status(name, {"status": ECheckStatus.DONE})
         logging.warning(
@@ -435,11 +629,8 @@ async def check_container(
         )
         return (None, False, False, None)
 
-    image = container.attrs["Config"]["Image"]
     _update_check_status(name, {"status": ECheckStatus.CHECKING})
-    logging.info(
-        f"Start checking for updates of container '{name}' with image '{image}'"
-    )
+    logging.info(f"Start checking for updates of container '{name}'")
     update_available: bool = await _is_container_update_available(
         container
     )
@@ -472,12 +663,11 @@ async def check_container(
         return (None, True, False, None)
 
     _update_check_status(name, {"status": ECheckStatus.UPDATING})
-    logging.info(f"New image '{image}' found for container '{name}'")
+    logging.info(f"New image found for container '{name}'")
 
     try:
         container, updated = await _recreate_container(
             container,
-            image,
         )
         if updated:
             await db_update_container(
@@ -490,17 +680,18 @@ async def check_container(
         _update_check_status(name, {"status": ECheckStatus.DONE})
         return (container, False, updated, None)
     except Exception as e:
-        logging.error(f"Failed to update container {name}")
+        logging.error(f"Failed to update container {name}: {e}")
         _update_check_status(name, {"status": ECheckStatus.ERROR})
         return (None, True, False, e)
 
 
 async def check_and_update_all_containers():
     """
-    Main func for check and update containers.
+    Check and update containers
+    marked for it, as well as self container (check only).
     Should not raises errors, only logging.
     """
-    status = get_check_status(ALL_CONTAINERS_STATUS_KEY)
+    status = get_check_status(_ALL_CONTAINERS_STATUS_KEY)
     allow_statuses = [ECheckStatus.DONE, ECheckStatus.ERROR]
     if status and status.get("status") not in allow_statuses:
         logging.warning(
@@ -509,17 +700,18 @@ async def check_and_update_all_containers():
         return
 
     _set_check_status(
-        ALL_CONTAINERS_STATUS_KEY,
+        _ALL_CONTAINERS_STATUS_KEY,
         {"status": ECheckStatus.PREPARING},
     )
     logging.info("Start checking for updates of all containers")
-    containers: list[Container] = _client.containers.list(all=True)
+    containers: list[Container] = _DOCKER.containers.list(all=True)
+
     for_check = await filter_containers_for_check(containers)
     for_update = await filter_containers_for_update(containers)
     for_update = _sort_containers_by_dependencies(for_update)
 
     _update_check_status(
-        ALL_CONTAINERS_STATUS_KEY,
+        _ALL_CONTAINERS_STATUS_KEY,
         {"status": ECheckStatus.CHECKING},
     )
 
@@ -540,7 +732,7 @@ async def check_and_update_all_containers():
             failed.append(item)
 
     _update_check_status(
-        ALL_CONTAINERS_STATUS_KEY,
+        _ALL_CONTAINERS_STATUS_KEY,
         {
             "status": ECheckStatus.UPDATING,
             "available": len(available),
@@ -561,7 +753,7 @@ async def check_and_update_all_containers():
             failed.append(item)
 
     _update_check_status(
-        ALL_CONTAINERS_STATUS_KEY,
+        _ALL_CONTAINERS_STATUS_KEY,
         {
             "status": ECheckStatus.DONE,
             "updated": len(updated),
@@ -572,26 +764,26 @@ async def check_and_update_all_containers():
 
     # Notification
     try:
-        title: str = f"Dockobserver {datetime.now()}"
+        title: str = f"Tugtainer {datetime.now()}"
         body: str = ""
         if updated:
             body += "Updated:\n"
             for c in updated:
-                body += f"{c.name} {_get_container_image(c)}\n"
+                body += f"{c.name} {_get_container_image_spec(c)}\n"
             body += "\n"
         if available:
             body += "Update available for:\n"
             for c in available:
-                body += f"{c.name} {_get_container_image(c)}\n"
+                body += f"{c.name} {_get_container_image_spec(c)}\n"
             body += "\n"
         if rolledback:
             body += "Rolled-back after fail:\n"
             for c in rolledback:
-                body += f"{c.name} {_get_container_image(c)}\n"
+                body += f"{c.name} {_get_container_image_spec(c)}\n"
         if failed:
             body += f"Failed and not rolled-back:\n"
             for c in failed:
-                body += f"{c.name} {_get_container_image(c)}\n\n"
+                body += f"{c.name} {_get_container_image_spec(c)}\n\n"
         if errors:
             body += f"Several errors occured:\n"
             for e in errors:

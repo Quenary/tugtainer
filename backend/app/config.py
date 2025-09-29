@@ -37,11 +37,11 @@ class Config:
             )
             cls.DB_URL = (
                 os.getenv("DB_URL")
-                or "sqlite+aiosqlite:////dockobserver/dockobserver.db"
+                or "sqlite+aiosqlite:////tugtainer/tugtainer.db"
             )
             cls.PASSWORD_FILE = (
                 os.getenv("PASSWORD_FILE")
-                or "/dockobserver/password_hash"
+                or "/tugtainer/password_hash"
             )
 
 

@@ -102,7 +102,7 @@ async def change_system_settings(
 async def test_notification(data: TestNotificationRequestBody):
     try:
         await send_notification(
-            "Dockobserver", "This is test notification", data.url
+            "Tugtainer", "This is test notification", data.url
         )
         return {}
     except:

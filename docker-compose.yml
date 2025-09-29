@@ -1,12 +1,25 @@
 networks:
-  cardholder_pwa:
+  tugtainer:
     driver: bridge
 services:
   app:
     build: .
-    ports:
-      - 80:80
     volumes:
-      - $HOME/.dockobserver:/dockobserver
+      - tugtainer_data:/tugtainer
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'python -c ''import urllib.request; exit(0) if urllib.request.urlopen("http://localhost:8000/api/public/health").getcode() == 200 else exit(1)''',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tugtainer
+    ports:
+      - '9412:80'
+volumes:
+  tugtainer_data:

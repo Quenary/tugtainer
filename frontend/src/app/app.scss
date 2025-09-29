@@ -3,27 +3,21 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 16px;
-  padding: 16px;
+  padding: 0.75rem;
   width: 100vw;
   height: 100vh;
 
-  .app-menu {
+  p-toolbar {
     width: 100%;
-    border: none;
-    border-radius: var(--p-border-radius-lg);
+  }
 
-    ::ng-deep {
-      .p-menubar-root-list {
-        width: 100%;
-      }
-      .p-menubar-item {
-        border-radius: var(--p-button-border-radius);
-        border: 2px solid transparent;
-      }
-      .p-menubar-item:has(.p-menubar-item-link-active) {
-        border: 2px solid var(--p-primary-color);
-      }
+  .app-menu-end {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+    & > * {
+      cursor: pointer;
     }
   }
 
@@ -31,5 +25,12 @@
     width: 100%;
     flex: 1;
     overflow: hidden;
+    padding-top: 0.75rem;
+  }
+
+  p-dialog {
+    pre {
+      text-wrap: auto;
+    }
   }
 }

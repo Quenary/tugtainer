@@ -1,4 +1,4 @@
-# Backend part of Dockobserver
+# Backend part of Tugtainer
 
 ### Preparations
 
@@ -9,7 +9,7 @@ You may also need following packages `pip3 install python-is-python3 python3-dev
 
 - create .env file (next to that readme, in /backend directory) with at least this variables
 ```bash
-DB_URL=sqlite+aiosqlite:///./dockobserver.db
+DB_URL=sqlite+aiosqlite:///./tugtainer.db
 PASSWORD_FILE=password_hash
 ```
 - create venv `python -m venv venv`

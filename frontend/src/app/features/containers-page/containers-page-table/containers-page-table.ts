@@ -12,7 +12,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { finalize, repeat, takeWhile } from 'rxjs';
+import { distinctUntilChanged, finalize, map, repeat, takeWhile } from 'rxjs';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
 import {
   ECheckStatus,
@@ -25,9 +25,10 @@ import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
 import { Tooltip } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { SplitButtonModule } from 'primeng/splitbutton';
 
 type TContainer = IContainer & {
-  menu: MenuItem[];
+  splitButtonMenu: MenuItem[];
   checkStatus?: ECheckStatus;
 };
 
@@ -51,6 +52,7 @@ type TContainer = IContainer & {
     DatePipe,
     Tooltip,
     MenuModule,
+    SplitButtonModule,
   ],
   templateUrl: './containers-page-table.html',
   styleUrl: './containers-page-table.scss',
@@ -97,11 +99,7 @@ export class ContainersPageTable {
       .subscribe({
         next: (list) => {
           const _list = list.map((item) => {
-            const menu: MenuItem[] = [
-              {
-                label: this.menuTranslates.CHECK,
-                command: () => this.checkContainer(item.name),
-              },
+            const splitButtonMenu: MenuItem[] = [
               {
                 label: this.menuTranslates.UPDATE,
                 command: () => this.checkContainer(item.name, true),
@@ -111,7 +109,7 @@ export class ContainersPageTable {
                   : {}),
               },
             ];
-            return { ...item, menu };
+            return { ...item, splitButtonMenu };
           });
           this.list.set(_list);
         },
@@ -167,7 +165,7 @@ export class ContainersPageTable {
       });
   }
 
-  private checkContainer(name: string, update: boolean = false): void {
+  public checkContainer(name: string, update: boolean = false): void {
     this.isLoading.set(true);
     const req$ = update
       ? this.containersApiService.updateContainer(name)
@@ -201,18 +199,20 @@ export class ContainersPageTable {
       .getCheckProgress(id)
       .pipe(
         repeat({ delay: 500 }),
-        takeWhile((res) => res.status !== ECheckStatus.DONE, true),
+        map(res => res?.status),
+        distinctUntilChanged(),
+        takeWhile((status) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(status), true),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (res) => {
+        next: (status) => {
           const list = this.list();
           const index = list.findIndex((item) => [id, name].includes(item.name));
           if (index > -1) {
             const _list = [...list];
             _list[index] = {
               ...list[index],
-              checkStatus: res.status,
+              checkStatus: status,
             };
             this.list.set(_list);
           }

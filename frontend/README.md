@@ -1,4 +1,4 @@
-# Frontend part of Dockobserver
+# Frontend part of Tugtainer
 - ### Preparations
 All you need to do is install a compatible version of node.js.
 It is recommended to use [NVM](https://github.com/nvm-sh/nvm) (node package manager).
