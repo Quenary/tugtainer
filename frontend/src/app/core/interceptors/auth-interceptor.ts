@@ -1,5 +1,6 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, first, of, switchMap, tap, throwError, timeout } from 'rxjs';
 import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
 
@@ -17,6 +18,7 @@ const isRefreshing$ = new BehaviorSubject<boolean>(false);
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authApiService = inject(AuthApiService);
+  const router = inject(Router);
 
   return next(req).pipe(
     catchError((error) => {
@@ -27,7 +29,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             .refresh()
             .pipe(
               catchError(() => of(null)),
-              tap(() => isRefreshing$.next(false))
+              tap(() => isRefreshing$.next(false)),
             )
             .subscribe();
         }
@@ -36,11 +38,20 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           first((flag) => !flag),
           timeout(10000),
           catchError(() => of(null)),
-          switchMap(() => next(req.clone()))
+          switchMap(() => {
+            return next(req.clone()).pipe(
+              catchError((error) => {
+                if (isRefreshable(req, error)) {
+                  router.navigate(['/auth']);
+                }
+                return throwError(() => error);
+              }),
+            );
+          }),
         );
       }
 
       return throwError(() => error);
-    })
+    }),
   );
 };
