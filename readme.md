@@ -2,6 +2,10 @@
 
 It's like well-known [watchtower](https://github.com/containrrr/watchtower), but with a web UI where you can change most of the settings or view the current state of the containers.
 
+<p align="center">
+<img src="resources/tugtainer-v0.0.1.png" width="80%" />
+</p>
+
 Please be aware that the application is distributed as is and is not recommended for use in a production environment.
 
 Automatic updates are disabled by default. You can choose only what you need.
