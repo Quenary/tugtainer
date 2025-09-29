@@ -1,7 +1,23 @@
 :host {
   width: 100%;
-  flex: 1;
-  overflow-y: auto;
+  height: auto;
+  overflow: hidden;
+
+  .name-header {
+    background: var(--p-datatable-header-cell-background) !important;
+  }
+  .name-cell {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .check-results {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
   .ports {
     display: flex;
@@ -20,26 +36,11 @@
 
   .extra-info {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
     width: 100%;
-
-    &-item {
-      display: flex;
-      flex-direction: column;
-      width: calc(50% - 1rem);
-      gap: 0.5rem;
-
-      &-label {
-        font-size: 0.8rem;
-        color: var(--p-form-field-float-label-color);
-      }
-      &-value {
-        font-size: 1rem;
-        color: var(--p-form-field-color);
-      }
+    & > * {
+      width: 100%;
     }
   }
 }

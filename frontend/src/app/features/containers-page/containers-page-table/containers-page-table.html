@@ -3,30 +3,84 @@
   [globalFilterFields]="['name', 'short_id']"
   dataKey="name"
   sortField="name"
+  [scrollable]="true"
+  scrollHeight="flex"
   [value]="list()"
 >
-  <ng-template #caption>
-    <div>
-      <p-iconfield iconPosition="left">
-        <p-inputicon>
-          <i class="pi pi-search"></i>
-        </p-inputicon>
-        <input
-          #searchInput
-          id="containers-search"
-          pInputText
-          type="text"
-          (input)="dt2.filterGlobal($event.target.value, 'contains')"
-          [placeholder]="'CONTAINERS.TABLE.SEARCH_PLACEHOLDER' | translate"
-        />
-      </p-iconfield>
-    </div>
-  </ng-template>
-
   <ng-template #header>
     <tr>
-      <th style="width: 5rem"></th>
-      <th pSortableColumn="name">
+      <th pFrozenColumn>
+        <p-iconfield iconPosition="left">
+          <p-inputicon>
+            <i class="pi pi-search"></i>
+          </p-inputicon>
+          <input
+            #searchInput
+            id="containers-search"
+            pInputText
+            type="text"
+            (input)="dt2.filterGlobal($event.target.value, 'contains')"
+            [placeholder]="'CONTAINERS.TABLE.SEARCH_PLACEHOLDER' | translate"
+          />
+        </p-iconfield>
+      </th>
+      <th colspan="4"></th>
+      <th>
+        <p-split-button
+          [disabled]="isLoading()"
+          [label]="'GENERAL.REFRESH' | translate"
+          [model]="headerButtonMenu()"
+          (onClick)="updateList()"
+        ></p-split-button>
+      </th>
+    </tr>
+
+    @if (checkAllProgress(); as prog) {
+      <tr>
+        <th colspan="6">
+          @if (prog.status !== ECheckStatus.DONE && prog.status !== ECheckStatus.ERROR) {
+            <p-progress-bar
+              [style.height.px]="6"
+              [showValue]="false"
+              mode="indeterminate"
+            ></p-progress-bar>
+          } @else {
+            <section class="check-results">
+              @if (prog.updated !== undefined) {
+                <p-tag [severity]="prog.updated > 0 ? 'success' : 'secondary'">
+                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.UPDATED' | translate }}: {{ prog.updated }}
+                </p-tag>
+              }
+              @if (prog.available !== undefined) {
+                <p-tag [severity]="prog.available > 0 ? 'info' : 'secondary'">
+                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.AVAILABLE' | translate }}:
+                  {{ prog.available }}
+                </p-tag>
+              }
+
+              @if (prog.rolledback !== undefined) {
+                <p-tag [severity]="prog.rolledback > 0 ? 'warn' : 'secondary'">
+                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.ROLLEDBACK' | translate }}:
+                  {{ prog.rolledback }}
+                </p-tag>
+              }
+              @if (prog.failed !== undefined) {
+                <p-tag [severity]="prog.failed > 0 ? 'danger' : 'secondary'">
+                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.FAILED' | translate }}: {{ prog.failed }}
+                </p-tag>
+              }
+            </section>
+          }
+        </th>
+      </tr>
+    }
+
+    <tr>
+      <th
+        pFrozenColumn
+        pSortableColumn="name"
+        class="name-header"
+      >
         {{ 'CONTAINERS.TABLE.NAME' | translate }}
         <p-sortIcon field="name"></p-sortIcon>
       </th>
@@ -63,24 +117,26 @@
       </th>
     </tr>
   </ng-template>
+
   <ng-template
     #body
     let-container
     let-expanded="expanded"
   >
     <tr>
-      <td>
-        <p-button
-          type="button"
-          pRipple
-          [pRowToggler]="container"
-          [text]="true"
-          severity="secondary"
-          [rounded]="true"
-          [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-        />
+      <td pFrozenColumn>
+        <span class="name-cell">
+          <p-button
+            type="button"
+            pRipple
+            [pRowToggler]="container"
+            severity="contrast"
+            [rounded]="true"
+            [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+          />
+          {{ container.name }}
+        </span>
       </td>
-      <td>{{ container.name }}</td>
       <td>
         <p-tag
           [severity]="EContainerStatusSeverity[container.status]"
@@ -96,6 +152,7 @@
       <td>
         @if (!container.is_self) {
           <p-togglebutton
+            severity="success"
             [ngModel]="container.check_enabled"
             (ngModelChange)="onCheckEnabledChange($event, container)"
             [onLabel]="'GENERAL.ENABLED' | translate"
@@ -119,13 +176,12 @@
         }
       </td>
       <td>
-        @if (!container.is_self) {
-          <p-split-button
-            [label]="'CONTAINERS.TABLE.C_MENU.CHECK' | translate"
-            [model]="container.splitButtonMenu"
-            (onClick)="checkContainer(container.name, false)"
-          ></p-split-button>
-        }
+        <p-split-button
+          [label]="container.splitButton.label"
+          [model]="container.splitButton.items"
+          [severity]="container.splitButton.severity"
+          (onClick)="container.splitButton.command()"
+        ></p-split-button>
       </td>
     </tr>
 
@@ -135,7 +191,7 @@
       container.checkStatus !== ECheckStatus.ERROR
     ) {
       <tr>
-        <td colspan="7">
+        <td colspan="6">
           <p-progress-bar
             [style.height.px]="6"
             [showValue]="false"
@@ -150,54 +206,26 @@
       let-container
     >
       <tr>
-        <td colspan="7">
-          <div
-            class="extra-info"
-            style="padding-left: 5rem"
-          >
-            <div class="extra-info-item">
-              <span class="extra-info-item-label">
-                {{ 'CONTAINERS.TABLE.IMAGE' | translate }}
-              </span>
-              <span class="extra-info-item-value">
-                {{ container.image }}
-              </span>
-            </div>
-            <div class="extra-info-item">
-              <span class="extra-info-item-label">
-                {{ 'CONTAINERS.TABLE.SHORT_ID' | translate }}
-              </span>
-              <span class="extra-info-item-value">
-                {{ container.short_id }}
-              </span>
-            </div>
-            <div class="extra-info-item">
-              <span class="extra-info-item-label">
-                {{ 'CONTAINERS.TABLE.PORTS' | translate }}
-              </span>
-              <span class="extra-info-item-value">
-                <ng-container
-                  [ngTemplateOutlet]="portsTemplate"
-                  [ngTemplateOutletContext]="{ ports: container.ports }"
-                ></ng-container>
-              </span>
-            </div>
-            <div class="extra-info-item">
-              <span class="extra-info-item-label">
-                {{ 'CONTAINERS.TABLE.CHECKED_AT' | translate }}
-              </span>
-              <span class="extra-info-item-value">
-                {{ container.checked_at | naiveDate | date: 'medium' }}
-              </span>
-            </div>
-            <div class="extra-info-item">
-              <span class="extra-info-item-label">
-                {{ 'CONTAINERS.TABLE.UPDATED_AT' | translate }}
-              </span>
-              <span class="extra-info-item-value">
-                {{ container.updated_at | naiveDate | date: 'medium' }}
-              </span>
-            </div>
+        <td colspan="6">
+          <div class="extra-info">
+            <p-fieldset [legend]="'CONTAINERS.TABLE.IMAGE' | translate">
+              {{ container.image }}
+            </p-fieldset>
+            <p-fieldset [legend]="'CONTAINERS.TABLE.SHORT_ID' | translate">
+              {{ container.short_id }}
+            </p-fieldset>
+            <p-fieldset [legend]="'CONTAINERS.TABLE.PORTS' | translate">
+              <ng-container
+                [ngTemplateOutlet]="portsTemplate"
+                [ngTemplateOutletContext]="{ ports: container.ports }"
+              ></ng-container>
+            </p-fieldset>
+            <p-fieldset [legend]="'CONTAINERS.TABLE.CHECKED_AT' | translate">
+              {{ container.checked_at | naiveDate | date: 'medium' }}
+            </p-fieldset>
+            <p-fieldset [legend]="'CONTAINERS.TABLE.UPDATED_AT' | translate">
+              {{ container.updated_at | naiveDate | date: 'medium' }}{{ '' }}
+            </p-fieldset>
           </div>
         </td>
       </tr>

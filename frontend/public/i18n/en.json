@@ -8,7 +8,8 @@
     "DISABLED": "Off",
     "SUCCESS": "Success",
     "ERROR": "Error",
-    "IN_PROGRESS": "In progress"
+    "IN_PROGRESS": "In progress",
+    "REFRESH": "Refresh"
   },
   "LOGO": {
     "0": "Tug",
@@ -43,15 +44,17 @@
     "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"]
   },
   "CONTAINERS": {
-    "HEADER": {
-      "CHECK_ALL": "Check all",
-      "UPDATED": "Updated",
-      "AVAILABLE": "Available",
-      "ROLLEDBACK": "Rolled back",
-      "FAILED": "Failed"
-    },
     "TABLE": {
       "SEARCH_PLACEHOLDER": "Name or Short ID",
+      "HEADER_BUTTON_MENU": {
+        "CHECK_ALL": "Check all"
+      },
+      "HEADER_PROGRESS": {
+        "UPDATED": "Updated",
+        "AVAILABLE": "Available",
+        "ROLLEDBACK": "Rolled back",
+        "FAILED": "Failed"
+      },
       "NAME": "Name",
       "SHORT_ID": "Short ID",
       "IMAGE": "Image",

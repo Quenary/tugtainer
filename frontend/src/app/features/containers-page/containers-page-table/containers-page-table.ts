@@ -1,5 +1,12 @@
 import { NgTemplateOutlet, KeyValuePipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MenuItem, MessageService } from 'primeng/api';
@@ -12,11 +19,12 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { distinctUntilChanged, finalize, map, repeat, takeWhile } from 'rxjs';
+import { distinctUntilChanged, finalize, map, Observable, repeat, takeWhile } from 'rxjs';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
 import {
   ECheckStatus,
   EContainerStatus,
+  ICheckProgress,
   IContainer,
   IContainerPatchBody,
 } from 'src/app/entities/containers/containers-interface';
@@ -26,9 +34,10 @@ import { Tooltip } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SplitButtonModule } from 'primeng/splitbutton';
+import { FieldsetModule } from 'primeng/fieldset';
 
 type TContainer = IContainer & {
-  splitButtonMenu: MenuItem[];
+  splitButton: MenuItem;
   checkStatus?: ECheckStatus;
 };
 
@@ -53,6 +62,7 @@ type TContainer = IContainer & {
     Tooltip,
     MenuModule,
     SplitButtonModule,
+    FieldsetModule,
   ],
   templateUrl: './containers-page-table.html',
   styleUrl: './containers-page-table.scss',
@@ -83,6 +93,20 @@ export class ContainersPageTable {
   public readonly isLoading = signal<boolean>(false);
   public readonly list = signal<Array<TContainer>>([]);
 
+  public readonly checkAllProgress = signal<ICheckProgress>(null);
+  public readonly headerButtonMenu = computed<MenuItem[]>(() => {
+    const checkAllProgress = this.checkAllProgress();
+    const checkStatus = checkAllProgress?.status;
+    const translates = this.translateService.instant('CONTAINERS.TABLE.HEADER_BUTTON_MENU');
+    return [
+      {
+        label: translates.CHECK_ALL,
+        command: () => this.checkAll(),
+        disabled: checkStatus && ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkStatus),
+      },
+    ];
+  });
+
   constructor() {
     this.updateList();
   }
@@ -99,17 +123,26 @@ export class ContainersPageTable {
       .subscribe({
         next: (list) => {
           const _list = list.map((item) => {
-            const splitButtonMenu: MenuItem[] = [
-              {
-                label: this.menuTranslates.UPDATE,
-                command: () => this.checkContainer(item.name, true),
-                disabled: !item.update_available,
-                ...(item.update_available
-                  ? { badge: 'available', badgeStyleClass: 'p-badge-success' }
-                  : {}),
-              },
-            ];
-            return { ...item, splitButtonMenu };
+            let splitButton: MenuItem = null;
+            const checkBtn: MenuItem = {
+              label: this.menuTranslates.CHECK,
+              command: () => this.checkContainer(item.name, false),
+              severity: 'primary',
+            };
+            const updateBtn: MenuItem = {
+              label: this.menuTranslates.UPDATE,
+              command: () => this.checkContainer(item.name, true),
+              severity: 'success',
+              disabled: !item.update_available || item.is_self,
+            };
+            if (item.update_available) {
+              updateBtn.items = [checkBtn];
+              splitButton = updateBtn;
+            } else {
+              checkBtn.items = [updateBtn];
+              splitButton = checkBtn;
+            }
+            return { ...item, splitButton };
           });
           this.list.set(_list);
         },
@@ -178,10 +211,27 @@ export class ContainersPageTable {
       )
       .subscribe({
         next: (id) => {
-          this.watchCheckProgress(id, name);
           this.messageService.add({
             severity: 'success',
             summary: this.translateService.instant('GENERAL.IN_PROGRESS'),
+          });
+          this.watchCheckProgress(id).subscribe({
+            next: (res) => {
+              const status = res.status;
+              const list = this.list();
+              const index = list.findIndex((item) => [id, name].includes(item.name));
+              if (index > -1) {
+                const _list = [...list];
+                _list[index] = {
+                  ...list[index],
+                  checkStatus: status,
+                };
+                this.list.set(_list);
+              }
+            },
+            complete: () => {
+              this.updateList();
+            },
           });
         },
         error: (error) => {
@@ -194,32 +244,50 @@ export class ContainersPageTable {
       });
   }
 
-  private watchCheckProgress(id: string, name: string): void {
+  public checkAll(): void {
+    this.isLoading.set(true);
     this.containersApiService
-      .getCheckProgress(id)
+      .checkAll()
       .pipe(
-        repeat({ delay: 500 }),
-        map(res => res?.status),
-        distinctUntilChanged(),
-        takeWhile((status) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(status), true),
-        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isLoading.set(false);
+        }),
       )
       .subscribe({
-        next: (status) => {
-          const list = this.list();
-          const index = list.findIndex((item) => [id, name].includes(item.name));
-          if (index > -1) {
-            const _list = [...list];
-            _list[index] = {
-              ...list[index],
-              checkStatus: status,
-            };
-            this.list.set(_list);
-          }
+        next: (id) => {
+          this.messageService.add({
+            severity: 'success',
+            summary: this.translateService.instant('GENERAL.IN_PROGRESS'),
+          });
+          this.watchCheckProgress(id).subscribe({
+            next: (res) => {
+              this.checkAllProgress.set(res);
+            },
+            complete: () => {
+              this.updateList();
+            },
+          });
         },
-        complete: () => {
-          this.updateList();
+        error: (error) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: this.translateService.instant('GENERAL.ERROR'),
+            detail: parseError(error),
+          });
         },
       });
+  }
+
+  /**
+   * Watch check progress
+   * @param id id of progress cache
+   * @returns
+   */
+  private watchCheckProgress(id: string): Observable<ICheckProgress> {
+    return this.containersApiService.getCheckProgress(id).pipe(
+      repeat({ delay: 500 }),
+      takeWhile((res) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(res?.status), true),
+      takeUntilDestroyed(this.destroyRef),
+    );
   }
 }
