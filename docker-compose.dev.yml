@@ -3,7 +3,8 @@ networks:
     driver: bridge
 services:
   app:
-    image: quenary/tugtainer:latest
+    container_name: tugtainer
+    build: .
     volumes:
       - tugtainer_data:/tugtainer
       - /var/run/docker.sock:/var/run/docker.sock
@@ -12,9 +13,10 @@ services:
       test:
         [
           'CMD-SHELL',
-          'python -c ''import urllib.request; exit(0) if urllib.request.urlopen("http://localhost:8000/api/public/health").getcode() == 200 else exit(1)''',
+          "curl -f  http://localhost:8000/api/public/health || exit 1",
         ]
       interval: 10s
+      start-period: 10
       timeout: 5s
       retries: 5
     networks:

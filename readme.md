@@ -30,7 +30,7 @@ docker run -d -p 9412:80 \
 --name=tugtainer \
 --restart=unless-stopped \
 -v tugtainer_data:/tugtainer \
---health-cmd "python -c 'import urllib.request; exit(0) if urllib.request.urlopen(\"http://localhost:8000/api/public/health\").getcode() == 200 else exit(1)'" \
+--health-cmd "curl -f  http://localhost:8000/api/public/health || exit 1" \
 quenary/tugtainer:latest
 ```
 

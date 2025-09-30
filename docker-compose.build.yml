@@ -4,7 +4,8 @@ networks:
 services:
   app:
     container_name: tugtainer
-    image: quenary/tugtainer:latest
+    build:
+      context: https://github.com/Quenary/tugtainer.git#latest
     volumes:
       - tugtainer_data:/tugtainer
       - /var/run/docker.sock:/var/run/docker.sock
