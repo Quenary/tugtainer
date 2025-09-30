@@ -1,6 +1,13 @@
 from typing import Any
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Response,
+    Request,
+    status,
+)
 from fastapi.responses import PlainTextResponse
 from app.helpers.delay_to_minimum import delay_to_minimum
 from app.config import Config
@@ -26,35 +33,43 @@ async def login(response: Response, password: str):
     STORED_PASSWORD_HASH: str | None = read_password_hash()
 
     if not STORED_PASSWORD_HASH:
-        raise HTTPException(status_code=401, detail="Password not set")
+        raise HTTPException(
+            status_code=401, detail="Password not set"
+        )
 
     if not verify_password(password, STORED_PASSWORD_HASH):
-        raise HTTPException(status_code=401, detail="Invalid password")
+        raise HTTPException(
+            status_code=401, detail="Invalid password"
+        )
 
     access_token: str = create_token(
         data={"type": "access"},
-        expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN),
+        expires_delta=timedelta(
+            minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
+        ),
     )
     refresh_token: str = create_token(
         data={"type": "refresh"},
-        expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
+        expires_delta=timedelta(
+            minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
+        ),
     )
-    print(access_token)
-    print(refresh_token)
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,
         samesite="strict",
+        secure=Config.HTTPS,
+        domain=Config.DOMAIN,
         max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
         samesite="strict",
+        secure=Config.HTTPS,
+        domain=Config.DOMAIN,
         max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
     )
     response.status_code = status.HTTP_200_OK
@@ -65,34 +80,44 @@ async def login(response: Response, password: str):
 async def refresh(request: Request, response: Response):
     refresh_token: str | None = request.cookies.get("refresh_token")
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="Missing refresh token")
+        raise HTTPException(
+            status_code=401, detail="Missing refresh token"
+        )
 
     payload: dict[str, Any] = verify_token(refresh_token)
     if payload.get("type") != "refresh":
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=401, detail="Invalid refresh token"
+        )
 
     new_access_token: str = create_token(
         data={"type": "access"},
-        expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN),
+        expires_delta=timedelta(
+            minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
+        ),
     )
     new_refresh_token: str = create_token(
         data={"type": "refresh"},
-        expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
+        expires_delta=timedelta(
+            minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
+        ),
     )
     response.set_cookie(
         key="access_token",
         value=new_access_token,
         httponly=True,
-        secure=True,
         samesite="strict",
+        secure=Config.HTTPS,
+        domain=Config.DOMAIN,
         max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
     )
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=True,
         samesite="strict",
+        secure=Config.HTTPS,
+        domain=Config.DOMAIN,
         max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
     )
     response.status_code = status.HTTP_200_OK
@@ -112,13 +137,8 @@ def logout(response: Response):
     description="Check if session is authorized",
     response_model=bool,
 )
-def is_authorized_req(_ = Depends(is_authorized)):
+def is_authorized_req(_=Depends(is_authorized)):
     return PlainTextResponse(status_code=status.HTTP_200_OK)
-    # try:
-    #     _ = is_authorized(request)
-    #     return True
-    # except:
-    #     return False
 
 
 @router.post(
@@ -132,12 +152,9 @@ def set_password(request: Request, payload: PasswordSetRequestBody):
         write_password_hash(password_hash)
         return PlainTextResponse(status_code=status.HTTP_201_CREATED)
 
-    try:
-        _ = is_authorized(request)
-        write_password_hash(password_hash)
-        return PlainTextResponse(status_code=status.HTTP_200_OK)
-    except HTTPException as e:
-        raise e
+    _ = is_authorized(request)
+    write_password_hash(password_hash)
+    return PlainTextResponse(status_code=status.HTTP_200_OK)
 
 
 @router.get(

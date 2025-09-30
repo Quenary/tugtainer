@@ -605,7 +605,7 @@ async def check_container(
     Check and update one container.
     Should not raises errors, only logging.
     :param name: name or id
-    :param update: wether to update container (only check if false)
+    :param update: whether to update container (only check if false)
     :returns 0: Container if there is new one (updated or rolled-back after fail)
     :returns 1: Available flag (new image, but not updated)
     :returns 2: Updated flag (that is, not rolled-back)

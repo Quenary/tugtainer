@@ -15,6 +15,8 @@ class Config:
     REFRESH_TOKEN_LIFETIME_MIN: ClassVar[int]
     DB_URL: ClassVar[str]
     PASSWORD_FILE: ClassVar[str]
+    HTTPS: ClassVar[bool]
+    DOMAIN: ClassVar[str | None]
 
     @classmethod
     def load(cls):
@@ -43,6 +45,8 @@ class Config:
                 os.getenv("PASSWORD_FILE")
                 or "/tugtainer/password_hash"
             )
+            cls.HTTPS = os.getenv("HTTPS", "false").lower() == "true"
+            cls.DOMAIN = os.getenv("DOMAIN")
 
 
 Config.load()

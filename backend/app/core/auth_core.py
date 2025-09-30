@@ -66,9 +66,9 @@ def read_password_hash() -> str | None:
     """
     Read password hash from file
     """
-    if not os.path.isfile("password_hash"):
+    if not os.path.isfile(Config.PASSWORD_FILE):
         return None
-    with open("password_hash", "r") as f:
+    with open(Config.PASSWORD_FILE, "r") as f:
         return f.read()
 
 
@@ -76,7 +76,7 @@ def write_password_hash(password_hash: str) -> None:
     """
     Write password hash to file
     """
-    with open("password_hash", "w") as f:
+    with open(Config.PASSWORD_FILE, "w") as f:
         _ = f.write(password_hash)
         f.flush()
         f.close()
