@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Quenary/tugtainer/compare/v1.0.0...v1.0.1) (2025-10-01)
+
+
+### Bug Fixes
+
+* **backend:** check image digest, choose registry ([258efa9](https://github.com/Quenary/tugtainer/commit/258efa98e20a83204211db0a8c2f494acb8a0c78))
+
 # 1.0.0 (2025-10-01)
 
 
