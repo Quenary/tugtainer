@@ -28,6 +28,7 @@ from app.helpers import (
     subtract_dict,
 )
 import traceback
+import re
 
 
 _DOCKER = client.from_env()
@@ -71,6 +72,16 @@ def _get_local_digest(image: Image) -> str | None:
     if repo_digests:
         return repo_digests[0].split("@")[1]
     return None
+
+
+def _extract_image_id(image_str: str) -> str:
+    """
+    Extract image id from string like 'sha256:<64-hex>'
+    """
+    if not image_str:
+        return ""
+    match = re.fullmatch(r"sha256:([0-9a-f]{64})", image_str)
+    return match.group(1) if match else ""
 
 
 async def db_update_container(name: str, data: dict):
@@ -591,9 +602,15 @@ async def _is_container_update_available(c: Container) -> bool:
     Compare digests and define is there new image
     """
     image_spec = _get_container_image_spec(c)
-    registry: BaseRegistryClient = choose_registry_client(image_spec)
-    local_image: Image = _DOCKER.images.get(image_spec)
+    image_id: str = _extract_image_id(c.attrs.get("Image", ""))
+    try:
+        # When using id, we're certain it's the current image. But something could go wrong.
+        local_image: Image = _DOCKER.images.get(image_id)
+    except:
+        # When using spec, the new image may already be pulled and then the update will not be detected.
+        local_image = _DOCKER.images.get(image_spec)
     local_digest: str | None = _get_local_digest(local_image)
+    registry: BaseRegistryClient = choose_registry_client(image_spec)
     remote_digest: str | None = await registry.get_remote_digest()
     return bool(remote_digest and local_digest != remote_digest)
 
