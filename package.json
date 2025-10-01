@@ -1,6 +1,6 @@
 {
   "name": "tugtainer",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Tugtainer is a self-hosted app for automating updates of your docker containers",
   "repository": {
     "type": "git",
