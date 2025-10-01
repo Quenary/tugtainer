@@ -1,0 +1,34 @@
+name: 💬 Open Discussion
+description: Start a conversation or ask a question
+title: "[Discussion] "
+labels: [discussion]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Not sure if it’s a bug or a feature idea?  
+        Have questions, thoughts, or just something worth talking about? Drop it here.
+
+  - type: input
+    id: topic
+    attributes:
+      label: What’s this about?
+      description: Give your discussion a short title or topic
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: Context or question
+      description: What made you think about this? Any background or context?
+    validations:
+      required: true
+
+  - type: textarea
+    id: input
+    attributes:
+      label: Any initial thoughts?
+      description: Your opinion, options you're considering, or what kind of feedback you want
+    validations:
+      required: false

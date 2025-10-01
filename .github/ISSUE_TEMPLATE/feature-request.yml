@@ -1,0 +1,37 @@
+name: 💡 Feature Request
+description: Suggest a new idea or improvement
+title: "[Feature] "
+labels: [feature]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea to make this project better?  
+        Share it here — the clearer, the better!
+
+  - type: input
+    id: summary
+    attributes:
+      label: What’s the feature?
+      description: Short one-liner describing the feature
+      placeholder: Dark mode support
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Why is it useful?
+      description: What problem does this solve, or how would it improve things?
+      placeholder: Helps when using the app at night without blinding myself.
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Any extra thoughts?
+      description: How you imagine it working, or links to similar things.
+      placeholder: Optional sketches, examples, or UX notes.
+    validations:
+      required: false

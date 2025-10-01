@@ -10,16 +10,6 @@ services:
       - tugtainer_data:/tugtainer
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          "curl -f  http://localhost:8000/api/public/health || exit 1",
-        ]
-      interval: 10s
-      start-period: 10
-      timeout: 5s
-      retries: 5
     networks:
       - tugtainer
     ports:

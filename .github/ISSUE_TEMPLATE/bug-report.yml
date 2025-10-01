@@ -1,0 +1,86 @@
+name: 🐞 Bug report
+description: Create a bug report and help improve the application
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: input
+    id: summary
+    attributes:
+      label: What’s the bug?
+      description: A short one-liner describing what went wrong
+      placeholder: Scanner dialog broken
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Scanner dialog doesn't open if the app opened via http (not https)
+    validations:
+      required: true
+
+  - type: input
+    id: expected_behaviour
+    attributes:
+      label: Expected behaviour
+      description: A clear and concise description of what you expected to happen.
+      placeholder: Scanner dialog should open even via http, as there is 'Scan from file' feature
+    validations:
+      required: true
+
+  - type: textarea
+    id: to_reproduce
+    attributes:
+      label: To reproduce
+      description: Steps to reproduce the bug
+      placeholder: |
+        1. Open the app via http
+        2. Open card
+        3. Click on scan button
+        4. Scan dialog doesn't open, screen become darker
+    validations:
+      required: true
+
+  - type: textarea
+    id: platform
+    attributes:
+      label: Platform
+      description: The platform you are using the app on
+      placeholder: |
+        OS: macOS 18.1
+        Browser: Chrome 122.1
+    validations:
+      required: false
+
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: Docker image version (if applicable, also backand/frontend versions) you believe are affected.
+      placeholder: "Docker image: 0.0.15"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra
+      description: Screenshots, environment, or other related things that can help identify the bug
+    validations:
+      required: false

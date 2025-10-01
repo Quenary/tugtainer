@@ -14,30 +14,33 @@ RUN pip install --upgrade pip setuptools
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY backend .
-COPY .env* ./app
 
 # Stage 3 - container build
-FROM python:3.13-slim
+FROM python:3.13-slim AS runtime
 WORKDIR /
 
 ARG VERSION
 ENV VERSION=$VERSION
 
-RUN apt-get update && apt-get install -y nginx supervisor curl && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get clean
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx supervisor curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 COPY --from=frontend-builder /app/dist/tugtainer/browser /app/frontend
 COPY --from=backend-builder /app /app/backend
-COPY --from=backend-builder /usr/local/ /usr/local/
+COPY --from=backend-builder /usr/local/lib/python3.13 /usr/local/lib/python3.13
+COPY --from=backend-builder /usr/local/bin /usr/local/bin
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-RUN pip install --upgrade pip setuptools
+COPY .env* ./app
 
 # Dir for sqlite and other files
-RUN mkdir -p /tugtainer && chmod 777 /tugtainer
+RUN mkdir -p /tugtainer && chmod 700 /tugtainer
 
 EXPOSE 80
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:8000/api/public/health || exit 1
+
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
