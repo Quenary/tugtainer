@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/Quenary/tugtainer/compare/v1.0.1...v1.0.2) (2025-10-02)
+
+
+### Bug Fixes
+
+* **backend:** self container detection ([0ec7703](https://github.com/Quenary/tugtainer/commit/0ec77034238d66c0a12feef00dff7da681e78026))
+
 ## [1.0.1](https://github.com/Quenary/tugtainer/compare/v1.0.0...v1.0.1) (2025-10-01)
 
 
