@@ -2,9 +2,9 @@ from datetime import datetime
 from docker import client
 from docker.models.containers import Container
 from docker.models.images import Image
-from docker.types import DriverConfig, Mount
+from docker.types import Mount
 import logging
-from typing import Any, Literal, NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 from sqlalchemy import and_, select
 import time
 import asyncio
@@ -14,10 +14,6 @@ from app.db import (
     ContainersModel,
     async_session_maker,
     insert_or_update_container,
-)
-from app.core.registries import (
-    choose_registry_client,
-    BaseRegistryClient,
 )
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
@@ -29,6 +25,7 @@ from app.helpers import (
 )
 import traceback
 import re
+from app.config import Config
 
 
 _DOCKER = client.from_env()
@@ -65,6 +62,21 @@ def _update_check_status(key: str, value: CheckStatusDict):
 def get_check_status(key: str) -> CheckStatusDict | None:
     """Get check status"""
     return _STATUS_CACHE.get(key)
+
+
+def _get_remote_digest(image_spec: str) -> str | None:
+    try:
+        return (
+            _DOCKER.images.get_registry_data(image_spec)
+            .attrs.get("Descriptor", {})
+            .get("digest", None)
+        )
+    except Exception as e:
+        logging.error(
+            f"Error fetching registry data for {image_spec}"
+        )
+        logging.exception(e)
+        return None
 
 
 def _get_local_digest(image: Image) -> str | None:
@@ -481,7 +493,10 @@ async def _recreate_container(
     """
 
     IMAGE_SPEC = _get_container_image_spec(existing_container)
-    OLD_IMAGE = _DOCKER.images.get(IMAGE_SPEC)
+    IMAGE_ID = _extract_image_id(
+        existing_container.attrs.get("Image", "")
+    )
+    OLD_IMAGE = _DOCKER.images.get(IMAGE_ID)
     CFG, NETWORKS_TO_CONNECT = get_container_config(
         existing_container
     )
@@ -554,7 +569,7 @@ async def _recreate_container(
             await loop.run_in_executor(executor, new_container.remove)
             raise RuntimeError("Healthcheck failed")
         except Exception as e:
-            logging.warning(e)
+            logging.exception(e)
             logging.warning(
                 f"Rolling back {NAME} with previous image"
             )
@@ -610,8 +625,9 @@ async def _is_container_update_available(c: Container) -> bool:
         # When using spec, the new image may already be pulled and then the update will not be detected.
         local_image = _DOCKER.images.get(image_spec)
     local_digest: str | None = _get_local_digest(local_image)
-    registry: BaseRegistryClient = choose_registry_client(image_spec)
-    remote_digest: str | None = await registry.get_remote_digest()
+    remote_digest: str | None = _get_remote_digest(image_spec)
+    logging.info(f"Local digest for {image_spec}: {local_digest}")
+    logging.info(f"Remote digest for {image_spec}: {remote_digest}")
     return bool(remote_digest and local_digest != remote_digest)
 
 
@@ -781,7 +797,9 @@ async def check_and_update_all_containers():
 
     # Notification
     try:
-        title: str = f"Tugtainer {datetime.now()}"
+        title: str = (
+            f"Tugtainer ({Config.HOSTNAME}) {datetime.now().strftime("%d.%m.%Y %H:%M:%S")}"
+        )
         body: str = ""
         if updated:
             body += "Updated:\n"

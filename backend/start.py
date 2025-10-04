@@ -1,10 +1,17 @@
 import subprocess
 import uvicorn
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+log_level = os.getenv("LOG_LEVEL", "WARNING").lower()
 
 
 def run_migrations():
     print("Running Alembic migrations...")
-    result = subprocess.run(["alembic", "upgrade", "head"], check=False)
+    result = subprocess.run(
+        ["alembic", "upgrade", "head"], check=False
+    )
     if result.returncode != 0:
         raise Exception("Alembic migrations failed. Exiting.")
     print("Alembic migrations completed.")
@@ -12,4 +19,6 @@ def run_migrations():
 
 if __name__ == "__main__":
     run_migrations()
-    uvicorn.run("app.app:app", host="0.0.0.0", port=8000)
+    uvicorn.run(
+        "app.app:app", host="0.0.0.0", port=8000, log_level=log_level
+    )
