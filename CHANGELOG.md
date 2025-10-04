@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/Quenary/tugtainer/compare/v1.0.2...v1.0.3) (2025-10-04)
+
+
+### Bug Fixes
+
+* **backend:** container check ([8797d28](https://github.com/Quenary/tugtainer/commit/8797d28f593e3bde2e83febddbf71397653be5e1))
+
 ## [1.0.2](https://github.com/Quenary/tugtainer/compare/v1.0.1...v1.0.2) (2025-10-02)
 
 
