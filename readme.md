@@ -44,5 +44,3 @@ Environment variables are not required, but you can still define some. There is 
 
 ### TODO:
 - add unit tests
-- add hostname to notification
-- sort containers by name+available
