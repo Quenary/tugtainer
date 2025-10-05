@@ -30,31 +30,27 @@ import { parseError } from 'src/app/shared/functions/parse-error.function';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
 import { ButtonModule } from 'primeng/button';
-import { IftaLabelModule } from 'primeng/iftalabel';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { DividerModule } from 'primeng/divider';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
 import { FluidModule } from 'primeng/fluid';
 import { NgTemplateOutlet } from '@angular/common';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { ToggleButtonModule } from 'primeng/togglebutton';
 
 @Component({
   selector: 'app-settings-page-form',
   imports: [
     ReactiveFormsModule,
     ButtonModule,
-    IftaLabelModule,
     InputTextModule,
     InputNumberModule,
-    DividerModule,
-    ToggleSwitchModule,
     TranslateModule,
     TooltipModule,
     FluidModule,
     NgTemplateOutlet,
     AutoCompleteModule,
+    ToggleButtonModule,
   ],
   templateUrl: './settings-page-form.html',
   styleUrl: './settings-page-form.scss',
