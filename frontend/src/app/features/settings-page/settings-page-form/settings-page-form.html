@@ -1,11 +1,14 @@
 @for (form of formArray.controls; track form) {
-  <form class="settings-form-group" [formGroup]="form">
+  <form
+    class="settings-form-group"
+    [formGroup]="form"
+  >
     @if (form.controls.key.value; as key) {
       <span class="settings-form-group-name">
         {{ keyTranslates[key]?.LABEL ?? key }}
       </span>
 
-      <p-ifta-label class="settings-form-group-field">
+      <div class="settings-form-group-field">
         <ng-container
           [ngTemplateOutlet]="valueInputTemplate"
           [ngTemplateOutletContext]="{
@@ -14,10 +17,7 @@
             control: form.controls.value,
           }"
         ></ng-container>
-        <label for="value-{{ key }}">
-          {{ 'SETTINGS.VALUE' | translate }}
-        </label>
-      </p-ifta-label>
+      </div>
 
       <section class="settings-form-group-functions">
         @switch (key) {
@@ -50,34 +50,61 @@
   </form>
 }
 
-<p-button [loading]="isLoading()" [disabled]="!formArray.dirty" (onClick)="submit()">
+<p-button
+  [loading]="isLoading()"
+  [disabled]="!formArray.dirty"
+  (onClick)="submit()"
+>
   <i class="pi pi-save"></i>
   <span pButtonLabel>
     {{ 'GENERAL.SAVE' | translate }}
   </span>
 </p-button>
 
-<ng-template #valueInputTemplate let-key="key" let-value_type="value_type" let-control="control">
+<ng-template
+  #valueInputTemplate
+  let-key="key"
+  let-value_type="value_type"
+  let-control="control"
+>
   @switch (key) {
     @case (ESettingKey.TIMEZONE) {
       <p-autocomplete
+        fluid
         [suggestions]="displayedTimezones()"
         [dropdown]="true"
         (completeMethod)="timezonesSearch.set($event.query)"
         [formControl]="control"
+        appendTo="body"
       >
       </p-autocomplete>
     }
     @default {
       @switch (value_type) {
         @case ('bool') {
-          <p-toggleSwitch fluid id="value-{{ key }}" [formControl]="control"></p-toggleSwitch>
+          <p-togglebutton
+            [formControl]="control"
+            [onLabel]="'GENERAL.ENABLED' | translate"
+            [offLabel]="'GENERAL.DISABLED' | translate"
+            [onIcon]="'pi pi-check-circle'"
+            [offIcon]="'pi pi-circle-off'"
+          />
         }
         @case ('str') {
-          <input fluid id="value-{{ key }}" type="text" pInputText [formControl]="control" />
+          <input
+            fluid
+            id="value-{{ key }}"
+            type="text"
+            pInputText
+            [formControl]="control"
+          />
         }
         @default {
-          <p-input-number fluid id="value-{{ key }}" [formControl]="control"></p-input-number>
+          <p-input-number
+            fluid
+            id="value-{{ key }}"
+            [formControl]="control"
+          ></p-input-number>
         }
       }
     }
