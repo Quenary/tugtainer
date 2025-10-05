@@ -44,3 +44,4 @@ Environment variables are not required, but you can still define some. There is 
 
 ### TODO:
 - add unit tests
+- filter cont in notification (dont notify already notified)

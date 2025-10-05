@@ -3,15 +3,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth_core import is_authorized
-from app.db.session import get_async_session
+from app.db import (
+    get_async_session,
+    SettingModel,
+    get_setting_typed_value,
+)
 from app.schemas.settings_schema import (
     SettingsGetResponseItem,
     SettingsPatchRequestItem,
     TestNotificationRequestBody,
-)
-from app.db.models.settings_model import SettingModel
-from app.helpers.get_setting_typed_value import (
-    get_setting_typed_value,
 )
 from app.core.notifications_core import send_notification
 from app.core.cron_manager import CronManager
