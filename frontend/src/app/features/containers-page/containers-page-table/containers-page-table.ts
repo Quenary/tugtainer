@@ -222,10 +222,7 @@ export class ContainersPageTable {
               const index = list.findIndex((item) => [id, name].includes(item.name));
               if (index > -1) {
                 const _list = [...list];
-                _list[index] = {
-                  ...list[index],
-                  checkStatus: status,
-                };
+                _list[index].checkStatus = status;
                 this.list.set(_list);
               }
             },
