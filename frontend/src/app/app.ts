@@ -76,6 +76,11 @@ docker run -d -p 9412:80 \\
           icon: 'pi pi-box',
         },
         {
+          label: translates.IMAGES,
+          routerLink: '/images',
+          icon: 'pi pi-file',
+        },
+        {
           label: translates.SETTINGS,
           routerLink: '/settings',
           icon: 'pi pi-cog',

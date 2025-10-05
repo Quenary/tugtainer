@@ -30,6 +30,12 @@ export const routes: Routes = [
       import('./features/containers-page/containers-page').then((c) => c.ContainersPage),
   },
   {
+    path: 'images',
+    title: titleTranslate('NAV.IMAGES'),
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/images-page/images-page').then((c) => c.ImagesPage),
+  },
+  {
     path: 'settings',
     title: titleTranslate('NAV.SETTINGS'),
     canActivate: [authGuard],

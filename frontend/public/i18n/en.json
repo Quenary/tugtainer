@@ -18,10 +18,12 @@
   "NAV": {
     "AUTH": "Tugtainer. Authorization.",
     "CONTAINERS": "Tugtainer. Containers.",
+    "IMAGES": "Tugtainer. Images.",
     "SETTINGS": "Tugtainer. Settings."
   },
   "MENU": {
     "CONTAINERS": "Containers",
+    "IMAGES": "Images",
     "SETTINGS": "Settings",
     "GITHUB": "GitHub",
     "UPDATE": "Update available",
@@ -72,6 +74,22 @@
         "UPDATE": "Update",
         "CHECK": "Check"
       }
+    }
+  },
+  "IMAGES": {
+    "TABLE": {
+      "PRUNE": "Prune",
+      "PRUNE_CONFIRM": "Do you want to prune images?",
+      "PRUNE_SPACE_RECLAIMED": "Space reclaimed: {{value}} MB",
+      "SEARCH_PLACEHOLDER": "ID, repo, tags",
+      "REPOSITORY": "Repository",
+      "ID": "ID",
+      "DANGLING": "Dangling",
+      "UNUSED": "Unused",
+      "TAGS": "Tags",
+      "SIZE": "Size",
+      "SIZE_UNIT": "MB",
+      "CREATED": "Created"
     }
   },
   "SETTINGS": {

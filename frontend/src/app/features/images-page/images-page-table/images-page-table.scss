@@ -1,0 +1,12 @@
+:host {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+
+  .image-id {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
