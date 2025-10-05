@@ -800,7 +800,7 @@ async def check_and_update_all_containers():
     # Notification
     try:
         title: str = (
-            f"Tugtainer ({Config.HOSTNAME}) {datetime.now().strftime("%d.%m.%Y %H:%M:%S")}"
+            f"Tugtainer ({Config.HOSTNAME})"
         )
         body: str = ""
         if updated:
