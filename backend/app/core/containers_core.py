@@ -14,6 +14,8 @@ from app.db import (
     ContainersModel,
     async_session_maker,
     insert_or_update_container,
+    get_setting_from_db,
+    get_setting_typed_value,
 )
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
@@ -26,6 +28,7 @@ from app.helpers import (
 import traceback
 import re
 from app.config import Config
+from app.enums.settings_enum import ESettingKey
 
 
 _DOCKER = client.from_env()
@@ -795,13 +798,19 @@ async def check_and_update_all_containers():
         },
     )
 
-    # TODO add prune images
+    prune_images = await get_setting_from_db(ESettingKey.PRUNE_IMAGES)
+    prune_res = {}
+    if get_setting_typed_value(
+        prune_images.value, prune_images.value_type
+    ):
+        prune_res = _DOCKER.images.prune()
+    reclaimed_mb = round(
+        prune_res.get("SpaceReclaimed", 0) / 1024 / 1024, 1
+    )
 
     # Notification
     try:
-        title: str = (
-            f"Tugtainer ({Config.HOSTNAME})"
-        )
+        title: str = f"Tugtainer ({Config.HOSTNAME})"
         body: str = ""
         if updated:
             body += "Updated:\n"
@@ -829,6 +838,8 @@ async def check_and_update_all_containers():
                 )
                 last_lines = tb_lines[-3:]
                 body += "".join(last_lines) + "\n"
+        if reclaimed_mb:
+            body += f"Prune reclaimed {reclaimed_mb} MB\n"
         if body:
             await send_notification(title, body)
     except Exception as e:
