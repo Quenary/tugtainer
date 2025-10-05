@@ -2,7 +2,11 @@
   #dt2
   [globalFilterFields]="['name', 'short_id']"
   dataKey="name"
-  sortField="name"
+  sortMode="multiple"
+  [multiSortMeta]="[
+    { field: 'update_available', order: -1 },
+    { field: 'name', order: 1 },
+  ]"
   [scrollable]="true"
   scrollHeight="flex"
   [value]="list()"
@@ -112,8 +116,8 @@
         ></i>
         <p-sortIcon field="update_enabled"></p-sortIcon>
       </th>
-      <th>
-        <!-- For menu -->
+      <th pSortableColumn="update_available">
+        <p-sortIcon field="update_available"></p-sortIcon>
       </th>
     </tr>
   </ng-template>
@@ -224,7 +228,7 @@
               {{ container.checked_at | naiveDate | date: 'medium' }}
             </p-fieldset>
             <p-fieldset [legend]="'CONTAINERS.TABLE.UPDATED_AT' | translate">
-              {{ container.updated_at | naiveDate | date: 'medium' }}{{ '' }}
+              {{ container.updated_at | naiveDate | date: 'medium' }}
             </p-fieldset>
           </div>
         </td>
