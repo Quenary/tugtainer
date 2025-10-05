@@ -10,6 +10,7 @@ class ESettingKey(str, Enum):
     CRONTAB_EXPR = "CRONTAB_EXPR"
     NOTIFICATION_URL = "NOTIFICATION_URL"
     TIMEZONE = "TIMEZONE"
+    PRUNE_IMAGES = "PRUNE_IMAGES"
 
 
 class ESettingType(str, Enum):
