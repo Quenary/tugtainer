@@ -9,3 +9,7 @@ from .settings_schema import (
     TestNotificationRequestBody,
 )
 from .version_schema import VersionResponseBody
+from .images_schema import (
+    ImageGetResponseBody,
+    ImagePruneResponseBody,
+)

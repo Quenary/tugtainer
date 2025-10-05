@@ -93,7 +93,8 @@ def upgrade() -> None:
         INSERT INTO settings (key, value, value_type) VALUES
         ('CRONTAB_EXPR', '0 */1 * * *', 'str'),
         ('NOTIFICATION_URL', '', 'str'),
-        ('TIMEZONE', '{tzlocal.get_localzone_name()}', 'str')
+        ('TIMEZONE', '{tzlocal.get_localzone_name()}', 'str'),
+        ('PRUNE_IMAGES', 'FALSE', 'bool')
         """
         )
     )

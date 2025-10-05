@@ -6,6 +6,7 @@ from app.api import (
     containers_router,
     public_router,
     settings_router,
+    images_router,
 )
 from app.config import Config
 import logging
@@ -30,3 +31,4 @@ app.include_router(auth_router)
 app.include_router(containers_router)
 app.include_router(public_router)
 app.include_router(settings_router)
+app.include_router(images_router)

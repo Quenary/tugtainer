@@ -795,6 +795,8 @@ async def check_and_update_all_containers():
         },
     )
 
+    # TODO add prune images
+
     # Notification
     try:
         title: str = (
