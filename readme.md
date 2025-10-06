@@ -2,16 +2,11 @@
 
 It's like well-known [watchtower](https://github.com/containrrr/watchtower), but with a web UI where you can change most of the settings or view the current state of the containers.
 
-</span>
-<div style="display: flex; gap: 10px;">
-  <div style="flex: 2;">
-    <img src="resources/tugtainer-containers-v1.1.2.png" width="100%">
-  </div>
-  <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
-    <img src="resources/tugtainer-images-v1.1.2.png" width="100%">
-    <img src="resources/tugtainer-settings-v1.1.2.png" width="100%">
-  </div>
-</div>
+<p align="center">
+<img src="resources/tugtainer-containers-v1.1.2.png" width="33%">
+<img src="resources/tugtainer-images-v1.1.2.png" width="33%">
+<img src="resources/tugtainer-settings-v1.1.2.png" width="33%">
+</p>
 
 Please be aware that the application is distributed as is and is not recommended for use in a production environment.
 
