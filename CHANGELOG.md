@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/Quenary/tugtainer/compare/v1.1.1...v1.1.2) (2025-10-06)
+
+
+### Bug Fixes
+
+* **frontend:** cmd in new version dialog ([3e8e970](https://github.com/Quenary/tugtainer/commit/3e8e970f9b50641da32591c85a0dbca4b6212bf1))
+
 ## [1.1.1](https://github.com/Quenary/tugtainer/compare/v1.1.0...v1.1.1) (2025-10-06)
 
 
