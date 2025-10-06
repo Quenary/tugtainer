@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Quenary/tugtainer/compare/v1.1.0...v1.1.1) (2025-10-06)
+
+
+### Bug Fixes
+
+* **frontend:** prune success toast unit ([c0fe4b5](https://github.com/Quenary/tugtainer/commit/c0fe4b549c2991da341a628f90b300a3ce0017fb))
+
 # [1.1.0](https://github.com/Quenary/tugtainer/compare/v1.0.3...v1.1.0) (2025-10-06)
 
 
