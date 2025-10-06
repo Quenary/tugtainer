@@ -8,8 +8,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MenuItem, MessageService } from 'primeng/api';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { MenuItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
@@ -19,7 +19,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { distinctUntilChanged, finalize, map, Observable, repeat, takeWhile } from 'rxjs';
+import { finalize, Observable, repeat, takeWhile } from 'rxjs';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
 import {
   ECheckStatus,
@@ -28,16 +28,15 @@ import {
   IContainer,
   IContainerPatchBody,
 } from 'src/app/entities/containers/containers-interface';
-import { parseError } from 'src/app/shared/functions/parse-error.function';
 import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
 import { Tooltip } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { FieldsetModule } from 'primeng/fieldset';
+import { ToastService } from 'src/app/core/services/toast.service';
 
 type TContainer = IContainer & {
-  splitButton: MenuItem;
   checkStatus?: ECheckStatus;
 };
 
@@ -45,7 +44,7 @@ type TContainer = IContainer & {
   selector: 'app-containers-page-table',
   imports: [
     TableModule,
-    TranslateModule,
+    TranslatePipe,
     NgTemplateOutlet,
     KeyValuePipe,
     ToggleButtonModule,
@@ -70,7 +69,7 @@ type TContainer = IContainer & {
 })
 export class ContainersPageTable {
   private readonly containersApiService = inject(ContainersApiService);
-  private readonly messageService = inject(MessageService);
+  private readonly toastService = inject(ToastService);
   private readonly translateService = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -88,7 +87,6 @@ export class ContainersPageTable {
     healthy: 'success',
     unhealthy: 'danger',
   };
-  private readonly menuTranslates = this.translateService.instant('CONTAINERS.TABLE.C_MENU');
 
   public readonly isLoading = signal<boolean>(false);
   public readonly list = signal<Array<TContainer>>([]);
@@ -122,36 +120,10 @@ export class ContainersPageTable {
       )
       .subscribe({
         next: (list) => {
-          const _list = list.map((item) => {
-            let splitButton: MenuItem = null;
-            const checkBtn: MenuItem = {
-              label: this.menuTranslates.CHECK,
-              command: () => this.checkContainer(item.name, false),
-              severity: 'primary',
-            };
-            const updateBtn: MenuItem = {
-              label: this.menuTranslates.UPDATE,
-              command: () => this.checkContainer(item.name, true),
-              severity: 'success',
-              disabled: !item.update_available || item.is_self,
-            };
-            if (item.update_available) {
-              updateBtn.items = [checkBtn];
-              splitButton = updateBtn;
-            } else {
-              checkBtn.items = [updateBtn];
-              splitButton = checkBtn;
-            }
-            return { ...item, splitButton };
-          });
-          this.list.set(_list);
+          this.list.set(list);
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
@@ -175,10 +147,7 @@ export class ContainersPageTable {
       )
       .subscribe({
         next: (container) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.SUCCESS'),
-          });
+          this.toastService.success();
           const list = this.list();
           const index = list.findIndex((item) => item.name == container.name);
           list[index] = {
@@ -188,11 +157,7 @@ export class ContainersPageTable {
           this.list.set([...list]);
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
           this.updateList();
         },
       });
@@ -211,10 +176,7 @@ export class ContainersPageTable {
       )
       .subscribe({
         next: (id) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.IN_PROGRESS'),
-          });
+          this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
           this.watchCheckProgress(id).subscribe({
             next: (res) => {
               const status = res.status;
@@ -232,11 +194,7 @@ export class ContainersPageTable {
           });
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
@@ -252,10 +210,7 @@ export class ContainersPageTable {
       )
       .subscribe({
         next: (id) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.IN_PROGRESS'),
-          });
+          this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
           this.watchCheckProgress(id).subscribe({
             next: (res) => {
               this.checkAllProgress.set(res);
@@ -266,11 +221,7 @@ export class ContainersPageTable {
           });
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }

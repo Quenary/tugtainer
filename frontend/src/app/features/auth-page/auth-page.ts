@@ -5,14 +5,12 @@ import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
 import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
 import { NewPasswordForm } from 'src/app/shared/components/new-password-form/new-password-form';
 import { LoginForm } from './login-form/login-form';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MessageService } from 'primeng/api';
-import { parseError } from 'src/app/shared/functions/parse-error.function';
 import { Logo } from 'src/app/shared/components/logo/logo';
+import { ToastService } from 'src/app/core/services/toast.service';
 
 @Component({
   selector: 'app-auth',
-  imports: [NewPasswordForm, LoginForm, TranslateModule, Logo],
+  imports: [NewPasswordForm, LoginForm, Logo],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,8 +18,7 @@ import { Logo } from 'src/app/shared/components/logo/logo';
 export class AuthPage implements OnInit {
   private readonly authApiService = inject(AuthApiService);
   private readonly router = inject(Router);
-  private readonly messageService = inject(MessageService);
-  private readonly translateService = inject(TranslateService);
+  private readonly toastService = inject(ToastService);
 
   public readonly isLoading = signal<boolean>(false);
   public readonly isPasswordSet = signal<boolean>(null);
@@ -40,11 +37,7 @@ export class AuthPage implements OnInit {
           this.isPasswordSet.set(res);
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
@@ -56,14 +49,11 @@ export class AuthPage implements OnInit {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
+          this.toastService.success();
           this.updateIsPasswordSet();
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
@@ -78,11 +68,7 @@ export class AuthPage implements OnInit {
           this.router.navigate(['/containers']);
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }

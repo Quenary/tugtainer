@@ -1,8 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
-import { MenubarModule } from 'primeng/menubar';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthApiService } from './entities/auth/auth-api.service';
 import { catchError, debounceTime, finalize, map, Observable, of, retry, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -11,7 +10,6 @@ import { AsyncPipe } from '@angular/common';
 import { PublicApiService } from './entities/public/public-api.service';
 import { ContainersApiService } from './entities/containers/containers-api.service';
 import { ButtonModule } from 'primeng/button';
-import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { Logo } from './shared/components/logo/logo';
@@ -26,7 +24,7 @@ import { ToolbarModule } from 'primeng/toolbar';
     ToastModule,
     AsyncPipe,
     ButtonModule,
-    TranslateModule,
+    TranslatePipe,
     TagModule,
     DialogModule,
     Logo,

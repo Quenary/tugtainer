@@ -70,10 +70,8 @@
       "UPDATE_HINT": "Automatically update container when a new image is detected.",
       "CHECKED_AT": "Last check",
       "UPDATED_AT": "Last update",
-      "C_MENU": {
-        "UPDATE": "Update",
-        "CHECK": "Check"
-      }
+      "UPDATE": "Update",
+      "CHECK": "Check"
     }
   },
   "IMAGES": {

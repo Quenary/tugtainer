@@ -8,7 +8,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
 import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
@@ -21,7 +21,7 @@ import { map } from 'rxjs';
 @Component({
   selector: 'app-new-password-form',
   imports: [
-    TranslateModule,
+    TranslatePipe,
     ReactiveFormsModule,
     ButtonModule,
     PasswordModule,

@@ -180,12 +180,20 @@
         }
       </td>
       <td>
-        <p-split-button
-          [label]="container.splitButton.label"
-          [model]="container.splitButton.items"
-          [severity]="container.splitButton.severity"
-          (onClick)="container.splitButton.command()"
-        ></p-split-button>
+        @if (!container.is_self) {
+          @if (container.update_available) {
+            <p-button
+              [label]="'CONTAINERS.TABLE.UPDATE' | translate"
+              severity="success"
+              (onClick)="checkContainer(container.name, true)"
+            ></p-button>
+          } @else {
+            <p-button
+              [label]="'CONTAINERS.TABLE.CHECK' | translate"
+              (onClick)="checkContainer(container.name, false)"
+            ></p-button>
+          }
+        }
       </td>
     </tr>
 

@@ -1,7 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { ConfirmPopup } from 'primeng/confirmpopup';
@@ -14,16 +14,16 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { finalize } from 'rxjs';
+import { ToastService } from 'src/app/core/services/toast.service';
 import { ImagesApiService } from 'src/app/entities/images/images-api.service';
 import { IImage } from 'src/app/entities/images/images-interface';
-import { parseError } from 'src/app/shared/functions/parse-error.function';
 
 @Component({
   selector: 'app-images-page-table',
   imports: [
     TableModule,
     ButtonModule,
-    TranslateModule,
+    TranslatePipe,
     TagModule,
     ProgressBarModule,
     IconFieldModule,
@@ -43,7 +43,7 @@ import { parseError } from 'src/app/shared/functions/parse-error.function';
 })
 export class ImagesPageTable {
   private readonly imagesApiService = inject(ImagesApiService);
-  private readonly messageService = inject(MessageService);
+  private readonly toastService = inject(ToastService);
   private readonly translateService = inject(TranslateService);
   private readonly confirmationService = inject(ConfirmationService);
 
@@ -68,11 +68,7 @@ export class ImagesPageTable {
           this.list.set(list);
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
@@ -111,19 +107,11 @@ export class ImagesPageTable {
           const detail = this.translateService.instant('IMAGES.TABLE.PRUNE_SPACE_RECLAIMED', {
             value: reclaimed,
           });
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.SUCCESS'),
-            detail,
-          });
+          this.toastService.success(this.translateService.instant('GENERAL.SUCCESS'), detail);
           this.updateList();
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }

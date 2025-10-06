@@ -2,26 +2,24 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { NewPasswordForm } from 'src/app/shared/components/new-password-form/new-password-form';
 import { SettingsPageForm } from './settings-page-form/settings-page-form';
 import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MessageService } from 'primeng/api';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import { finalize } from 'rxjs';
-import { parseError } from 'src/app/shared/functions/parse-error.function';
 import { ISettingUpdate } from 'src/app/entities/settings/settings-interface';
 import { DividerModule } from 'primeng/divider';
 import { AccordionModule } from 'primeng/accordion';
+import { ToastService } from 'src/app/core/services/toast.service';
 
 @Component({
   selector: 'app-settings-page',
-  imports: [NewPasswordForm, SettingsPageForm, DividerModule, TranslateModule, AccordionModule],
+  imports: [NewPasswordForm, TranslatePipe, SettingsPageForm, DividerModule, AccordionModule],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsPage {
-  private readonly translateService = inject(TranslateService);
-  private readonly messageService = inject(MessageService);
+  private readonly toastService = inject(ToastService);
   private readonly authApiService = inject(AuthApiService);
   private readonly settingsApiService = inject(SettingsApiService);
 
@@ -34,17 +32,10 @@ export class SettingsPage {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.SUCCESS'),
-          });
+          this.toastService.success();
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
@@ -56,17 +47,10 @@ export class SettingsPage {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.SUCCESS'),
-          });
+          this.toastService.success();
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
