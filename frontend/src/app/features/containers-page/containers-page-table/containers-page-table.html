@@ -30,54 +30,21 @@
       </th>
       <th colspan="4"></th>
       <th>
-        <p-split-button
-          [disabled]="isLoading()"
-          [label]="'GENERAL.REFRESH' | translate"
-          [model]="headerButtonMenu()"
-          (onClick)="updateList()"
-        ></p-split-button>
+        <p-button-group>
+          <p-button
+            [loading]="isLoading()"
+            [label]="'GENERAL.REFRESH' | translate"
+            (onClick)="updateList()"
+          ></p-button>
+          <p-button
+            severity="success"
+            [loading]="checkAllActive()"
+            [label]="'CONTAINERS.TABLE.CHECK_ALL' | translate"
+            (onClick)="checkAll()"
+          ></p-button>
+        </p-button-group>
       </th>
     </tr>
-
-    @if (checkAllProgress(); as prog) {
-      <tr>
-        <th colspan="6">
-          @if (prog.status !== ECheckStatus.DONE && prog.status !== ECheckStatus.ERROR) {
-            <p-progress-bar
-              [style.height.px]="6"
-              [showValue]="false"
-              mode="indeterminate"
-            ></p-progress-bar>
-          } @else {
-            <section class="check-results">
-              @if (prog.updated !== undefined) {
-                <p-tag [severity]="prog.updated > 0 ? 'success' : 'secondary'">
-                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.UPDATED' | translate }}: {{ prog.updated }}
-                </p-tag>
-              }
-              @if (prog.available !== undefined) {
-                <p-tag [severity]="prog.available > 0 ? 'info' : 'secondary'">
-                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.AVAILABLE' | translate }}:
-                  {{ prog.available }}
-                </p-tag>
-              }
-
-              @if (prog.rolledback !== undefined) {
-                <p-tag [severity]="prog.rolledback > 0 ? 'warn' : 'secondary'">
-                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.ROLLEDBACK' | translate }}:
-                  {{ prog.rolledback }}
-                </p-tag>
-              }
-              @if (prog.failed !== undefined) {
-                <p-tag [severity]="prog.failed > 0 ? 'danger' : 'secondary'">
-                  {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.FAILED' | translate }}: {{ prog.failed }}
-                </p-tag>
-              }
-            </section>
-          }
-        </th>
-      </tr>
-    }
 
     <tr>
       <th
@@ -183,12 +150,22 @@
         @if (!container.is_self) {
           @if (container.update_available) {
             <p-button
+              [loading]="
+                container.checkStatus &&
+                container.checkStatus !== ECheckStatus.DONE &&
+                container.checkStatus !== ECheckStatus.ERROR
+              "
               [label]="'CONTAINERS.TABLE.UPDATE' | translate"
               severity="success"
               (onClick)="checkContainer(container.name, true)"
             ></p-button>
           } @else {
             <p-button
+              [loading]="
+                container.checkStatus &&
+                container.checkStatus !== ECheckStatus.DONE &&
+                container.checkStatus !== ECheckStatus.ERROR
+              "
               [label]="'CONTAINERS.TABLE.CHECK' | translate"
               (onClick)="checkContainer(container.name, false)"
             ></p-button>
@@ -196,22 +173,6 @@
         }
       </td>
     </tr>
-
-    @if (
-      container.checkStatus &&
-      container.checkStatus !== ECheckStatus.DONE &&
-      container.checkStatus !== ECheckStatus.ERROR
-    ) {
-      <tr>
-        <td colspan="6">
-          <p-progress-bar
-            [style.height.px]="6"
-            [showValue]="false"
-            mode="indeterminate"
-          ></p-progress-bar>
-        </td>
-      </tr>
-    }
 
     <ng-template
       #expandedrow
@@ -260,3 +221,26 @@
     }
   </section>
 </ng-template>
+
+<p-dialog
+  [header]="'CONTAINERS.TABLE.CHECK_ALL_COMPLETED' | translate"
+  [modal]="true"
+  [draggable]="false"
+  [visible]="checkAllDialogVisible()"
+  (visibleChange)="checkAllDialogVisible.set(false)"
+>
+  @if (checkAllProgress(); as prog) {
+    <section class="check-results">
+      <span>
+        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.UPDATED' | translate }}: {{ prog.updated }}
+      </span>
+      <span>
+        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.AVAILABLE' | translate }}: {{ prog.available }}
+      </span>
+      <span>
+        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.ROLLEDBACK' | translate }}: {{ prog.rolledback }}
+      </span>
+      <span> {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.FAILED' | translate }}: {{ prog.failed }} </span>
+    </section>
+  }
+</p-dialog>

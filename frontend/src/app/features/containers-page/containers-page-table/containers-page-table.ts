@@ -9,13 +9,10 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { MenuItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
@@ -30,11 +27,11 @@ import {
 } from 'src/app/entities/containers/containers-interface';
 import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
 import { Tooltip } from 'primeng/tooltip';
-import { MenuModule } from 'primeng/menu';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { SplitButtonModule } from 'primeng/splitbutton';
 import { FieldsetModule } from 'primeng/fieldset';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { ButtonGroup } from 'primeng/buttongroup';
+import { DialogModule } from 'primeng/dialog';
 
 type TContainer = IContainer & {
   checkStatus?: ECheckStatus;
@@ -49,9 +46,7 @@ type TContainer = IContainer & {
     KeyValuePipe,
     ToggleButtonModule,
     FormsModule,
-    ProgressBarModule,
     TagModule,
-    SkeletonModule,
     ButtonModule,
     IconFieldModule,
     InputTextModule,
@@ -59,9 +54,9 @@ type TContainer = IContainer & {
     NaiveDatePipe,
     DatePipe,
     Tooltip,
-    MenuModule,
-    SplitButtonModule,
     FieldsetModule,
+    ButtonGroup,
+    DialogModule,
   ],
   templateUrl: './containers-page-table.html',
   styleUrl: './containers-page-table.scss',
@@ -92,18 +87,13 @@ export class ContainersPageTable {
   public readonly list = signal<Array<TContainer>>([]);
 
   public readonly checkAllProgress = signal<ICheckProgress>(null);
-  public readonly headerButtonMenu = computed<MenuItem[]>(() => {
+  public readonly checkAllActive = computed(() => {
     const checkAllProgress = this.checkAllProgress();
-    const checkStatus = checkAllProgress?.status;
-    const translates = this.translateService.instant('CONTAINERS.TABLE.HEADER_BUTTON_MENU');
-    return [
-      {
-        label: translates.CHECK_ALL,
-        command: () => this.checkAll(),
-        disabled: checkStatus && ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkStatus),
-      },
-    ];
+    return (
+      checkAllProgress && ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkAllProgress.status)
+    );
   });
+  public readonly checkAllDialogVisible = signal<boolean>(false);
 
   constructor() {
     this.updateList();
@@ -217,6 +207,7 @@ export class ContainersPageTable {
             },
             complete: () => {
               this.updateList();
+              this.checkAllDialogVisible.set(true);
             },
           });
         },
