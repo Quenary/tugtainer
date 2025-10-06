@@ -1,3 +1,21 @@
+# [1.1.0](https://github.com/Quenary/tugtainer/compare/v1.0.3...v1.1.0) (2025-10-06)
+
+
+### Bug Fixes
+
+* dt removed from nitification ([45d00ac](https://github.com/Quenary/tugtainer/commit/45d00ace971f8988108b3c966220d0e53c5f1af4))
+* **frontend:** app settings presentation ([4706a3e](https://github.com/Quenary/tugtainer/commit/4706a3e2e88a9240611aa6af79c74a50b063db72))
+* **frontend:** check progress rendering ([c031d63](https://github.com/Quenary/tugtainer/commit/c031d63db62066bb79334413877d92b02229fc1d))
+* settings enum ([3842cd7](https://github.com/Quenary/tugtainer/commit/3842cd714ff998777ddc8913824aec70ec0e10a2))
+
+
+### Features
+
+* **backend:** scheduled prune ([c3b87ef](https://github.com/Quenary/tugtainer/commit/c3b87ef4ff48f043a2e496f3728f6795f3279c65))
+* **frontend:** add cont multisort ([f4df035](https://github.com/Quenary/tugtainer/commit/f4df035bb52a21056564a274612522b1a3acdf43))
+* **frontend:** check complete dialog ([97b200f](https://github.com/Quenary/tugtainer/commit/97b200f719171295d5ee3266e57fa53f10f14a9d))
+* images ([b810c05](https://github.com/Quenary/tugtainer/commit/b810c052be4539a3accd1f7c5f412bd1736daef8))
+
 ## [1.0.3](https://github.com/Quenary/tugtainer/compare/v1.0.2...v1.0.3) (2025-10-04)
 
 
