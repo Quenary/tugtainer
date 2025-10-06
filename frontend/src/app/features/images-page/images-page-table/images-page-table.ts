@@ -99,7 +99,7 @@ export class ImagesPageTable {
       )
       .subscribe({
         next: (res) => {
-          const reclaimed = res.SpaceReclaimed.toFixed(2).replace('.00', '');
+          const reclaimed = (res.SpaceReclaimed / 1024 / 1024).toFixed(2).replace('.00', '');
           const detail = this.translateService.instant('IMAGES.TABLE.PRUNE_SPACE_RECLAIMED', {
             value: reclaimed,
           });
