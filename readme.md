@@ -27,10 +27,10 @@ docker pull quenary/tugtainer:latest
 
 # run container
 docker run -d -p 9412:80 \
---name=tugtainer \
---restart=unless-stopped \
--v tugtainer_data:/tugtainer \
--v /var/run/docker.sock:/var/run/docker.sock \
+    --name=tugtainer \
+    --restart=unless-stopped \
+    -v tugtainer_data:/tugtainer \
+    -v /var/run/docker.sock:/var/run/docker.sock \
 quenary/tugtainer:latest
 ```
 

@@ -54,7 +54,7 @@ docker run -d -p 9412:80 \\
   --name=tugtainer \\
   --restart=unless-stopped \\
   -v tugtainer_data:/tugtainer \\
-  --health-cmd "python -c 'import urllib.request; exit(0) if urllib.request.urlopen(\"http://localhost:8000/api/public/health\").getcode() == 200 else exit(1)'" \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
   quenary/tugtainer:latest
 `;
   public readonly version$ = this.publicApiService.getVersion().pipe(
