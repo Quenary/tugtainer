@@ -8,8 +8,6 @@ import { ConfirmPopup } from 'primeng/confirmpopup';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { SplitButtonModule } from 'primeng/splitbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
@@ -25,11 +23,9 @@ import { IImage } from 'src/app/entities/images/images-interface';
     ButtonModule,
     TranslatePipe,
     TagModule,
-    ProgressBarModule,
     IconFieldModule,
     InputTextModule,
     InputIconModule,
-    SplitButtonModule,
     ConfirmPopup,
     ButtonGroupModule,
     DatePipe,

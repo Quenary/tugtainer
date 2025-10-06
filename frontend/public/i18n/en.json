@@ -48,9 +48,8 @@
   "CONTAINERS": {
     "TABLE": {
       "SEARCH_PLACEHOLDER": "Name or Short ID",
-      "HEADER_BUTTON_MENU": {
-        "CHECK_ALL": "Check all"
-      },
+      "CHECK_ALL": "Check all",
+      "CHECK_ALL_COMPLETED": "Check completed",
       "HEADER_PROGRESS": {
         "UPDATED": "Updated",
         "AVAILABLE": "Available",
