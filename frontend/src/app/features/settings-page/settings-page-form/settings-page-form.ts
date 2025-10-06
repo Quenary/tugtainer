@@ -16,8 +16,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MessageService } from 'primeng/api';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, finalize, of } from 'rxjs';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import {
@@ -26,7 +25,6 @@ import {
   ISetting,
   ISettingUpdate,
 } from 'src/app/entities/settings/settings-interface';
-import { parseError } from 'src/app/shared/functions/parse-error.function';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
 import { ButtonModule } from 'primeng/button';
@@ -37,6 +35,7 @@ import { FluidModule } from 'primeng/fluid';
 import { NgTemplateOutlet } from '@angular/common';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ToggleButtonModule } from 'primeng/togglebutton';
+import { ToastService } from 'src/app/core/services/toast.service';
 
 @Component({
   selector: 'app-settings-page-form',
@@ -45,7 +44,7 @@ import { ToggleButtonModule } from 'primeng/togglebutton';
     ButtonModule,
     InputTextModule,
     InputNumberModule,
-    TranslateModule,
+    TranslatePipe,
     TooltipModule,
     FluidModule,
     NgTemplateOutlet,
@@ -59,7 +58,7 @@ import { ToggleButtonModule } from 'primeng/togglebutton';
 export class SettingsPageForm {
   private readonly settingsApiService = inject(SettingsApiService);
   private readonly translateService = inject(TranslateService);
-  private readonly messageService = inject(MessageService);
+  private readonly toastService = inject(ToastService);
 
   public readonly OnSubmit = output<ISettingUpdate[]>();
 
@@ -123,11 +122,7 @@ export class SettingsPageForm {
           }
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }
@@ -173,17 +168,10 @@ export class SettingsPageForm {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: this.translateService.instant('GENERAL.SUCCESS'),
-          });
+          this.toastService.success();
         },
         error: (error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: this.translateService.instant('GENERAL.ERROR'),
-            detail: parseError(error),
-          });
+          this.toastService.error(error);
         },
       });
   }

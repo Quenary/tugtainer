@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormGroup, FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
 import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';
@@ -8,7 +8,7 @@ import { IftaLabelModule } from 'primeng/iftalabel';
 
 @Component({
   selector: 'app-login-form',
-  imports: [TranslateModule, ReactiveFormsModule, ButtonModule, PasswordModule, IftaLabelModule],
+  imports: [TranslatePipe, ReactiveFormsModule, ButtonModule, PasswordModule, IftaLabelModule],
   templateUrl: './login-form.html',
   styleUrl: './login-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
