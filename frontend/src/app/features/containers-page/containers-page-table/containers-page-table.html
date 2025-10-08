@@ -1,6 +1,6 @@
 <p-table
   #dt2
-  [globalFilterFields]="['name', 'short_id']"
+  [globalFilterFields]="['name', 'id']"
   dataKey="name"
   sortMode="multiple"
   [multiSortMeta]="[
@@ -184,8 +184,8 @@
             <p-fieldset [legend]="'CONTAINERS.TABLE.IMAGE' | translate">
               {{ container.image }}
             </p-fieldset>
-            <p-fieldset [legend]="'CONTAINERS.TABLE.SHORT_ID' | translate">
-              {{ container.short_id }}
+            <p-fieldset [legend]="'CONTAINERS.TABLE.ID' | translate">
+              {{ container.id }}
             </p-fieldset>
             <p-fieldset [legend]="'CONTAINERS.TABLE.PORTS' | translate">
               <ng-container
@@ -214,7 +214,7 @@
     @if (ports) {
       @for (item of ports | keyvalue; track item) {
         @for (hp of $any(item.value); track hp) {
-          {{ hp.HostIp }}:{{ hp.HostPort }}<br />
+          {{ hp.host_ip }}:{{ hp.host_port }}<br />
         }
         <span>:{{ item.key }}</span>
       }

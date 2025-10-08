@@ -47,7 +47,7 @@
   },
   "CONTAINERS": {
     "TABLE": {
-      "SEARCH_PLACEHOLDER": "Name or Short ID",
+      "SEARCH_PLACEHOLDER": "Name or ID",
       "CHECK_ALL": "Check all",
       "CHECK_ALL_COMPLETED": "Check completed",
       "HEADER_PROGRESS": {
@@ -57,7 +57,7 @@
         "FAILED": "Failed"
       },
       "NAME": "Name",
-      "SHORT_ID": "Short ID",
+      "ID": "ID",
       "IMAGE": "Image",
       "UPDATE_AVAILABLE": "Update available",
       "STATUS": "Status",
