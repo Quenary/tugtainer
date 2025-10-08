@@ -1,7 +1,8 @@
 from app.db import ContainersModel
 from app.schemas import ContainerGetResponseBody
-from docker.models.containers import Container
 from app.helpers import is_self_container
+from python_on_whales import Container
+from app.core.container.util import get_container_health_status_str
 
 
 def map_container_schema(
@@ -14,11 +15,11 @@ def map_container_schema(
     """
     _item = ContainerGetResponseBody(
         name=str(d_cont.name),
-        image=d_cont.attrs.get("Config", {}).get("Image", ""),
-        short_id=d_cont.short_id,
-        ports=d_cont.ports,
-        status=d_cont.attrs.get("State", {}).get("Status", ""),
-        health=str(d_cont.health),
+        image=str(d_cont.config.image),
+        id=d_cont.id,
+        ports=d_cont.host_config.port_bindings,
+        status=str(d_cont.state.status),
+        health=get_container_health_status_str(d_cont),
         is_self=is_self_container(d_cont),
     )
     if db_cont:

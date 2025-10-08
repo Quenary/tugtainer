@@ -1,7 +1,5 @@
 import asyncio
-from docker.models.containers import Container
 from fastapi import APIRouter, Depends
-import docker
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth_core import is_authorized
@@ -23,8 +21,10 @@ from app.core.containers_core import (
 )
 from app.helpers import is_self_container
 from .util import map_container_schema
+from python_on_whales import docker
+from python_on_whales import Container
 
-_client = docker.from_env()
+# _client = docker.from_env()
 router = APIRouter(
     prefix="/containers",
     tags=["containers"],
@@ -38,12 +38,12 @@ router = APIRouter(
 async def containers_list(
     session: AsyncSession = Depends(get_async_session),
 ) -> list[ContainerGetResponseBody]:
-    containers: list[Container] = _client.containers.list(all=True)
+    containers: list[Container] = docker.container.list(all=True)
     _list: list[ContainerGetResponseBody] = []
     for c in containers:
         stmt = (
             select(ContainersModel)
-            .where(ContainersModel.name == str(c.name))
+            .where(ContainersModel.name == c.name)
             .limit(1)
         )
         result = await session.execute(stmt)
@@ -66,7 +66,7 @@ async def patch_container_data(
     db_cont = await insert_or_update_container(
         session, name, body.model_dump(exclude_unset=True)
     )
-    d_cont = _client.containers.get(db_cont.name)
+    d_cont = docker.container.inspect(db_cont.name)
     return map_container_schema(d_cont, db_cont)
 
 
@@ -114,7 +114,7 @@ def check_progress(id: str) -> CheckStatusDict | None:
 async def is_update_available_self(
     session: AsyncSession = Depends(get_async_session),
 ):
-    containers: list[Container] = _client.containers.list()
+    containers: list[Container] = docker.container.list()
     self_c = [item for item in containers if is_self_container(item)]
     if not self_c:
         return False

@@ -1,21 +1,20 @@
-from docker.models.images import Image
 from app.schemas import ImageGetResponseBody
+from python_on_whales import Image
 
 
 def map_image_schema(
     image: Image, dangling: bool, unused: bool
 ) -> ImageGetResponseBody:
-    repodigests: list[str] = image.attrs.get("RepoDigests", [])
+    repodigests: list[str] = image.repo_digests
     repository = repodigests[0].split("@")[0] if repodigests else ""
-    size = image.attrs.get("Size", 0)
-    created = image.attrs.get("Created", "")
+    size = image.size
     _image = ImageGetResponseBody(
         repository=repository,
-        id=str(image.id),
+        id=image.id,
         dangling=dangling,
         unused=unused,
-        tags=image.tags,
-        size=size,
-        created=created,
+        tags=image.repo_tags,
+        size=image.size,
+        created=image.created,
     )
     return _image

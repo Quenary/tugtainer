@@ -1,4 +1,4 @@
-from docker.models.containers import Container
+from python_on_whales import Container
 from app.config import Config
 import re
 import logging
@@ -87,10 +87,10 @@ def is_self_container(container: Container) -> bool:
     Check if provided container is self container
     """
     self_id = _get_self_container_id() or ""
-    c_id = container.short_id or container.id or ""
+    c_id = container.id[0:12]
     if c_id and self_id and self_id.startswith(c_id):
         return True
-    c_hostname = container.attrs.get("Config", {}).get("Hostname", "")
+    c_hostname = container.config.hostname
     if (
         c_hostname
         and Config.HOSTNAME

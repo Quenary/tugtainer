@@ -4,7 +4,7 @@
 export interface IContainer {
   name: string;
   image: string;
-  short_id: string;
+  id: string;
   ports: {
     [K: string]: IContainerPort[];
   };
@@ -20,8 +20,8 @@ export interface IContainer {
   modified_at: string;
 }
 export interface IContainerPort {
-  HostIp: string;
-  HostPort: string;
+  host_ip: string;
+  host_port: string;
 }
 
 export interface IContainerPatchBody {
