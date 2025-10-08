@@ -14,12 +14,13 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 ## Main features:
 
-- Crontab expression scheduling
-- Notifications for a wide range of services
-- Per container selection
+- Web UI
+- Authentication
+- Crontab scheduling
+- Notifications to a wide range of services
+- Per-container config (check only or auto-update)
 - Manual check and update
-- Web UI with auth
-- Auto/manual image prune
+- Automatic/manual image pruning
 
 ## Deploy:
 
@@ -53,3 +54,8 @@ Environment variables are not required, but you can still define some. There is 
 
 - add unit tests
 - filter cont in notification (dont notify already notified)
+- Dozzle integration or something more universal (list of urls for redirects?)
+- Docker compose support (display stacks, maybe update only together?)
+- Swarm support?
+- Remote hosts via ssh tunneling or tls
+- Try to add release notes (from labels or something)
