@@ -1,4 +1,3 @@
-import docker
 from fastapi import APIRouter, Depends
 from app.core.auth_core import is_authorized
 from app.schemas import ImageGetResponseBody, ImagePruneResponseBody

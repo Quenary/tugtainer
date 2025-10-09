@@ -59,3 +59,5 @@ Environment variables are not required, but you can still define some. There is 
 - Swarm support?
 - Remote hosts via ssh tunneling or tls
 - Try to add release notes (from labels or something)
+- Add exited code to container table
+- Remove unused deps

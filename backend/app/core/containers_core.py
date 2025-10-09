@@ -36,6 +36,9 @@ from app.core.container.util import (
     get_container_health_status_str,
     get_container_image_spec,
     get_container_image_id,
+    get_container_restart_policy_str,
+    normalize_path,
+    map_tmpfs_dict_to_list,
 )
 
 _ROLLBACK_TIMEOUT = 60
@@ -209,20 +212,17 @@ def get_container_config(
     # Remove any ports coz those are not supported in host network mode
     if NETWORK_MODE in ["host", "none"]:
         PUBLISH = None
-
     # Networks
     NETWORKS = list((NETWORK_SETTINGS.networks or {}).keys())
-    NETWORKS = [n for n in NETWORKS if n not in ["host", "bridge"]]
 
     CONFIG = {
         "name": container.name,
-        "detach": True,
         "blkio_weight": HOST_CONFIG.blkio_weight,
         "blkio_weight_device": HOST_CONFIG.blkio_weight_device,
         "command": CONFIG.cmd,
         "cap_add": HOST_CONFIG.cap_add,
         "cap_drop": HOST_CONFIG.cap_drop,
-        "cgroup_parent": HOST_CONFIG.cgroup_parent,
+        "cgroup_parent": normalize_path(HOST_CONFIG.cgroup_parent),
         "cgroupns": HOST_CONFIG.cgroupns_mode,
         "cpu_period": HOST_CONFIG.cpu_period,
         "cpu_quota": HOST_CONFIG.cpu_quota,
@@ -268,7 +268,9 @@ def get_container_config(
         "publish": PUBLISH,
         "publish_all": HOST_CONFIG.publish_all_ports,
         "read_only": HOST_CONFIG.readonly_rootfs,
-        "restart": HOST_CONFIG.restart_policy,
+        "restart": get_container_restart_policy_str(
+            HOST_CONFIG.restart_policy
+        ),
         "runtime": HOST_CONFIG.runtime,
         "security_options": HOST_CONFIG.security_opt,
         "shm_size": HOST_CONFIG.shm_size,
@@ -277,14 +279,14 @@ def get_container_config(
         "storage_options": HOST_CONFIG.storage_opt,
         "sysctl": HOST_CONFIG.sysctls,
         "systemd": CONFIG.systemd_mode,
-        # "tmpfs": HOST_CONFIG.tmpfs, TODO
+        "tmpfs": map_tmpfs_dict_to_list(HOST_CONFIG.tmpfs),
         "ulimit": map_ulimits_to_arg(HOST_CONFIG.ulimits),
         "user": CONFIG.user,
         "userns": HOST_CONFIG.userns_mode,
         "uts": HOST_CONFIG.uts_mode,
         "volume_driver": HOST_CONFIG.volume_driver,
         "volumes_from": HOST_CONFIG.volumes_from,
-        "workdir": CONFIG.working_dir,
+        "workdir": normalize_path(CONFIG.working_dir),
     }
     CONFIG = {k: v for k, v in CONFIG.items() if v}
 
@@ -372,7 +374,9 @@ async def _recreate_container(
                 return (new_container, True)
 
             logging.info(f"Starting new container {NAME}...")
-            await LOOP.run_in_executor(executor, new_container.start)
+            await LOOP.run_in_executor(
+                executor, lambda: new_container.start()
+            )
 
             logging.info(f"Waiting for healthchecks of {NAME}")
             if await _wait_for_container_healthy(new_container):
@@ -445,10 +449,6 @@ async def check_container(
     Should not raises errors, only logging.
     :param name: name or id
     :param update: whether to update container (only check if false)
-    :returns 0: Container if there is new one (updated or rolled-back after fail)
-    :returns 1: Available flag (new image, but not updated)
-    :returns 2: Updated flag (that is, not rolled-back)
-    :returns 3: Exception if there was any
     """
     STATUS = get_check_status(name)
     ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
@@ -516,6 +516,7 @@ async def check_container(
         )
         return CheckContainerResult(available=False, updated=False)
 
+    logging.info(f"New image was found for the container '{name}'")
     is_self = is_self_container(container)
     if is_self:
         _update_check_status(name, {"status": ECheckStatus.DONE})

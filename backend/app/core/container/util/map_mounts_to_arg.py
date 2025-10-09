@@ -49,8 +49,9 @@ def map_mounts_to_arg(
             if driver != "local":
                 mount_list.append(f"volume-driver={driver}")
                 # TODO add volume driver options
-
-        mount_list.append(f"source={source}")
+        if source:
+            # Source could be emptry e.g. for tmpfs mount
+            mount_list.append(f"source={source}")
         docker_mounts.append(mount_list)
 
     return docker_mounts
