@@ -450,110 +450,146 @@ async def check_container(
     :param name: name or id
     :param update: whether to update container (only check if false)
     """
-    STATUS = get_check_status(name)
-    ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
-    LOOP = asyncio.get_running_loop()
-
-    if STATUS and STATUS.get("status") not in ALLOW_STATUSES:
-        logging.warning(
-            f"Check and update of container {name} is already running"
-        )
-        return CheckContainerResult(available=False, updated=False)
-
-    _set_check_status(name, {"status": ECheckStatus.PREPARING})
-    container = await LOOP.run_in_executor(
-        None, lambda: docker.container.inspect(name)
-    )
-    if not container:
-        _update_check_status(name, {"status": ECheckStatus.DONE})
-        logging.warning(
-            f"Container '{name}' not found, cannot check for update"
-        )
-        return CheckContainerResult(available=False, updated=False)
-
-    _update_check_status(name, {"status": ECheckStatus.CHECKING})
-    logging.info(f"Start checking for updates of container '{name}'")
-    IMAGE_SPEC = get_container_image_spec(container)
-    if not IMAGE_SPEC:
-        logging.warning(
-            f"Cannot check container '{name}' without image spec."
-        )
-        return CheckContainerResult(available=False, updated=False)
-
-    IMAGE_ID = get_container_image_id(container)
-    OLD_IMAGE: Image
-    if IMAGE_ID:
-        OLD_IMAGE = await LOOP.run_in_executor(
-            None, lambda: docker.image.inspect(IMAGE_ID)
-        )
-    else:
-        OLD_IMAGE = await LOOP.run_in_executor(
-            None, lambda: docker.image.inspect(IMAGE_SPEC)
-        )
-    NEW_IMAGE = await LOOP.run_in_executor(
-        None, lambda: docker.image.pull(IMAGE_SPEC)
-    )
-    if not isinstance(NEW_IMAGE, Image):
-        logging.warning(f"Failed to pull new image for {name}")
-        return CheckContainerResult(available=False, updated=False)
-    update_available: bool = bool(
-        OLD_IMAGE
-        and NEW_IMAGE
-        and OLD_IMAGE.repo_digests != NEW_IMAGE.repo_digests
-    )
-    await db_update_container(
-        str(name),
-        {
-            "update_available": update_available,
-            "checked_at": now(),
-        },
-    )
-
-    if not update_available:
-        _update_check_status(name, {"status": ECheckStatus.DONE})
-        logging.info(
-            f"No new image was found for the container '{name}'"
-        )
-        return CheckContainerResult(available=False, updated=False)
-
-    logging.info(f"New image was found for the container '{name}'")
-    is_self = is_self_container(container)
-    if is_self:
-        _update_check_status(name, {"status": ECheckStatus.DONE})
-        logging.warning(
-            f"Update is available, but self container cannot be updated with that func"
-        )
-        return CheckContainerResult(available=True, updated=False)
-
-    if not update:
-        _update_check_status(name, {"status": ECheckStatus.DONE})
-        logging.info(f"Check of container '{name}' complete")
-        return CheckContainerResult(available=True, updated=False)
-
-    _update_check_status(name, {"status": ECheckStatus.UPDATING})
-    logging.info(f"New image found for container '{name}'")
-
     try:
-        container, updated = await _recreate_container(
-            container, OLD_IMAGE, NEW_IMAGE
-        )
-        if updated:
-            await db_update_container(
-                str(name),
-                {
-                    "update_available": False,
-                    "updated_at": now(),
-                },
+        STATUS = get_check_status(name)
+        ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
+        LOOP = asyncio.get_running_loop()
+
+        if STATUS and STATUS.get("status") not in ALLOW_STATUSES:
+            logging.warning(
+                f"Check and update of container {name} is already running"
             )
-        _update_check_status(name, {"status": ECheckStatus.DONE})
-        return CheckContainerResult(
-            container=container, available=False, updated=updated
+            return CheckContainerResult(
+                available=False, updated=False
+            )
+
+        _set_check_status(name, {"status": ECheckStatus.PREPARING})
+        container = await LOOP.run_in_executor(
+            None, lambda: docker.container.inspect(name)
         )
+        if not container:
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            logging.warning(
+                f"Container '{name}' not found, cannot check for update"
+            )
+            return CheckContainerResult(
+                available=False, updated=False
+            )
+
+        _update_check_status(name, {"status": ECheckStatus.CHECKING})
+        logging.info(
+            f"Start checking for updates of container '{name}'"
+        )
+        IMAGE_SPEC = get_container_image_spec(container)
+        if not IMAGE_SPEC:
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            logging.warning(
+                f"Cannot check container '{name}' without image spec."
+            )
+            return CheckContainerResult(
+                available=False, updated=False
+            )
+
+        IMAGE_ID = get_container_image_id(container)
+        OLD_IMAGE: Image
+        if IMAGE_ID:
+            OLD_IMAGE = await LOOP.run_in_executor(
+                None, lambda: docker.image.inspect(IMAGE_ID)
+            )
+        else:
+            OLD_IMAGE = await LOOP.run_in_executor(
+                None, lambda: docker.image.inspect(IMAGE_SPEC)
+            )
+        if not OLD_IMAGE.repo_digests:
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            logging.warning(
+                f"Image of '{name}' missing repo digests. Presumably a local image. Exiting."
+            )
+            return CheckContainerResult(
+                available=False, updated=False
+            )
+
+        NEW_IMAGE = await LOOP.run_in_executor(
+            None, lambda: docker.image.pull(IMAGE_SPEC)
+        )
+        if not isinstance(NEW_IMAGE, Image):
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            logging.warning(f"Failed to pull new image for '{name}'")
+            return CheckContainerResult(
+                available=False, updated=False
+            )
+        update_available: bool = bool(
+            OLD_IMAGE
+            and NEW_IMAGE
+            and OLD_IMAGE.repo_digests != NEW_IMAGE.repo_digests
+        )
+        await db_update_container(
+            str(name),
+            {
+                "update_available": update_available,
+                "checked_at": now(),
+            },
+        )
+
+        if not update_available:
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            logging.info(
+                f"No new image was found for the container '{name}'"
+            )
+            return CheckContainerResult(
+                available=False, updated=False
+            )
+
+        logging.info(
+            f"New image was found for the container '{name}'"
+        )
+        is_self = is_self_container(container)
+        if is_self:
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            logging.info(
+                f"Update is available, but self container cannot be updated with that func"
+            )
+            return CheckContainerResult(available=True, updated=False)
+
+        if not update:
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            logging.info(f"Check of container '{name}' complete")
+            return CheckContainerResult(available=True, updated=False)
+
+        _update_check_status(name, {"status": ECheckStatus.UPDATING})
+        logging.info(f"New image found for container '{name}'")
+
+        try:
+            container, updated = await _recreate_container(
+                container, OLD_IMAGE, NEW_IMAGE
+            )
+            if updated:
+                await db_update_container(
+                    str(name),
+                    {
+                        "update_available": False,
+                        "updated_at": now(),
+                    },
+                )
+            _update_check_status(name, {"status": ECheckStatus.DONE})
+            return CheckContainerResult(
+                container=container, available=False, updated=updated
+            )
+        except Exception as e:
+            logging.error(f"Failed to update container '{name}'")
+            logging.exception(e)
+            _update_check_status(name, {"status": ECheckStatus.ERROR})
+            return CheckContainerResult(
+                available=True, updated=False, exception=e
+            )
     except Exception as e:
-        logging.error(f"Failed to update container {name}: {e}")
+        logging.error(
+            f"Error while checking container '{name}' update:"
+        )
+        logging.exception(e)
         _update_check_status(name, {"status": ECheckStatus.ERROR})
         return CheckContainerResult(
-            available=True, updated=False, exception=e
+            available=False, updated=False, exception=e
         )
 
 
