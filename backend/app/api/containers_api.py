@@ -11,13 +11,15 @@ from app.db import (
     get_async_session,
     ContainersModel,
     insert_or_update_container,
+    ContainerInsertOrUpdateData,
 )
 from app.core.containers_core import (
-    CheckStatusDict,
     check_and_update_all_containers,
     check_container,
-    get_check_status,
     _ALL_CONTAINERS_STATUS_KEY,
+    ContainerCheckData,
+    AllContainersCheckData,
+    ProcessCache,
 )
 from app.helpers import is_self_container
 from .util import map_container_schema
@@ -63,7 +65,11 @@ async def patch_container_data(
     session: AsyncSession = Depends(get_async_session),
 ) -> ContainerGetResponseBody:
     db_cont = await insert_or_update_container(
-        session, name, body.model_dump(exclude_unset=True)
+        session,
+        name,
+        ContainerInsertOrUpdateData(
+            **body.model_dump(exclude_unset=True)
+        ),
     )
     d_cont = docker.container.inspect(db_cont.name)
     return map_container_schema(d_cont, db_cont)
@@ -97,12 +103,25 @@ async def update_container(name: str) -> str:
 
 
 @router.get(
+    path="/check_progress/all",
+    description="Get progress of check and update process of all containers",
+    response_model=AllContainersCheckData,
+)
+def check_progress_all() -> AllContainersCheckData | None:
+    CACHE = ProcessCache[AllContainersCheckData](
+        _ALL_CONTAINERS_STATUS_KEY
+    )
+    return CACHE.get()
+
+
+@router.get(
     path="/check_progress/{id}",
     description="Get progress of check and update process",
-    response_model=CheckStatusDict,
+    response_model=ContainerCheckData,
 )
-def check_progress(id: str) -> CheckStatusDict | None:
-    return get_check_status(id)
+def check_progress(id: str) -> ContainerCheckData | None:
+    CACHE = ProcessCache[ContainerCheckData](id)
+    return CACHE.get()
 
 
 @router.get(
