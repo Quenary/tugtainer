@@ -1,16 +1,13 @@
 from python_on_whales import docker, Container, Image
 from python_on_whales.components.container.models import Mount
 import logging
-from typing import Any, NotRequired, TypedDict, cast
+from typing import NotRequired, TypedDict, cast
 from sqlalchemy import and_, select
-import time
 import asyncio
 import concurrent.futures
-from cachetools import TTLCache
 from app.db import (
     ContainersModel,
     async_session_maker,
-    insert_or_update_container,
     get_setting_from_db,
     get_setting_typed_value,
 )
@@ -23,7 +20,6 @@ from app.helpers import (
     subtract_dict,
 )
 import traceback
-import re
 from app.config import Config
 from app.enums.settings_enum import ESettingKey
 from app.core.container.util import (
@@ -33,55 +29,21 @@ from app.core.container.util import (
     map_mounts_to_arg,
     map_port_bindings_to_list,
     map_devices_to_list,
-    get_container_health_status_str,
     get_container_image_spec,
     get_container_image_id,
     get_container_restart_policy_str,
     normalize_path,
     map_tmpfs_dict_to_list,
+    wait_for_container_healthy,
+    update_container_db_data,
+)
+from app.core.container import (
+    ContainerCheckData,
+    AllContainersCheckData,
+    ProcessCache,
 )
 
-_ROLLBACK_TIMEOUT = 60
-
-_STATUS_CACHE = TTLCache(maxsize=10, ttl=600)
 _ALL_CONTAINERS_STATUS_KEY = "check_and_update_all_containers"
-
-
-class CheckStatusDict(TypedDict):
-    status: NotRequired[ECheckStatus]  # status code
-    available: NotRequired[
-        int
-    ]  # Count of not updated containers (check only)
-    updated: NotRequired[int]  # count of updated containers
-    rolledback: NotRequired[int]  # count of rolled-back after fail
-    failed: NotRequired[int]  # count of failed updates
-
-
-def _set_check_status(key: str, value: CheckStatusDict):
-    """Set new check status"""
-    _STATUS_CACHE[key] = value
-
-
-def _update_check_status(key: str, value: CheckStatusDict):
-    """Update existing check status"""
-    current = _STATUS_CACHE.get(key) or {}
-    _STATUS_CACHE[key] = {
-        **current,
-        **value,
-    }
-
-
-def get_check_status(key: str) -> CheckStatusDict | None:
-    """Get check status"""
-    return _STATUS_CACHE.get(key)
-
-
-async def db_update_container(name: str, data: dict):
-    """
-    Helper for updating container data in db
-    """
-    async with async_session_maker() as session:
-        await insert_or_update_container(session, name, data)
 
 
 async def filter_containers_for_check(
@@ -293,26 +255,6 @@ def get_container_config(
     return CONFIG
 
 
-async def _wait_for_container_healthy(
-    container: Container, timeout: int = _ROLLBACK_TIMEOUT
-) -> bool:
-    """Wait for container healthy status or timeout"""
-    start = time.time()
-    while time.time() - start < timeout:
-        container.reload()
-        health = get_container_health_status_str(container)
-        if health == "healthy":
-            return True
-        await asyncio.sleep(5)
-    container.reload()
-    health = get_container_health_status_str(container)
-    status = container.state.status
-    # On last attempt assume unknown is also healthy
-    if status == "running" and health in ["healthy", "unknown"]:
-        return True
-    return False
-
-
 async def _recreate_container(
     existing_container: Container,
     old_image: Image,
@@ -379,7 +321,7 @@ async def _recreate_container(
             )
 
             logging.info(f"Waiting for healthchecks of {NAME}")
-            if await _wait_for_container_healthy(new_container):
+            if await wait_for_container_healthy(new_container):
                 logging.info(
                     f"Container {NAME} is healthy. Update successful."
                 )
@@ -450,8 +392,9 @@ async def check_container(
     :param name: name or id
     :param update: whether to update container (only check if false)
     """
+    CACHE = ProcessCache[ContainerCheckData](name)
     try:
-        STATUS = get_check_status(name)
+        STATUS = CACHE.get()
         ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
         LOOP = asyncio.get_running_loop()
 
@@ -463,12 +406,12 @@ async def check_container(
                 available=False, updated=False
             )
 
-        _set_check_status(name, {"status": ECheckStatus.PREPARING})
+        CACHE.set({"status": ECheckStatus.PREPARING})
         container = await LOOP.run_in_executor(
             None, lambda: docker.container.inspect(name)
         )
         if not container:
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             logging.warning(
                 f"Container '{name}' not found, cannot check for update"
             )
@@ -476,13 +419,13 @@ async def check_container(
                 available=False, updated=False
             )
 
-        _update_check_status(name, {"status": ECheckStatus.CHECKING})
+        CACHE.update({"status": ECheckStatus.CHECKING})
         logging.info(
             f"Start checking for updates of container '{name}'"
         )
         IMAGE_SPEC = get_container_image_spec(container)
         if not IMAGE_SPEC:
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             logging.warning(
                 f"Cannot check container '{name}' without image spec."
             )
@@ -501,7 +444,7 @@ async def check_container(
                 None, lambda: docker.image.inspect(IMAGE_SPEC)
             )
         if not OLD_IMAGE.repo_digests:
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             logging.warning(
                 f"Image of '{name}' missing repo digests. Presumably a local image. Exiting."
             )
@@ -513,7 +456,7 @@ async def check_container(
             None, lambda: docker.image.pull(IMAGE_SPEC)
         )
         if not isinstance(NEW_IMAGE, Image):
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             logging.warning(f"Failed to pull new image for '{name}'")
             return CheckContainerResult(
                 available=False, updated=False
@@ -523,7 +466,7 @@ async def check_container(
             and NEW_IMAGE
             and OLD_IMAGE.repo_digests != NEW_IMAGE.repo_digests
         )
-        await db_update_container(
+        await update_container_db_data(
             str(name),
             {
                 "update_available": update_available,
@@ -532,7 +475,7 @@ async def check_container(
         )
 
         if not update_available:
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             logging.info(
                 f"No new image was found for the container '{name}'"
             )
@@ -545,18 +488,18 @@ async def check_container(
         )
         is_self = is_self_container(container)
         if is_self:
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             logging.info(
                 f"Update is available, but self container cannot be updated with that func"
             )
             return CheckContainerResult(available=True, updated=False)
 
         if not update:
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             logging.info(f"Check of container '{name}' complete")
             return CheckContainerResult(available=True, updated=False)
 
-        _update_check_status(name, {"status": ECheckStatus.UPDATING})
+        CACHE.update({"status": ECheckStatus.UPDATING})
         logging.info(f"New image found for container '{name}'")
 
         try:
@@ -564,21 +507,21 @@ async def check_container(
                 container, OLD_IMAGE, NEW_IMAGE
             )
             if updated:
-                await db_update_container(
+                await update_container_db_data(
                     str(name),
                     {
                         "update_available": False,
                         "updated_at": now(),
                     },
                 )
-            _update_check_status(name, {"status": ECheckStatus.DONE})
+            CACHE.update({"status": ECheckStatus.DONE})
             return CheckContainerResult(
                 container=container, available=False, updated=updated
             )
         except Exception as e:
             logging.error(f"Failed to update container '{name}'")
             logging.exception(e)
-            _update_check_status(name, {"status": ECheckStatus.ERROR})
+            CACHE.update({"status": ECheckStatus.ERROR})
             return CheckContainerResult(
                 available=True, updated=False, exception=e
             )
@@ -587,7 +530,7 @@ async def check_container(
             f"Error while checking container '{name}' update:"
         )
         logging.exception(e)
-        _update_check_status(name, {"status": ECheckStatus.ERROR})
+        CACHE.update({"status": ECheckStatus.ERROR})
         return CheckContainerResult(
             available=False, updated=False, exception=e
         )
@@ -599,7 +542,10 @@ async def check_and_update_all_containers():
     marked for it, as well as self container (check only).
     Should not raises errors, only logging.
     """
-    status = get_check_status(_ALL_CONTAINERS_STATUS_KEY)
+    CACHE = ProcessCache[AllContainersCheckData](
+        _ALL_CONTAINERS_STATUS_KEY
+    )
+    status = CACHE.get()
     allow_statuses = [ECheckStatus.DONE, ECheckStatus.ERROR]
     if status and status.get("status") not in allow_statuses:
         logging.warning(
@@ -607,8 +553,7 @@ async def check_and_update_all_containers():
         )
         return
 
-    _set_check_status(
-        _ALL_CONTAINERS_STATUS_KEY,
+    CACHE.set(
         {"status": ECheckStatus.PREPARING},
     )
     logging.info("Start checking for updates of all containers")
@@ -618,8 +563,7 @@ async def check_and_update_all_containers():
     for_update = await filter_containers_for_update(containers)
     for_update = _sort_containers_by_dependencies(for_update)
 
-    _update_check_status(
-        _ALL_CONTAINERS_STATUS_KEY,
+    CACHE.update(
         {"status": ECheckStatus.CHECKING},
     )
 
@@ -639,8 +583,7 @@ async def check_and_update_all_containers():
             errors.append(_exp)
             failed.append(item)
 
-    _update_check_status(
-        _ALL_CONTAINERS_STATUS_KEY,
+    CACHE.update(
         {
             "status": ECheckStatus.UPDATING,
             "available": len(available),
@@ -661,8 +604,7 @@ async def check_and_update_all_containers():
             errors.append(_exp)
             failed.append(item)
 
-    _update_check_status(
-        _ALL_CONTAINERS_STATUS_KEY,
+    CACHE.update(
         {
             "status": ECheckStatus.DONE,
             "updated": len(updated),

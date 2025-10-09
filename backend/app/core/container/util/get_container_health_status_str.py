@@ -4,6 +4,10 @@ from python_on_whales.components.container.cli_wrapper import (
 
 
 def get_container_health_status_str(c: Container) -> str:
-    if c.state.status and c.state.health:
-        return c.state.health.status or "unknown"
-    return "unknown"
+    """
+    Get container health status str
+    or unknown if health property missing.
+    """
+    if not c.state.health:
+        return "unknown"
+    return c.state.health.status or "unknown"

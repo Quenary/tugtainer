@@ -199,9 +199,9 @@ export class ContainersPageTable {
         }),
       )
       .subscribe({
-        next: (id) => {
+        next: () => {
           this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
-          this.watchCheckProgress(id).subscribe({
+          this.watchCheckProgress('all').subscribe({
             next: (res) => {
               this.checkAllProgress.set(res);
             },
