@@ -24,7 +24,6 @@ from .util import map_container_schema
 from python_on_whales import docker
 from python_on_whales import Container
 
-# _client = docker.from_env()
 router = APIRouter(
     prefix="/containers",
     tags=["containers"],
