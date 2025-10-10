@@ -1,7 +1,6 @@
 from python_on_whales import docker, Container, Image
-from python_on_whales.components.container.models import Mount
 import logging
-from typing import NotRequired, TypedDict, cast
+from typing import NotRequired, TypedDict
 from sqlalchemy import and_, select
 import asyncio
 import concurrent.futures
@@ -16,26 +15,17 @@ from app.enums.check_status_enum import ECheckStatus
 from app.helpers import (
     is_self_container,
     now,
-    env_to_dict,
-    subtract_dict,
 )
 import traceback
 from app.config import Config
 from app.enums.settings_enum import ESettingKey
 from app.core.container.util import (
-    map_ulimits_to_arg,
-    map_healthcheck_to_kwargs,
-    map_log_config_to_kwargs,
-    map_mounts_to_arg,
-    map_port_bindings_to_list,
-    map_devices_to_list,
     get_container_image_spec,
     get_container_image_id,
-    get_container_restart_policy_str,
-    normalize_path,
-    map_tmpfs_dict_to_list,
     wait_for_container_healthy,
     update_container_db_data,
+    get_container_config,
+    merge_container_config_with_image,
 )
 from app.core.container import (
     ContainerCheckData,
@@ -151,110 +141,6 @@ def _sort_containers_by_dependencies(
     return result
 
 
-def get_container_config(
-    container: Container,
-):
-    """Get container config dict that matches kwargs for create/run"""
-    ID = container.id
-    CONFIG = container.config
-    HOST_CONFIG = container.host_config
-    NETWORK_SETTINGS = container.network_settings
-
-    # Do not preserve generated hostname
-    HOSTNAME = CONFIG.hostname
-    if HOSTNAME and HOSTNAME in ID:
-        HOSTNAME = None
-    HOST_CONFIG.mounts
-
-    ENVS = env_to_dict(CONFIG.env)
-
-    PUBLISH = map_port_bindings_to_list(HOST_CONFIG.port_bindings)
-    # Possible values: bridge | none | container:<name|id> (named network) | host
-    NETWORK_MODE = HOST_CONFIG.network_mode
-    # Remove any ports coz those are not supported in host network mode
-    if NETWORK_MODE in ["host", "none"]:
-        PUBLISH = None
-    # Networks
-    NETWORKS = list((NETWORK_SETTINGS.networks or {}).keys())
-
-    CONFIG = {
-        "name": container.name,
-        "blkio_weight": HOST_CONFIG.blkio_weight,
-        "blkio_weight_device": HOST_CONFIG.blkio_weight_device,
-        "command": CONFIG.cmd,
-        "cap_add": HOST_CONFIG.cap_add,
-        "cap_drop": HOST_CONFIG.cap_drop,
-        "cgroup_parent": normalize_path(HOST_CONFIG.cgroup_parent),
-        "cgroupns": HOST_CONFIG.cgroupns_mode,
-        "cpu_period": HOST_CONFIG.cpu_period,
-        "cpu_quota": HOST_CONFIG.cpu_quota,
-        "cpu_rt_period": HOST_CONFIG.cpu_realtime_period,
-        "cpu_rt_runtime": HOST_CONFIG.cpu_realtime_runtime,
-        "cpu_shares": HOST_CONFIG.cpu_shares,
-        "cpus": HOST_CONFIG.cpu_count,
-        "cpuset_cpus": HOST_CONFIG.cpuset_cpus,
-        "cpuset_mems": HOST_CONFIG.cpuset_mems,
-        "devices": map_devices_to_list(HOST_CONFIG.devices),
-        "device_cgroup_rules": HOST_CONFIG.device_cgroup_rules,
-        "device_read_bps": HOST_CONFIG.blkio_device_read_bps,
-        "device_read_iops": HOST_CONFIG.blkio_device_read_iops,
-        "device_write_bps": HOST_CONFIG.blkio_device_write_bps,
-        "device_write_iops": HOST_CONFIG.blkio_device_write_iops,
-        "dns": HOST_CONFIG.dns,
-        "dns_options": HOST_CONFIG.dns_options,
-        "dns_search": HOST_CONFIG.dns_search,
-        "domainname": CONFIG.domainname,
-        "entrypoint": CONFIG.entrypoint,
-        "envs": ENVS,
-        "groups_add": HOST_CONFIG.group_add,
-        **map_healthcheck_to_kwargs(CONFIG.healthcheck),
-        "hostname": HOSTNAME,
-        "ipc": HOST_CONFIG.ipc_mode,
-        "isolation": HOST_CONFIG.isolation,
-        "kernel_memory": HOST_CONFIG.kernel_memory,
-        "labels": CONFIG.labels,
-        "link": HOST_CONFIG.links,
-        **map_log_config_to_kwargs(HOST_CONFIG.log_config),
-        # Add setting to keep mac?
-        # "mac_address": NETWORK_SETTINGS.mac_address,
-        "memory": HOST_CONFIG.memory,
-        "memory_reservation": HOST_CONFIG.memory_reservation,
-        "memory_swap": HOST_CONFIG.memory_swap,
-        "memory_swappiness": HOST_CONFIG.memory_swappiness,
-        "mounts": map_mounts_to_arg(container.mounts),
-        "networks": NETWORKS,
-        "oom_kill": bool(not HOST_CONFIG.oom_kill_disable),
-        "oom_score_adj": HOST_CONFIG.oom_score_adj,
-        "pids_limit": HOST_CONFIG.pids_limit,
-        "privileged": HOST_CONFIG.privileged,
-        "publish": PUBLISH,
-        "publish_all": HOST_CONFIG.publish_all_ports,
-        "read_only": HOST_CONFIG.readonly_rootfs,
-        "restart": get_container_restart_policy_str(
-            HOST_CONFIG.restart_policy
-        ),
-        "runtime": HOST_CONFIG.runtime,
-        "security_options": HOST_CONFIG.security_opt,
-        "shm_size": HOST_CONFIG.shm_size,
-        "stop_signal": CONFIG.stop_signal,
-        "stop_timeout": CONFIG.stop_timeout,
-        "storage_options": HOST_CONFIG.storage_opt,
-        "sysctl": HOST_CONFIG.sysctls,
-        "systemd": CONFIG.systemd_mode,
-        "tmpfs": map_tmpfs_dict_to_list(HOST_CONFIG.tmpfs),
-        "ulimit": map_ulimits_to_arg(HOST_CONFIG.ulimits),
-        "user": CONFIG.user,
-        "userns": HOST_CONFIG.userns_mode,
-        "uts": HOST_CONFIG.uts_mode,
-        "volume_driver": HOST_CONFIG.volume_driver,
-        "volumes_from": HOST_CONFIG.volumes_from,
-        "workdir": normalize_path(CONFIG.working_dir),
-    }
-    CONFIG = {k: v for k, v in CONFIG.items() if v}
-
-    return CONFIG
-
-
 async def _recreate_container(
     existing_container: Container,
     old_image: Image,
@@ -271,24 +157,19 @@ async def _recreate_container(
 
     NAME: str = existing_container.name
     IMAGE_SPEC = str(get_container_image_spec(existing_container))
-    CFG = get_container_config(existing_container)
+    CURRENT_CFG = get_container_config(existing_container)
     SHOULD_START = existing_container.state.status == "running"
-    CFG_ENVS: dict = CFG.pop("envs", {})
-    CFG_LABELS: dict = CFG.pop("labels", {})
-
-    logging.info(f"Merging container and new image values")
-    NEW_IMAGE_ENVS: dict = env_to_dict(new_image.config.env)
-    MERGED_CFG = {}
-    MERGED_CFG["envs"] = subtract_dict(CFG_ENVS, NEW_IMAGE_ENVS) or {}
-    MERGED_CFG["labels"] = (
-        subtract_dict(CFG_LABELS, new_image.config.labels) or {}
-    )
-
     LOOP = asyncio.get_running_loop()
+
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=1
     ) as executor:
         try:
+            logging.info(f"Merging container and new image values")
+            MERGED_CFG = merge_container_config_with_image(
+                CURRENT_CFG, new_image
+            )
+
             logging.info(f"Stopping container {NAME}...")
             await LOOP.run_in_executor(
                 executor, existing_container.stop
@@ -305,7 +186,6 @@ async def _recreate_container(
                 lambda: docker.container.create(
                     IMAGE_SPEC,
                     **MERGED_CFG,
-                    **CFG,
                 ),
             )
 
@@ -362,9 +242,7 @@ async def _recreate_container(
                 executor,
                 lambda: docker.container.create(
                     image=IMAGE_SPEC,
-                    envs=CFG_ENVS,
-                    labels=CFG_LABELS,
-                    **CFG,
+                    **CURRENT_CFG,
                 ),
             )
             if SHOULD_START:
