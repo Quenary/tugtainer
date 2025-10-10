@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/Quenary/tugtainer/compare/v1.1.5...v1.1.6) (2025-10-10)
+
+
+### Bug Fixes
+
+* **backend:** log config options ([77da3e6](https://github.com/Quenary/tugtainer/commit/77da3e6c5e77284ac601a9ede68b0a1e633b0102))
+
 ## [1.1.5](https://github.com/Quenary/tugtainer/compare/v1.1.4...v1.1.5) (2025-10-10)
 
 
