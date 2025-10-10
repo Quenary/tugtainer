@@ -83,8 +83,13 @@ def merge_container_config_with_image(
 
 def get_container_config(
     container: Container,
-):
-    """Get container config dict that matches kwargs for create/run."""
+) -> tuple[dict[Any, Any], list[list[str]]]:
+    """
+    Get container config dict that matches kwargs for create/run.
+    :returns 0: config dict
+    :returns 1: list of docker commands to be executed after container creation, in list format e.g. ["network", "connect", ...]
+    """
+    COMMANDS: list[list[str]] = []
     ID = container.id
     CONFIG = container.config
     HOST_CONFIG = container.host_config
@@ -104,15 +109,32 @@ def get_container_config(
     # Remove any ports coz those are not supported in host network mode
     if NETWORK_MODE in ["host", "none"]:
         PUBLISH = None
-    # Networks
-    NETWORKS = list((NETWORK_SETTINGS.networks or {}).keys())
 
-    valid_labels, invalid_labels = filter_valid_docker_labels(
+    # Networks
+    NETWORKS: list[str] = []
+    NETWORK_ALIASES: list[str] = []
+    if NETWORK_SETTINGS.networks:
+        NETWORKS_KEYS = list(NETWORK_SETTINGS.networks.keys())
+        MAIN_NETWORK = NETWORK_SETTINGS.networks[NETWORKS_KEYS[0]]
+        NETWORKS = [NETWORKS_KEYS[0]]
+        NETWORK_ALIASES = MAIN_NETWORK.aliases or []
+        for net in NETWORKS_KEYS[1:]:
+            # Additional networks returned as commands as python_on_whales doesnt support multiple aliases yet
+            _cmd = ["network", "connect"]
+            aliases = NETWORK_SETTINGS.networks[net].aliases or []
+            for a in aliases:
+                _cmd += ["--alias", a]
+            _cmd += [net, container.name]
+            COMMANDS.append(_cmd)
+    elif NETWORK_MODE:
+        NETWORKS = [NETWORK_MODE]
+
+    VALID_LABELS, INVALID_LABELS = filter_valid_docker_labels(
         CONFIG.labels or {}
     )
-    if invalid_labels:
+    if INVALID_LABELS:
         logging.warning(
-            f"Invalid labels were dropped while preparing config: {invalid_labels}"
+            f"Invalid labels were dropped while preparing config: {INVALID_LABELS}"
         )
 
     CONFIG = {
@@ -150,7 +172,7 @@ def get_container_config(
         "ipc": HOST_CONFIG.ipc_mode,
         "isolation": HOST_CONFIG.isolation,
         "kernel_memory": HOST_CONFIG.kernel_memory,
-        "labels": valid_labels,
+        "labels": VALID_LABELS,
         "link": HOST_CONFIG.links,
         **map_log_config_to_kwargs(HOST_CONFIG.log_config),
         # Add setting to keep mac?
@@ -161,6 +183,7 @@ def get_container_config(
         "memory_swappiness": HOST_CONFIG.memory_swappiness,
         "mounts": map_mounts_to_arg(container.mounts),
         "networks": NETWORKS,
+        "network_aliases": NETWORK_ALIASES,
         "oom_kill": bool(not HOST_CONFIG.oom_kill_disable),
         "oom_score_adj": HOST_CONFIG.oom_score_adj,
         "pids_limit": HOST_CONFIG.pids_limit,
@@ -190,4 +213,4 @@ def get_container_config(
     }
     CONFIG = _drop_empty_keys(CONFIG)
 
-    return CONFIG
+    return CONFIG, COMMANDS

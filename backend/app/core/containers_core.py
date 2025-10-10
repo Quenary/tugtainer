@@ -1,4 +1,5 @@
 from python_on_whales import docker, Container, Image
+from python_on_whales.utils import run as docker_run_cmd
 import logging
 from typing import NotRequired, TypedDict
 from sqlalchemy import and_, select
@@ -157,13 +158,30 @@ async def _recreate_container(
 
     NAME: str = existing_container.name
     IMAGE_SPEC = str(get_container_image_spec(existing_container))
-    CURRENT_CFG = get_container_config(existing_container)
+    CURRENT_CFG, COMMANDS = get_container_config(existing_container)
     SHOULD_START = existing_container.state.status == "running"
     LOOP = asyncio.get_running_loop()
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=1
     ) as executor:
+
+        async def run_commands_after_create():
+            for C in COMMANDS:
+                try:
+                    _command = docker.config.docker_cmd + C
+                    logging.info(f"Running command: {_command}")
+                    out, err = await LOOP.run_in_executor(
+                        executor, lambda: docker_run_cmd(_command)
+                    )
+                    if out:
+                        logging.info(out)
+                    if err:
+                        logging.error(err)
+                except Exception as e:
+                    logging.error(f"Error while running command: {C}")
+                    logging.exception(e)
+
         try:
             logging.info(f"Merging container and new image values")
             MERGED_CFG = merge_container_config_with_image(
@@ -188,6 +206,8 @@ async def _recreate_container(
                     **MERGED_CFG,
                 ),
             )
+
+            await run_commands_after_create()
 
             if not SHOULD_START:
                 logging.info(
@@ -230,7 +250,6 @@ async def _recreate_container(
                     )
             except:
                 pass
-
             logging.warning(
                 f"Tagging previous image with spec: {IMAGE_SPEC}"
             )
@@ -245,6 +264,7 @@ async def _recreate_container(
                     **CURRENT_CFG,
                 ),
             )
+            await run_commands_after_create()
             if SHOULD_START:
                 logging.info(f"Starting rolled-back container")
                 await LOOP.run_in_executor(
@@ -361,10 +381,8 @@ async def check_container(
                 available=False, updated=False
             )
 
-        logging.info(
-            f"New image found for the container '{name}'"
-        )
-        
+        logging.info(f"New image found for the container '{name}'")
+
         is_self = is_self_container(container)
         if is_self:
             CACHE.update({"status": ECheckStatus.DONE})
