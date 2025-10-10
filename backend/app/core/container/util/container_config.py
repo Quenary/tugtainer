@@ -19,6 +19,26 @@ from . import (
 import logging
 
 
+def _drop_empty_keys(cfg: dict) -> dict:
+    """
+    Drops 'empty' values from dict:
+    - None
+    - Empty containers (list, dict, tuple, set)
+    - Empty strings or strings with only spaces
+    """
+
+    def is_empty(v):
+        if v is None:
+            return True
+        if isinstance(v, (list, dict, tuple, set)) and len(v) == 0:
+            return True
+        if isinstance(v, str) and not v.strip():
+            return True
+        return False
+
+    return {k: v for k, v in cfg.items() if not is_empty(v)}
+
+
 def merge_container_config_with_image(
     cfg: dict, image: Image
 ) -> dict:
@@ -45,12 +65,19 @@ def merge_container_config_with_image(
         logging.warning(
             f"Invalid labels were dropped while preparing config: {invalid_labels}"
         )
+    if image.config.entrypoint:
+        cfg.pop("entrypoint", None)
+    if image.config.cmd:
+        cfg.pop("command", None)
+    if image.config.working_dir:
+        cfg.pop("workdir", None)
     merged_config = {
         **cfg,
         "envs": merged_envs,
         "labels": merged_labels,
     }
-    merged_config = {k: v for k, v in merged_config.items() if v}
+    merged_config = _drop_empty_keys(merged_config)
+
     return merged_config
 
 
@@ -79,6 +106,14 @@ def get_container_config(
         PUBLISH = None
     # Networks
     NETWORKS = list((NETWORK_SETTINGS.networks or {}).keys())
+
+    valid_labels, invalid_labels = filter_valid_docker_labels(
+        CONFIG.labels or {}
+    )
+    if invalid_labels:
+        logging.warning(
+            f"Invalid labels were dropped while preparing config: {invalid_labels}"
+        )
 
     CONFIG = {
         "name": container.name,
@@ -115,7 +150,7 @@ def get_container_config(
         "ipc": HOST_CONFIG.ipc_mode,
         "isolation": HOST_CONFIG.isolation,
         "kernel_memory": HOST_CONFIG.kernel_memory,
-        "labels": CONFIG.labels,
+        "labels": valid_labels,
         "link": HOST_CONFIG.links,
         **map_log_config_to_kwargs(HOST_CONFIG.log_config),
         # Add setting to keep mac?
@@ -153,6 +188,6 @@ def get_container_config(
         "volumes_from": HOST_CONFIG.volumes_from,
         "workdir": normalize_path(CONFIG.working_dir),
     }
-    CONFIG = {k: v for k, v in CONFIG.items() if v}
+    CONFIG = _drop_empty_keys(CONFIG)
 
     return CONFIG

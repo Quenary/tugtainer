@@ -362,8 +362,9 @@ async def check_container(
             )
 
         logging.info(
-            f"New image was found for the container '{name}'"
+            f"New image found for the container '{name}'"
         )
+        
         is_self = is_self_container(container)
         if is_self:
             CACHE.update({"status": ECheckStatus.DONE})
@@ -378,8 +379,6 @@ async def check_container(
             return CheckContainerResult(available=True, updated=False)
 
         CACHE.update({"status": ECheckStatus.UPDATING})
-        logging.info(f"New image found for container '{name}'")
-
         try:
             container, updated = await _recreate_container(
                 container, OLD_IMAGE, NEW_IMAGE
