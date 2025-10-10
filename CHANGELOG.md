@@ -1,3 +1,13 @@
+## [1.1.3](https://github.com/Quenary/tugtainer/compare/v1.1.2...v1.1.3) (2025-10-10)
+
+
+### Bug Fixes
+
+* **backend:** local image check error ([e6a5248](https://github.com/Quenary/tugtainer/commit/e6a5248de357870ab90f299253f4978cb8d427c0)), closes [#2](https://github.com/Quenary/tugtainer/issues/2)
+* **backend:** potential error if cmd/entrypoint/workdir changed ([d7b7441](https://github.com/Quenary/tugtainer/commit/d7b7441083f34aaa78d2301be00de2469b09bd40))
+* **backend:** potential error with invalid labels keys ([c03b937](https://github.com/Quenary/tugtainer/commit/c03b9373880b7f58783f5192fa6a4a7356d8c177))
+* **backend:** python_on_whales migration fixes ([e8e2353](https://github.com/Quenary/tugtainer/commit/e8e23532f7bbe4ec780666b015bdbb74d857b301))
+
 ## [1.1.2](https://github.com/Quenary/tugtainer/compare/v1.1.1...v1.1.2) (2025-10-06)
 
 
