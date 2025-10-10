@@ -14,8 +14,10 @@ def map_log_config_to_kwargs(
             "log_options": (),
         }
 
-    config = cfg.config or {}
-    log_options: Iterable[str] = tuple(f"{k}={v}" for k, v in config)
+    config: dict = cfg.config or {}
+    log_options: Iterable[str] = tuple(
+        f"{k}={v}" for k, v in config.items()
+    )
     return {
         "log_driver": cfg.type,
         "log_options": log_options,
