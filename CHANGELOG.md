@@ -1,3 +1,10 @@
+## [1.1.5](https://github.com/Quenary/tugtainer/compare/v1.1.4...v1.1.5) (2025-10-10)
+
+
+### Bug Fixes
+
+* **backend:** preserve aliases and multiple networks ([9489a0c](https://github.com/Quenary/tugtainer/commit/9489a0c7ff36a67f6061c5b5e04b56dfd916bae0))
+
 ## [1.1.4](https://github.com/Quenary/tugtainer/compare/v1.1.3...v1.1.4) (2025-10-10)
 
 
