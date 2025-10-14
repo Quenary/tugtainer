@@ -1,6 +1,18 @@
-from typing import Any, Generic, Mapping, TypedDict, TypeVar, Union
+from typing import Any, Generic, Mapping, TypedDict, TypeVar
 from cachetools import TTLCache
 from app.enums import ECheckStatus
+import uuid
+
+
+ALL_CONTAINERS_STATUS_KEY = str(uuid.uuid4())
+
+
+def get_host_cache_key(host_id: int) -> str:
+    return str(host_id)
+
+
+def get_container_cache_key(host_id: int, c_name: str) -> str:
+    return f"{host_id}:{c_name}"
 
 
 _CACHE = TTLCache(maxsize=10, ttl=600)
@@ -12,13 +24,19 @@ class ContainerCheckData(TypedDict, total=False):
     status: ECheckStatus  # Status of progress
 
 
-class AllContainersCheckData(ContainerCheckData, total=False):
-    """Data of all containers check/update progress"""
+class HostCheckData(ContainerCheckData, total=False):
+    """Data of host container's check/update progress"""
 
     available: int  # Count of not updated containers (check only)
     updated: int  # count of updated containers
     rolledback: int  # count of rolled-back after fail
     failed: int  # count of failed updates
+
+
+class AllContainersCheckData(HostCheckData, total=False):
+    """Data of all host's container's check/update progress"""
+
+    pass
 
 
 T = TypeVar("T", bound=Mapping[Any, Any])

@@ -1,7 +1,8 @@
-from python_on_whales import docker, Container, Image
+from types import CoroutineType
+from python_on_whales import Container, Image, DockerClient
 from python_on_whales.utils import run as docker_run_cmd
 import logging
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 from sqlalchemy import and_, select
 import asyncio
 import concurrent.futures
@@ -10,16 +11,16 @@ from app.db import (
     async_session_maker,
     get_setting_from_db,
     get_setting_typed_value,
+    HostModel,
 )
+from app.core import HostManager
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
 from app.helpers import (
     is_self_container,
     now,
 )
-import traceback
 from app.config import Config
-from app.enums.settings_enum import ESettingKey
 from app.core.container.util import (
     get_container_image_spec,
     get_container_image_id,
@@ -32,9 +33,10 @@ from app.core.container import (
     ContainerCheckData,
     AllContainersCheckData,
     ProcessCache,
+    ALL_CONTAINERS_STATUS_KEY,
 )
 
-_ALL_CONTAINERS_STATUS_KEY = "check_and_update_all_containers"
+_ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
 
 
 async def filter_containers_for_check(
@@ -143,6 +145,7 @@ def _sort_containers_by_dependencies(
 
 
 async def _recreate_container(
+    client: DockerClient,
     existing_container: Container,
     old_image: Image,
     new_image: Image,
@@ -169,7 +172,7 @@ async def _recreate_container(
         async def run_commands_after_create():
             for C in COMMANDS:
                 try:
-                    _command = docker.config.docker_cmd + C
+                    _command = client.config.docker_cmd + C
                     logging.info(f"Running command: {_command}")
                     out, err = await LOOP.run_in_executor(
                         executor, lambda: docker_run_cmd(_command)
@@ -201,7 +204,7 @@ async def _recreate_container(
             logging.info(f"Creating new container {NAME}...")
             new_container = await LOOP.run_in_executor(
                 executor,
-                lambda: docker.container.create(
+                lambda: client.container.create(
                     IMAGE_SPEC,
                     **MERGED_CFG,
                 ),
@@ -240,7 +243,7 @@ async def _recreate_container(
             )
             try:
                 # In case failed container was not removed
-                failed_cont = docker.container.inspect(NAME)
+                failed_cont = client.container.inspect(NAME)
                 if failed_cont:
                     await LOOP.run_in_executor(
                         executor, failed_cont.stop
@@ -259,7 +262,7 @@ async def _recreate_container(
             logging.warning(f"Creating container with previous image")
             rolled_back = await LOOP.run_in_executor(
                 executor,
-                lambda: docker.container.create(
+                lambda: client.container.create(
                     image=IMAGE_SPEC,
                     **CURRENT_CFG,
                 ),
@@ -282,7 +285,10 @@ class CheckContainerResult(TypedDict):
 
 
 async def check_container(
-    name: str, update: bool = False
+    client: DockerClient,
+    host_name: str,
+    c_name: str,
+    update: bool = False,
 ) -> CheckContainerResult:
     """
     Check and update one container.
@@ -290,7 +296,8 @@ async def check_container(
     :param name: name or id
     :param update: whether to update container (only check if false)
     """
-    CACHE = ProcessCache[ContainerCheckData](name)
+    CACHE_KEY = f"{host_name}:{c_name}"
+    CACHE = ProcessCache[ContainerCheckData](CACHE_KEY)
     try:
         STATUS = CACHE.get()
         ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
@@ -298,7 +305,7 @@ async def check_container(
 
         if STATUS and STATUS.get("status") not in ALLOW_STATUSES:
             logging.warning(
-                f"Check and update of container {name} is already running"
+                f"Check and update of container {c_name} is already running"
             )
             return CheckContainerResult(
                 available=False, updated=False
@@ -306,12 +313,12 @@ async def check_container(
 
         CACHE.set({"status": ECheckStatus.PREPARING})
         container = await LOOP.run_in_executor(
-            None, lambda: docker.container.inspect(name)
+            None, lambda: client.container.inspect(c_name)
         )
         if not container:
             CACHE.update({"status": ECheckStatus.DONE})
             logging.warning(
-                f"Container '{name}' not found, cannot check for update"
+                f"Container '{c_name}' not found, cannot check for update"
             )
             return CheckContainerResult(
                 available=False, updated=False
@@ -319,13 +326,13 @@ async def check_container(
 
         CACHE.update({"status": ECheckStatus.CHECKING})
         logging.info(
-            f"Start checking for updates of container '{name}'"
+            f"Start checking for updates of container '{c_name}'"
         )
         IMAGE_SPEC = get_container_image_spec(container)
         if not IMAGE_SPEC:
             CACHE.update({"status": ECheckStatus.DONE})
             logging.warning(
-                f"Cannot check container '{name}' without image spec."
+                f"Cannot check container '{c_name}' without image spec."
             )
             return CheckContainerResult(
                 available=False, updated=False
@@ -335,27 +342,29 @@ async def check_container(
         OLD_IMAGE: Image
         if IMAGE_ID:
             OLD_IMAGE = await LOOP.run_in_executor(
-                None, lambda: docker.image.inspect(IMAGE_ID)
+                None, lambda: client.image.inspect(IMAGE_ID)
             )
         else:
             OLD_IMAGE = await LOOP.run_in_executor(
-                None, lambda: docker.image.inspect(IMAGE_SPEC)
+                None, lambda: client.image.inspect(IMAGE_SPEC)
             )
         if not OLD_IMAGE.repo_digests:
             CACHE.update({"status": ECheckStatus.DONE})
             logging.warning(
-                f"Image of '{name}' missing repo digests. Presumably a local image. Exiting."
+                f"Image of '{c_name}' missing repo digests. Presumably a local image. Exiting."
             )
             return CheckContainerResult(
                 available=False, updated=False
             )
 
         NEW_IMAGE = await LOOP.run_in_executor(
-            None, lambda: docker.image.pull(IMAGE_SPEC)
+            None, lambda: client.image.pull(IMAGE_SPEC)
         )
         if not isinstance(NEW_IMAGE, Image):
             CACHE.update({"status": ECheckStatus.DONE})
-            logging.warning(f"Failed to pull new image for '{name}'")
+            logging.warning(
+                f"Failed to pull new image for '{c_name}'"
+            )
             return CheckContainerResult(
                 available=False, updated=False
             )
@@ -365,7 +374,7 @@ async def check_container(
             and OLD_IMAGE.repo_digests != NEW_IMAGE.repo_digests
         )
         await update_container_db_data(
-            str(name),
+            str(c_name),
             {
                 "update_available": update_available,
                 "checked_at": now(),
@@ -375,13 +384,13 @@ async def check_container(
         if not update_available:
             CACHE.update({"status": ECheckStatus.DONE})
             logging.info(
-                f"No new image was found for the container '{name}'"
+                f"No new image was found for the container '{c_name}'"
             )
             return CheckContainerResult(
                 available=False, updated=False
             )
 
-        logging.info(f"New image found for the container '{name}'")
+        logging.info(f"New image found for the container '{c_name}'")
 
         is_self = is_self_container(container)
         if is_self:
@@ -393,17 +402,17 @@ async def check_container(
 
         if not update:
             CACHE.update({"status": ECheckStatus.DONE})
-            logging.info(f"Check of container '{name}' complete")
+            logging.info(f"Check of container '{c_name}' complete")
             return CheckContainerResult(available=True, updated=False)
 
         CACHE.update({"status": ECheckStatus.UPDATING})
         try:
             container, updated = await _recreate_container(
-                container, OLD_IMAGE, NEW_IMAGE
+                client, container, OLD_IMAGE, NEW_IMAGE
             )
             if updated:
                 await update_container_db_data(
-                    str(name),
+                    str(c_name),
                     {
                         "update_available": False,
                         "updated_at": now(),
@@ -414,7 +423,7 @@ async def check_container(
                 container=container, available=False, updated=updated
             )
         except Exception as e:
-            logging.error(f"Failed to update container '{name}'")
+            logging.error(f"Failed to update container '{c_name}'")
             logging.exception(e)
             CACHE.update({"status": ECheckStatus.ERROR})
             return CheckContainerResult(
@@ -422,7 +431,7 @@ async def check_container(
             )
     except Exception as e:
         logging.error(
-            f"Error while checking container '{name}' update:"
+            f"Error while checking container '{c_name}' update:"
         )
         logging.exception(e)
         CACHE.update({"status": ECheckStatus.ERROR})
@@ -431,45 +440,58 @@ async def check_container(
         )
 
 
-async def check_and_update_all_containers():
+class HostCheckResult(TypedDict):
+    host_name: str
+    available: list[Container]
+    updated: list[Container]
+    rolledback: list[Container]
+    failed: list[Container]
+    errors: list[Exception]
+    prune_res: str | None
+
+
+async def check_host(
+    host: HostModel, client: DockerClient, update: bool
+) -> HostCheckResult | None:
     """
-    Check and update containers
-    marked for it, as well as self container (check only).
-    Should not raises errors, only logging.
+    Check containers of specified host.
+    :param host: host info from db
+    :param client: host's docker client
+    :param update: update flag (only check if False)
     """
-    CACHE = ProcessCache[AllContainersCheckData](
-        _ALL_CONTAINERS_STATUS_KEY
-    )
-    status = CACHE.get()
-    allow_statuses = [ECheckStatus.DONE, ECheckStatus.ERROR]
-    if status and status.get("status") not in allow_statuses:
+    STATUS_KEY = str(host.id)
+    CACHE = ProcessCache[AllContainersCheckData](STATUS_KEY)
+    STATUS = CACHE.get()
+    if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
         logging.warning(
-            "Check and update process is already running."
+            f"Check process for host '{host.name}' is already running."
         )
-        return
+        return None
 
     CACHE.set(
         {"status": ECheckStatus.PREPARING},
     )
-    logging.info("Start checking for updates of all containers")
-    containers: list[Container] = docker.container.list(all=True)
+    logging.info(f"Start check for host '{host.name}'")
 
-    for_check = await filter_containers_for_check(containers)
-    for_update = await filter_containers_for_update(containers)
-    for_update = _sort_containers_by_dependencies(for_update)
-
-    CACHE.update(
-        {"status": ECheckStatus.CHECKING},
-    )
-
+    # Results
     available: list[Container] = []
     updated: list[Container] = []
     rolledback: list[Container] = []
     failed: list[Container] = []
     errors: list[Exception] = []
+    prune_res: str | None = None
+
+    containers: list[Container] = client.container.list(all=True)
+    for_check = await filter_containers_for_check(containers)
+
+    CACHE.update(
+        {"status": ECheckStatus.CHECKING},
+    )
 
     for item in for_check:
-        res = await check_container(item.name, False)
+        res = await check_container(
+            client, host.name, item.name, False
+        )
         _available = res["available"]
         _exp = res.get("exception")
         if _available:
@@ -478,15 +500,28 @@ async def check_and_update_all_containers():
             errors.append(_exp)
             failed.append(item)
 
-    CACHE.update(
-        {
-            "status": ECheckStatus.UPDATING,
-            "available": len(available),
-        },
-    )
+    CACHE.update({"available": len(available)})
+
+    if not update:
+        CACHE.update({"status": ECheckStatus.DONE})
+        return HostCheckResult(
+            host_name=host.name,
+            available=available,
+            updated=updated,
+            rolledback=rolledback,
+            failed=failed,
+            errors=errors,
+            prune_res=None,
+        )
+
+    CACHE.update({"status": ECheckStatus.UPDATING})
+    for_update = await filter_containers_for_update(containers)
+    for_update = _sort_containers_by_dependencies(for_update)
 
     for item in for_update:
-        res = await check_container(str(item.name), True)
+        res = await check_container(
+            client, host.name, item.name, True
+        )
         _cont = res.get("container")
         _updated = res.get("updated")
         _exp = res.get("exception")
@@ -501,22 +536,16 @@ async def check_and_update_all_containers():
 
     CACHE.update(
         {
-            "status": ECheckStatus.DONE,
             "updated": len(updated),
             "failed": len(failed),
             "rolledback": len(rolledback),
         },
     )
 
-    prune_images = await get_setting_from_db(ESettingKey.PRUNE_IMAGES)
-    prune_res: str | None = None
-    if get_setting_typed_value(
-        prune_images.value, prune_images.value_type
-    ):
+    if host.prune:
+        CACHE.update({"status": ECheckStatus.PRUNING})
         loop = asyncio.get_running_loop()
-        output = await loop.run_in_executor(
-            None, lambda: docker.image.prune()
-        )
+        output = await loop.run_in_executor(None, client.image.prune)
         lines = [
             line.strip()
             for line in output.splitlines()
@@ -524,39 +553,106 @@ async def check_and_update_all_containers():
         ]
         prune_res = lines[-1] if lines else None
 
-    # Notification
+    CACHE.update({"status": ECheckStatus.DONE})
+
+    return HostCheckResult(
+        host_name=host.name,
+        available=available,
+        updated=updated,
+        rolledback=rolledback,
+        failed=failed,
+        errors=errors,
+        prune_res=prune_res,
+    )
+
+
+async def check_all(update: bool):
+    """
+    Main func for scheduled/manual check/update all containers
+    marked for it, for all specified docker hosts.
+    Should not raises errors, only logging.
+    """
+    CACHE = ProcessCache[AllContainersCheckData](
+        ALL_CONTAINERS_STATUS_KEY
+    )
     try:
-        title: str = f"Tugtainer ({Config.HOSTNAME})"
-        body: str = ""
-        if updated:
-            body += "Updated:\n"
-            for c in updated:
-                body += f"{c.name} {get_container_image_spec(c)}\n"
-            body += "\n"
-        if available:
-            body += "Update available for:\n"
-            for c in available:
-                body += f"{c.name} {get_container_image_spec(c)}\n"
-            body += "\n"
-        if rolledback:
-            body += "Rolled-back after fail:\n"
-            for c in rolledback:
-                body += f"{c.name} {get_container_image_spec(c)}\n"
-        if failed:
-            body += f"Failed and not rolled-back:\n"
-            for c in failed:
-                body += f"{c.name} {get_container_image_spec(c)}\n\n"
-        if errors:
-            body += f"Several errors occured:\n"
-            for e in errors:
-                tb_lines = traceback.format_exception(
-                    type(e), e, e.__traceback__
-                )
-                last_lines = tb_lines[-3:]
-                body += "".join(last_lines) + "\n"
-        if prune_res:
-            body += prune_res
+        STATUS = CACHE.get()
+        if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
+            logging.warning(
+                "General check process is already running."
+            )
+            return
+
+        CACHE.set(
+            {"status": ECheckStatus.PREPARING},
+        )
+        logging.info("Start checking of all containers for all hosts")
+
+        async with async_session_maker() as session:
+            stmt = select(HostModel).where(HostModel.enabled == True)
+            result = await session.execute(stmt)
+            hosts = result.scalars().all()
+
+        tasks: list[
+            CoroutineType[Any, Any, HostCheckResult | None]
+        ] = []
+        for h in hosts:
+            c = HostManager.get_host_client(h)
+            t = check_host(h, c, update)
+            tasks.append(t)
+
+        CACHE.update({"status": ECheckStatus.CHECKING})
+        results = await asyncio.gather(*tasks)
+
+        CACHE.update({"status": ECheckStatus.DONE})
+        await _send_notification(results)
+
+    except Exception as e:
+        CACHE.update({"status": ECheckStatus.ERROR})
+        logging.error(
+            "Error while checking of all containers for all hosts"
+        )
+        logging.exception(e)
+        return
+
+
+async def _send_notification(results: list[HostCheckResult | None]):
+    """
+    Send notification with general check results
+    """
+
+    def get_cont_str(c: Container) -> str:
+        return f"  - {c.name}  {get_container_image_spec(c)}\n"
+
+    title: str = f"Tugtainer ({Config.HOSTNAME})"
+    body: str = ""
+    for res in results:
+        if not res:
+            continue
+        host_part: str = ""
+        if res["updated"]:
+            host_part += "Updated:\n"
+            for c in res["updated"]:
+                host_part += get_cont_str(c)
+        if res["available"]:
+            host_part += "Update available for:\n"
+            for c in res["available"]:
+                host_part += get_cont_str(c)
+        if res["rolledback"]:
+            host_part += "Rolled-back after fail:\n"
+            for c in res["rolledback"]:
+                host_part += get_cont_str(c)
+        if res["failed"]:
+            host_part += f"Failed and not rolled-back:\n"
+            for c in res["failed"]:
+                host_part += get_cont_str(c)
+        if res["prune_res"]:
+            host_part += res["prune_res"] + "\n"
+        if host_part:
+            body += f"\nHost: {res["host_name"]}\n" + host_part
+    try:
         if body:
             await send_notification(title, body)
     except Exception as e:
-        logging.error(f"Error while sending notification: {e}")
+        logging.error("Error while sending notification")
+        logging.exception(e)

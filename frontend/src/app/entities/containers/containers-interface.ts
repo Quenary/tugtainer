@@ -2,9 +2,10 @@
  * Container data
  */
 export interface IContainer {
+  id: number;
   name: string;
   image: string;
-  id: string;
+  container_id: string;
   ports: {
     [K: string]: IContainerPort[];
   };

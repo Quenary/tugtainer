@@ -1,6 +1,6 @@
 import asyncio
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth_core import is_authorized
 from app.schemas.containers_schema import (
@@ -12,19 +12,27 @@ from app.db import (
     ContainersModel,
     insert_or_update_container,
     ContainerInsertOrUpdateData,
+    HostModel,
 )
-from app.core.containers_core import (
-    check_and_update_all_containers,
-    check_container,
-    _ALL_CONTAINERS_STATUS_KEY,
+from app.core import (
+    HostManager,
+    get_host_cache_key,
+    get_container_cache_key,
     ContainerCheckData,
+    HostCheckData,
     AllContainersCheckData,
     ProcessCache,
+    ALL_CONTAINERS_STATUS_KEY,
 )
-from app.helpers import is_self_container
+from app.core.containers_core import (
+    check_all,
+    check_host,
+    check_container,
+)
+from app.helpers import get_self_container_id
 from .util import map_container_schema
-from python_on_whales import docker
 from python_on_whales import Container
+from app.api.util import get_host
 
 router = APIRouter(
     prefix="/containers",
@@ -34,93 +42,128 @@ router = APIRouter(
 
 
 @router.get(
-    path="/list", response_model=list[ContainerGetResponseBody]
+    path="/{host_id}/list",
+    response_model=list[ContainerGetResponseBody],
+    description="Get list of containers for docker host",
 )
 async def containers_list(
+    host_id: int,
     session: AsyncSession = Depends(get_async_session),
 ) -> list[ContainerGetResponseBody]:
-    containers: list[Container] = docker.container.list(all=True)
+    host = await get_host(host_id, session)
+    client = HostManager.get_host_client(host)
+    containers: list[Container] = client.container.list(all=True)
+    stmt = select(ContainersModel).where(
+        ContainersModel.host_id == host_id
+    )
+    result = await session.execute(stmt)
+    containers_db = result.scalars().all()
     _list: list[ContainerGetResponseBody] = []
     for c in containers:
-        stmt = (
-            select(ContainersModel)
-            .where(ContainersModel.name == c.name)
-            .limit(1)
+        _db_item = next(
+            item for item in containers_db if item.name == c.name
         )
-        result = await session.execute(stmt)
-        _dbItem = result.scalar_one_or_none()
-        _item = map_container_schema(c, _dbItem)
+        _item = map_container_schema(host_id, c, _db_item)
         _list.append(_item)
     return _list
 
 
 @router.patch(
-    path="/{name}",
+    path="/{host_id}/{c_name}",
     description="Patch container data (create db entry if not exists)",
     response_model=ContainerGetResponseBody,
 )
 async def patch_container_data(
-    name: str,
+    host_id: int,
+    c_name: str,
     body: ContainerPatchRequestBody,
     session: AsyncSession = Depends(get_async_session),
 ) -> ContainerGetResponseBody:
     db_cont = await insert_or_update_container(
         session,
-        name,
+        host_id,
+        c_name,
         ContainerInsertOrUpdateData(
             **body.model_dump(exclude_unset=True)
         ),
     )
-    d_cont = docker.container.inspect(db_cont.name)
-    return map_container_schema(d_cont, db_cont)
+    host = await get_host(host_id, session)
+    client = HostManager.get_host_client(host)
+    d_cont = client.container.inspect(db_cont.name)
+    return map_container_schema(host_id, d_cont, db_cont)
 
 
 @router.post(
-    path="/check/all",
-    description="Run check and update now. Returns ID of the task that can be used for monitoring.",
+    path="/check",
+    description="Run general check process. Returns ID of the task that can be used for monitoring.",
 )
-async def update_all():
-    asyncio.create_task(check_and_update_all_containers())
-    return _ALL_CONTAINERS_STATUS_KEY
+async def check_all_ep(update: bool = False):
+    asyncio.create_task(check_all(update))
+    return ALL_CONTAINERS_STATUS_KEY
 
 
 @router.post(
-    path="/check/{name}",
+    path="check/{host_id}",
+    description="Check specific host. Returns ID of the task that can be used for monitoring.",
+)
+async def check_host_ep(
+    host_id: int,
+    update: bool = False,
+    session: AsyncSession = Depends(get_async_session),
+) -> str:
+    host = await get_host(host_id, session)
+    client = HostManager.get_host_client(host)
+    asyncio.create_task(check_host(host, client, update))
+    return get_host_cache_key(host.id)
+
+
+@router.post(
+    path="/check/{host_id}/{c_name}",
     description="Check specific container. Returns ID of the task that can be used for monitoring.",
 )
-async def check_container_ep(name: str) -> str:
-    asyncio.create_task(check_container(name))
-    return name
-
-
-@router.post(
-    path="/update/{name}",
-    description="Check and update specific container. Returns ID of the task that can be used for monitoring.",
-)
-async def update_container(name: str) -> str:
-    asyncio.create_task(check_container(name, True))
-    return name
+async def check_container_ep(
+    host_id: int,
+    c_name: str,
+    update: bool = False,
+    session: AsyncSession = Depends(get_async_session),
+) -> str:
+    host = await get_host(host_id, session)
+    client = HostManager.get_host_client(host)
+    asyncio.create_task(
+        check_container(client, host.name, c_name, update)
+    )
+    return get_container_cache_key(host_id, c_name)
 
 
 @router.get(
-    path="/check_progress/all",
-    description="Get progress of check and update process of all containers",
+    path="/progress/all",
+    description="Get progress of general check",
     response_model=AllContainersCheckData,
 )
-def check_progress_all() -> AllContainersCheckData | None:
+def progress_all() -> AllContainersCheckData | None:
     CACHE = ProcessCache[AllContainersCheckData](
-        _ALL_CONTAINERS_STATUS_KEY
+        ALL_CONTAINERS_STATUS_KEY
     )
     return CACHE.get()
 
 
 @router.get(
-    path="/check_progress/{id}",
-    description="Get progress of check and update process",
-    response_model=ContainerCheckData,
+    path="/progress/host/{cache_id}",
+    description="Get progress of check for host",
+    response_model=HostCheckData,
 )
-def check_progress(id: str) -> ContainerCheckData | None:
-    CACHE = ProcessCache[ContainerCheckData](id)
+def progress_host(cache_id: str) -> HostCheckData | None:
+    CACHE = ProcessCache[HostCheckData](cache_id)
+    return CACHE.get()
+
+
+@router.get(
+    path="/progress/container/{cache_id}",
+    description="Get progress of check for host's container",
+    response_model=HostCheckData,
+)
+def progress_container(cache_id: str) -> HostCheckData | None:
+    CACHE = ProcessCache[HostCheckData](cache_id)
     return CACHE.get()
 
 
@@ -132,13 +175,27 @@ def check_progress(id: str) -> ContainerCheckData | None:
 async def is_update_available_self(
     session: AsyncSession = Depends(get_async_session),
 ):
-    containers: list[Container] = docker.container.list()
-    self_c = [item for item in containers if is_self_container(item)]
-    if not self_c:
+    self_container_id = get_self_container_id()
+    if not self_container_id:
         return False
-    stmt = select(ContainersModel.update_available).where(
-        ContainersModel.name == self_c[0].name
-    )
-    result = await session.execute(stmt)
-    update_available = result.scalar_one_or_none()
-    return bool(update_available)
+    clients = HostManager.get_all()
+    for clid, cli in clients:
+        if cli.container.exists(self_container_id):
+            cont = cli.container.inspect(self_container_id)
+            name = cont.name
+            stmt = (
+                select(ContainersModel)
+                .where(
+                    and_(
+                        ContainersModel.host_id == clid,
+                        ContainersModel.name == name,
+                    )
+                )
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            db_cont = result.scalar_one_or_none()
+            if not db_cont:
+                return False
+            return db_cont.update_available
+    return False

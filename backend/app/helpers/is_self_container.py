@@ -64,7 +64,7 @@ def _read_container_id_from_mountinfo() -> str | None:
     return None
 
 
-def _get_self_container_id() -> str | None:
+def get_self_container_id() -> str | None:
     global SELF_CONTAINER_ID
     if SELF_CONTAINER_ID is not None:
         return SELF_CONTAINER_ID
@@ -86,7 +86,7 @@ def is_self_container(container: Container) -> bool:
     """
     Check if provided container is self container
     """
-    self_id = _get_self_container_id() or ""
+    self_id = get_self_container_id() or ""
     c_id = container.id[0:12]
     if c_id and self_id and self_id.startswith(c_id):
         return True

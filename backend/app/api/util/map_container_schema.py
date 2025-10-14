@@ -6,6 +6,7 @@ from app.core.container.util import get_container_health_status_str
 
 
 def map_container_schema(
+    host_id: int,
     d_cont: Container,
     db_cont: ContainersModel | None,
 ) -> ContainerGetResponseBody:
@@ -14,15 +15,17 @@ def map_container_schema(
     to api response schema
     """
     _item = ContainerGetResponseBody(
-        name=str(d_cont.name),
-        image=str(d_cont.config.image),
-        id=d_cont.id,
+        name=d_cont.name,
+        image=d_cont.config.image if d_cont.config.image else None,
+        container_id=d_cont.id,
         ports=d_cont.host_config.port_bindings,
-        status=str(d_cont.state.status),
+        status=d_cont.state.status,
         health=get_container_health_status_str(d_cont),
         is_self=is_self_container(d_cont),
+        host_id=host_id,
     )
     if db_cont:
+        _item.id = db_cont.id
         _item.check_enabled = db_cont.check_enabled
         _item.update_enabled = db_cont.update_enabled
         _item.update_available = db_cont.update_available
