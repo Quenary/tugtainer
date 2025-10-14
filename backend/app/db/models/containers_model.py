@@ -13,7 +13,7 @@ from .base_model import BaseModel
 from app.helpers.now import now
 
 if TYPE_CHECKING:
-    from .host_model import HostModel
+    from .hosts_model import HostsModel
 
 
 class ContainersModel(BaseModel):
@@ -69,6 +69,6 @@ class ContainersModel(BaseModel):
         nullable=False,
     )
 
-    host: Mapped["HostModel"] = relationship(
-        "HostModel", back_populates="containers"
+    host: Mapped["HostsModel"] = relationship(
+        "HostsModel", back_populates="containers"
     )

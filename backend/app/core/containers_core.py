@@ -9,11 +9,9 @@ import concurrent.futures
 from app.db import (
     ContainersModel,
     async_session_maker,
-    get_setting_from_db,
-    get_setting_typed_value,
-    HostModel,
+    HostsModel,
 )
-from app.core import HostManager
+from app.core import HostsManager
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
 from app.helpers import (
@@ -31,9 +29,11 @@ from app.core.container.util import (
 )
 from app.core.container import (
     ContainerCheckData,
-    AllContainersCheckData,
+    AllCheckData,
     ProcessCache,
     ALL_CONTAINERS_STATUS_KEY,
+    get_host_cache_key,
+    get_container_cache_key,
 )
 
 _ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
@@ -286,7 +286,7 @@ class CheckContainerResult(TypedDict):
 
 async def check_container(
     client: DockerClient,
-    host_name: str,
+    host: HostsModel,
     c_name: str,
     update: bool = False,
 ) -> CheckContainerResult:
@@ -296,7 +296,7 @@ async def check_container(
     :param name: name or id
     :param update: whether to update container (only check if false)
     """
-    CACHE_KEY = f"{host_name}:{c_name}"
+    CACHE_KEY = get_container_cache_key(host.id, c_name)
     CACHE = ProcessCache[ContainerCheckData](CACHE_KEY)
     try:
         STATUS = CACHE.get()
@@ -374,7 +374,8 @@ async def check_container(
             and OLD_IMAGE.repo_digests != NEW_IMAGE.repo_digests
         )
         await update_container_db_data(
-            str(c_name),
+            host.id,
+            c_name,
             {
                 "update_available": update_available,
                 "checked_at": now(),
@@ -412,7 +413,8 @@ async def check_container(
             )
             if updated:
                 await update_container_db_data(
-                    str(c_name),
+                    host.id,
+                    c_name,
                     {
                         "update_available": False,
                         "updated_at": now(),
@@ -451,7 +453,7 @@ class HostCheckResult(TypedDict):
 
 
 async def check_host(
-    host: HostModel, client: DockerClient, update: bool
+    host: HostsModel, client: DockerClient, update: bool
 ) -> HostCheckResult | None:
     """
     Check containers of specified host.
@@ -459,8 +461,8 @@ async def check_host(
     :param client: host's docker client
     :param update: update flag (only check if False)
     """
-    STATUS_KEY = str(host.id)
-    CACHE = ProcessCache[AllContainersCheckData](STATUS_KEY)
+    STATUS_KEY = get_host_cache_key(host.id)
+    CACHE = ProcessCache[AllCheckData](STATUS_KEY)
     STATUS = CACHE.get()
     if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
         logging.warning(
@@ -489,9 +491,7 @@ async def check_host(
     )
 
     for item in for_check:
-        res = await check_container(
-            client, host.name, item.name, False
-        )
+        res = await check_container(client, host, item.name, False)
         _available = res["available"]
         _exp = res.get("exception")
         if _available:
@@ -519,9 +519,7 @@ async def check_host(
     for_update = _sort_containers_by_dependencies(for_update)
 
     for item in for_update:
-        res = await check_container(
-            client, host.name, item.name, True
-        )
+        res = await check_container(client, host, item.name, True)
         _cont = res.get("container")
         _updated = res.get("updated")
         _exp = res.get("exception")
@@ -572,9 +570,7 @@ async def check_all(update: bool):
     marked for it, for all specified docker hosts.
     Should not raises errors, only logging.
     """
-    CACHE = ProcessCache[AllContainersCheckData](
-        ALL_CONTAINERS_STATUS_KEY
-    )
+    CACHE = ProcessCache[AllCheckData](ALL_CONTAINERS_STATUS_KEY)
     try:
         STATUS = CACHE.get()
         if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
@@ -589,7 +585,7 @@ async def check_all(update: bool):
         logging.info("Start checking of all containers for all hosts")
 
         async with async_session_maker() as session:
-            stmt = select(HostModel).where(HostModel.enabled == True)
+            stmt = select(HostsModel).where(HostsModel.enabled == True)
             result = await session.execute(stmt)
             hosts = result.scalars().all()
 
@@ -597,7 +593,7 @@ async def check_all(update: bool):
             CoroutineType[Any, Any, HostCheckResult | None]
         ] = []
         for h in hosts:
-            c = HostManager.get_host_client(h)
+            c = HostsManager.get_host_client(h)
             t = check_host(h, c, update)
             tasks.append(t)
 

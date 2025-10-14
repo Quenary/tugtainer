@@ -12,15 +12,14 @@ from app.db import (
     ContainersModel,
     insert_or_update_container,
     ContainerInsertOrUpdateData,
-    HostModel,
 )
 from app.core import (
-    HostManager,
+    HostsManager,
     get_host_cache_key,
     get_container_cache_key,
     ContainerCheckData,
     HostCheckData,
-    AllContainersCheckData,
+    AllCheckData,
     ProcessCache,
     ALL_CONTAINERS_STATUS_KEY,
 )
@@ -33,6 +32,7 @@ from app.helpers import get_self_container_id
 from .util import map_container_schema
 from python_on_whales import Container
 from app.api.util import get_host
+import logging
 
 router = APIRouter(
     prefix="/containers",
@@ -51,7 +51,9 @@ async def containers_list(
     session: AsyncSession = Depends(get_async_session),
 ) -> list[ContainerGetResponseBody]:
     host = await get_host(host_id, session)
-    client = HostManager.get_host_client(host)
+    if not host.enabled:
+        raise HTTPException(409, "Host disabled")
+    client = HostsManager.get_host_client(host)
     containers: list[Container] = client.container.list(all=True)
     stmt = select(ContainersModel).where(
         ContainersModel.host_id == host_id
@@ -61,7 +63,8 @@ async def containers_list(
     _list: list[ContainerGetResponseBody] = []
     for c in containers:
         _db_item = next(
-            item for item in containers_db if item.name == c.name
+            (item for item in containers_db if item.name == c.name),
+            None,
         )
         _item = map_container_schema(host_id, c, _db_item)
         _list.append(_item)
@@ -88,7 +91,7 @@ async def patch_container_data(
         ),
     )
     host = await get_host(host_id, session)
-    client = HostManager.get_host_client(host)
+    client = HostsManager.get_host_client(host)
     d_cont = client.container.inspect(db_cont.name)
     return map_container_schema(host_id, d_cont, db_cont)
 
@@ -103,7 +106,7 @@ async def check_all_ep(update: bool = False):
 
 
 @router.post(
-    path="check/{host_id}",
+    path="/check/{host_id}",
     description="Check specific host. Returns ID of the task that can be used for monitoring.",
 )
 async def check_host_ep(
@@ -112,7 +115,7 @@ async def check_host_ep(
     session: AsyncSession = Depends(get_async_session),
 ) -> str:
     host = await get_host(host_id, session)
-    client = HostManager.get_host_client(host)
+    client = HostsManager.get_host_client(host)
     asyncio.create_task(check_host(host, client, update))
     return get_host_cache_key(host.id)
 
@@ -128,42 +131,23 @@ async def check_container_ep(
     session: AsyncSession = Depends(get_async_session),
 ) -> str:
     host = await get_host(host_id, session)
-    client = HostManager.get_host_client(host)
-    asyncio.create_task(
-        check_container(client, host.name, c_name, update)
-    )
+    client = HostsManager.get_host_client(host)
+    asyncio.create_task(check_container(client, host, c_name, update))
     return get_container_cache_key(host_id, c_name)
 
 
 @router.get(
-    path="/progress/all",
+    path="/progress/{cache_id}",
     description="Get progress of general check",
-    response_model=AllContainersCheckData,
+    response_model=AllCheckData
+    | HostCheckData
+    | ContainerCheckData
+    | None,
 )
-def progress_all() -> AllContainersCheckData | None:
-    CACHE = ProcessCache[AllContainersCheckData](
-        ALL_CONTAINERS_STATUS_KEY
-    )
-    return CACHE.get()
-
-
-@router.get(
-    path="/progress/host/{cache_id}",
-    description="Get progress of check for host",
-    response_model=HostCheckData,
-)
-def progress_host(cache_id: str) -> HostCheckData | None:
-    CACHE = ProcessCache[HostCheckData](cache_id)
-    return CACHE.get()
-
-
-@router.get(
-    path="/progress/container/{cache_id}",
-    description="Get progress of check for host's container",
-    response_model=HostCheckData,
-)
-def progress_container(cache_id: str) -> HostCheckData | None:
-    CACHE = ProcessCache[HostCheckData](cache_id)
+def progress(
+    cache_id: str,
+) -> AllCheckData | HostCheckData | ContainerCheckData | None:
+    CACHE = ProcessCache(cache_id)
     return CACHE.get()
 
 
@@ -178,24 +162,30 @@ async def is_update_available_self(
     self_container_id = get_self_container_id()
     if not self_container_id:
         return False
-    clients = HostManager.get_all()
+    clients = HostsManager.get_all()
     for clid, cli in clients:
-        if cli.container.exists(self_container_id):
-            cont = cli.container.inspect(self_container_id)
-            name = cont.name
-            stmt = (
-                select(ContainersModel)
-                .where(
-                    and_(
-                        ContainersModel.host_id == clid,
-                        ContainersModel.name == name,
+        try:
+            if cli.container.exists(self_container_id):
+                cont = cli.container.inspect(self_container_id)
+                name = cont.name
+                stmt = (
+                    select(ContainersModel)
+                    .where(
+                        and_(
+                            ContainersModel.host_id == clid,
+                            ContainersModel.name == name,
+                        )
                     )
+                    .limit(1)
                 )
-                .limit(1)
+                result = await session.execute(stmt)
+                db_cont = result.scalar_one_or_none()
+                if not db_cont:
+                    return False
+                return db_cont.update_available
+        except Exception as e:
+            logging.error(
+                "Error while getting self container update value"
             )
-            result = await session.execute(stmt)
-            db_cont = result.scalar_one_or_none()
-            if not db_cont:
-                return False
-            return db_cont.update_available
+            logging.exception(e)
     return False

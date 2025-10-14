@@ -33,7 +33,7 @@ class HostCheckData(ContainerCheckData, total=False):
     failed: int  # count of failed updates
 
 
-class AllContainersCheckData(HostCheckData, total=False):
+class AllCheckData(HostCheckData, total=False):
     """Data of all host's container's check/update progress"""
 
     pass

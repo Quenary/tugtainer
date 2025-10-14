@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from .containers_model import ContainersModel
 
 
-class HostModel(BaseModel):
+class HostsModel(BaseModel):
     """Model of docker host"""
 
     __tablename__ = "hosts"

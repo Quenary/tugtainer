@@ -1,0 +1,226 @@
+<form
+  [formGroup]="form"
+  class="hosts-form"
+  (submit)="save()"
+>
+  <p-accordion
+    [value]="['main']"
+    [multiple]="true"
+  >
+    <p-accordion-panel value="main">
+      <p-accordion-header>
+        {{ 'HOSTS.CARD.GENERAL.LABEL' | translate }}
+      </p-accordion-header>
+      <p-accordion-content>
+        <section class="accordion-content">
+          <span
+            class="switch-field"
+            fluid
+          >
+            <p-toggle-switch
+              [inputId]="'host-enabled'"
+              formControlName="enabled"
+            ></p-toggle-switch>
+            <label for="host-enabled">
+              {{ 'HOSTS.CARD.GENERAL.ENABLED' | translate }}
+            </label>
+
+            <p-toggle-switch
+              [inputId]="'host-prune'"
+              formControlName="prune"
+            ></p-toggle-switch>
+            <label for="host-prune">
+              {{ 'HOSTS.CARD.GENERAL.PRUNE' | translate }}
+            </label>
+          </span>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-name"
+              formControlName="name"
+            />
+            <label for="host-name">
+              {{ 'HOSTS.CARD.GENERAL.NAME' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-host"
+              formControlName="host"
+              [placeholder]="'HOSTS.CARD.GENERAL.HOST_PLACEHOLDER' | translate"
+            />
+            <label for="host-host">
+              {{ 'HOSTS.CARD.GENERAL.HOST' | translate }}
+            </label>
+          </p-iftaLabel>
+        </section>
+      </p-accordion-content>
+    </p-accordion-panel>
+
+    <p-accordion-panel value="tls">
+      <p-accordion-header>
+        {{ 'HOSTS.CARD.TLS.LABEL' | translate }}
+      </p-accordion-header>
+      <p-accordion-content>
+        <section class="accordion-content">
+          <span
+            class="switch-field"
+            fluid
+          >
+            <p-toggle-switch
+              [inputId]="'host-tls'"
+              formControlName="tls"
+            ></p-toggle-switch>
+            <label for="host-tls">
+              {{ 'HOSTS.CARD.TLS.TLS' | translate }}
+            </label>
+
+            <p-toggle-switch
+              [inputId]="'host-tlsverify'"
+              formControlName="tlsverify"
+            ></p-toggle-switch>
+            <label for="host-tlsverify">
+              {{ 'HOSTS.CARD.TLS.TLS_VERIFY' | translate }}
+            </label>
+          </span>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-tlscacert"
+              formControlName="tlscacert"
+              [placeholder]="'HOSTS.CARD.TLS.TLS_CACERT_PLACEHOLDER' | translate"
+            />
+            <label for="host-tlscacert">
+              {{ 'HOSTS.CARD.TLS.TLS_CACERT' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-tlscert"
+              formControlName="tlscert"
+              [placeholder]="'HOSTS.CARD.TLS.TLS_CERT_PLACEHOLDER' | translate"
+            />
+            <label for="host-tlscert">
+              {{ 'HOSTS.CARD.TLS.TLS_CERT' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-tlskey"
+              formControlName="tlskey"
+              [placeholder]="'HOSTS.CARD.TLS.TLS_KEY_PLACEHOLDER' | translate"
+            />
+            <label for="host-tlskey">
+              {{ 'HOSTS.CARD.TLS.TLS_KEY' | translate }}
+            </label>
+          </p-iftaLabel>
+        </section>
+      </p-accordion-content>
+    </p-accordion-panel>
+
+    <p-accordion-panel value="extra">
+      <p-accordion-header>
+        {{ 'HOSTS.CARD.EXTRA.LABEL' | translate }}
+      </p-accordion-header>
+      <p-accordion-content>
+        <section class="accordion-content">
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-config"
+              formControlName="config"
+              [placeholder]="'HOSTS.CARD.EXTRA.CONFIG_PLACEHOLDER' | translate"
+            />
+            <label for="host-config">
+              {{ 'HOSTS.CARD.EXTRA.CONFIG' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-context"
+              formControlName="context"
+              [placeholder]="'HOSTS.CARD.EXTRA.CONTEXT_PLACEHOLDER' | translate"
+            />
+            <label for="host-context">
+              {{ 'HOSTS.CARD.EXTRA.CONTEXT' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-client_binary"
+              formControlName="client_binary"
+              [placeholder]="'HOSTS.CARD.EXTRA.CLIENT_BINARY_PLACEHOLDER' | translate"
+            />
+            <label for="host-client_binary">
+              {{ 'HOSTS.CARD.EXTRA.CLIENT_BINARY' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <p-autocomplete
+              fluid
+              [inputId]="'host-client_call'"
+              formControlName="client_call"
+              [typeahead]="false"
+              [multiple]="true"
+              appendTo="body"
+              [placeholder]="'HOSTS.CARD.EXTRA.CLIENT_CALL_PLACEHOLDER' | translate"
+            >
+            </p-autocomplete>
+            <label for="host-client_call">
+              {{ 'HOSTS.CARD.EXTRA.CLIENT_CALL' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <input
+              fluid
+              pInputText
+              id="host-client_type"
+              formControlName="client_type"
+              [placeholder]="'HOSTS.CARD.EXTRA.CLIENT_TYPE_PLACEHOLDER' | translate"
+            />
+            <label for="host-client_type">
+              {{ 'HOSTS.CARD.EXTRA.CLIENT_TYPE' | translate }}
+            </label>
+          </p-iftaLabel>
+        </section>
+      </p-accordion-content>
+    </p-accordion-panel>
+  </p-accordion>
+
+  <p-button-group style="padding-top: 1rem;">
+    <p-button
+      [label]="'GENERAL.CANCEL' | translate"
+      routerLink="/hosts"
+      severity="secondary"
+    ></p-button>
+    <p-button
+      type="submit"
+      [label]="saveTitle()"
+      [loading]="isLoading()"
+      severity="success"
+      [disabled]="!form.dirty"
+    ></p-button>
+  </p-button-group>
+</form>

@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core import is_authorized, HostManager
+from app.core import is_authorized, HostsManager
 from app.schemas import HostInfo, HostBase
-from app.db import get_async_session, HostModel
+from app.db import get_async_session, HostsModel
 from app.api.util import get_host
 
 router = APIRouter(
-    prefix="/host",
-    tags=["host"],
+    prefix="/hosts",
+    tags=["hosts"],
     dependencies=[Depends(is_authorized)],
 )
 
@@ -21,7 +21,7 @@ router = APIRouter(
 async def get_list(
     session: AsyncSession = Depends(get_async_session),
 ):
-    stmt = select(HostModel)
+    stmt = select(HostsModel)
     result = await session.execute(stmt)
     return result.scalars().all()
 
@@ -37,18 +37,19 @@ async def create(
     session: AsyncSession = Depends(get_async_session),
 ):
     stmt = (
-        select(HostModel).where(HostModel.name == body.name).limit(1)
+        select(HostsModel).where(HostsModel.name == body.name).limit(1)
     )
     result = await session.execute(stmt)
     host = result.scalar_one_or_none()
     if host:
         raise HTTPException(400, "Host name is already taken")
     _body = body.model_dump(exclude_unset=True)
-    new_host = HostModel(**_body)
+    new_host = HostsModel(**_body)
     session.add(new_host)
     await session.commit()
     await session.refresh(new_host)
-    HostManager.set_client(new_host)
+    if new_host.enabled:
+        HostsManager.set_client(new_host)
     return new_host
 
 
@@ -61,7 +62,7 @@ async def read(
     id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
-    return get_host(id, session)
+    return await get_host(id, session)
 
 
 @router.put(
@@ -80,19 +81,19 @@ async def update(
             setattr(host, key, value)
     await session.commit()
     await session.refresh(host)
-    HostManager.set_client(host)
+    HostsManager.remove_client(host.id)
+    if host.enabled:
+        HostsManager.set_client(host)
     return host
 
-@router.delete(
-    path="/{id}",
-    description="Delete host"
-)
+
+@router.delete(path="/{id}", description="Delete host")
 async def delete(
     id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
     host = await get_host(id, session)
-    HostManager.remove_client(host)
+    HostsManager.remove_client(host)
     await session.delete(host)
     await session.commit()
     return {"detail": "Host deleted successfully"}
