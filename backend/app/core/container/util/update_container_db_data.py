@@ -7,8 +7,8 @@ from app.db import (
 
 
 async def update_container_db_data(
-    name: str, data: ContainerInsertOrUpdateData
+    host_id: int, name: str, data: ContainerInsertOrUpdateData
 ):
     """Helper for updating container db data"""
     async with async_session_maker() as session:
-        await insert_or_update_container(session, name, data)
+        await insert_or_update_container(session, host_id, name, data)

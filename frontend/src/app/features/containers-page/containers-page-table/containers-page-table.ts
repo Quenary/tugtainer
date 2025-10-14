@@ -5,6 +5,8 @@ import {
   computed,
   DestroyRef,
   inject,
+  input,
+  OnInit,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -21,9 +23,10 @@ import { ContainersApiService } from 'src/app/entities/containers/containers-api
 import {
   ECheckStatus,
   EContainerStatus,
-  ICheckProgress,
   IContainer,
+  IContainerCheckData,
   IContainerPatchBody,
+  IHostCheckData,
 } from 'src/app/entities/containers/containers-interface';
 import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
 import { Tooltip } from 'primeng/tooltip';
@@ -32,6 +35,7 @@ import { FieldsetModule } from 'primeng/fieldset';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { ButtonGroup } from 'primeng/buttongroup';
 import { DialogModule } from 'primeng/dialog';
+import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
 
 type TContainer = IContainer & {
   checkStatus?: ECheckStatus;
@@ -62,11 +66,13 @@ type TContainer = IContainer & {
   styleUrl: './containers-page-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ContainersPageTable {
+export class ContainersPageTable implements OnInit {
   private readonly containersApiService = inject(ContainersApiService);
   private readonly toastService = inject(ToastService);
   private readonly translateService = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
+
+  public readonly host = input.required<IHostInfo>();
 
   public readonly EContainerStatusSeverity: { [K in keyof typeof EContainerStatus]: string } = {
     [EContainerStatus.created]: 'primary',
@@ -86,23 +92,27 @@ export class ContainersPageTable {
   public readonly isLoading = signal<boolean>(false);
   public readonly list = signal<Array<TContainer>>([]);
 
-  public readonly checkAllProgress = signal<ICheckProgress>(null);
+  public readonly checkHostProgress = signal<IHostCheckData>(null);
   public readonly checkAllActive = computed(() => {
-    const checkAllProgress = this.checkAllProgress();
+    const checkAllProgress = this.checkHostProgress();
     return (
       checkAllProgress && ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkAllProgress.status)
     );
   });
   public readonly checkAllDialogVisible = signal<boolean>(false);
 
-  constructor() {
+  ngOnInit(): void {
     this.updateList();
   }
 
   public updateList(): void {
+    const host = this.host();
+    if (!host || !host.enabled) {
+      return;
+    }
     this.isLoading.set(true);
     this.containersApiService
-      .list()
+      .list(host.id)
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
@@ -127,9 +137,13 @@ export class ContainersPageTable {
   }
 
   private patchContainer(name: string, body: IContainerPatchBody): void {
+    const host = this.host();
+    if (!host || !host.enabled) {
+      return;
+    }
     this.isLoading.set(true);
     this.containersApiService
-      .patch(name, body)
+      .patch(host.id, name, body)
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
@@ -154,24 +168,26 @@ export class ContainersPageTable {
   }
 
   public checkContainer(name: string, update: boolean = false): void {
+    const host = this.host();
+    if (!host || !host.enabled) {
+      return;
+    }
     this.isLoading.set(true);
-    const req$ = update
-      ? this.containersApiService.updateContainer(name)
-      : this.containersApiService.checkContainer(name);
-    req$
+    this.containersApiService
+      .checkContainer(host.id, name, update)
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
         }),
       )
       .subscribe({
-        next: (id) => {
+        next: (cache_id) => {
           this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
-          this.watchCheckProgress(id).subscribe({
+          this.watchCheckProgress(cache_id).subscribe({
             next: (res) => {
               const status = res.status;
               const list = this.list();
-              const index = list.findIndex((item) => [id, name].includes(item.name));
+              const index = list.findIndex((item) => item.name == name);
               if (index > -1) {
                 const _list = [...list];
                 _list[index].checkStatus = status;
@@ -189,21 +205,25 @@ export class ContainersPageTable {
       });
   }
 
-  public checkAll(): void {
+  public checkHost(update: boolean = false): void {
+    const host = this.host();
+    if (!host || !host.enabled) {
+      return;
+    }
     this.isLoading.set(true);
     this.containersApiService
-      .checkAll()
+      .checkHost(host.id, update)
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
         }),
       )
       .subscribe({
-        next: () => {
+        next: (cache_id: string) => {
           this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
-          this.watchCheckProgress('all').subscribe({
+          this.watchCheckProgress<IHostCheckData>(cache_id).subscribe({
             next: (res) => {
-              this.checkAllProgress.set(res);
+              this.checkHostProgress.set(res);
             },
             complete: () => {
               this.updateList();
@@ -222,8 +242,8 @@ export class ContainersPageTable {
    * @param id id of progress cache
    * @returns
    */
-  private watchCheckProgress(id: string): Observable<ICheckProgress> {
-    return this.containersApiService.getCheckProgress(id).pipe(
+  private watchCheckProgress<T extends IContainerCheckData>(id: string): Observable<T> {
+    return this.containersApiService.progress<T>(id).pipe(
       repeat({ delay: 500 }),
       takeWhile((res) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(res?.status), true),
       takeUntilDestroyed(this.destroyRef),

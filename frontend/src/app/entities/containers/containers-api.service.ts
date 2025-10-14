@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../base/base-api.service';
 import { Observable } from 'rxjs';
-import { ICheckProgress, IContainer, IContainerPatchBody } from './containers-interface';
+import {
+  IAllCheckData,
+  IHostCheckData,
+  IContainerCheckData,
+  IContainer,
+  IContainerPatchBody,
+} from './containers-interface';
 
 @Injectable({
   providedIn: 'root',
@@ -9,28 +15,36 @@ import { ICheckProgress, IContainer, IContainerPatchBody } from './containers-in
 export class ContainersApiService extends BaseApiService<'/containers'> {
   protected override readonly prefix = '/containers';
 
-  list(): Observable<IContainer[]> {
-    return this.httpClient.get<IContainer[]>(`${this.basePath}/list`);
+  list(host_id: number): Observable<IContainer[]> {
+    return this.httpClient.get<IContainer[]>(`${this.basePath}/${host_id}/list`);
   }
 
-  patch(name: string, body: IContainerPatchBody): Observable<IContainer> {
-    return this.httpClient.patch<IContainer>(`${this.basePath}/${name}`, body);
+  patch(host_id: number, name: string, body: IContainerPatchBody): Observable<IContainer> {
+    return this.httpClient.patch<IContainer>(`${this.basePath}/${host_id}/${name}`, body);
   }
 
-  checkAll(): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/check/all`, {});
+  checkAll(update: boolean = false): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/check`, {}, { params: { update } });
   }
 
-  checkContainer(name: string): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/check/${name}`, {});
+  checkHost(host_id: number, update: boolean = false): Observable<string> {
+    return this.httpClient.post<string>(
+      `${this.basePath}/check/${host_id}`,
+      {},
+      { params: { update } },
+    );
   }
 
-  updateContainer(name: string): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/update/${name}`, {});
+  checkContainer(host_id: number, name: string, update: boolean = false): Observable<string> {
+    return this.httpClient.post<string>(
+      `${this.basePath}/check/${host_id}/${name}`,
+      {},
+      { params: { update } },
+    );
   }
 
-  getCheckProgress(id: string): Observable<ICheckProgress> {
-    return this.httpClient.get<ICheckProgress>(`${this.basePath}/check_progress/${id}`);
+  progress<T extends IContainerCheckData>(cache_id: string): Observable<T> {
+    return this.httpClient.get<T>(`${this.basePath}/progress/${cache_id}`);
   }
 
   isUpdateAvailableSelf(): Observable<boolean> {

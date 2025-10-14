@@ -2,10 +2,13 @@
   "GENERAL": {
     "TITLE": "Tugtainer",
     "SAVE": "Save",
+    "ADD": "Add",
     "CONFIRM": "Confirm",
     "CANCEL": "Cancel",
-    "ENABLED": "On",
-    "DISABLED": "Off",
+    "ENABLED": "Enabled",
+    "DISABLED": "Disabled",
+    "ON": "On",
+    "OFF": "Off",
     "SUCCESS": "Success",
     "ERROR": "Error",
     "IN_PROGRESS": "In progress",
@@ -17,11 +20,13 @@
   },
   "NAV": {
     "AUTH": "Tugtainer. Authorization.",
+    "HOSTS": "Tugtainer. Hosts.",
     "CONTAINERS": "Tugtainer. Containers.",
     "IMAGES": "Tugtainer. Images.",
     "SETTINGS": "Tugtainer. Settings."
   },
   "MENU": {
+    "HOSTS": "Hosts",
     "CONTAINERS": "Containers",
     "IMAGES": "Images",
     "SETTINGS": "Settings",
@@ -45,6 +50,51 @@
     },
     "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"]
   },
+  "HOSTS": {
+    "TABLE": {
+      "SEARCH_PLACEHOLDER": "ID, name, host",
+      "ADD": "Add host",
+      "NAME": "Name",
+      "HOST": "Host",
+      "STATUS": "Status"
+    },
+    "CARD": {
+      "ID": "ID",
+      "GENERAL": {
+        "LABEL": "General",
+        "ID": "ID",
+        "NAME": "Name",
+        "ENABLED": "Enabled",
+        "PRUNE": "Prune",
+        "HOST": "Host",
+        "HOST_PLACEHOLDER": "ssh://root@192.168.0.10"
+      },
+      "TLS": {
+        "LABEL": "TLS",
+        "TLS": "TLS",
+        "TLS_CACERT": "TLS CA Cert",
+        "TLS_CACERT_PLACEHOLDER": "~/.docker/ca.pem",
+        "TLS_CERT": "TLS Cert",
+        "TLS_CERT_PLACEHOLDER": "~/.docker/cert.pem",
+        "TLS_KEY": "TLS Key",
+        "TLS_KEY_PLACEHOLDER": "~/.docker/key.pem",
+        "TLS_VERIFY": "TLS Verify"
+      },
+      "EXTRA": {
+        "LABEL": "Extra",
+        "CONFIG": "Config",
+        "CONFIG_PLACEHOLDER": "~/.docker",
+        "CONTEXT": "Context",
+        "CONTEXT_PLACEHOLDER": "my-remote-server",
+        "CLIENT_BINARY": "Client binary",
+        "CLIENT_BINARY_PLACEHOLDER": "docker",
+        "CLIENT_CALL": "Client call",
+        "CLIENT_CALL_PLACEHOLDER": "List e.g. ['docker'], press enter to add item",
+        "CLIENT_TYPE": "Client type",
+        "CLIENT_TYPE_PLACEHOLDER": "docker | podman | nerdctl | unknown"
+      }
+    }
+  },
   "CONTAINERS": {
     "TABLE": {
       "SEARCH_PLACEHOLDER": "Name or ID",
@@ -57,7 +107,7 @@
         "FAILED": "Failed"
       },
       "NAME": "Name",
-      "ID": "ID",
+      "CONTAINER_ID": "ID",
       "IMAGE": "Image",
       "UPDATE_AVAILABLE": "Update available",
       "STATUS": "Status",

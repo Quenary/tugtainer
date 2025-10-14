@@ -1,0 +1,85 @@
+<p-table
+  #dt2
+  [globalFilterFields]="['id', 'name', 'host']"
+  dataKey="id"
+  sortField="id"
+  [scrollable]="true"
+  scrollHeight="flex"
+  [value]="list()"
+  selectionMode="single"
+>
+  <ng-template #header>
+    <tr>
+      <th>
+        <p-iconfield iconPosition="left">
+          <p-inputicon>
+            <i class="pi pi-search"></i>
+          </p-inputicon>
+          <input
+            #searchInput
+            id="host-search"
+            pInputText
+            type="text"
+            (input)="dt2.filterGlobal($event.target.value, 'contains')"
+            [placeholder]="'HOSTS.TABLE.SEARCH_PLACEHOLDER' | translate"
+          />
+        </p-iconfield>
+      </th>
+      <th></th>
+      <th>
+        <p-button-group>
+          <p-button
+            [loading]="isLoading()"
+            [label]="'GENERAL.REFRESH' | translate"
+            (onClick)="updateList()"
+          ></p-button>
+          <p-button
+            severity="success"
+            routerLink="/hosts/new"
+            [label]="'HOSTS.TABLE.ADD' | translate"
+          ></p-button>
+        </p-button-group>
+      </th>
+    </tr>
+
+    <tr>
+      <th pSortableColumn="name">
+        {{ 'HOSTS.TABLE.NAME' | translate }}
+        <p-sortIcon field="name"></p-sortIcon>
+      </th>
+      <th pSortableColumn="host">
+        {{ 'HOSTS.TABLE.HOST' | translate }}
+        <p-sortIcon field="host"></p-sortIcon>
+      </th>
+      <th pSortableColumn="status">
+        {{ 'HOSTS.TABLE.STATUS' | translate }}
+        <p-sortIcon field="status"></p-sortIcon>
+      </th>
+    </tr>
+  </ng-template>
+
+  <ng-template
+    #body
+    let-host
+  >
+    <tr
+      [routerLink]="'/hosts/' + host.id"
+      style="cursor: pointer"
+    >
+      <td>
+        {{ host.name }}
+        @if (!host.enabled) {
+          <p-tag severity="danger">
+            {{ 'GENERAL.DISABLED' | translate }}
+          </p-tag>
+        }
+      </td>
+      <td>
+        {{ host.host }}
+      </td>
+      <td>
+        {{ host.status }}
+      </td>
+    </tr>
+  </ng-template>
+</p-table>

@@ -7,7 +7,7 @@ from app.api import (
     public_router,
     settings_router,
     images_router,
-    host_router,
+    hosts_router,
 )
 from app.config import Config
 import logging
@@ -34,4 +34,4 @@ app.include_router(containers_router)
 app.include_router(public_router)
 app.include_router(settings_router)
 app.include_router(images_router)
-app.include_router(host_router)
+app.include_router(hosts_router)

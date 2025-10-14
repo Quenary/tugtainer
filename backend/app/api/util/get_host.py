@@ -1,13 +1,11 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core import HostManager
-from python_on_whales import DockerClient
-from app.db import HostModel
+from app.db import HostsModel
 
 
-async def get_host(host_id: int, session: AsyncSession) -> HostModel:
-    stmt = select(HostModel).where(HostModel.id == host_id).limit(1)
+async def get_host(host_id: int, session: AsyncSession) -> HostsModel:
+    stmt = select(HostsModel).where(HostsModel.id == host_id).limit(1)
     result = await session.execute(stmt)
     host = result.scalar_one_or_none()
     if not host:

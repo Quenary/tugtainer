@@ -69,6 +69,11 @@ docker run -d -p 9412:80 \\
     map((translates) => {
       return <MenuItem[]>[
         {
+          label: translates.HOSTS,
+          routerLink: '/hosts',
+          icon: 'pi pi-server',
+        },
+        {
           label: translates.CONTAINERS,
           routerLink: '/containers',
           icon: 'pi pi-box',

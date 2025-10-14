@@ -23,6 +23,19 @@ export const routes: Routes = [
   },
   // AUTHORIZED
   {
+    path: 'hosts',
+    title: titleTranslate('NAV.HOSTS'),
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/hosts-page/hosts-page').then((c) => c.HostsPage),
+    children: [
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./features/hosts-page/hosts-page-card/hosts-page-card').then((c) => c.HostsPageCard),
+      },
+    ],
+  },
+  {
     path: 'containers',
     title: titleTranslate('NAV.CONTAINERS'),
     canActivate: [authGuard],

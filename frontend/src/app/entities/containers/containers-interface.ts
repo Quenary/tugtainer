@@ -50,10 +50,14 @@ export enum ECheckStatus {
   DONE = 'DONE',
   ERROR = 'ERROR',
 }
-export interface ICheckProgress {
+
+export interface IContainerCheckData {
   status: ECheckStatus;
+}
+export interface IHostCheckData extends IContainerCheckData {
   available: number;
   updated: number;
   rolledback: number;
   failed: number;
 }
+export interface IAllCheckData extends IHostCheckData {}

@@ -2,28 +2,27 @@ from inspect import signature
 import threading
 import logging
 from sqlalchemy import select
-from app.schemas import HostInfo
 from python_on_whales import DockerClient
-from app.db import async_session_maker, HostModel
+from app.db import async_session_maker, HostsModel
+from app.schemas import HostInfo
 
 
 async def load_hosts_on_init():
     """Init hosts from db"""
     async with async_session_maker() as session:
-        stmt = select(HostModel).where(HostModel.enabled == True)
+        stmt = select(HostsModel).where(HostsModel.enabled == True)
         result = await session.execute(stmt)
         hosts = result.scalars().all()
         for h in hosts:
             try:
-                info = HostInfo.model_validate(h)
-                HostManager.set_client(info)
+                HostsManager.set_client(h)
                 logging.info(f"Docker host '{h.name}' loaded.")
             except Exception as e:
                 logging.error(f"Error loading docker host '{h.name}'")
                 logging.exception(e)
 
 
-class HostManager:
+class HostsManager:
     """Class for managing multiple docker hosts"""
 
     _INSTANCE = None
@@ -35,20 +34,21 @@ class HostManager:
         return cls._INSTANCE
 
     @classmethod
-    def set_client(cls, info: HostInfo):
-        cls.remove_client(info.id)
-        cls._HOST_CLIENTS[info.id] = cls._create_client(info)
+    def set_client(cls, host: HostsModel):
+        cls.remove_client(host.id)
+        cls._HOST_CLIENTS[host.id] = cls._create_client(host)
 
     @classmethod
-    def get_host_client(cls, info: HostInfo) -> DockerClient:
-        if info.id in cls._HOST_CLIENTS:
-            return cls._HOST_CLIENTS[info.id]
-        client = cls._create_client(info)
-        cls._HOST_CLIENTS[info.id] = cls._create_client(info)
+    def get_host_client(cls, host: HostsModel) -> DockerClient:
+        if host.id in cls._HOST_CLIENTS:
+            return cls._HOST_CLIENTS[host.id]
+        client = cls._create_client(host)
+        cls._HOST_CLIENTS[host.id] = cls._create_client(host)
         return client
 
     @classmethod
-    def _create_client(cls, info: HostInfo) -> DockerClient:
+    def _create_client(cls, host: HostsModel) -> DockerClient:
+        info = HostInfo.model_validate(host)
         allowed_keys = signature(DockerClient.__init__).parameters
         filtered = {
             k: v
