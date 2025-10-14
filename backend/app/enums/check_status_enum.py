@@ -9,5 +9,6 @@ class ECheckStatus(str, Enum):
     PREPARING = "PREPARING"
     CHECKING = "CHECKING"
     UPDATING = "UPDATING"
+    PRUNING = "PRUNING"
     DONE = "DONE"
     ERROR = "ERROR"

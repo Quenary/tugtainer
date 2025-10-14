@@ -3,3 +3,4 @@ from .containers_api import router as containers_router
 from .public_api import router as public_router
 from .settings_api import router as settings_router
 from .images_api import router as images_router
+from .host_api import router as host_router

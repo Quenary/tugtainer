@@ -5,14 +5,16 @@ from python_on_whales.components.container.models import PortBinding
 
 
 class ContainerGetResponseBody(BaseModel):
-    name: str
-    image: str
-    id: str
+    name: str  # name of the container
+    container_id: str  # id of the container
+    image: str | None  # image of the container
     ports: Dict[str, List[PortBinding] | None] | None
     status: str | None
     health: str | None
     is_self: bool
+    host_id: int  # host id is also stored in db, but it must be always defined
     # Those keys stored in db, but might be undefined for new containers
+    id: Optional[int] = None  # id of the row
     check_enabled: Optional[bool] = (
         None  # Is check for update enabled
     )

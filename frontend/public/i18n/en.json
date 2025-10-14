@@ -110,10 +110,6 @@
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
-      },
-      "PRUNE_IMAGES": {
-        "LABEL": "Prune images",
-        "HINT": "Prune images after scheduled check and update."
       }
     }
   }
