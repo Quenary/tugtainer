@@ -16,6 +16,7 @@ from . import (
     map_tmpfs_dict_to_list,
     filter_valid_docker_labels,
 )
+from .map_device_requests_to_gpus import  map_device_requests_to_gpus
 import logging
 
 
@@ -166,6 +167,9 @@ def get_container_config(
         "domainname": CONFIG.domainname,
         "entrypoint": CONFIG.entrypoint,
         "envs": ENVS,
+        "gpus": map_device_requests_to_gpus(
+            HOST_CONFIG.device_requests
+        ),
         "groups_add": HOST_CONFIG.group_add,
         **map_healthcheck_to_kwargs(CONFIG.healthcheck),
         "hostname": HOSTNAME,
