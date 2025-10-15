@@ -118,8 +118,5 @@ Environment variables are not required, but you can still define some. There is 
 - Dozzle integration or something more universal (list of urls for redirects?)
 - Docker compose support (display stacks, maybe update only together?)
 - Swarm support?
-- Remote hosts via ssh tunneling or tls
 - Try to add release notes (from labels or something)
-- Add exited code to container table
 - Remove unused deps
-- Generate ssh keys in container?
