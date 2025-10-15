@@ -10,6 +10,7 @@ class ContainerGetResponseBody(BaseModel):
     image: str | None  # image of the container
     ports: Dict[str, List[PortBinding] | None] | None
     status: str | None
+    exit_code: int | None
     health: str | None
     is_self: bool
     host_id: int  # host id is also stored in db, but it must be always defined

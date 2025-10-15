@@ -20,6 +20,7 @@ def map_container_schema(
         container_id=d_cont.id,
         ports=d_cont.host_config.port_bindings,
         status=d_cont.state.status,
+        exit_code=d_cont.state.exit_code,
         health=get_container_health_status_str(d_cont),
         is_self=is_self_container(d_cont),
         host_id=host_id,

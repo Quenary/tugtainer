@@ -29,7 +29,7 @@
         </p-iconfield>
       </th>
       <th colspan="4"></th>
-      <th style="text-wrap: nowrap;">
+      <th style="text-wrap: nowrap">
         <p-button-group>
           <p-button
             [loading]="isLoading()"
@@ -126,7 +126,11 @@
       <td>
         <p-tag
           [severity]="EContainerStatusSeverity[container.status]"
-          [value]="container.status"
+          [value]="
+            container.status == 'exited'
+              ? container.status + ' ' + container.exit_code
+              : container.status
+          "
         ></p-tag>
       </td>
       <td>
