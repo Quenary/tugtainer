@@ -1,1 +1,35 @@
-<app-images-page-table></app-images-page-table>
+<p-accordion
+  [multiple]="true"
+  [value]="accordionValue()"
+>
+  @for (h of hosts(); track h) {
+    <p-accordion-panel
+      [value]="h.id"
+      [disabled]="!h.enabled"
+    >
+      <p-accordion-header>
+        <span class="host-header">
+          {{ h.name }}
+          <p-button
+            [style]="{ 'pointer-events': 'all' }"
+            icon="pi pi-external-link"
+            rounded
+            text
+            [routerLink]="'/hosts/' + h.id"
+          >
+          </p-button>
+          @if (!h.enabled) {
+            <p-tag severity="danger">
+              {{ 'GENERAL.DISABLED' | translate }}
+            </p-tag>
+          }
+        </span>
+      </p-accordion-header>
+      <p-accordion-content>
+        @if (h.enabled) {
+          <app-images-page-table [host]="h"></app-images-page-table>
+        }
+      </p-accordion-content>
+    </p-accordion-panel>
+  }
+</p-accordion>

@@ -20,7 +20,7 @@
           </p-inputicon>
           <input
             #searchInput
-            id="{{host()?.id}}-containers-search"
+            id="{{ host()?.id }}-containers-search"
             pInputText
             type="text"
             (input)="dt2.filterGlobal($event.target.value, 'contains')"
@@ -29,7 +29,7 @@
         </p-iconfield>
       </th>
       <th colspan="4"></th>
-      <th>
+      <th style="text-wrap: nowrap;">
         <p-button-group>
           <p-button
             [loading]="isLoading()"
@@ -55,15 +55,24 @@
         {{ 'CONTAINERS.TABLE.NAME' | translate }}
         <p-sortIcon field="name"></p-sortIcon>
       </th>
-      <th pSortableColumn="status">
+      <th
+        pSortableColumn="status"
+        style="width: 10%"
+      >
         {{ 'CONTAINERS.TABLE.STATUS' | translate }}
         <p-sortIcon field="status"></p-sortIcon>
       </th>
-      <th pSortableColumn="health">
+      <th
+        pSortableColumn="health"
+        style="width: 10%"
+      >
         {{ 'CONTAINERS.TABLE.HEALTH' | translate }}
         <p-sortIcon field="health"></p-sortIcon>
       </th>
-      <th pSortableColumn="check_enabled">
+      <th
+        pSortableColumn="check_enabled"
+        style="width: 10%"
+      >
         {{ 'CONTAINERS.TABLE.CHECK_ENABLED' | translate }}
         <i
           class="pi pi-question-circle"
@@ -73,7 +82,10 @@
         ></i>
         <p-sortIcon field="check_enabled"></p-sortIcon>
       </th>
-      <th pSortableColumn="update_enabled">
+      <th
+        pSortableColumn="update_enabled"
+        style="width: 10%"
+      >
         {{ 'CONTAINERS.TABLE.UPDATE_ENABLED' | translate }}
         <i
           class="pi pi-question-circle"
@@ -83,7 +95,10 @@
         ></i>
         <p-sortIcon field="update_enabled"></p-sortIcon>
       </th>
-      <th pSortableColumn="update_available">
+      <th
+        pSortableColumn="update_available"
+        style="width: 20%"
+      >
         <p-sortIcon field="update_available"></p-sortIcon>
       </th>
     </tr>

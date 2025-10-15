@@ -27,7 +27,7 @@
         </p-iconfield>
       </th>
       <th colspan="3"></th>
-      <th>
+      <th style="text-wrap: nowrap">
         <p-buttongroup>
           <p-button
             [loading]="isLoading()"
@@ -60,11 +60,17 @@
         {{ 'IMAGES.TABLE.TAGS' | translate }}
         <p-sortIcon field="tags"></p-sortIcon>
       </th>
-      <th pSortableColumn="size">
+      <th
+        pSortableColumn="size"
+        style="width: 10%"
+      >
         {{ 'IMAGES.TABLE.SIZE' | translate }}
         <p-sortIcon field="size"></p-sortIcon>
       </th>
-      <th pSortableColumn="created">
+      <th
+        pSortableColumn="created"
+        style="width: 20%"
+      >
         {{ 'IMAGES.TABLE.CREATED' | translate }}
         <p-sortIcon field="created"></p-sortIcon>
       </th>

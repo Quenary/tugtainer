@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../base/base-api.service';
 import { Observable } from 'rxjs';
-import { IImage, IImagePruneResult } from './images-interface';
+import { IImage } from './images-interface';
 
 @Injectable({
   providedIn: 'root',
@@ -9,11 +9,11 @@ import { IImage, IImagePruneResult } from './images-interface';
 export class ImagesApiService extends BaseApiService<'/images'> {
   protected override readonly prefix = '/images';
 
-  list(): Observable<IImage[]> {
-    return this.httpClient.get<IImage[]>(`${this.basePath}/list`);
+  list(host_id: number): Observable<IImage[]> {
+    return this.httpClient.get<IImage[]>(`${this.basePath}/${host_id}/list`);
   }
 
-  prune(): Observable<IImagePruneResult> {
-    return this.httpClient.post<IImagePruneResult>(`${this.basePath}/prune`, {});
+  prune(host_id: number): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/${host_id}/prune`, {});
   }
 }

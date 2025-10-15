@@ -8,6 +8,12 @@
     display: flex;
     flex-direction: column;
 
+    .help-buttons {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
     .accordion-content {
       width: 100%;
       display: flex;

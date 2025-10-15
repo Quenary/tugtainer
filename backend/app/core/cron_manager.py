@@ -40,7 +40,7 @@ async def schedule_check_on_init():
             ECronJob.CHECK_CONTAINERS,
             cast(str, crontab_expr.value),
             tz.value if tz else None,
-            check_all,
+            lambda: check_all(True)
         )
 
 

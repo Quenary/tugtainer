@@ -23,7 +23,7 @@ ARG VERSION
 ENV VERSION=$VERSION
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx supervisor curl docker-cli \
+    nginx supervisor curl docker-cli openssh-client \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

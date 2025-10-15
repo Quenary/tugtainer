@@ -88,7 +88,7 @@ async def change_system_settings(
             ECronJob.CHECK_CONTAINERS,
             str(cron_expr.value),
             str(timezone.value),
-            check_all,
+            lambda: check_all(True),
         )
 
     return {"status": "updated", "count": len(data)}
