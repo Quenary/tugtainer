@@ -5,6 +5,7 @@ import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { ConfirmPopup } from 'primeng/confirmpopup';
+import { DialogModule } from 'primeng/dialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -32,6 +33,7 @@ import { IImage } from 'src/app/entities/images/images-interface';
     DatePipe,
     TooltipModule,
     DecimalPipe,
+    DialogModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './images-page-table.html',
@@ -47,6 +49,7 @@ export class ImagesPageTable implements OnInit {
   public readonly host = input.required<IHostInfo>();
 
   public readonly isLoading = signal<boolean>(false);
+  public readonly pruneResult = signal<string>(null);
   public readonly list = signal<IImage[]>([]);
 
   ngOnInit(): void {
@@ -104,7 +107,7 @@ export class ImagesPageTable implements OnInit {
       )
       .subscribe({
         next: (res) => {
-          this.toastService.success(this.translateService.instant('GENERAL.SUCCESS'), res);
+          this.pruneResult.set(res);
           this.updateList();
         },
         error: (error) => {

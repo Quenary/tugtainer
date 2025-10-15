@@ -123,3 +123,15 @@
     </tr>
   </ng-template>
 </p-table>
+
+<p-dialog
+  [header]="'IMAGES.TABLE.PRUNE_RESULT' | translate"
+  [modal]="true"
+  [draggable]="false"
+  [visible]="!!pruneResult()"
+  (visibleChange)="pruneResult.set(null)"
+>
+  <pre style="max-width: 75vw; max-height: 75vh">
+      {{ pruneResult() }}
+  </pre>
+</p-dialog>
