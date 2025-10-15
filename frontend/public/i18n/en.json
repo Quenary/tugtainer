@@ -135,6 +135,7 @@
     "TABLE": {
       "PRUNE": "Prune",
       "PRUNE_CONFIRM": "Do you want to prune images?",
+      "PRUNE_RESULT": "Prune result",
       "SEARCH_PLACEHOLDER": "ID, repo, tags",
       "REPOSITORY": "Repository",
       "ID": "ID",
