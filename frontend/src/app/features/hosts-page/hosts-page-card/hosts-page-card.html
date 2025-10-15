@@ -1,12 +1,57 @@
+<p-confirmpopup></p-confirmpopup>
+
 <form
   [formGroup]="form"
   class="hosts-form"
   (submit)="save()"
 >
   <p-accordion
-    [value]="['main']"
+    [value]="accordionValue()"
+    (valueChange)="accordionValue.set($event)"
     [multiple]="true"
   >
+    <p-accordion-panel value="help">
+      <p-accordion-header>
+        {{ 'HOSTS.CARD.HELP.LABEL' | translate }}
+      </p-accordion-header>
+      <p-accordion-content>
+        <section class="accordion-content">
+          <div>
+            {{ 'HOSTS.CARD.HELP.TEXT' | translate }}
+          </div>
+          <section style="display: inline-flex; align-items: center; gap: 1rem">
+            <p-button
+              [label]="'HOSTS.CARD.HELP.HELP_BTN' | translate"
+              icon="pi pi-external-link"
+              (onClick)="openHelp()"
+            ></p-button>
+            <p-button-group>
+              <p-button
+                icon="pi pi-file-import"
+                severity="success"
+                [label]="'HOSTS.CARD.HELP.SSH_TMPL' | translate"
+                (onClick)="setSshTmpl()"
+              ></p-button>
+              <p-button
+                icon="pi pi-file-import"
+                severity="success"
+                [label]="'HOSTS.CARD.HELP.PROXY_TMPL' | translate"
+                (onClick)="setProxyTmpl()"
+              ></p-button>
+            </p-button-group>
+            @if (id()) {
+              <p-button
+                icon="pi pi-delete"
+                severity="danger"
+                [label]="'GENERAL.DELETE' | translate"
+                (onClick)="confirmDelete($event)"
+              ></p-button>
+            }
+          </section>
+        </section>
+      </p-accordion-content>
+    </p-accordion-panel>
+
     <p-accordion-panel value="main">
       <p-accordion-header>
         {{ 'HOSTS.CARD.GENERAL.LABEL' | translate }}
@@ -209,7 +254,7 @@
     </p-accordion-panel>
   </p-accordion>
 
-  <p-button-group style="padding-top: 1rem;">
+  <p-button-group style="padding-top: 1rem">
     <p-button
       [label]="'GENERAL.CANCEL' | translate"
       routerLink="/hosts"

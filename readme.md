@@ -24,21 +24,82 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 ## Deploy:
 
-```
-# create volume
-docker volume create tugtainer_data
+- ### Quick start
 
-# pull image
-docker pull quenary/tugtainer:latest
+  ```bash
+  # create volume
+  docker volume create tugtainer_data
 
-# run container
-docker run -d -p 9412:80 \
+  # pull image
+  docker pull quenary/tugtainer:latest
+
+  # run container
+  docker run -d -p 9412:80 \
+      --name=tugtainer \
+      --restart=unless-stopped \
+      -v tugtainer_data:/tugtainer \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      quenary/tugtainer:latest
+  ```
+
+- ### Remote / proxy hosts
+
+  - SSH:
+
+  ```bash
+  # Mount ssh key to the container.
+  # Don't forget to add known hosts (ssh to remote at least once).
+  docker run -d -p 9412:80 \
+      --name=tugtainer \
+      --restart=unless-stopped \
+      -v tugtainer_data:/tugtainer \
+      -v ~/.ssh:/root/.ssh:ro \
+      quenary/tugtainer:latest
+
+  # And create a host in the UI with
+  HOST: ssh://my-user@my-host
+  ```
+
+  - Socket proxy:
+
+  ```bash
+  # Create socket proxy container, e.g. https://hub.docker.com/r/linuxserver/socket-proxy
+  # Of course, you should remember not to update proxy container from the app.
+  # Enable at least IMAGES, INFO, PING for the check feature, and CONTAINERS, NETWORKS, POST, VOLUMES for the update feature.
+
+  # Run the app with only the data volume.
+  docker run -d -p 9412:80 \
+      --name=tugtainer \
+      --restart=unless-stopped \
+      -v tugtainer_data:/tugtainer \
+      quenary/tugtainer:latest
+
+  # And create a host in the UI with
+  HOST: tcp://my-socket-proxy:my-port
+  ```
+
+  - Combine ssh tunnel and socket proxy:
+
+  ```bash
+  # Create persistent tunnel outside the container.
+  autossh -M 0 -f -N -L 23750:127.0.0.1:2375 \
+    -o ServerAliveInterval=60 \
+    -o ServerAliveCountMax=3 \
+    my-user@my-host
+
+  # Run the app with only the data volume.
+  docker run -d -p 9412:80 \
     --name=tugtainer \
     --restart=unless-stopped \
     -v tugtainer_data:/tugtainer \
-    -v /var/run/docker.sock:/var/run/docker.sock \
     quenary/tugtainer:latest
-```
+
+  # And create a host in the UI with
+  HOST: tcp://127.0.0.1:23750
+  ```
+
+  - TLS:
+    You can try to utilize a tls certificates if you wish. In this case you have to mount ca/cert/key to the container and specify appropriate paths in the UI
 
 ## Env:
 
@@ -61,3 +122,4 @@ Environment variables are not required, but you can still define some. There is 
 - Try to add release notes (from labels or something)
 - Add exited code to container table
 - Remove unused deps
+- Generate ssh keys in container?

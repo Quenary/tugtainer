@@ -1,4 +1,4 @@
-<p-accordion multiple [value]="accordionValue()">
+<p-accordion [multiple]="true" [value]="accordionValue()">
   @for (h of hosts(); track h) {
     <p-accordion-panel
       [value]="h.id"

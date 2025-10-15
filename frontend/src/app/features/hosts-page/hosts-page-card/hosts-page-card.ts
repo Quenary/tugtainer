@@ -25,6 +25,8 @@ import { ICreateHost, IHostInfo, THostClientType } from 'src/app/entities/hosts/
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import { RouterLink } from '@angular/router';
 import { ButtonGroup } from 'primeng/buttongroup';
+import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-host-page-card',
@@ -42,7 +44,9 @@ import { ButtonGroup } from 'primeng/buttongroup';
     RouterLink,
     ButtonGroup,
     AutoCompleteModule,
+    ConfirmPopupModule,
   ],
+  providers: [ConfirmationService],
   templateUrl: './hosts-page-card.html',
   styleUrl: './hosts-page-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,6 +57,7 @@ export class HostsPageCard implements OnInit {
   private readonly hostsApiService = inject(HostsApiService);
   private readonly translateService = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly confirmationService = inject(ConfirmationService);
 
   public readonly id = toSignal(
     this.activatedRoute.params.pipe(map((params) => Number(params.id) || null)),
@@ -64,6 +69,7 @@ export class HostsPageCard implements OnInit {
       : this.translateService.instant('GENERAL.ADD');
   });
   public readonly isLoading = signal<boolean>(false);
+  public readonly accordionValue = signal<string | number | string[] | number[]>(['help', 'main']);
 
   private get defaultFormValues(): Partial<ICreateHost> {
     return {
@@ -154,6 +160,60 @@ export class HostsPageCard implements OnInit {
             this.router.navigate([`/hosts/${info.id}`], { replaceUrl: true });
           }
           this.prepareForm(info);
+        },
+        error: (error) => {
+          this.toastService.error(error);
+        },
+      });
+  }
+
+  openHelp(): void {
+    window.open('https://gabrieldemarmiesse.github.io/python-on-whales/docker_client', '_blank');
+  }
+
+  setProxyTmpl(): void {
+    this.form.reset({
+      ...this.defaultFormValues,
+      host: 'tcp://my-socket-proxy:my-port',
+    });
+  }
+
+  setSshTmpl(): void {
+    this.form.reset({
+      ...this.defaultFormValues,
+      host: 'ssh://my-user@my-host',
+    });
+  }
+
+  confirmDelete($event: Event): void {
+    this.confirmationService.confirm({
+      target: $event.currentTarget,
+      message: this.translateService.instant('HOSTS.CARD.DELETE_CONFIRM'),
+      rejectButtonProps: {
+        label: this.translateService.instant('GENERAL.CANCEL'),
+        severity: 'secondary',
+        outlined: true,
+      },
+      acceptButtonProps: {
+        label: this.translateService.instant('GENERAL.CONFIRM'),
+        severity: 'warn',
+      },
+      accept: () => {
+        this.deleteHost();
+      },
+    });
+  }
+
+  private deleteHost(): void {
+    const id = this.id();
+    this.isLoading.set(true);
+    this.hostsApiService
+      .delete(id)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: () => {
+          this.toastService.success(this.translateService.instant('SUCCESS'));
+          this.router.navigate(['/hosts'], { replaceUrl: true });
         },
         error: (error) => {
           this.toastService.error(error);

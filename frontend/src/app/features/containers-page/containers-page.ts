@@ -39,7 +39,6 @@ export class ContainersPage implements OnInit {
   public readonly hosts = signal<IHostInfo[]>([]);
   public readonly accordionValue = computed(() => {
     const hosts = this.hosts();
-    console.log(hosts)
     return hosts.filter((h) => h.enabled).map((h) => h.id);
   });
 

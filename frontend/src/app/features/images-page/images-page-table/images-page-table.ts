@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -13,6 +13,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { finalize } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
 import { ImagesApiService } from 'src/app/entities/images/images-api.service';
 import { IImage } from 'src/app/entities/images/images-interface';
 
@@ -37,23 +38,26 @@ import { IImage } from 'src/app/entities/images/images-interface';
   styleUrl: './images-page-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ImagesPageTable {
+export class ImagesPageTable implements OnInit {
   private readonly imagesApiService = inject(ImagesApiService);
   private readonly toastService = inject(ToastService);
   private readonly translateService = inject(TranslateService);
   private readonly confirmationService = inject(ConfirmationService);
 
+  public readonly host = input.required<IHostInfo>();
+
   public readonly isLoading = signal<boolean>(false);
   public readonly list = signal<IImage[]>([]);
 
-  constructor() {
+  ngOnInit(): void {
     this.updateList();
   }
 
   public updateList(): void {
+    const host = this.host();
     this.isLoading.set(true);
     this.imagesApiService
-      .list()
+      .list(host.id)
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
@@ -80,7 +84,7 @@ export class ImagesPageTable {
       },
       acceptButtonProps: {
         label: this.translateService.instant('GENERAL.CONFIRM'),
-        severity: 'warn',
+        severity: 'danger',
       },
       accept: () => {
         this.prune();
@@ -89,9 +93,10 @@ export class ImagesPageTable {
   }
 
   private prune(): void {
+    const host = this.host();
     this.isLoading.set(true);
     this.imagesApiService
-      .prune()
+      .prune(host.id)
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
@@ -99,11 +104,7 @@ export class ImagesPageTable {
       )
       .subscribe({
         next: (res) => {
-          const reclaimed = (res.SpaceReclaimed / 1024 / 1024).toFixed(2).replace('.00', '');
-          const detail = this.translateService.instant('IMAGES.TABLE.PRUNE_SPACE_RECLAIMED', {
-            value: reclaimed,
-          });
-          this.toastService.success(this.translateService.instant('GENERAL.SUCCESS'), detail);
+          this.toastService.success(this.translateService.instant('GENERAL.SUCCESS'), res);
           this.updateList();
         },
         error: (error) => {

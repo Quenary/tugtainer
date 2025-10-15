@@ -618,7 +618,7 @@ async def _send_notification(results: list[HostCheckResult | None]):
     """
 
     def get_cont_str(c: Container) -> str:
-        return f"  - {c.name}  {get_container_image_spec(c)}\n"
+        return f"    - {c.name}  {get_container_image_spec(c)}\n"
 
     title: str = f"Tugtainer ({Config.HOSTNAME})"
     body: str = ""
@@ -627,15 +627,15 @@ async def _send_notification(results: list[HostCheckResult | None]):
             continue
         host_part: str = ""
         if res["updated"]:
-            host_part += "Updated:\n"
+            host_part += "  Updated:\n"
             for c in res["updated"]:
                 host_part += get_cont_str(c)
         if res["available"]:
-            host_part += "Update available for:\n"
+            host_part += "  Update available for:\n"
             for c in res["available"]:
                 host_part += get_cont_str(c)
         if res["rolledback"]:
-            host_part += "Rolled-back after fail:\n"
+            host_part += "  Rolled-back after fail:\n"
             for c in res["rolledback"]:
                 host_part += get_cont_str(c)
         if res["failed"]:
@@ -643,7 +643,7 @@ async def _send_notification(results: list[HostCheckResult | None]):
             for c in res["failed"]:
                 host_part += get_cont_str(c)
         if res["prune_res"]:
-            host_part += res["prune_res"] + "\n"
+            host_part += f"  {res["prune_res"]}\n"
         if host_part:
             body += f"\nHost: {res["host_name"]}\n" + host_part
     try:
