@@ -142,6 +142,13 @@ export class HostsPageCard implements OnInit {
 
   public save(): void {
     if (this.form.invalid) {
+      const controls = this.form.controls;
+      for (const k in controls) {
+        if (controls[k].invalid) {
+          controls[k].markAsTouched();
+          controls[k].markAsDirty();
+        }
+      }
       return;
     }
     const id = this.id();

@@ -52,6 +52,7 @@
     "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"]
   },
   "HOSTS": {
+    "NO_HOSTS_FOUND": "No hosts found",
     "TABLE": {
       "SEARCH_PLACEHOLDER": "ID, name, host",
       "ADD": "Add host",
@@ -64,6 +65,7 @@
       "HELP": {
         "LABEL": "Help",
         "TEXT": "Most of the settings are passed directly as python-on-whales library parameters. Click the button below to view their description.",
+        "TEXT_2": "For a local docker socket, just the name will be enough.",
         "HELP_BTN": "Help",
         "PROXY_TMPL": "Socket proxy template",
         "SSH_TMPL": "SSH template"

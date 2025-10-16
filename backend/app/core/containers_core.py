@@ -288,7 +288,7 @@ async def check_container(
     client: DockerClient,
     host: HostsModel,
     c_name: str,
-    update: bool = False,
+    update: bool,
 ) -> CheckContainerResult:
     """
     Check and update one container.

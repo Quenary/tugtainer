@@ -16,6 +16,7 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { NoHosts } from 'src/app/shared/components/no-hosts/no-hosts';
 
 @Component({
   selector: 'app-containers-page',
@@ -26,6 +27,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     ButtonModule,
     RouterLink,
     TranslatePipe,
+    NoHosts,
   ],
   templateUrl: './containers-page.html',
   styleUrl: './containers-page.scss',

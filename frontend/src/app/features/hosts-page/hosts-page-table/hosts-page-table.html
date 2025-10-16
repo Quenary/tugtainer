@@ -27,7 +27,7 @@
       </th>
       <th></th>
       <th>
-        <p-button-group>
+        <p-button-group style="text-wrap: nowrap">
           <p-button
             [loading]="isLoading()"
             [label]="'GENERAL.REFRESH' | translate"
@@ -51,7 +51,10 @@
         {{ 'HOSTS.TABLE.HOST' | translate }}
         <p-sortIcon field="host"></p-sortIcon>
       </th>
-      <th pSortableColumn="status">
+      <th
+        pSortableColumn="status"
+        style="width: 20%"
+      >
         {{ 'HOSTS.TABLE.STATUS' | translate }}
         <p-sortIcon field="status"></p-sortIcon>
       </th>
