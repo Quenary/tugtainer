@@ -9,10 +9,19 @@ import { finalize } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsApiService } from 'src/app/entities/hosts/hosts-api.service';
 import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
+import { NoHosts } from 'src/app/shared/components/no-hosts/no-hosts';
 
 @Component({
   selector: 'app-images-page',
-  imports: [ImagesPageTable, AccordionModule, TagModule, ButtonModule, RouterLink, TranslatePipe],
+  imports: [
+    ImagesPageTable,
+    AccordionModule,
+    TagModule,
+    ButtonModule,
+    RouterLink,
+    TranslatePipe,
+    NoHosts,
+  ],
   templateUrl: './images-page.html',
   styleUrl: './images-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
