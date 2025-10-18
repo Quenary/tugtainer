@@ -7,9 +7,9 @@ from app.schemas.containers_schema import (
     ContainerPatchRequestBody,
     ContainerGetResponseBody,
 )
-from app.db import (
-    get_async_session,
-    ContainersModel,
+from app.db.session import get_async_session
+from app.db.models import ContainersModel
+from app.db.util import (
     insert_or_update_container,
     ContainerInsertOrUpdateData,
 )
@@ -28,7 +28,8 @@ from app.core.containers_core import (
     check_host,
     check_container,
 )
-from app.helpers import get_self_container_id, asyncall
+from app.helpers.is_self_container import get_self_container_id
+from app.helpers.asyncall import asyncall
 from .util import map_container_schema
 from python_on_whales import Container, DockerException
 from app.api.util import get_host

@@ -42,12 +42,12 @@ Automatic updates are disabled by default. You can choose only what you need.
       quenary/tugtainer:latest
   ```
 
-- ### Remote / proxy hosts
+- ### Remote Hosts / Proxy socket
 
   - SSH:
 
   ```bash
-  # Mount ssh key to the container.
+  # Mount ssh key to the container
   # Don't forget to add known hosts (ssh to remote at least once).
   docker run -d -p 9412:80 \
       --name=tugtainer \

@@ -1,23 +1,23 @@
 from types import CoroutineType
-from python_on_whales import Container, Image, DockerClient
+from python_on_whales import (
+    Container,
+    DockerException,
+    Image,
+    DockerClient,
+)
 from python_on_whales.utils import run as docker_run_cmd
 import logging
 from typing import Any, NotRequired, TypedDict
 from sqlalchemy import and_, select
 import asyncio
 import concurrent.futures
-from app.db import (
-    ContainersModel,
-    async_session_maker,
-    HostsModel,
-)
+from app.db.session import async_session_maker
+from app.db.models import ContainersModel, HostsModel
 from app.core import HostsManager
 from app.core.notifications_core import send_notification
 from app.enums.check_status_enum import ECheckStatus
-from app.helpers import (
-    is_self_container,
-    now,
-)
+from app.helpers.is_self_container import is_self_container
+from app.helpers.now import now
 from app.config import Config
 from app.core.container.util import (
     get_container_image_spec,
@@ -464,46 +464,100 @@ async def check_host(
     STATUS_KEY = get_host_cache_key(host.id)
     CACHE = ProcessCache[AllCheckData](STATUS_KEY)
     STATUS = CACHE.get()
-    if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
-        logging.warning(
-            f"Check process for host '{host.name}' is already running."
+    try:
+        if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
+            logging.warning(
+                f"Check process for host '{host.name}' is already running."
+            )
+            return None
+
+        CACHE.set(
+            {"status": ECheckStatus.PREPARING},
         )
-        return None
+        logging.info(f"Start check for host '{host.name}'")
 
-    CACHE.set(
-        {"status": ECheckStatus.PREPARING},
-    )
-    logging.info(f"Start check for host '{host.name}'")
+        # Results
+        available: list[Container] = []
+        updated: list[Container] = []
+        rolledback: list[Container] = []
+        failed: list[Container] = []
+        errors: list[Exception] = []
+        prune_res: str | None = None
 
-    # Results
-    available: list[Container] = []
-    updated: list[Container] = []
-    rolledback: list[Container] = []
-    failed: list[Container] = []
-    errors: list[Exception] = []
-    prune_res: str | None = None
+        containers: list[Container] = client.container.list(all=True)
+        for_check = await filter_containers_for_check(containers)
 
-    containers: list[Container] = client.container.list(all=True)
-    for_check = await filter_containers_for_check(containers)
+        CACHE.update(
+            {"status": ECheckStatus.CHECKING},
+        )
 
-    CACHE.update(
-        {"status": ECheckStatus.CHECKING},
-    )
+        for item in for_check:
+            res = await check_container(
+                client, host, item.name, False
+            )
+            _available = res["available"]
+            _exp = res.get("exception")
+            if _available:
+                available.append(item)
+            elif _exp:
+                errors.append(_exp)
+                failed.append(item)
 
-    for item in for_check:
-        res = await check_container(client, host, item.name, False)
-        _available = res["available"]
-        _exp = res.get("exception")
-        if _available:
-            available.append(item)
-        elif _exp:
-            errors.append(_exp)
-            failed.append(item)
+        CACHE.update({"available": len(available)})
 
-    CACHE.update({"available": len(available)})
+        if not update:
+            CACHE.update({"status": ECheckStatus.DONE})
+            return HostCheckResult(
+                host_name=host.name,
+                available=available,
+                updated=updated,
+                rolledback=rolledback,
+                failed=failed,
+                errors=errors,
+                prune_res=None,
+            )
 
-    if not update:
+        CACHE.update({"status": ECheckStatus.UPDATING})
+        for_update = await filter_containers_for_update(containers)
+        for_update = _sort_containers_by_dependencies(for_update)
+
+        for item in for_update:
+            res = await check_container(client, host, item.name, True)
+            _cont = res.get("container")
+            _updated = res.get("updated")
+            _exp = res.get("exception")
+            if _cont:
+                if _updated:
+                    updated.append(_cont)
+                else:
+                    rolledback.append(_cont)
+            elif _exp:
+                errors.append(_exp)
+                failed.append(item)
+
+        CACHE.update(
+            {
+                "updated": len(updated),
+                "failed": len(failed),
+                "rolledback": len(rolledback),
+            },
+        )
+
+        if host.prune:
+            CACHE.update({"status": ECheckStatus.PRUNING})
+            loop = asyncio.get_running_loop()
+            output = await loop.run_in_executor(
+                None, client.image.prune
+            )
+            lines = [
+                line.strip()
+                for line in output.splitlines()
+                if line.strip()
+            ]
+            prune_res = lines[-1] if lines else None
+
         CACHE.update({"status": ECheckStatus.DONE})
+
         return HostCheckResult(
             host_name=host.name,
             available=available,
@@ -511,57 +565,27 @@ async def check_host(
             rolledback=rolledback,
             failed=failed,
             errors=errors,
-            prune_res=None,
+            prune_res=prune_res,
         )
-
-    CACHE.update({"status": ECheckStatus.UPDATING})
-    for_update = await filter_containers_for_update(containers)
-    for_update = _sort_containers_by_dependencies(for_update)
-
-    for item in for_update:
-        res = await check_container(client, host, item.name, True)
-        _cont = res.get("container")
-        _updated = res.get("updated")
-        _exp = res.get("exception")
-        if _cont:
-            if _updated:
-                updated.append(_cont)
-            else:
-                rolledback.append(_cont)
-        elif _exp:
-            errors.append(_exp)
-            failed.append(item)
-
-    CACHE.update(
-        {
-            "updated": len(updated),
-            "failed": len(failed),
-            "rolledback": len(rolledback),
-        },
-    )
-
-    if host.prune:
-        CACHE.update({"status": ECheckStatus.PRUNING})
-        loop = asyncio.get_running_loop()
-        output = await loop.run_in_executor(None, client.image.prune)
-        lines = [
-            line.strip()
-            for line in output.splitlines()
-            if line.strip()
-        ]
-        prune_res = lines[-1] if lines else None
-
-    CACHE.update({"status": ECheckStatus.DONE})
-
-    return HostCheckResult(
-        host_name=host.name,
-        available=available,
-        updated=updated,
-        rolledback=rolledback,
-        failed=failed,
-        errors=errors,
-        prune_res=prune_res,
-    )
+    except DockerException as e:
+        CACHE.set(
+            {"status": ECheckStatus.ERROR},
+        )
+        logging.error(
+            f"Failed to get containers list for host {host.name}"
+        )
+        logging.info(e.stdout)
+        logging.error(e.stderr)
+        return None
+    except Exception as e:
+        CACHE.set(
+            {"status": ECheckStatus.ERROR},
+        )
+        logging.error(
+            f"Failed to get containers list for host {host.name}"
+        )
+        logging.exception(e)
+        return None
 
 
 async def check_all(update: bool):
@@ -585,7 +609,9 @@ async def check_all(update: bool):
         logging.info("Start checking of all containers for all hosts")
 
         async with async_session_maker() as session:
-            stmt = select(HostsModel).where(HostsModel.enabled == True)
+            stmt = select(HostsModel).where(
+                HostsModel.enabled == True
+            )
             result = await session.execute(stmt)
             hosts = result.scalars().all()
 
