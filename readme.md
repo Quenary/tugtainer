@@ -65,7 +65,7 @@ Automatic updates are disabled by default. You can choose only what you need.
   ```bash
   # Create socket proxy container, e.g. https://hub.docker.com/r/linuxserver/socket-proxy
   # Of course, you should remember not to update proxy container from the app.
-  # Enable at least IMAGES, INFO, PING for the check feature, and CONTAINERS, NETWORKS, POST for the update feature.
+  # Enable at least CONTAINERS, IMAGES, INFO, PING for the check feature, and POST, NETWORKS for the update feature.
 
   # Run the app with only the data volume.
   docker run -d -p 9412:80 \
