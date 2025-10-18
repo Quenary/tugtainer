@@ -1,5 +1,4 @@
 from inspect import signature
-import threading
 import logging
 from sqlalchemy import select
 from python_on_whales import DockerClient

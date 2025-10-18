@@ -28,9 +28,9 @@ from app.core.containers_core import (
     check_host,
     check_container,
 )
-from app.helpers import get_self_container_id
+from app.helpers import get_self_container_id, asyncall
 from .util import map_container_schema
-from python_on_whales import Container
+from python_on_whales import Container, DockerException
 from app.api.util import get_host
 import logging
 
@@ -54,7 +54,9 @@ async def containers_list(
     if not host.enabled:
         raise HTTPException(409, "Host disabled")
     client = HostsManager.get_host_client(host)
-    containers: list[Container] = client.container.list(all=True)
+    containers: list[Container] = await asyncall(
+        client.container.list, all=True
+    )
     stmt = select(ContainersModel).where(
         ContainersModel.host_id == host_id
     )
@@ -92,7 +94,9 @@ async def patch_container_data(
     )
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    d_cont = client.container.inspect(db_cont.name)
+    d_cont = await asyncall(
+        lambda: client.container.inspect(db_cont.name)
+    )
     return map_container_schema(host_id, d_cont, db_cont)
 
 
@@ -165,8 +169,12 @@ async def is_update_available_self(
     clients = HostsManager.get_all()
     for clid, cli in clients:
         try:
-            if cli.container.exists(self_container_id):
-                cont = cli.container.inspect(self_container_id)
+            if await asyncall(
+                lambda: cli.container.exists(self_container_id),
+            ):
+                cont = await asyncall(
+                    lambda: cli.container.inspect(self_container_id),
+                )
                 name = cont.name
                 stmt = (
                     select(ContainersModel)
@@ -183,9 +191,15 @@ async def is_update_available_self(
                 if not db_cont:
                     return False
                 return db_cont.update_available
+        except DockerException as e:
+            logging.error(
+                "Docker exception while getting self container update availability."
+            )
+            logging.info(e.stdout)
+            logging.error(e.stderr)
         except Exception as e:
             logging.error(
-                "Error while getting self container update value"
+                "Failed to get self container update availability."
             )
             logging.exception(e)
     return False

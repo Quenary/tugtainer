@@ -81,7 +81,7 @@
         {{ host.host }}
       </td>
       <td>
-        {{ host.status }}
+        <app-host-status [host]="host"></app-host-status>
       </td>
     </tr>
   </ng-template>

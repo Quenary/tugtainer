@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+import asyncio
+from fastapi import APIRouter, Depends, HTTPException, Response
+from python_on_whales import DockerException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import is_authorized, HostsManager
-from app.schemas import HostInfo, HostBase
+from app.schemas import HostInfo, HostBase, HostStatusResponseBody
 from app.db import get_async_session, HostsModel
 from app.api.util import get_host
+from app.helpers import asyncall
 
 router = APIRouter(
     prefix="/hosts",
@@ -37,7 +40,9 @@ async def create(
     session: AsyncSession = Depends(get_async_session),
 ):
     stmt = (
-        select(HostsModel).where(HostsModel.name == body.name).limit(1)
+        select(HostsModel)
+        .where(HostsModel.name == body.name)
+        .limit(1)
     )
     result = await session.execute(stmt)
     host = result.scalar_one_or_none()
@@ -97,3 +102,35 @@ async def delete(
     await session.delete(host)
     await session.commit()
     return {"detail": "Host deleted successfully"}
+
+
+@router.get(
+    path="/{id}/status",
+    description="Get host status",
+    response_model=HostStatusResponseBody,
+)
+async def get_status(
+    id: int,
+    response: Response,
+    session: AsyncSession = Depends(get_async_session),
+) -> HostStatusResponseBody:
+    response.headers["Cache-Control"] = (
+        "no-cache, no-store, must-revalidate"
+    )
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    host = await get_host(id, session)
+    if not host.enabled:
+        HostStatusResponseBody(id=id)
+    client = HostsManager.get_host_client(host)
+    try:
+        _ = await asyncall(client.info)
+        return HostStatusResponseBody(id=id, ok=True)
+    except DockerException as e:
+        return HostStatusResponseBody(id=id, ok=False, err=e.stderr)
+    except asyncio.TimeoutError as e:
+        return HostStatusResponseBody(
+            id=id,
+            ok=False,
+            err="Timeout error while calling docker cli",
+        )

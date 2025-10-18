@@ -58,7 +58,9 @@
       "ADD": "Add host",
       "NAME": "Name",
       "HOST": "Host",
-      "STATUS": "Status"
+      "STATUS": "Status",
+      "STATUS_OK": "Ok",
+      "STATUS_ERROR": "Error"
     },
     "CARD": {
       "DELETE_CONFIRM": "Do you want to delete this host?",
@@ -170,6 +172,10 @@
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
+      },
+      "DOCKER_TIMEOUT": {
+        "LABEL": "Docker timeout",
+        "HINT": "Docker CLI call timeout. This applies primarily to API methods and does not apply to, for example, container re-creation or image pulling."
       }
     }
   }
