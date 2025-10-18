@@ -1,0 +1,22 @@
+@if (status.hasValue()) {
+  @if (status.value(); as v) {
+    @switch (v.ok) {
+      @case (true) {
+        <p-tag severity="success">
+          {{ 'HOSTS.TABLE.STATUS_OK' | translate }}
+        </p-tag>
+      }
+      @case (false) {
+        <p-tag
+          severity="danger"
+          [pTooltip]="v.err"
+        >
+          {{ 'HOSTS.TABLE.STATUS_ERROR' | translate }}
+        </p-tag>
+      }
+    }
+  }
+}
+@else {
+  <p-skeleton></p-skeleton>
+}

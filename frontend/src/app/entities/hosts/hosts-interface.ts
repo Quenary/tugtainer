@@ -18,3 +18,8 @@ export interface ICreateHost {
 export interface IHostInfo extends ICreateHost {
   id: number;
 }
+export interface IHostStatus {
+  id: number;
+  ok: boolean;
+  err: string;
+}

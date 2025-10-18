@@ -1,4 +1,4 @@
-def env_to_dict(env: list[str] | None) -> dict:
+def map_env_to_dict(env: list[str] | None) -> dict:
     """
     Maps list of env vars to {key:value} dict
     """

@@ -15,6 +15,7 @@ export class ToastService {
       severity: 'error',
       summary,
       detail: parseError(error),
+      life: 10000
     });
   }
 

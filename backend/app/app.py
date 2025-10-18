@@ -1,5 +1,7 @@
+import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from python_on_whales import DockerException
 from app.core import schedule_check_on_init, load_hosts_on_init
 from app.api import (
     auth_router,
@@ -11,6 +13,7 @@ from app.api import (
 )
 from app.config import Config
 import logging
+from app.db import SettingsStorage
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
@@ -24,6 +27,7 @@ async def lifespan(app: FastAPI):
     # Code to run on startup
     await load_hosts_on_init()
     await schedule_check_on_init()
+    await SettingsStorage.load_all()
     yield  # App
     # Code to run on shutdown
 
@@ -35,3 +39,21 @@ app.include_router(public_router)
 app.include_router(settings_router)
 app.include_router(images_router)
 app.include_router(hosts_router)
+
+
+@app.exception_handler(asyncio.TimeoutError)
+async def timeout_exception_handler(
+    request: Request, exc: asyncio.TimeoutError
+):
+    raise HTTPException(
+        500,
+        "Timeout error. The problem is most likely related to connecting to the docker host.",
+    )
+
+
+@app.exception_handler(DockerException)
+async def docker_exception_handler(
+    request: Request,
+    exc: DockerException,
+):
+    raise HTTPException(424, exc.stdout)

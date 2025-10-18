@@ -1,8 +1,5 @@
 from typing import Any
 from python_on_whales import Container, Image
-from app.helpers import (
-    env_to_dict,
-)
 from app.helpers import subtract_dict
 from . import (
     map_ulimits_to_arg,
@@ -15,8 +12,9 @@ from . import (
     normalize_path,
     map_tmpfs_dict_to_list,
     filter_valid_docker_labels,
+    map_env_to_dict,
 )
-from .map_device_requests_to_gpus import  map_device_requests_to_gpus
+from .map_device_requests_to_gpus import map_device_requests_to_gpus
 import logging
 
 
@@ -48,7 +46,7 @@ def merge_container_config_with_image(
     Returns config dict that matches kwargs for create/run.
     """
     cfg_envs: dict = cfg.get("envs", {})
-    image_envs: dict = env_to_dict(image.config.env)
+    image_envs: dict = map_env_to_dict(image.config.env)
     merged_envs: dict = subtract_dict(cfg_envs, image_envs) or {}
     cfg_labels: dict = cfg.get("labels", {})
     image_labels: dict = image.config.labels or {}
@@ -102,7 +100,7 @@ def get_container_config(
         HOSTNAME = None
     HOST_CONFIG.mounts
 
-    ENVS = env_to_dict(CONFIG.env)
+    ENVS = map_env_to_dict(CONFIG.env)
 
     PUBLISH = map_port_bindings_to_list(HOST_CONFIG.port_bindings)
     # Possible values: bridge | none | container:<name|id> (named network) | host

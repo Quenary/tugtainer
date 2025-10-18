@@ -117,6 +117,12 @@ def upgrade() -> None:
         sa.text("DELETE FROM settings WHERE key = 'PRUNE_IMAGES'")
     )
 
+    op.execute(
+        sa.text(
+            "INSERT INTO settings (key, value, value_type) VALUES ('DOCKER_TIMEOUT', '15', 'int')"
+        )
+    )
+
 
 def downgrade() -> None:
     """Downgrade schema."""
@@ -177,4 +183,7 @@ def downgrade() -> None:
         sa.text(
             "INSERT INTO settings (key, value, value_type) VALUES ('PRUNE_IMAGES', 'FALSE', 'bool')"
         )
+    )
+    op.execute(
+        sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'")
     )

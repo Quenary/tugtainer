@@ -12,6 +12,7 @@ import { finalize } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsApiService } from 'src/app/entities/hosts/hosts-api.service';
 import { ICreateHost } from 'src/app/entities/hosts/hosts-interface';
+import { HostStatus } from 'src/app/shared/components/host-status/host-status';
 
 @Component({
   selector: 'app-host-page-table',
@@ -25,6 +26,7 @@ import { ICreateHost } from 'src/app/entities/hosts/hosts-interface';
     ButtonGroupModule,
     InputTextModule,
     TagModule,
+    HostStatus,
   ],
   templateUrl: './hosts-page-table.html',
   styleUrl: './hosts-page-table.scss',

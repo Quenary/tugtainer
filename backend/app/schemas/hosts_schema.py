@@ -25,3 +25,9 @@ class HostBase(BaseModel):
 class HostInfo(HostBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class HostStatusResponseBody(BaseModel):
+    id: int
+    ok: bool | None = None
+    err: str | None = None
