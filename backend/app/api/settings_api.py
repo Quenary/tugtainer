@@ -3,11 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth_core import is_authorized
-from app.db import (
-    get_async_session,
-    SettingModel,
-    get_setting_typed_value,
-)
+from app.db.session import get_async_session
+from app.db.models import SettingModel
+from app.db.util import get_setting_typed_value
 from app.schemas.settings_schema import (
     SettingsGetResponseItem,
     SettingsPatchRequestItem,

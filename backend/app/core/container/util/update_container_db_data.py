@@ -1,6 +1,6 @@
 from typing import TypedDict
-from app.db import (
-    async_session_maker,
+from app.db.session import async_session_maker
+from app.db.util import (
     insert_or_update_container,
     ContainerInsertOrUpdateData,
 )

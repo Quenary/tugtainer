@@ -2,8 +2,8 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, ParamSpec, TypeVar
 from asyncio import AbstractEventLoop
-from app.db import SettingsStorage
 from app.enums import ESettingKey
+from .settings_storage import SettingsStorage
 
 EXECUTOR = ThreadPoolExecutor(7)
 
@@ -14,7 +14,7 @@ R = TypeVar("R")
 async def asyncall(
     func: Callable[P, R],
     asyncall_timeout: int | None = None,
-    asyncall_loop: AbstractEventLoop = asyncio.get_running_loop(),
+    asyncall_loop: AbstractEventLoop | None = None,
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> R:
@@ -27,6 +27,8 @@ async def asyncall(
         asyncall_timeout = SettingsStorage.get(
             ESettingKey.DOCKER_TIMEOUT
         )
+    if not asyncall_loop:
+        asyncall_loop = asyncio.get_running_loop()
     return await asyncio.wait_for(
         asyncall_loop.run_in_executor(
             EXECUTOR, lambda: func(*args, **kwargs)

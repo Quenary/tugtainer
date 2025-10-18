@@ -5,8 +5,8 @@ from app.schemas import ImageGetResponseBody
 from app.api.util import map_image_schema, get_host
 from python_on_whales import Container
 from app.core import HostsManager
-from app.db import get_async_session
-from app.helpers import asyncall
+from app.db.session import get_async_session
+from app.helpers.asyncall import asyncall
 
 router = APIRouter(
     prefix="/images",

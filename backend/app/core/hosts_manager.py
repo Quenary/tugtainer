@@ -2,7 +2,8 @@ from inspect import signature
 import logging
 from sqlalchemy import select
 from python_on_whales import DockerClient
-from app.db import async_session_maker, HostsModel
+from app.db.session import async_session_maker
+from app.db.models import HostsModel
 from app.schemas import HostInfo
 
 

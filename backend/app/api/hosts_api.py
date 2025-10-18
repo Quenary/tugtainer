@@ -5,9 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import is_authorized, HostsManager
 from app.schemas import HostInfo, HostBase, HostStatusResponseBody
-from app.db import get_async_session, HostsModel
+from app.db.session import get_async_session
+from app.db.models import HostsModel
 from app.api.util import get_host
-from app.helpers import asyncall
+from app.helpers.asyncall import asyncall
 
 router = APIRouter(
     prefix="/hosts",

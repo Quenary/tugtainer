@@ -13,7 +13,7 @@ from app.api import (
 )
 from app.config import Config
 import logging
-from app.db import SettingsStorage
+from app.helpers.settings_storage import SettingsStorage
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
