@@ -1,3 +1,24 @@
+# [1.2.0](https://github.com/Quenary/tugtainer/compare/v1.1.6...v1.2.0) (2025-10-18)
+
+
+### Bug Fixes
+
+* preserve gpus ([0cbe7b8](https://github.com/Quenary/tugtainer/commit/0cbe7b855b1ddc82e671ddb34637dea7a7eedfe3))
+
+
+### Features
+
+* container exit code ([0bca164](https://github.com/Quenary/tugtainer/commit/0bca1642d5d88830238cdfb70c07348058e76884))
+* multiple host support ([c1c9234](https://github.com/Quenary/tugtainer/commit/c1c923434190a2f2918ad84edd17507a20c64732))
+* multiple host support ([1279150](https://github.com/Quenary/tugtainer/commit/12791509d8c6bbf91af3f469a22bfaf94358f6b8))
+* multiple host support ([092a355](https://github.com/Quenary/tugtainer/commit/092a35538734ce51c14b02ef437cf40acb25ac25))
+* multiple host support ([9cd9176](https://github.com/Quenary/tugtainer/commit/9cd91766eb787551c718fb24fcd89d9a6d0cde14))
+* multiple host support ([7a86509](https://github.com/Quenary/tugtainer/commit/7a86509652362bc38345257a6210505d621707f7))
+* multiple host support ([c774988](https://github.com/Quenary/tugtainer/commit/c7749881532d2b75db782fec88b452d7eca723cf))
+* multiple host support ([a9cc38b](https://github.com/Quenary/tugtainer/commit/a9cc38ba237ef0a4f48901f4914d6cb1cb6c0d6a))
+* multiple host support ([801886d](https://github.com/Quenary/tugtainer/commit/801886df3d7d5e8912fbdb56c6ca0b2f7f2afaad))
+* prune res in modal ([e630ee9](https://github.com/Quenary/tugtainer/commit/e630ee96180cc759531cd154e780f9442e3b3019))
+
 ## [1.1.6](https://github.com/Quenary/tugtainer/compare/v1.1.5...v1.1.6) (2025-10-10)
 
 
