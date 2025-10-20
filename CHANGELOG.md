@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/Quenary/tugtainer/compare/v1.2.1...v1.2.2) (2025-10-20)
+
+
+### Bug Fixes
+
+* i18n after update ([60fdfb8](https://github.com/Quenary/tugtainer/commit/60fdfb83280641181ff88f13f26088bfbcf0fc4d)), closes [#19](https://github.com/Quenary/tugtainer/issues/19)
+
 ## [1.2.1](https://github.com/Quenary/tugtainer/compare/v1.2.0...v1.2.1) (2025-10-20)
 
 
