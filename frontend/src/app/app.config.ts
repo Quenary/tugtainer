@@ -9,14 +9,14 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideTranslateService } from '@ngx-translate/core';
-import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { provideTranslateLoader, provideTranslateService } from '@ngx-translate/core';
 import { localeInitializer } from './core/initializers/locale-initializer';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
+import { DynamicImportTranslationLoader } from './core/services/dynamic-import-translation-loader.service';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -44,7 +44,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
     provideTranslateService({
-      loader: provideTranslateHttpLoader({ prefix: '/i18n/', suffix: '.json' }),
+      loader: provideTranslateLoader(DynamicImportTranslationLoader),
       fallbackLang: 'en',
     }),
     {
