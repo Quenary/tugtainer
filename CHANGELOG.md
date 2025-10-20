@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/Quenary/tugtainer/compare/v1.2.0...v1.2.1) (2025-10-20)
+
+
+### Bug Fixes
+
+* conflict in networking settings ([3c94ed2](https://github.com/Quenary/tugtainer/commit/3c94ed2de5728f8034cc7e8bfef2e20b425124df)), closes [#17](https://github.com/Quenary/tugtainer/issues/17)
+
 # [1.2.0](https://github.com/Quenary/tugtainer/compare/v1.1.6...v1.2.0) (2025-10-18)
 
 
