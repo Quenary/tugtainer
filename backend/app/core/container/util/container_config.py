@@ -16,6 +16,7 @@ from .map_tmpfs_dict_to_list import map_tmpfs_dict_to_list
 from .filter_valid_docker_labels import filter_valid_docker_labels
 from .map_device_requests_to_gpus import map_device_requests_to_gpus
 from .map_env_to_dict import map_env_to_dict
+from .get_container_net_kwargs import get_container_net_kwargs
 import logging
 
 
@@ -90,44 +91,14 @@ def get_container_config(
     :returns 1: list of docker commands to be executed after container creation, in list format e.g. ["network", "connect", ...]
     """
     COMMANDS: list[list[str]] = []
-    ID = container.id
     CONFIG = container.config
     HOST_CONFIG = container.host_config
-    NETWORK_SETTINGS = container.network_settings
-
-    # Do not preserve generated hostname
-    HOSTNAME = CONFIG.hostname
-    if HOSTNAME and HOSTNAME in ID:
-        HOSTNAME = None
-    HOST_CONFIG.mounts
 
     ENVS = map_env_to_dict(CONFIG.env)
 
-    PUBLISH = map_port_bindings_to_list(HOST_CONFIG.port_bindings)
-    # Possible values: bridge | none | container:<name|id> (named network) | host
-    NETWORK_MODE = HOST_CONFIG.network_mode
-    # Remove any ports coz those are not supported in host network mode
-    if NETWORK_MODE in ["host", "none"]:
-        PUBLISH = None
-
-    # Networks
-    NETWORKS: list[str] = []
-    NETWORK_ALIASES: list[str] = []
-    if NETWORK_SETTINGS.networks:
-        NETWORKS_KEYS = list(NETWORK_SETTINGS.networks.keys())
-        MAIN_NETWORK = NETWORK_SETTINGS.networks[NETWORKS_KEYS[0]]
-        NETWORKS = [NETWORKS_KEYS[0]]
-        NETWORK_ALIASES = MAIN_NETWORK.aliases or []
-        for net in NETWORKS_KEYS[1:]:
-            # Additional networks returned as commands as python_on_whales doesnt support multiple aliases yet
-            _cmd = ["network", "connect"]
-            aliases = NETWORK_SETTINGS.networks[net].aliases or []
-            for a in aliases:
-                _cmd += ["--alias", a]
-            _cmd += [net, container.name]
-            COMMANDS.append(_cmd)
-    elif NETWORK_MODE:
-        NETWORKS = [NETWORK_MODE]
+    NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(container)
+    if NET_COMMANDS:
+        COMMANDS += NET_COMMANDS
 
     VALID_LABELS, INVALID_LABELS = filter_valid_docker_labels(
         CONFIG.labels or {}
@@ -160,9 +131,7 @@ def get_container_config(
         "device_read_iops": HOST_CONFIG.blkio_device_read_iops,
         "device_write_bps": HOST_CONFIG.blkio_device_write_bps,
         "device_write_iops": HOST_CONFIG.blkio_device_write_iops,
-        "dns": HOST_CONFIG.dns,
-        "dns_options": HOST_CONFIG.dns_options,
-        "dns_search": HOST_CONFIG.dns_search,
+        **NET_KWARGS,
         "domainname": CONFIG.domainname,
         "entrypoint": CONFIG.entrypoint,
         "envs": ENVS,
@@ -171,12 +140,10 @@ def get_container_config(
         ),
         "groups_add": HOST_CONFIG.group_add,
         **map_healthcheck_to_kwargs(CONFIG.healthcheck),
-        "hostname": HOSTNAME,
         "ipc": HOST_CONFIG.ipc_mode,
         "isolation": HOST_CONFIG.isolation,
         "kernel_memory": HOST_CONFIG.kernel_memory,
         "labels": VALID_LABELS,
-        "link": HOST_CONFIG.links,
         **map_log_config_to_kwargs(HOST_CONFIG.log_config),
         # Add setting to keep mac?
         # "mac_address": NETWORK_SETTINGS.mac_address,
@@ -185,14 +152,10 @@ def get_container_config(
         "memory_swap": HOST_CONFIG.memory_swap,
         "memory_swappiness": HOST_CONFIG.memory_swappiness,
         "mounts": map_mounts_to_arg(container.mounts),
-        "networks": NETWORKS,
-        "network_aliases": NETWORK_ALIASES,
         "oom_kill": bool(not HOST_CONFIG.oom_kill_disable),
         "oom_score_adj": HOST_CONFIG.oom_score_adj,
         "pids_limit": HOST_CONFIG.pids_limit,
         "privileged": HOST_CONFIG.privileged,
-        "publish": PUBLISH,
-        "publish_all": HOST_CONFIG.publish_all_ports,
         "read_only": HOST_CONFIG.readonly_rootfs,
         "restart": get_container_restart_policy_str(
             HOST_CONFIG.restart_policy
