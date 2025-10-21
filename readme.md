@@ -3,19 +3,23 @@
 It's like well-known [watchtower](https://github.com/containrrr/watchtower), but with a web UI where you can change most of the settings or view the current state of the containers.
 
 <p align="center">
-<img src="resources/tugtainer-containers-v1.1.2.png" width="32%">
-<img src="resources/tugtainer-images-v1.1.2.png" width="32%">
-<img src="resources/tugtainer-settings-v1.1.2.png" width="32%">
+<img src="resources/tugtainer-hosts-v1.2.3.png" width="90%">
+<img src="resources/tugtainer-containers-v1.2.3.png" width="30%">
+<img src="resources/tugtainer-images-v1.2.3.png" width="30%">
+<img src="resources/tugtainer-settings-v1.2.3.png" width="30%">
 </p>
 
 Please be aware that the application is distributed as is and is not recommended for use in a production environment.
+
+And don't forget about regular backups of important data.
 
 Automatic updates are disabled by default. You can choose only what you need.
 
 ## Main features:
 
-- Web UI
-- Authentication
+- Web UI with authentication
+- Socket proxy support
+- Multiple hosts support
 - Crontab scheduling
 - Notifications to a wide range of services
 - Per-container config (check only or auto-update)
