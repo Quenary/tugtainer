@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/Quenary/tugtainer/compare/v1.2.2...v1.2.3) (2025-10-21)
+
+
+### Bug Fixes
+
+* **backend:** apprise interpret escapes, logging ([19a5d46](https://github.com/Quenary/tugtainer/commit/19a5d46b06ea8f0b114a44a5439c078314752c7c)), closes [#8](https://github.com/Quenary/tugtainer/issues/8) [#16](https://github.com/Quenary/tugtainer/issues/16)
+
 ## [1.2.2](https://github.com/Quenary/tugtainer/compare/v1.2.1...v1.2.2) (2025-10-20)
 
 
