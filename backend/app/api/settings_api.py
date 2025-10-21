@@ -1,4 +1,5 @@
 from zoneinfo import available_timezones
+from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from app.core.cron_manager import CronManager
 from app.enums.settings_enum import ESettingKey
 from app.enums.cron_jobs_enum import ECronJob
 from app.core.containers_core import check_all
+from app.exception import TugException
 
 VALID_TIMEZONES = available_timezones()
 
@@ -103,8 +105,8 @@ async def test_notification(data: TestNotificationRequestBody):
             "Tugtainer", "This is test notification", data.url
         )
         return {}
-    except:
-        raise HTTPException(500, "Failed to send notification")
+    except (TugException, AppriseException) as e:
+        raise HTTPException(500, str(e))
 
 
 @router.get(
