@@ -1,67 +1,20 @@
-name: Build and Push Docker Image on Version Tag
+name: Build and push docker image with arbitrary tag
 
 on:
-  # push:
-  #   tags:
-  #     - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
     inputs:
-      version:
-        description: "Tag version to build (e.g. v1.2.3), this will be the docker-image tag"
+      tag:
+        description: 'Tag of the image being built (e.g. dev). Cannot start with "v" or be "latest".'
         required: true
-  # workflow_run:
-  #   workflows: ["Semantic Release"]
-  #   types:
-  #     - completed
 
 jobs:
-  check-tag:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      exists: ${{ steps.check_tag.outputs.exists }}
-    env:
-      IMAGE_NAME: quenary/tugtainer
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Determine version
-        id: version
-        run: |
-          VERSION="${{ github.event.inputs.version }}"
-
-          if [ -z "$VERSION" ]; then
-            echo "❌ ERROR: No version tag found. Aborting."
-            exit 1
-          fi
-
-          echo "✅ Using VERSION=$VERSION"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Check if Docker tag already exists
-        id: check_tag
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://hub.docker.com/v2/repositories/${{ env.IMAGE_NAME }}/tags/${{ steps.version.outputs.version }}/)
-          echo "Status: $STATUS"
-          if [ "$STATUS" = "200" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
   build:
     needs: check-tag
-    if: needs.check-tag.outputs.version != '' && needs.check-tag.outputs.exists == 'false'
+    if: github.event.inputs.tag != 'latest' && not startsWith(github.event.inputs.tag, 'v')
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: quenary/tugtainer
-      VERSION: ${{ needs.check-tag.outputs.version }}
+      TAG: ${{ github.event.inputs.tag }}
 
     steps:
       - name: Checkout repository
@@ -86,7 +39,14 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ env.TAG }}
           build-args: |
-            VERSION=${{ env.VERSION }}
+            VERSION=${{ env.TAG }}
+          labels: |
+            org.opencontainers.image.title=Tugtainer
+            org.opencontainers.image.description="Containerized app for automating updates of docker containers"
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}
+            org.opencontainers.image.created=${{ github.run_started_at }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
