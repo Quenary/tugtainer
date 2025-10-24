@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/Quenary/tugtainer/compare/v1.2.3...v1.3.0) (2025-10-24)
+
+
+### Features
+
+* enable arm64 build for docker image ([61066d9](https://github.com/Quenary/tugtainer/commit/61066d991d15867f0791876001c990d26f479674))
+
 ## [1.2.3](https://github.com/Quenary/tugtainer/compare/v1.2.2...v1.2.3) (2025-10-21)
 
 
