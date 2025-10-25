@@ -4,7 +4,10 @@ networks:
 services:
   app:
     container_name: tugtainer
-    build: .
+    build:
+      context: .
+      args:
+        VERSION: dev build
     volumes:
       - tugtainer_data:/tugtainer
       - /var/run/docker.sock:/var/run/docker.sock
