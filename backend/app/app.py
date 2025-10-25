@@ -22,6 +22,26 @@ logging.basicConfig(
 )
 
 
+class EndpointFilter(logging.Filter):
+    def __init__(self):
+        self.excluded_endpoints = [
+            "/api/containers/progress",
+            "/health",
+        ]
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        return not any(
+            endpoint in message
+            for endpoint in self.excluded_endpoints
+        )
+
+
+uvicorn_logger = logging.getLogger("uvicorn.access")
+uvicorn_logger.setLevel(Config.LOG_LEVEL)
+uvicorn_logger.addFilter(EndpointFilter())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Code to run on startup
