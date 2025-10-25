@@ -25,6 +25,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 - Per-container config (check only or auto-update)
 - Manual check and update
 - Automatic/manual image pruning
+- Compose support (sort of, read Check/update section)
 
 ## Deploy:
 
@@ -105,6 +106,31 @@ Automatic updates are disabled by default. You can choose only what you need.
   - TLS:
     You can try to utilize a tls certificates if you wish. In this case you have to mount ca/cert/key to the container and specify appropriate paths in the UI
 
+## Check/update process:
+
+- ### Groups
+  Every check/update process performed by a group of containers. It's not some fancy term, but just that some containers will be grouped together. For now, this only applies to the valid compose projects. Containers with the same 'com.docker.compose.project' label will be grouped and processed together. Otherwise, there will be a group of one container. In future, i plan to add custom dependency label or an UI setting to link containers together (even if they are not in the same project).
+
+- ### Actual process
+  - **Image pull** performed for containers marked for **check**;
+  - If there are a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
+  - After that, all containers in the group are stopped in **order from most dependent**;
+  - Then, **in reverse order** (from most dependable):
+      - Updatable containers being recreated and started;
+      - Non-updatable containers being started;
+
+- ### Scheduled:
+  - For each **host defined in the UI**, the check/update process starts at time specified in the settings;
+  - All containers of the host are distributed among **groups**;
+  - Each container in the group receives an **action based on your selection in the UI** (check/update/none);
+  - *Actual process*
+
+- ### Click of check/update button:
+  - **The container** (and **possible participants** from compose) added to a group;
+  - **The container** receives an action based on the button you've clicked (check or update);
+  - **Other possible participants** receives an **action based on your selection in the UI**. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked for auto-update** and there is **new image** for it, **it will also be updated**.
+  - *Actual process*
+
 ## Env:
 
 Environment variables are not required, but you can still define some. There is [.env.example](/.env.example) containing list of vars with description.
@@ -120,7 +146,6 @@ Environment variables are not required, but you can still define some. There is 
 - add unit tests
 - filter cont in notification (dont notify already notified)
 - Dozzle integration or something more universal (list of urls for redirects?)
-- Docker compose support (display stacks, maybe update only together?)
 - Swarm support?
 - Try to add release notes (from labels or something)
 - Remove unused deps
