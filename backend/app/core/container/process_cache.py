@@ -2,34 +2,38 @@ from typing import Any, Generic, Mapping, TypedDict, TypeVar
 from cachetools import TTLCache
 from app.enums import ECheckStatus
 import uuid
+from .container_group import ContainerGroup
+from app.db.models import HostsModel
 
 
 ALL_CONTAINERS_STATUS_KEY = str(uuid.uuid4())
 
 
-def get_host_cache_key(host_id: int) -> str:
-    return str(host_id)
+def get_host_cache_key(host: HostsModel) -> str:
+    return f"{host.id}:{host.name}"
 
 
-def get_container_cache_key(host_id: int, c_name: str) -> str:
-    return f"{host_id}:{c_name}"
+def get_group_cache_key(
+    host: HostsModel, group: ContainerGroup
+) -> str:
+    return f"{get_host_cache_key(host)}:{group.name}"
 
 
 _CACHE = TTLCache(maxsize=10, ttl=600)
 
 
-class ContainerCheckData(TypedDict, total=False):
-    """Data of single container check/update progress"""
+class GroupCheckData(TypedDict, total=False):
+    """Data of containers group check/update progress"""
 
     status: ECheckStatus  # Status of progress
 
 
-class HostCheckData(ContainerCheckData, total=False):
+class HostCheckData(GroupCheckData, total=False):
     """Data of host container's check/update progress"""
 
     available: int  # Count of not updated containers (check only)
     updated: int  # count of updated containers
-    rolledback: int  # count of rolled-back after fail
+    rolled_back: int  # count of rolled-back after fail
     failed: int  # count of failed updates
 
 

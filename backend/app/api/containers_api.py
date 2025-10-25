@@ -15,24 +15,25 @@ from app.db.util import (
 )
 from app.core import (
     HostsManager,
+    ALL_CONTAINERS_STATUS_KEY,
     get_host_cache_key,
-    get_container_cache_key,
-    ContainerCheckData,
+    get_group_cache_key,
+    GroupCheckData,
     HostCheckData,
     AllCheckData,
     ProcessCache,
-    ALL_CONTAINERS_STATUS_KEY,
 )
 from app.core.containers_core import (
     check_all,
     check_host,
-    check_container,
+    check_group,
 )
+from app.core.container.container_group import get_container_group
+from app.core.container.util import update_containers_data_after_check
 from app.helpers.is_self_container import get_self_container_id
 from app.helpers.asyncall import asyncall
-from .util import map_container_schema
+from .util import map_container_schema, get_host, get_host_containers
 from python_on_whales import Container, DockerException
-from app.api.util import get_host
 import logging
 
 router = APIRouter(
@@ -120,9 +121,20 @@ async def check_host_ep(
     session: AsyncSession = Depends(get_async_session),
 ) -> str:
     host = await get_host(host_id, session)
+    containers = await get_host_containers(session, host_id)
     client = HostsManager.get_host_client(host)
-    asyncio.create_task(check_host(host, client, update))
-    return get_host_cache_key(host.id)
+    task = asyncio.create_task(
+        asyncall(
+            lambda: check_host(host, client, update, containers),
+            asyncall_timeout=None,
+        )
+    )
+    task.add_done_callback(
+        lambda t: asyncio.create_task(
+            update_containers_data_after_check(t.result())
+        )
+    )
+    return get_host_cache_key(host)
 
 
 @router.post(
@@ -137,8 +149,30 @@ async def check_container_ep(
 ) -> str:
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    asyncio.create_task(check_container(client, host, c_name, update))
-    return get_container_cache_key(host_id, c_name)
+    if not await asyncall(lambda: client.container.exists(c_name)):
+        raise HTTPException(404, "Container not found")
+    container = await asyncall(
+        lambda: client.container.inspect(c_name)
+    )
+    containers = await asyncall(
+        lambda: client.container.list(all=True)
+    )
+    db_containers = await get_host_containers(session, host_id)
+    group = get_container_group(
+        container, containers, db_containers, update
+    )
+    task = asyncio.create_task(
+        asyncall(
+            lambda: check_group(client, host, group, update),
+            asyncall_timeout=None,
+        )
+    )
+    task.add_done_callback(
+        lambda t: asyncio.create_task(
+            update_containers_data_after_check(t.result())
+        )
+    )
+    return get_group_cache_key(host, group)
 
 
 @router.get(
@@ -146,12 +180,12 @@ async def check_container_ep(
     description="Get progress of general check",
     response_model=AllCheckData
     | HostCheckData
-    | ContainerCheckData
+    | GroupCheckData
     | None,
 )
 def progress(
     cache_id: str,
-) -> AllCheckData | HostCheckData | ContainerCheckData | None:
+) -> AllCheckData | HostCheckData | GroupCheckData | None:
     CACHE = ProcessCache(cache_id)
     return CACHE.get()
 

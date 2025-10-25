@@ -115,7 +115,7 @@
       "HEADER_PROGRESS": {
         "UPDATED": "Updated",
         "AVAILABLE": "Available",
-        "ROLLEDBACK": "Rolled back",
+        "ROLLED_BACK": "Rolled back",
         "FAILED": "Failed"
       },
       "NAME": "Name",
@@ -132,7 +132,8 @@
       "CHECKED_AT": "Last check",
       "UPDATED_AT": "Last update",
       "UPDATE": "Update",
-      "CHECK": "Check"
+      "CHECK": "Check",
+      "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process."
     }
   },
   "IMAGES": {
