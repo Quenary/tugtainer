@@ -1,10 +1,15 @@
-from .util import *
 from .process_cache import (
-    ContainerCheckData,
+    GroupCheckData,
     HostCheckData,
     AllCheckData,
     ProcessCache,
-    get_host_cache_key,
-    get_container_cache_key,
     ALL_CONTAINERS_STATUS_KEY,
+    get_host_cache_key,
+    get_group_cache_key,
+)
+from .container_group import (
+    ContainerGroup,
+    ContainerGroupItem,
+    get_containers_groups,
+    get_container_group,
 )
