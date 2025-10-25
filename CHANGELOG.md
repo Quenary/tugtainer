@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/Quenary/tugtainer/compare/v1.3.0...v1.4.0) (2025-10-25)
+
+
+### Features
+
+* composed containers ([d6ec893](https://github.com/Quenary/tugtainer/commit/d6ec893c9e1c6013af8deb2cac990569306f930f)), closes [#5](https://github.com/Quenary/tugtainer/issues/5)
+* log filter for frequent api calls ([46f54cf](https://github.com/Quenary/tugtainer/commit/46f54cf3e6d825c30801459e59da1c1a20683a56))
+
 # [1.3.0](https://github.com/Quenary/tugtainer/compare/v1.2.3...v1.3.0) (2025-10-24)
 
 
