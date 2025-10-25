@@ -128,7 +128,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 - ### Click of check/update button:
   - **The container** (and **possible participants** from compose) added to a group;
   - **The container** receives an action based on the button you've clicked (check or update);
-  - **Other possible participants** receives an **action based on your selection in the UI**. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked for auto-update** and there is **new image** for it, **it will also be updated**.
+  - **Other possible participants** receives an **action based on your selection in the UI**. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked for auto-update** and there is **new image** for it, **it will also be updated**. Otherwise, **participant** will not be updated even if there is a new image for it.
   - *Actual process*
 
 ## Env:
