@@ -99,6 +99,12 @@
         pSortableColumn="update_available"
         style="width: 20%"
       >
+        <i
+          class="pi pi-question-circle"
+          style="margin: 0 0.5rem"
+          [pTooltip]="'CONTAINERS.TABLE.MAIN_BTN_HINT' | translate"
+          tooltipPosition="left"
+        ></i>
         <p-sortIcon field="update_available"></p-sortIcon>
       </th>
     </tr>
@@ -257,7 +263,7 @@
         {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.AVAILABLE' | translate }}: {{ prog.available }}
       </span>
       <span>
-        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.ROLLEDBACK' | translate }}: {{ prog.rolledback }}
+        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.ROLLED_BACK' | translate }}: {{ prog.rolled_back }}
       </span>
       <span> {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.FAILED' | translate }}: {{ prog.failed }} </span>
     </section>

@@ -57,7 +57,7 @@ export interface IContainerCheckData {
 export interface IHostCheckData extends IContainerCheckData {
   available: number;
   updated: number;
-  rolledback: number;
+  rolled_back: number;
   failed: number;
 }
 export interface IAllCheckData extends IHostCheckData {}
