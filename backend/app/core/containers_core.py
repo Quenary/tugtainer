@@ -122,9 +122,7 @@ def check_group(
     logging.info(
         f"""
 =================================================================
-Starting check of group: '{group.name}', containers count: {len(group.containers)}
-"""
-    )
+Starting check of group: '{group.name}', containers count: {len(group.containers)}""")
     result = GroupCheckResult(host_id=host.id, host_name=host.name)
     STATUS_KEY = get_group_cache_key(host, group)
     CACHE = ProcessCache[GroupCheckData](STATUS_KEY)
@@ -200,10 +198,8 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         > 0
     )
     if not update or group.is_self or not any_for_update:
-        logging.info(f"""
-Group check completed.
-=================================================================
-""")
+        logging.info(f"""Group check completed.
+=================================================================""")
         CACHE.update({"status": ECheckStatus.DONE})
         result.available = _get_shrinked_containers(
             [
@@ -231,11 +227,8 @@ Group check completed.
             logging.exception(e)
             if will_update(gc):
                 logging.error(
-                    """
-Failed to get config for updatable container. Exiting group update.
-=================================================================
-"""
-                )
+                    """Failed to get config for updatable container. Exiting group update.
+=================================================================""")
                 CACHE.update({"status": ECheckStatus.ERROR})
                 return on_stop_fail()
         # Stopping all containers
@@ -244,10 +237,8 @@ Failed to get config for updatable container. Exiting group update.
             gc.container.stop()
         except Exception as e:
             logging.exception(e)
-            logging.error("""
-Failed to stop container. Exiting group update.
-=================================================================
-""")
+            logging.error("""Failed to stop container. Exiting group update.
+=================================================================""")
             CACHE.update({"status": ECheckStatus.ERROR})
             return on_stop_fail()
 
@@ -360,10 +351,8 @@ Failed to stop container. Exiting group update.
             if item.available
         ]
     )
-    logging.info(f"""
-Group update completed.
-=================================================================
-""")
+    logging.info(f"""Group update completed.
+=================================================================""")
     CACHE.update({"status": ECheckStatus.DONE})
     return result
 

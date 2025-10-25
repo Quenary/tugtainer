@@ -178,7 +178,7 @@ def get_container_group(
                         (
                             item
                             for item in containers_db
-                            if item.name == item.name
+                            if item.name == c.name
                         ),
                         None,
                     )
