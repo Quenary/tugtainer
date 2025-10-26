@@ -158,6 +158,9 @@ async def clear_self_container_update_available():
             _, c_db = res
             if not c_db:
                 return
+            logging.info(
+                "Clearing self container update available flag"
+            )
             c_db.update_available = False
             c_db.checked_at = now()
             await session.commit()
