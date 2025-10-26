@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 from python_on_whales import Image
-from app.helpers.is_self_container import is_self_container
+from app.helpers.self_container import is_self_container
 from python_on_whales.components.container.cli_wrapper import (
     Container,
 )

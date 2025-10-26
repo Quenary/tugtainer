@@ -1,6 +1,6 @@
 from app.db.models import ContainersModel
 from app.schemas import ContainerGetResponseBody
-from app.helpers.is_self_container import is_self_container
+from app.helpers.self_container import is_self_container
 from python_on_whales import Container
 from app.core.container.util import get_container_health_status_str
 
