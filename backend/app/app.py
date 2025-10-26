@@ -14,6 +14,9 @@ from app.api import (
 from app.config import Config
 import logging
 from app.helpers.settings_storage import SettingsStorage
+from app.helpers.self_container import (
+    clear_self_container_update_available,
+)
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
@@ -46,8 +49,9 @@ uvicorn_logger.addFilter(EndpointFilter())
 async def lifespan(app: FastAPI):
     # Code to run on startup
     await load_hosts_on_init()
-    await schedule_check_on_init()
+    await clear_self_container_update_available()
     await SettingsStorage.load_all()
+    await schedule_check_on_init()
     yield  # App
     # Code to run on shutdown
 

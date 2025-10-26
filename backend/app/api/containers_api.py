@@ -30,7 +30,7 @@ from app.core.containers_core import (
 )
 from app.core.container.container_group import get_container_group
 from app.core.container.util import update_containers_data_after_check
-from app.helpers.is_self_container import get_self_container_id
+from app.helpers.self_container import get_self_container
 from app.helpers.asyncall import asyncall
 from .util import map_container_schema, get_host, get_host_containers
 from python_on_whales import Container, DockerException
@@ -198,43 +198,10 @@ def progress(
 async def is_update_available_self(
     session: AsyncSession = Depends(get_async_session),
 ):
-    self_container_id = get_self_container_id()
-    if not self_container_id:
+    res = await get_self_container(session)
+    if not res:
         return False
-    clients = HostsManager.get_all()
-    for clid, cli in clients:
-        try:
-            if await asyncall(
-                lambda: cli.container.exists(self_container_id),
-            ):
-                cont = await asyncall(
-                    lambda: cli.container.inspect(self_container_id),
-                )
-                name = cont.name
-                stmt = (
-                    select(ContainersModel)
-                    .where(
-                        and_(
-                            ContainersModel.host_id == clid,
-                            ContainersModel.name == name,
-                        )
-                    )
-                    .limit(1)
-                )
-                result = await session.execute(stmt)
-                db_cont = result.scalar_one_or_none()
-                if not db_cont:
-                    return False
-                return db_cont.update_available
-        except DockerException as e:
-            logging.error(
-                "Docker exception while getting self container update availability."
-            )
-            logging.info(e.stdout)
-            logging.error(e.stderr)
-        except Exception as e:
-            logging.error(
-                "Failed to get self container update availability."
-            )
-            logging.exception(e)
-    return False
+    _, c_db = res
+    if not c_db:
+        return False
+    return c_db.update_available
