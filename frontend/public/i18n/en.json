@@ -35,8 +35,8 @@
     "UPDATE": "Update available",
     "UPDATE_NOTES": [
       "Due to container limitations, it cannot be updated from itself.",
-      "You can update it manually or, say, from Portainer.",
-      "Here are the commands you'll need. Check all the parameters in case you have changed any."
+      "You can update it manually or for example from Portainer.",
+      "Detailed instructions are available on GitHub."
     ]
   },
   "AUTH": {

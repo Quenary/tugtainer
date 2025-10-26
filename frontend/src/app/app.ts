@@ -43,26 +43,13 @@ export class App {
   private readonly containersApiService = inject(ContainersApiService);
 
   public readonly showNewVersionDialog = signal<boolean>(false);
-  public readonly newVersionDialogText = `
-docker stop tugtainer
 
-docker rm tugtainer
-
-docker pull quenary/tugtainer:latest
-
-docker run -d -p 9412:80 \\
-  --name=tugtainer \\
-  --restart=unless-stopped \\
-  -v tugtainer_data:/tugtainer \\
-  -v /var/run/docker.sock:/var/run/docker.sock \\
-  quenary/tugtainer:latest
-`;
   public readonly version$ = this.publicApiService.getVersion().pipe(
-    retry({ count: 3, delay: 500 }),
+    retry({ count: 1, delay: 500 }),
     catchError(() => of({ image_version: 'unknown' })),
   );
   public readonly isUpdateAvailable$ = this.containersApiService.isUpdateAvailableSelf().pipe(
-    retry({ count: 3, delay: 500 }),
+    retry({ count: 1, delay: 500 }),
     catchError(() => of(false)),
   );
   public readonly menuItems$: Observable<MenuItem[]> = this.translateService.get('MENU').pipe(
