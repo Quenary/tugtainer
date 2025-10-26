@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/Quenary/tugtainer/compare/v1.4.1...v1.4.2) (2025-10-26)
+
+
+### Bug Fixes
+
+* incorrect update available hint ([8d858e2](https://github.com/Quenary/tugtainer/commit/8d858e2a5c620edd822a3ee843061dd03df4f29b)), closes [#12](https://github.com/Quenary/tugtainer/issues/12)
+
 ## [1.4.1](https://github.com/Quenary/tugtainer/compare/v1.4.0...v1.4.1) (2025-10-25)
 
 
