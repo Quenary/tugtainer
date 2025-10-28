@@ -3,21 +3,21 @@ from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.auth_core import is_authorized
-from app.db.session import get_async_session
-from app.db.models import SettingModel
-from app.db.util import get_setting_typed_value
-from app.schemas.settings_schema import (
+from backend.app.core.auth_core import is_authorized
+from backend.app.db.session import get_async_session
+from backend.app.db.models import SettingModel
+from backend.app.db.util import get_setting_typed_value
+from backend.app.schemas.settings_schema import (
     SettingsGetResponseItem,
     SettingsPatchRequestItem,
     TestNotificationRequestBody,
 )
-from app.core.notifications_core import send_notification
-from app.core.cron_manager import CronManager
-from app.enums.settings_enum import ESettingKey
-from app.enums.cron_jobs_enum import ECronJob
-from app.core.containers_core import check_all
-from app.exception import TugException
+from backend.app.core.notifications_core import send_notification
+from backend.app.core.cron_manager import CronManager
+from backend.app.enums.settings_enum import ESettingKey
+from backend.app.enums.cron_jobs_enum import ECronJob
+from backend.app.core.containers_core import check_all
+from backend.app.exception import TugException
 
 VALID_TIMEZONES = available_timezones()
 

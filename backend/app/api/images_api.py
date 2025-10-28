@@ -1,12 +1,23 @@
+from typing import cast
 from fastapi import APIRouter, Depends
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.auth_core import is_authorized
-from app.schemas import ImageGetResponseBody
-from app.api.util import map_image_schema, get_host
+from backend.app.core.auth_core import is_authorized
+from backend.app.schemas import ImageGetResponseBody
+from backend.app.api.util import map_image_schema, get_host
 from python_on_whales import Container
-from app.core import HostsManager
-from app.db.session import get_async_session
-from app.helpers.asyncall import asyncall
+from backend.app.core import HostsManager
+from backend.app.db.session import get_async_session
+from backend.app.helpers.asyncall import asyncall
+from shared.schemas.container_schemas import (
+    GetContainerListBodySchema,
+)
+from shared.schemas.image_schemas import (
+    GetImageListBodySchema,
+    PruneImagesRequestBodySchema,
+)
 
 router = APIRouter(
     prefix="/images",
@@ -23,18 +34,24 @@ async def get_list(
 ) -> list[ImageGetResponseBody]:
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    containers: list[Container] = await asyncall(
-        client.container.list, all=True
+    containers: list[ContainerInspectResult] = await asyncall(
+        lambda: client.container.list(
+            GetContainerListBodySchema(all=True)
+        )
     )
-    used_images: list[str] = [c.image for c in containers]
+    used_images: list[str] = [c.image for c in containers if c.image]
     dangling_images: list[str] = [
         str(i.id)
         for i in await asyncall(
-            client.image.list, filters=[("dangling", "true")]
+            lambda: client.image.list(
+                GetImageListBodySchema(filters={"dangling": "true"})
+            )
         )
     ]
     res: list[ImageGetResponseBody] = []
-    for image in await asyncall(client.image.list, all=True):
+    for image in await asyncall(
+        lambda: client.image.list(GetImageListBodySchema(all=True))
+    ):
         dangling = image.id in dangling_images
         unused = image.id not in used_images
         res.append(map_image_schema(image, dangling, unused))
@@ -47,4 +64,8 @@ async def prune(
 ) -> str:
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    return client.image.prune()
+    return await asyncall(
+        lambda: client.image.prune(
+            PruneImagesRequestBodySchema(all=True)
+        )
+    )

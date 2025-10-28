@@ -1,13 +1,17 @@
-from app.db.models import ContainersModel
-from app.schemas import ContainerGetResponseBody
-from app.helpers.self_container import is_self_container
+from typing import cast
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
+)
+from backend.app.db.models import ContainersModel
+from backend.app.schemas import ContainerGetResponseBody
+from backend.app.helpers.self_container import is_self_container
 from python_on_whales import Container
-from app.core.container.util import get_container_health_status_str
+from backend.app.core.container.util import get_container_health_status_str
 
 
 def map_container_schema(
     host_id: int,
-    d_cont: Container,
+    d_cont: ContainerInspectResult,
     db_cont: ContainersModel | None,
 ) -> ContainerGetResponseBody:
     """
@@ -15,12 +19,20 @@ def map_container_schema(
     to api response schema
     """
     _item = ContainerGetResponseBody(
-        name=d_cont.name,
-        image=d_cont.config.image if d_cont.config.image else None,
-        container_id=d_cont.id,
-        ports=d_cont.host_config.port_bindings,
-        status=d_cont.state.status,
-        exit_code=d_cont.state.exit_code,
+        name=d_cont.name if d_cont.name else "",
+        image=(
+            d_cont.config.image
+            if d_cont.config and d_cont.config.image
+            else None
+        ),
+        container_id=d_cont.id if d_cont.id else "",
+        ports=(
+            d_cont.host_config.port_bindings
+            if d_cont.host_config
+            else None
+        ),
+        status=d_cont.state.status if d_cont.state else None,
+        exit_code=d_cont.state.exit_code if d_cont.state else None,
         health=get_container_health_status_str(d_cont),
         is_self=is_self_container(d_cont),
         host_id=host_id,

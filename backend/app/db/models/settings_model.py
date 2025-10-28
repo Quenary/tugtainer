@@ -2,7 +2,7 @@ from .base_model import BaseModel
 from sqlalchemy import String, DateTime, text
 from sqlalchemy.orm import mapped_column, Mapped
 from datetime import datetime
-from app.helpers.now import now
+from backend.app.helpers.now import now
 
 
 class SettingModel(BaseModel):

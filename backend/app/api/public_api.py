@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_async_session
-from app.schemas.version_schema import VersionResponseBody
-from app.core.cron_manager import CronManager
-from app.enums.cron_jobs_enum import ECronJob
+from backend.app.db.session import get_async_session
+from backend.app.schemas.version_schema import VersionResponseBody
+from backend.app.core.cron_manager import CronManager
+from backend.app.enums.cron_jobs_enum import ECronJob
 
 
 router = APIRouter(tags=["public"], prefix="/public")

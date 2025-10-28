@@ -1,19 +1,19 @@
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.auth_core import is_authorized
-from app.schemas.containers_schema import (
+from backend.app.core.auth_core import is_authorized
+from backend.app.schemas.containers_schema import (
     ContainerPatchRequestBody,
     ContainerGetResponseBody,
 )
-from app.db.session import get_async_session
-from app.db.models import ContainersModel
-from app.db.util import (
+from backend.app.db.session import get_async_session
+from backend.app.db.models import ContainersModel
+from backend.app.db.util import (
     insert_or_update_container,
     ContainerInsertOrUpdateData,
 )
-from app.core import (
+from backend.app.core import (
     HostsManager,
     ALL_CONTAINERS_STATUS_KEY,
     get_host_cache_key,
@@ -23,18 +23,20 @@ from app.core import (
     AllCheckData,
     ProcessCache,
 )
-from app.core.containers_core import (
+from backend.app.core.containers_core import (
     check_all,
     check_host,
     check_group,
 )
-from app.core.container.container_group import get_container_group
-from app.core.container.util import update_containers_data_after_check
-from app.helpers.self_container import get_self_container
-from app.helpers.asyncall import asyncall
+from backend.app.core.container.container_group import get_container_group
+from backend.app.core.container.util import update_containers_data_after_check
+from backend.app.helpers.self_container import get_self_container
+from backend.app.helpers.asyncall import asyncall
+from shared.schemas.container_schemas import (
+    GetContainerListBodySchema,
+)
 from .util import map_container_schema, get_host, get_host_containers
-from python_on_whales import Container, DockerException
-import logging
+from python_on_whales import Container
 
 router = APIRouter(
     prefix="/containers",
@@ -56,13 +58,16 @@ async def containers_list(
     if not host.enabled:
         raise HTTPException(409, "Host disabled")
     client = HostsManager.get_host_client(host)
-    containers: list[Container] = await asyncall(
-        client.container.list, all=True
+    containers = await asyncall(
+        lambda: client.container.list(
+            GetContainerListBodySchema(all=True)
+        )
     )
-    stmt = select(ContainersModel).where(
-        ContainersModel.host_id == host_id
+    result = await session.execute(
+        select(ContainersModel).where(
+            ContainersModel.host_id == host_id
+        )
     )
-    result = await session.execute(stmt)
     containers_db = result.scalars().all()
     _list: list[ContainerGetResponseBody] = []
     for c in containers:
@@ -155,7 +160,9 @@ async def check_container_ep(
         lambda: client.container.inspect(c_name)
     )
     containers = await asyncall(
-        lambda: client.container.list(all=True)
+        lambda: client.container.list(
+            GetContainerListBodySchema(all=True)
+        )
     )
     db_containers = await get_host_containers(session, host_id)
     group = get_container_group(

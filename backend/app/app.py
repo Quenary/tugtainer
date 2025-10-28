@@ -1,9 +1,13 @@
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, status
 from python_on_whales import DockerException
-from app.core import schedule_check_on_init, load_hosts_on_init
-from app.api import (
+import requests
+from backend.app.core import (
+    schedule_check_on_init,
+    load_hosts_on_init,
+)
+from backend.app.api import (
     auth_router,
     containers_router,
     public_router,
@@ -11,12 +15,13 @@ from app.api import (
     images_router,
     hosts_router,
 )
-from app.config import Config
+from backend.app.config import Config
 import logging
-from app.helpers.settings_storage import SettingsStorage
-from app.helpers.self_container import (
+from backend.app.helpers.settings_storage import SettingsStorage
+from backend.app.helpers.self_container import (
     clear_self_container_update_available,
 )
+from shared.util.endpoint_logging_filter import EndpointLoggingFilter
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
@@ -24,25 +29,16 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-
-class EndpointFilter(logging.Filter):
-    def __init__(self):
-        self.excluded_endpoints = [
-            "/api/containers/progress",
-            "/health",
-        ]
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        message = record.getMessage()
-        return not any(
-            endpoint in message
-            for endpoint in self.excluded_endpoints
-        )
-
-
 uvicorn_logger = logging.getLogger("uvicorn.access")
 uvicorn_logger.setLevel(Config.LOG_LEVEL)
-uvicorn_logger.addFilter(EndpointFilter())
+uvicorn_logger.addFilter(
+    EndpointLoggingFilter(
+        [
+            "/api/containers/progress",
+            "/public/health",
+        ]
+    )
+)
 
 
 @asynccontextmanager
@@ -70,14 +66,13 @@ async def timeout_exception_handler(
     request: Request, exc: asyncio.TimeoutError
 ):
     raise HTTPException(
-        500,
+        status.HTTP_500_INTERNAL_SERVER_ERROR,
         "Timeout error. The problem is most likely related to connecting to the docker host.",
     )
 
 
-@app.exception_handler(DockerException)
-async def docker_exception_handler(
-    request: Request,
-    exc: DockerException,
+@app.exception_handler(requests.exceptions.HTTPError)
+async def requests_exception_handler(
+    request: Request, exc: requests.exceptions.HTTPError
 ):
-    raise HTTPException(424, exc.stdout)
+    raise HTTPException(status.HTTP_424_FAILED_DEPENDENCY, str(exc))

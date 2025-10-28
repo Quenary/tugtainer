@@ -1,13 +1,11 @@
-from python_on_whales.components.container.cli_wrapper import (
-    Container,
-)
 from typing import Any
+from python_on_whales.components.container.models import ContainerConfig, ContainerHostConfig, ContainerInspectResult, NetworkSettings
 from python_on_whales.utils import ValidPortMapping
 from .map_port_bindings_to_list import map_port_bindings_to_list
 
 
 def get_container_net_kwargs(
-    container: Container,
+    container: ContainerInspectResult,
 ) -> tuple[dict[Any, Any], list[list[str]]]:
     """
     Get container networking params dict that matches kwargs for create/run.
@@ -15,10 +13,10 @@ def get_container_net_kwargs(
     :returns 1: list of docker commands to be executed after container creation, in list format e.g. ["network", "connect", ...]
     """
     COMMANDS: list[list[str]] = []
-    ID = container.id
-    CONFIG = container.config
-    HOST_CONFIG = container.host_config
-    NETWORK_SETTINGS = container.network_settings
+    ID = container.id or ""
+    CONFIG = container.config or ContainerConfig()
+    HOST_CONFIG = container.host_config or ContainerHostConfig()
+    NETWORK_SETTINGS = container.network_settings or NetworkSettings()
 
     DNS: list[str] = HOST_CONFIG.dns or []
     DNS_OPTIONS: list[str] = HOST_CONFIG.dns_options or []

@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base_model import BaseModel
-from app.helpers.now import now
+from backend.app.helpers.now import now
 
 if TYPE_CHECKING:
     from .hosts_model import HostsModel

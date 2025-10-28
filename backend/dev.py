@@ -1,9 +1,18 @@
 import subprocess
+import os
 
 
 def run_migrations():
     print("Running Alembic migrations...")
-    result = subprocess.run(["alembic", "upgrade", "head"], check=False)
+    result = subprocess.run(
+        [
+            "alembic",
+            "-c",
+            os.path.join(os.path.dirname(__file__), "alembic.ini"),
+            "upgrade",
+            "head",
+        ]
+    )
     if result.returncode != 0:
         raise Exception("Alembic migrations failed. Exiting.")
     print("Alembic migrations completed.")
@@ -12,6 +21,14 @@ def run_migrations():
 if __name__ == "__main__":
     run_migrations()
     try:
-        subprocess.run(["fastapi", "dev", "app/app.py", "--host=0.0.0.0"])
+        subprocess.run(
+            [
+                "fastapi",
+                "dev",
+                os.path.join(os.path.dirname(__file__), "app", "app.py"),
+                "--host=0.0.0.0",
+                "--port=8000",
+            ]
+        )
     except KeyboardInterrupt as e:
         print("Dev server shutdown by user.")

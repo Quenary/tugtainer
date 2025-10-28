@@ -2,12 +2,14 @@ from python_on_whales.components.container.models import Mount
 
 
 def map_mounts_to_arg(
-    mounts_config: list[Mount],
+    mounts_config: list[Mount] | None,
 ) -> list[list[str]]:
     """
     Map docker inspect mounts config to run/create arg
     """
     docker_mounts: list[list[str]] = []
+    if not mounts_config:
+        return docker_mounts
 
     for mount in mounts_config:
         mount_list: list[str] = []

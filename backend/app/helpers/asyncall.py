@@ -2,9 +2,9 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, ParamSpec, TypeVar, cast
 from asyncio import AbstractEventLoop
-from app.enums import ESettingKey
+from backend.app.enums import ESettingKey
 from .settings_storage import SettingsStorage
-from app.exception import TugAsyncallNoLoopException
+from backend.app.exception import TugAsyncallNoLoopException
 
 EXECUTOR = ThreadPoolExecutor(7)
 

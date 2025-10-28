@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.models import ContainersModel
+from backend.app.db.models import ContainersModel
 
 
 async def get_host_containers(

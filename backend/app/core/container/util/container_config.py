@@ -1,6 +1,17 @@
 from typing import Any
-from python_on_whales import Container, Image
-from app.helpers.subtract_dict import subtract_dict
+
+from python_on_whales.components.container.models import (
+    ContainerConfig,
+    ContainerHostConfig,
+    ContainerInspectResult,
+)
+from python_on_whales.components.image.models import (
+    ImageInspectResult,
+)
+from backend.app.helpers.subtract_dict import subtract_dict
+from shared.schemas.container_schemas import (
+    CreateContainerRequestBodySchema,
+)
 from .map_ulimits_to_arg import map_ulimits_to_arg
 from .map_ulimits_to_arg import map_ulimits_to_arg
 from .map_healthcheck_to_kwargs import map_healthcheck_to_kwargs
@@ -41,12 +52,15 @@ def _drop_empty_keys(cfg: dict) -> dict:
 
 
 def merge_container_config_with_image(
-    cfg: dict, image: Image
-) -> dict:
+    _cfg: CreateContainerRequestBodySchema, image: ImageInspectResult
+) -> CreateContainerRequestBodySchema:
     """
     Merge container config with some values from image config.
     Returns config dict that matches kwargs for create/run.
     """
+    if not image.config:
+        return _cfg
+    cfg = _cfg.model_dump()
     cfg_envs: dict = cfg.get("envs", {})
     image_envs: dict = map_env_to_dict(image.config.env)
     merged_envs: dict = subtract_dict(cfg_envs, image_envs) or {}
@@ -79,20 +93,20 @@ def merge_container_config_with_image(
     }
     merged_config = _drop_empty_keys(merged_config)
 
-    return merged_config
+    return CreateContainerRequestBodySchema(**merged_config)
 
 
 def get_container_config(
-    container: Container,
-) -> tuple[dict[Any, Any], list[list[str]]]:
+    container: ContainerInspectResult,
+) -> tuple[CreateContainerRequestBodySchema, list[list[str]]]:
     """
     Get container config dict that matches kwargs for create/run.
     :returns 0: config dict
     :returns 1: list of docker commands to be executed after container creation, in list format e.g. ["network", "connect", ...]
     """
     COMMANDS: list[list[str]] = []
-    CONFIG = container.config
-    HOST_CONFIG = container.host_config
+    CONFIG = container.config or ContainerConfig()
+    HOST_CONFIG = container.host_config or ContainerHostConfig()
 
     ENVS = map_env_to_dict(CONFIG.env)
 
@@ -109,6 +123,7 @@ def get_container_config(
         )
 
     CONFIG = {
+        "image": CONFIG.image,
         "name": container.name,
         "blkio_weight": HOST_CONFIG.blkio_weight,
         "blkio_weight_device": HOST_CONFIG.blkio_weight_device,
@@ -179,4 +194,4 @@ def get_container_config(
     }
     CONFIG = _drop_empty_keys(CONFIG)
 
-    return CONFIG, COMMANDS
+    return CreateContainerRequestBodySchema(**CONFIG), COMMANDS

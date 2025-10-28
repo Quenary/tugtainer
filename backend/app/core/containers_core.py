@@ -1,28 +1,30 @@
-from python_on_whales import (
-    Container,
-    Image,
-    DockerClient,
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
 )
-from python_on_whales.utils import run as docker_run_cmd
+from python_on_whales.components.image.models import (
+    ImageInspectResult,
+)
 import logging
 from typing import cast
 from sqlalchemy import select
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from app.db.session import async_session_maker
-from app.db.models import ContainersModel, HostsModel
-from app.core.container.util import update_containers_data_after_check
-from app.core.container.schemas.check_result import (
+from backend.app.db.session import async_session_maker
+from backend.app.db.models import ContainersModel, HostsModel
+from backend.app.core.container.util import (
+    update_containers_data_after_check,
+)
+from backend.app.core.container.schemas.check_result import (
     CheckContainerUpdateAvailableResult,
     GroupCheckResult,
     HostCheckResult,
     ShrinkedContainer,
 )
-from app.core import HostsManager
-from app.core.notifications_core import send_notification
-from app.enums.check_status_enum import ECheckStatus
-from app.config import Config
-from app.core.container.util import (
+from backend.app.core import HostsManager
+from backend.app.core.notifications_core import send_notification
+from backend.app.enums.check_status_enum import ECheckStatus
+from backend.app.config import Config
+from backend.app.core.container.util import (
     get_container_image_spec,
     get_container_image_id,
     wait_for_container_healthy_sync,
@@ -30,7 +32,7 @@ from app.core.container.util import (
     merge_container_config_with_image,
     update_containers_data_after_check,
 )
-from app.core.container import (
+from backend.app.core.container import (
     GroupCheckData,
     HostCheckData,
     AllCheckData,
@@ -39,10 +41,22 @@ from app.core.container import (
     get_host_cache_key,
     get_group_cache_key,
 )
-from app.core.container.container_group import (
+from backend.app.core.container.container_group import (
     ContainerGroupItem,
     get_containers_groups,
     ContainerGroup,
+)
+from backend.app.core.agent_client import AgentClient
+from shared.schemas.command_schemas import RunCommandRequestBodySchema
+from shared.schemas.container_schemas import (
+    CreateContainerRequestBodySchema,
+    GetContainerListBodySchema,
+)
+from shared.schemas.image_schemas import (
+    InspectImageRequestBodySchema,
+    PruneImagesRequestBodySchema,
+    PullImageRequestBodySchema,
+    TagImageRequestBodySchema,
 )
 
 # Allowed cache statuses for further processing
@@ -50,14 +64,14 @@ _ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
 
 
 def _get_shrinked_containers(
-    containers: list[Container],
+    containers: list[ContainerInspectResult],
 ) -> list[ShrinkedContainer]:
     return [ShrinkedContainer.from_c(c) for c in containers]
 
 
 def check_container_update_available(
-    client: DockerClient,
-    container: Container,
+    client: AgentClient,
+    container: ContainerInspectResult,
 ) -> CheckContainerUpdateAvailableResult:
     """
     Check if there is new image for the container.
@@ -74,19 +88,25 @@ def check_container_update_available(
             return result
         result.image_spec = image_spec
         image_id = get_container_image_id(container)
-        old_image: Image
+        old_image: ImageInspectResult
         if image_id:
-            old_image = client.image.inspect(image_id)
+            old_image = client.image.inspect(
+                InspectImageRequestBodySchema(spec_or_id=image_id)
+            )
         else:
-            old_image = client.image.inspect(image_spec)
+            old_image = client.image.inspect(
+                InspectImageRequestBodySchema(spec_or_id=image_spec)
+            )
         result.old_image = old_image
         if not old_image.repo_digests:
             logging.warning(
                 f"Image missing repo digests. Presumably a local image."
             )
             return result
-        new_image = client.image.pull(image_spec)
-        if not isinstance(new_image, Image):
+        new_image = client.image.pull(
+            PullImageRequestBodySchema(image=image_spec)
+        )
+        if not isinstance(new_image, ImageInspectResult):
             logging.warning(f"Failed to pull new image.'")
             return result
         result.new_image = new_image
@@ -107,7 +127,7 @@ def check_container_update_available(
 
 
 def check_group(
-    client: DockerClient,
+    client: AgentClient,
     host: HostsModel,
     group: ContainerGroup,
     update: bool,
@@ -122,7 +142,8 @@ def check_group(
     logging.info(
         f"""
 =================================================================
-Starting check of group: '{group.name}', containers count: {len(group.containers)}""")
+Starting check of group: '{group.name}', containers count: {len(group.containers)}"""
+    )
     result = GroupCheckResult(host_id=host.id, host_name=host.name)
     STATUS_KEY = get_group_cache_key(host, group)
     CACHE = ProcessCache[GroupCheckData](STATUS_KEY)
@@ -167,7 +188,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     def on_stop_fail():
         """If failed to stop containers before updating"""
         for gc in group.containers:
-            gc.container.start()
+            client.container.start(gc.name)
         result.available = _get_shrinked_containers(
             [
                 item.container
@@ -181,9 +202,10 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         """Run commands after container started"""
         for c in commands:
             try:
-                _command = client.config.docker_cmd + c
-                logging.info(f"Running command: {_command}")
-                out, err = docker_run_cmd(_command)
+                logging.info(f"Running command: {c}")
+                out, err = client.command.run(
+                    RunCommandRequestBodySchema(command=c)
+                )
                 if out:
                     logging.info(out)
                 if err:
@@ -198,8 +220,10 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         > 0
     )
     if not update or group.is_self or not any_for_update:
-        logging.info(f"""Group check completed.
-=================================================================""")
+        logging.info(
+            f"""Group check completed.
+================================================================="""
+        )
         CACHE.update({"status": ECheckStatus.DONE})
         result.available = _get_shrinked_containers(
             [
@@ -228,17 +252,20 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             if will_update(gc):
                 logging.error(
                     """Failed to get config for updatable container. Exiting group update.
-=================================================================""")
+================================================================="""
+                )
                 CACHE.update({"status": ECheckStatus.ERROR})
                 return on_stop_fail()
         # Stopping all containers
         try:
             logging.info(f"Stopping container {gc.container.name}...")
-            gc.container.stop()
+            client.container.stop(gc.name)
         except Exception as e:
             logging.exception(e)
-            logging.error("""Failed to stop container. Exiting group update.
-=================================================================""")
+            logging.error(
+                """Failed to stop container. Exiting group update.
+================================================================="""
+            )
             CACHE.update({"status": ECheckStatus.ERROR})
             return on_stop_fail()
 
@@ -250,30 +277,28 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     # If True, the following updates will not be processed.
     any_failed: bool = False
     for gc in group.containers:
-        c_name = gc.container.name
+        c_name = gc.name
         # Updating container
         if will_update(gc) and not any_failed:
             image_spec = cast(str, gc.image_spec)
-            old_image = cast(Image, gc.old_image)
-            new_image = cast(Image, gc.new_image)
-            config = cast(dict, gc.config)
+            old_image = cast(ImageInspectResult, gc.old_image)
+            new_image = cast(ImageInspectResult, gc.new_image)
+            config = cast(CreateContainerRequestBodySchema, gc.config)
             logging.info(f"Starting update of container {c_name}...")
             try:
                 logging.info("Removing container...")
-                gc.container.remove()
+                client.container.remove(c_name)
                 logging.info("Merging configs...")
                 merged_config = merge_container_config_with_image(
                     config, new_image
                 )
                 logging.info("Recreating container...")
-                new_c = client.container.create(
-                    image_spec, **merged_config
-                )
+                new_c = client.container.create(merged_config)
                 logging.info("Starting container...")
-                new_c.start()
+                client.container.start(c_name)
                 run_commands(gc.commands)
                 logging.info("Waiting for healthchecks...")
-                if wait_for_container_healthy_sync(new_c):
+                if wait_for_container_healthy_sync(client, new_c):
                     logging.info("Container is healthy!")
                     gc.container = new_c
                     gc.available = False
@@ -285,35 +310,40 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 logging.warning(
                     "Container is unhealthy, rolling back..."
                 )
-                new_c.stop()
-                new_c.remove()
+                client.container.stop(c_name)
+                client.container.remove(c_name)
             except Exception as e:
                 logging.exception(e)
                 logging.error("Update failed, rolling back...")
                 # Try to remove possibly existing container
                 if client.container.exists(c_name):
                     logging.warning("Removing failed container...")
-                    client.stop(c_name)
-                    client.remove(c_name)
+                    client.container.stop(c_name)
+                    client.container.remove(c_name)
             # Rolling back
             try:
                 logging.warning("Tagging previous image...")
-                old_image.tag(image_spec)
+                client.image.tag(
+                    TagImageRequestBodySchema(
+                        spec_or_id=str(old_image.id),
+                        tag=image_spec,
+                    )
+                )
                 logging.warning(
                     "Creating container with previous image..."
                 )
-                rolled_back = client.container.create(
-                    image_spec, **config
-                )
+                rolled_back = client.container.create(config)
                 logging.warning("Starting container...")
-                rolled_back.start()
+                client.container.start(str(rolled_back.id))
                 run_commands(gc.commands)
                 gc.container = rolled_back
                 result.rolled_back.append(
                     ShrinkedContainer.from_c(rolled_back)
                 )
                 logging.warning("Waiting for healthchecks...")
-                if wait_for_container_healthy_sync(rolled_back):
+                if wait_for_container_healthy_sync(
+                    client, rolled_back
+                ):
                     logging.warning("Container is healthy!")
                     continue
                 logging.warning("Container is unhealthy!")
@@ -331,10 +361,12 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 logging.info(
                     f"Starting non-updatable container {gc.container.name}"
                 )
-                gc.container.start()
+                client.container.start(gc.name)
                 run_commands(gc.commands)
                 logging.info("Waiting for healthchecks...")
-                if wait_for_container_healthy_sync(gc.container):
+                if wait_for_container_healthy_sync(
+                    client, gc.container
+                ):
                     logging.info("Container is healthy!")
                     continue
                 logging.warning("Container is unhealthy! Continue...")
@@ -351,15 +383,17 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             if item.available
         ]
     )
-    logging.info(f"""Group update completed.
-=================================================================""")
+    logging.info(
+        f"""Group update completed.
+================================================================="""
+    )
     CACHE.update({"status": ECheckStatus.DONE})
     return result
 
 
 def check_host(
     host: HostsModel,
-    client: DockerClient,
+    client: AgentClient,
     update: bool,
     containers_db: list[ContainersModel],
 ) -> HostCheckResult | None:
@@ -386,10 +420,12 @@ def check_host(
         )
         logging.info(f"Starting check for host '{host.name}'")
 
-        containers: list[Container] = client.container.list(all=True)
-        groups = get_containers_groups(
-            containers, containers_db
+        containers: list[ContainerInspectResult] = (
+            client.container.list(
+                GetContainerListBodySchema(all=True)
+            )
         )
+        groups = get_containers_groups(containers, containers_db)
         CACHE.update(
             {
                 "status": (
@@ -420,7 +456,9 @@ def check_host(
 
         if host.prune:
             CACHE.update({"status": ECheckStatus.PRUNING})
-            output = client.image.prune()
+            output = client.image.prune(
+                PruneImagesRequestBodySchema(all=True)
+            )
             lines = [
                 line.strip()
                 for line in output.splitlines()

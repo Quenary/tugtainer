@@ -1,9 +1,9 @@
 from typing import Any, Generic, Mapping, TypedDict, TypeVar
 from cachetools import TTLCache
-from app.enums import ECheckStatus
+from backend.app.enums import ECheckStatus
 import uuid
 from .container_group import ContainerGroup
-from app.db.models import HostsModel
+from backend.app.db.models import HostsModel
 
 
 ALL_CONTAINERS_STATUS_KEY = str(uuid.uuid4())

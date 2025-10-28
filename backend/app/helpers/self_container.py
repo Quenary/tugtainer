@@ -1,12 +1,14 @@
-from python_on_whales import Container
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
+)
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.config import Config
+from backend.app.config import Config
 import re
 import logging
-from app.core.hosts_manager import HostsManager
-from app.db.models import ContainersModel
-from app.db.session import async_session_maker
+from backend.app.core.hosts_manager import HostsManager
+from backend.app.db.models import ContainersModel
+from backend.app.db.session import async_session_maker
 from .asyncall import asyncall
 from .now import now
 
@@ -85,15 +87,17 @@ def get_self_container_id() -> str | None:
     return SELF_CONTAINER_ID
 
 
-def is_self_container(container: Container) -> bool:
+def is_self_container(container: ContainerInspectResult) -> bool:
     """
     Check if provided container is self container
     """
     self_id = get_self_container_id() or ""
-    c_id = container.id[0:12]
+    c_id = container.id[0:12] if container.id else None
     if c_id and self_id and self_id.startswith(c_id):
         return True
-    c_hostname = container.config.hostname
+    c_hostname = (
+        container.config.hostname if container.config else None
+    )
     if (
         c_hostname
         and Config.HOSTNAME
@@ -105,7 +109,7 @@ def is_self_container(container: Container) -> bool:
 
 async def get_self_container(
     session: AsyncSession,
-) -> tuple[Container, ContainersModel | None] | None:
+) -> tuple[ContainerInspectResult, ContainersModel | None] | None:
     """
     Get self container
     :returns: container object and container db data (if exists)

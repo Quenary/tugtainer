@@ -1,11 +1,11 @@
 from sqlalchemy import and_, select
-from app.db.models.containers_model import ContainersModel
-from app.core.container.schemas.check_result import (
+from backend.app.db.models.containers_model import ContainersModel
+from backend.app.core.container.schemas.check_result import (
     GroupCheckResult,
     HostCheckResult,
 )
-from app.helpers.now import now
-from app.db.session import async_session_maker
+from backend.app.helpers.now import now
+from backend.app.db.session import async_session_maker
 
 
 async def update_containers_data_after_check(

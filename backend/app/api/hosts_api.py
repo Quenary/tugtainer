@@ -1,14 +1,19 @@
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Response
 from python_on_whales import DockerException
+import requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core import is_authorized, HostsManager
-from app.schemas import HostInfo, HostBase, HostStatusResponseBody
-from app.db.session import get_async_session
-from app.db.models import HostsModel
-from app.api.util import get_host
-from app.helpers.asyncall import asyncall
+from backend.app.core import is_authorized, HostsManager
+from backend.app.schemas import (
+    HostInfo,
+    HostBase,
+    HostStatusResponseBody,
+)
+from backend.app.db.session import get_async_session
+from backend.app.db.models import HostsModel
+from backend.app.api.util import get_host
+from backend.app.helpers.asyncall import asyncall
 
 router = APIRouter(
     prefix="/hosts",
@@ -125,13 +130,24 @@ async def get_status(
         HostStatusResponseBody(id=id)
     client = HostsManager.get_host_client(host)
     try:
-        _ = await asyncall(client.info)
+        _ = await asyncall(client.public.health)
+        _ = await asyncall(client.public.access)
         return HostStatusResponseBody(id=id, ok=True)
-    except DockerException as e:
-        return HostStatusResponseBody(id=id, ok=False, err=e.stderr)
+    except requests.exceptions.HTTPError as e:
+        return HostStatusResponseBody(
+            id=id,
+            ok=False,
+            err=str(e),
+        )
     except asyncio.TimeoutError as e:
         return HostStatusResponseBody(
             id=id,
             ok=False,
-            err="Timeout error while calling docker cli",
+            err="Timeout error",
+        )
+    except Exception as e:
+        return HostStatusResponseBody(
+            id=id,
+            ok=False,
+            err="Unknown error",
         )

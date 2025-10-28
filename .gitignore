@@ -1,3 +1,6 @@
+**/password_hash
+**/tugtainer.db
+
 # Logs
 logs
 *.log
@@ -137,3 +140,17 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# PYTHON
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/

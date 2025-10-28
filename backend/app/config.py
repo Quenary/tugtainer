@@ -17,6 +17,7 @@ class Config:
     PASSWORD_FILE: ClassVar[str]
     HTTPS: ClassVar[bool]
     DOMAIN: ClassVar[str | None]
+    AGENT_SIGNATURE_LIFETIME: ClassVar[int]
 
     @classmethod
     def load(cls):
@@ -47,6 +48,9 @@ class Config:
             )
             cls.HTTPS = os.getenv("HTTPS", "false").lower() == "true"
             cls.DOMAIN = os.getenv("DOMAIN")
+            cls.AGENT_SIGNATURE_LIFETIME = int(
+                os.getenv("AGENT_SIGNATURE_LIFETIME") or 10
+            )
 
 
 Config.load()

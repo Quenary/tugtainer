@@ -4,8 +4,8 @@ from fastapi import HTTPException, Request
 from jose import jwt, JWTError
 import bcrypt
 import os
-from app.config import Config
-from app.helpers.now import now
+from backend.app.config import Config
+from backend.app.helpers.now import now
 
 
 def verify_password(plain: str, hashed: str) -> bool:

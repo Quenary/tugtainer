@@ -1,10 +1,10 @@
 from inspect import signature
 import logging
 from sqlalchemy import select
-from python_on_whales import DockerClient
-from app.db.session import async_session_maker
-from app.db.models import HostsModel
-from app.schemas import HostInfo
+from backend.app.db.session import async_session_maker
+from backend.app.db.models import HostsModel
+from backend.app.schemas import HostInfo
+from .agent_client import AgentClient
 
 
 async def load_hosts_on_init():
@@ -26,7 +26,7 @@ class HostsManager:
     """Class for managing multiple docker hosts"""
 
     _INSTANCE = None
-    _HOST_CLIENTS: dict[int, DockerClient] = {}
+    _HOST_CLIENTS: dict[int, AgentClient] = {}
 
     def __new__(cls, *args, **kwargs):
         if cls._INSTANCE is None:
@@ -39,7 +39,7 @@ class HostsManager:
         cls._HOST_CLIENTS[host.id] = cls._create_client(host)
 
     @classmethod
-    def get_host_client(cls, host: HostsModel) -> DockerClient:
+    def get_host_client(cls, host: HostsModel) -> AgentClient:
         if host.id in cls._HOST_CLIENTS:
             return cls._HOST_CLIENTS[host.id]
         client = cls._create_client(host)
@@ -47,23 +47,23 @@ class HostsManager:
         return client
 
     @classmethod
-    def _create_client(cls, host: HostsModel) -> DockerClient:
+    def _create_client(cls, host: HostsModel) -> AgentClient:
         info = HostInfo.model_validate(host)
-        allowed_keys = signature(DockerClient.__init__).parameters
+        allowed_keys = signature(AgentClient.__init__).parameters
         filtered = {
             k: v
             for k, v in info.model_dump(exclude_unset=True).items()
             if k in allowed_keys and v
         }
-        return DockerClient(**filtered)
+        return AgentClient(**filtered)
 
     @classmethod
-    def get_all(cls) -> list[tuple[int, DockerClient]]:
+    def get_all(cls) -> list[tuple[int, AgentClient]]:
         """
         Get all registered host clients.
         :returns: list of tuple(host_id, client)
         """
-        return list[tuple[int, DockerClient]](
+        return list[tuple[int, AgentClient]](
             cls._HOST_CLIENTS.items()
         )
 

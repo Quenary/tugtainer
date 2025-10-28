@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.models import HostsModel
+from backend.app.db.models import HostsModel
 
 
 async def get_host(host_id: int, session: AsyncSession) -> HostsModel:

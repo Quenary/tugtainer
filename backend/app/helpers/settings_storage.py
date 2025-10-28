@@ -1,9 +1,9 @@
 from typing import Any, Literal, overload
 from sqlalchemy import event, select
-from app.enums import ESettingKey
-from app.db.session import async_session_maker
-from app.db.models import SettingModel
-from app.db.util import get_setting_typed_value
+from backend.app.enums import ESettingKey
+from backend.app.db.session import async_session_maker
+from backend.app.db.models import SettingModel
+from backend.app.db.util import get_setting_typed_value
 
 
 class SettingsStorage:

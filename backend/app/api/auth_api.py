@@ -9,10 +9,10 @@ from fastapi import (
     status,
 )
 from fastapi.responses import PlainTextResponse
-from app.helpers.delay_to_minimum import delay_to_minimum
-from app.config import Config
-from app.helpers.now import now
-from app.core.auth_core import (
+from backend.app.helpers.delay_to_minimum import delay_to_minimum
+from backend.app.config import Config
+from backend.app.helpers.now import now
+from backend.app.core.auth_core import (
     get_password_hash,
     verify_token,
     verify_password,
@@ -21,7 +21,7 @@ from app.core.auth_core import (
     read_password_hash,
     write_password_hash,
 )
-from app.schemas.auth_schema import PasswordSetRequestBody
+from backend.app.schemas.auth_schema import PasswordSetRequestBody
 
 
 router: APIRouter = APIRouter(prefix="/auth", tags=["auth"])

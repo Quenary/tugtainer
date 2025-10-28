@@ -1,7 +1,7 @@
-from sqlalchemy import JSON, Boolean, Integer, String, text
+from sqlalchemy import Boolean, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base_model import BaseModel
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .containers_model import ContainersModel
@@ -30,38 +30,13 @@ class HostsModel(BaseModel):
         default=False,
         server_default=text("FALSE"),
     )
-    # Optional fields for python-on-whales client
-    config: Mapped[Optional[str]] = mapped_column(
+    url: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+    secret: Mapped[Optional[str]] = mapped_column(
         String, nullable=True
     )
-    context: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True
-    )
-    host: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    tls: Mapped[Optional[bool]] = mapped_column(
-        Boolean, nullable=True
-    )
-    tlscacert: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True
-    )
-    tlscert: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True
-    )
-    tlskey: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True
-    )
-    tlsverify: Mapped[Optional[bool]] = mapped_column(
-        Boolean, nullable=True
-    )
-    client_binary: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True
-    )
-    client_call: Mapped[Optional[list[str]]] = mapped_column(
-        JSON, nullable=True
-    )
-    client_type: Mapped[
-        Optional[Literal["docker", "podman", "nerdctl", "unknown"]]
-    ] = mapped_column(String, nullable=True)
 
     containers: Mapped[list["ContainersModel"]] = relationship(
         "ContainersModel",

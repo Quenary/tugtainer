@@ -1,20 +1,22 @@
-from app.schemas import ImageGetResponseBody
-from python_on_whales import Image
+from python_on_whales.components.image.models import (
+    ImageInspectResult,
+)
+from backend.app.schemas import ImageGetResponseBody
+from backend.app.helpers.now import now
 
 
 def map_image_schema(
-    image: Image, dangling: bool, unused: bool
+    image: ImageInspectResult, dangling: bool, unused: bool
 ) -> ImageGetResponseBody:
-    repodigests: list[str] = image.repo_digests
+    repodigests: list[str] = image.repo_digests or []
     repository = repodigests[0].split("@")[0] if repodigests else ""
-    size = image.size
     _image = ImageGetResponseBody(
         repository=repository,
-        id=image.id,
+        id=image.id or "",
         dangling=dangling,
         unused=unused,
-        tags=image.repo_tags,
-        size=image.size,
-        created=image.created,
+        tags=image.repo_tags or [],
+        size=image.size or 0,
+        created=image.created or now(),
     )
     return _image

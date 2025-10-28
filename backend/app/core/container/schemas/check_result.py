@@ -1,13 +1,18 @@
 from dataclasses import dataclass, field
-from python_on_whales import Container, Image
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
+)
+from python_on_whales.components.image.models import (
+    ImageInspectResult,
+)
 
 
 @dataclass
 class CheckContainerUpdateAvailableResult:
     available: bool = False
     image_spec: str | None = None
-    old_image: Image | None = None
-    new_image: Image | None = None
+    old_image: ImageInspectResult | None = None
+    new_image: ImageInspectResult | None = None
 
 
 @dataclass
@@ -18,9 +23,13 @@ class ShrinkedContainer:
     image_spec: str
 
     @classmethod
-    def from_c(cls, c: Container) -> "ShrinkedContainer":
+    def from_c(cls, c: ContainerInspectResult) -> "ShrinkedContainer":
+        if not c.name or not c.config or not c.config.image:
+            raise Exception(
+                "Cannot create ShrinkedContainer, no data."
+            )
         return ShrinkedContainer(
-            name=c.name, image_spec=c.config.image or ""
+            name=c.name, image_spec=c.config.image
         )
 
 

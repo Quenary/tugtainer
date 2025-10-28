@@ -1,9 +1,9 @@
 from datetime import datetime
-from app.db.models import ContainersModel
+from backend.app.db.models import ContainersModel
 from typing import TypedDict
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.models.containers_model import ContainersModel
+from backend.app.db.models.containers_model import ContainersModel
 
 
 class ContainerInsertOrUpdateData(TypedDict, total=False):

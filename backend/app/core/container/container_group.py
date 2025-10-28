@@ -1,11 +1,18 @@
 from dataclasses import dataclass, field
 from typing import Literal
-from python_on_whales import Image
-from app.helpers.self_container import is_self_container
-from python_on_whales.components.container.cli_wrapper import (
-    Container,
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
 )
-from app.db.models import ContainersModel
+from python_on_whales.components.image.models import (
+    ImageInspectResult,
+)
+from backend.app.helpers.self_container import is_self_container
+from backend.app.db.models import ContainersModel
+import uuid
+
+from shared.schemas.container_schemas import (
+    CreateContainerRequestBodySchema,
+)
 
 
 @dataclass
@@ -22,14 +29,22 @@ class ContainerGroupItem:
     :param new_image: possible new image for the container
     """
 
-    container: Container
+    container: ContainerInspectResult
     action: Literal["update", "check", None]
     available: bool = False
     image_spec: str | None = None
-    config: dict | None = None
+    config: CreateContainerRequestBodySchema | None = None
     commands: list[list[str]] = field(default_factory=list)
-    old_image: Image | None = None
-    new_image: Image | None = None
+    old_image: ImageInspectResult | None = None
+    new_image: ImageInspectResult | None = None
+
+    @property
+    def name(self) -> str:
+        """
+        This is helper to get name with proper typing.
+        Name of the container cannot be None
+        """
+        return self.container.name or ""
 
 
 @dataclass
@@ -48,20 +63,34 @@ class ContainerGroup:
     containers: list[ContainerGroupItem]
 
 
-def _get_project_name(container: Container) -> str:
-    labels = container.config.labels or {}
+def _get_project_name(container: ContainerInspectResult) -> str:
+    labels = (
+        container.config.labels
+        if container.config and container.config.labels
+        else {}
+    )
     return labels.get("com.docker.compose.project", "")
 
 
-def _get_service_name(container: Container) -> str:
+def _get_service_name(container: ContainerInspectResult) -> str:
     """Extract service name from labels"""
-    labels = container.config.labels or {}
-    return labels.get("com.docker.compose.service", container.name)
+    labels = (
+        container.config.labels
+        if container.config and container.config.labels
+        else {}
+    )
+    return labels.get(
+        "com.docker.compose.service", container.name or ""
+    )
 
 
-def _get_dependencies(container: Container) -> list[str]:
+def _get_dependencies(container: ContainerInspectResult) -> list[str]:
     """Get list of dependencies from labels"""
-    labels: dict[str, str] = container.config.labels or {}
+    labels: dict[str, str] = (
+        container.config.labels
+        if container.config and container.config.labels
+        else {}
+    )
 
     # E.g. "service1:condition:value,service2:condition:value"
     depends_on_label: str = labels.get(
@@ -132,8 +161,8 @@ def _get_action(
 
 
 def get_container_group(
-    target: Container,
-    containers: list[Container],
+    target: ContainerInspectResult,
+    containers: list[ContainerInspectResult],
     containers_db: list[ContainersModel],
     update: bool,
 ) -> ContainerGroup:
@@ -194,12 +223,14 @@ def get_container_group(
     else:
         # Standalone container
         return ContainerGroup(
-            name=target.name, containers=[target_item], is_self=False
+            name=target.name if target.name else str(uuid.uuid4()),
+            containers=[target_item],
+            is_self=False,
         )
 
 
 def get_containers_groups(
-    containers: list[Container],
+    containers: list[ContainerInspectResult],
     containers_db: list[ContainersModel],
 ) -> dict[str, ContainerGroup]:
     """
@@ -240,11 +271,12 @@ def get_containers_groups(
 
             group.containers.append(item)
         else:
+            name = c.name if c.name else str(uuid.uuid4())
             # Standalone container
             group = ContainerGroup(
-                name=c.name, containers=[item], is_self=False
+                name=name, containers=[item], is_self=False
             )
-            groups[c.name] = group
+            groups[name] = group
         # TODO add support of custom label or db depends-on field?
 
     for g in groups.values():

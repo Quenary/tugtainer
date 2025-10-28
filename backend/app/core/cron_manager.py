@@ -3,10 +3,10 @@ from zoneinfo import ZoneInfo, available_timezones
 import aiocron
 from typing import Callable, Dict, cast
 from sqlalchemy import select
-from app.enums import ESettingKey, ECronJob
-from app.core.containers_core import check_all
-from app.db.session import async_session_maker
-from app.db.models import SettingModel
+from backend.app.enums import ESettingKey, ECronJob
+from backend.app.core.containers_core import check_all
+from backend.app.db.session import async_session_maker
+from backend.app.db.models import SettingModel
 
 
 VALID_TIMEZONES = available_timezones()
@@ -38,9 +38,9 @@ async def schedule_check_on_init():
 
         CronManager.schedule_job(
             ECronJob.CHECK_CONTAINERS,
-            cast(str, crontab_expr.value),
+            str(crontab_expr.value),
             tz.value if tz else None,
-            lambda: check_all(True)
+            lambda: check_all(True),
         )
 
 

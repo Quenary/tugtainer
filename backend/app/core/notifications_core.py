@@ -3,10 +3,10 @@ import apprise
 from apprise.exception import AppriseException
 from typing import cast
 from sqlalchemy import select
-from app.db.session import async_session_maker
-from app.db.models.settings_model import SettingModel
-from app.enums.settings_enum import ESettingKey
-from app.exception import TugException
+from backend.app.db.session import async_session_maker
+from backend.app.db.models.settings_model import SettingModel
+from backend.app.enums.settings_enum import ESettingKey
+from backend.app.exception import TugException
 
 _url_sentinel = object()
 
