@@ -175,6 +175,46 @@ def is_password_set():
     return password_hash not in [None, ""]
 
 
+def get_current_user(request: Request) -> dict[str, Any]:
+    """Dependency to get current user from access token"""
+    access_token: str | None = request.cookies.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=401, detail="Missing access token"
+        )
+    
+    payload: dict[str, Any] = verify_token(access_token)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=401, detail="Invalid access token"
+        )
+    
+    return payload
+
+
+@router.get(
+    path="/user/info",
+    description="Get current authenticated user information",
+)
+def get_user_info(current_user: dict[str, Any] = Depends(get_current_user)):
+    user_info = {
+        "is_oidc": current_user.get("oidc", False),
+        "user_id": current_user.get("user_id", ""),
+    }
+    
+    # If OIDC user, include additional user info
+    if current_user.get("oidc") and current_user.get("user_info"):
+        oidc_info = current_user.get("user_info", {})
+        user_info.update({
+            "email": oidc_info.get("email", ""),
+            "name": oidc_info.get("name", ""),
+            "preferred_username": oidc_info.get("preferred_username", ""),
+            "sub": oidc_info.get("sub", ""),
+        })
+    
+    return user_info
+
+
 @router.get(
     path="/oidc/enabled",
     description="Check if OIDC authentication is enabled",

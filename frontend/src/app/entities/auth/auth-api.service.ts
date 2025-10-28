@@ -51,4 +51,8 @@ export class AuthApiService extends BaseApiService<'/auth'> {
       subscriber.complete();
     });
   }
+
+  getUserInfo(): Observable<any> {
+    return this.httpClient.get(`${this.basePath}/user/info`, { withCredentials: true });
+  }
 }
