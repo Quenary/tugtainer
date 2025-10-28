@@ -263,9 +263,16 @@ async def oidc_callback(
     config = get_oidc_config()
     
     try:
+        print(f"OIDC Callback - Code: {code}, State: {state}")  # Debug print
         discovery_doc = await fetch_oidc_discovery(config['well_known_url'])
+        print(f"OIDC Discovery successful")  # Debug print
         user_data = await exchange_oidc_code(code, state, discovery_doc, config)
+        print(f"OIDC Token exchange successful: {user_data}")  # Debug print
         tokens = create_oidc_user_session(user_data)
+        print(f"OIDC Session created")  # Debug print
+        
+        # Create response for redirect
+        response = RedirectResponse(url="/containers", status_code=302)
         
         # Set authentication cookies
         response.set_cookie(
@@ -274,7 +281,7 @@ async def oidc_callback(
             httponly=True,
             samesite="strict",
             secure=Config.HTTPS,
-            domain=Config.DOMAIN,
+            domain=Config.DOMAIN if Config.DOMAIN else None,
             max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
         )
         response.set_cookie(
@@ -283,15 +290,14 @@ async def oidc_callback(
             httponly=True,
             samesite="strict",
             secure=Config.HTTPS,
-            domain=Config.DOMAIN,
+            domain=Config.DOMAIN if Config.DOMAIN else None,
             max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
         )
         
         # Clear the state cookie
         response.delete_cookie("oidc_state")
         
-        # Redirect to main application
-        return RedirectResponse(url="/containers", status_code=302)
+        return response
         
     except Exception as e:
         raise HTTPException(
