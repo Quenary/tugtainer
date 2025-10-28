@@ -35,10 +35,6 @@ export class SettingsPage {
     ESettingKey.OIDC_SCOPES
   ];
 
-  public get currentUrl(): string {
-    return window.location.origin;
-  }
-
   public onSubmitNewPassword(body: ISetPasswordBody): void {
     this.isLoading.set(true);
     this.authApiService
