@@ -78,20 +78,40 @@ async def change_system_settings(
 
     await session.commit()
 
-    cron_expr = [
+    # Only reschedule cron job if CRONTAB_EXPR or TIMEZONE were updated
+    cron_expr_items = [
         item for item in data if item.key == ESettingKey.CRONTAB_EXPR
-    ][0]
-    timezone = [
+    ]
+    timezone_items = [
         item for item in data if item.key == ESettingKey.TIMEZONE
-    ][0]
+    ]
 
-    if cron_expr or timezone:
-        CronManager.schedule_job(
-            ECronJob.CHECK_CONTAINERS,
-            str(cron_expr.value),
-            str(timezone.value),
-            lambda: check_all(True),
-        )
+    if cron_expr_items or timezone_items:
+        cron_expr = cron_expr_items[0] if cron_expr_items else None
+        timezone = timezone_items[0] if timezone_items else None
+        
+        # Get current values if not provided in the update
+        if not cron_expr:
+            stmt = select(SettingModel).where(SettingModel.key == ESettingKey.CRONTAB_EXPR).limit(1)
+            result = await session.execute(stmt)
+            cron_setting = result.scalar_one_or_none()
+            if cron_setting:
+                cron_expr = type('obj', (object,), {'value': cron_setting.value})()
+        
+        if not timezone:
+            stmt = select(SettingModel).where(SettingModel.key == ESettingKey.TIMEZONE).limit(1)
+            result = await session.execute(stmt)
+            timezone_setting = result.scalar_one_or_none()
+            if timezone_setting:
+                timezone = type('obj', (object,), {'value': timezone_setting.value})()
+        
+        if cron_expr and timezone:
+            CronManager.schedule_job(
+                ECronJob.CHECK_CONTAINERS,
+                str(cron_expr.value),
+                str(timezone.value),
+                lambda: check_all(True),
+            )
 
     return {"status": "updated", "count": len(data)}
 
