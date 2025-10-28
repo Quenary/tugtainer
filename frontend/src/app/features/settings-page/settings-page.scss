@@ -8,14 +8,14 @@
 .oidc-redirect-info {
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background-color: var(--p-blue-50);
-  border: 1px solid var(--p-blue-200);
-  border-left: 4px solid var(--p-blue-500);
+  background-color: var(--p-surface-ground);
+  border: 1px solid var(--p-surface-border);
+  border-left: 4px solid var(--p-primary-color);
   border-radius: var(--p-border-radius-md);
   
   .redirect-url-info {
     strong {
-      color: var(--p-blue-700);
+      color: var(--p-primary-color);
       font-size: 1rem;
       display: block;
       margin-bottom: 0.5rem;
@@ -31,11 +31,11 @@
       display: block;
       margin-top: 0.75rem;
       padding: 0.5rem;
-      background-color: var(--p-surface-100);
-      border: 1px solid var(--p-surface-300);
+      background-color: var(--p-surface-200);
+      border: 1px solid var(--p-surface-border);
       border-radius: var(--p-border-radius-sm);
       font-family: 'Courier New', monospace;
-      color: var(--p-primary-color);
+      color: var(--p-text-color);
       word-break: break-all;
       font-size: 0.9rem;
     }
