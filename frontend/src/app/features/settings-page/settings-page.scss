@@ -7,11 +7,24 @@
 
 .oidc-redirect-info {
   margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--p-blue-50);
+  border: 1px solid var(--p-blue-200);
+  border-left: 4px solid var(--p-blue-500);
+  border-radius: var(--p-border-radius-md);
   
   .redirect-url-info {
+    strong {
+      color: var(--p-blue-700);
+      font-size: 1rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
     p {
       margin: 0.5rem 0;
       line-height: 1.5;
+      color: var(--p-text-color);
     }
     
     .redirect-example {

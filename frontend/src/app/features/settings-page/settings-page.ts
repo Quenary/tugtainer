@@ -9,12 +9,11 @@ import { finalize } from 'rxjs';
 import { ISettingUpdate, ESettingKey } from 'src/app/entities/settings/settings-interface';
 import { DividerModule } from 'primeng/divider';
 import { AccordionModule } from 'primeng/accordion';
-import { MessageModule } from 'primeng/message';
 import { ToastService } from 'src/app/core/services/toast.service';
 
 @Component({
   selector: 'app-settings-page',
-  imports: [NewPasswordForm, TranslatePipe, SettingsPageForm, DividerModule, AccordionModule, MessageModule],
+  imports: [NewPasswordForm, TranslatePipe, SettingsPageForm, DividerModule, AccordionModule],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
