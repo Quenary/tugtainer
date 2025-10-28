@@ -92,7 +92,7 @@ def write_password_hash(password_hash: str) -> None:
 def is_oidc_enabled() -> bool:
     """Check if OIDC authentication is enabled"""
     try:
-        return SettingsStorage.get(ESettingKey.OIDC_ENABLED) == "true"
+        return SettingsStorage.get(ESettingKey.OIDC_ENABLED) is True
     except:
         return False
 
