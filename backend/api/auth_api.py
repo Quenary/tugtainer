@@ -216,8 +216,8 @@ async def oidc_login(request: Request):
             key="oidc_state",
             value=state,
             httponly=True,
-            samesite="strict",
-            secure=Config.HTTPS,
+            samesite="lax",  # Changed from strict to lax for cross-origin redirects
+            secure=False,  # Set to False for HTTP testing
             max_age=300,  # 5 minutes
         )
         return response
@@ -254,10 +254,12 @@ async def oidc_callback(
     
     # Verify state parameter
     stored_state = request.cookies.get("oidc_state")
+    print(f"OIDC Callback Debug - Received state: {state}, Stored state: {stored_state}")  # Debug print
+    print(f"OIDC Callback Debug - All cookies: {dict(request.cookies)}")  # Debug print
     if not stored_state or stored_state != state:
         raise HTTPException(
             status_code=400,
-            detail="Invalid state parameter - possible CSRF attack"
+            detail=f"Invalid state parameter - received: {state}, stored: {stored_state}"
         )
     
     config = get_oidc_config()
