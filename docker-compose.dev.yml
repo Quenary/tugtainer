@@ -6,6 +6,7 @@ services:
     container_name: tugtainer
     build:
       context: .
+      dockerfile: Dockerfile.backend
       args:
         VERSION: dev build
     volumes:

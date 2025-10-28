@@ -176,7 +176,7 @@
       },
       "DOCKER_TIMEOUT": {
         "LABEL": "Docker timeout",
-        "HINT": "Docker CLI call timeout. This applies primarily to API methods and does not apply to, for example, container re-creation or image pulling."
+        "HINT": "Docker CLI timeout that applies primarily to API methods and does not apply to e.g. container re-creation or image pulling."
       }
     }
   }

@@ -140,6 +140,7 @@ jobs:
     if: needs.check-tag.outputs.version != '' && needs.check-tag.outputs.exists == 'false'
     env:
       IMAGE_NAME: quenary/tugtainer
+      AGENT_IMAGE_NAME: quenary/tugtainer-agent
       VERSION: ${{ needs.check-tag.outputs.version }}
 
     steps:
@@ -167,10 +168,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push full image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile.backend
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -180,7 +182,29 @@ jobs:
             VERSION=${{ env.VERSION }}
           labels: |
             org.opencontainers.image.title=Tugtainer
-            org.opencontainers.image.description="Containerized app for automating updates of docker containers"
+            org.opencontainers.image.description="Containerized app for automating updates of docker containers."
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ env.VERSION }}
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.created=${{ github.run_started_at }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+
+      - name: Build and push agent image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.agent
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.AGENT_IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.AGENT_IMAGE_NAME }}:latest
+          build-args: |
+            VERSION=${{ env.VERSION }}
+          labels: |
+            org.opencontainers.image.title="Tugtainer Agent"
+            org.opencontainers.image.description="Agent part of Tugtainer app, providing secure remote access to Docker hosts."
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ env.VERSION }}
             org.opencontainers.image.version=${{ env.VERSION }}

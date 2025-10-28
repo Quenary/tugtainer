@@ -1,0 +1,56 @@
+networks:
+  tugtainer_agent:
+    driver: bridge
+services:
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: Europe/Moscow
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
+  agent:
+    container_name: tugtainer-agent
+    image: quenary/tugtainer-agent:latest
+    # volumes:
+      # Either uncomment to mount socket directly
+      # or use DOCKER_HOST and socket-proxy
+      # - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    ports:
+      - '9413:8001'
+    environment:
+      # Secret key for backend-agent requests
+      AGENT_SECRET: CHANGE_ME!
+      # Backend-agent requests signature timeout in seconds
+      # AGENT_SIGNATURE_LIFETIME: 10
+      # Default is container's short id
+      # HOSTNAME: myhostname
+      # Default is WARNING
+      # LOG_LEVEL: WARNING
+      # This value is used for run without mounting docker socket in the container,
+      # with for example socket-proxy
+      DOCKER_HOST: tcp://:socket-proxy:2375
+      # Docker CLI timeout that applies primarily to API methods 
+      # and doesn't apply to e.g. container re-creation or image pulling.
+      # DOCKER_TIMEOUT: 15
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
