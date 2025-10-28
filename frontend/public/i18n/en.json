@@ -194,8 +194,9 @@
       "EMAIL": "Email",
       "NAME": "Name",
       "USERNAME": "Username",
-      "REDIRECT_SETUP_TITLE": "Important: OIDC Provider Setup",
-      "REDIRECT_SETUP_MESSAGE": "In your OIDC provider, you must register this exact redirect URI as an allowed callback URL:"
+      "REDIRECT_SETUP_TITLE": "Important: OIDC Provider Setup", 
+      "REDIRECT_SETUP_MESSAGE": "In your OIDC provider, you must register your Tugtainer URL followed by '/api/auth/oidc/callback' as an allowed callback URL.",
+      "REDIRECT_SETUP_EXAMPLE": "Example: https://your-tugtainer-domain.com/api/auth/oidc/callback"
     }
   }
 }
