@@ -6,9 +6,7 @@ import bcrypt
 import os
 import asyncio
 import aiohttp
-from authlib.integrations.requests_client import OAuth2Session
-from authlib.oidc.core import CodeIDToken
-from authlib.common.errors import AuthlibBaseError
+from urllib.parse import urlencode
 from app.config import Config
 from app.helpers.now import now
 from app.helpers.settings_storage import SettingsStorage
@@ -130,18 +128,24 @@ async def fetch_oidc_discovery(well_known_url: str) -> Dict[str, Any]:
 def create_oidc_authorization_url(discovery_doc: Dict[str, Any], config: Dict[str, str], state: str) -> str:
     """Create OIDC authorization URL"""
     try:
-        client = OAuth2Session(
-            client_id=config['client_id'],
-            redirect_uri=config['redirect_uri'],
-            scope=config['scopes']
-        )
+        # Manually build the authorization URL
+        auth_endpoint = discovery_doc['authorization_endpoint']
+        scopes = ' '.join(config['scopes'])
         
-        authorization_url, _ = client.create_authorization_url(
-            discovery_doc['authorization_endpoint'],
-            state=state
-        )
+        params = {
+            'client_id': config['client_id'],
+            'redirect_uri': config['redirect_uri'],
+            'scope': scopes,
+            'response_type': 'code',
+            'state': state
+        }
+        
+        # Build query string
+        query_string = urlencode(params)
+        authorization_url = f"{auth_endpoint}?{query_string}"
+        
         return authorization_url
-    except AuthlibBaseError as e:
+    except Exception as e:
         raise HTTPException(
             status_code=400,
             detail=f"Error creating authorization URL: {str(e)}"
@@ -156,31 +160,40 @@ async def exchange_oidc_code(
 ) -> Dict[str, Any]:
     """Exchange authorization code for tokens"""
     try:
-        client = OAuth2Session(
-            client_id=config['client_id'],
-            redirect_uri=config['redirect_uri']
-        )
+        # Prepare token exchange request
+        token_endpoint = discovery_doc['token_endpoint']
+        
+        data = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': config['redirect_uri'],
+            'client_id': config['client_id'],
+            'client_secret': config['client_secret']
+        }
         
         # Exchange code for token
-        token = client.fetch_token(
-            discovery_doc['token_endpoint'],
-            code=code,
-            client_secret=config['client_secret']
-        )
-        
-        # Verify and decode ID token if present
-        if 'id_token' in token:
-            # For production, you should verify the ID token signature
-            # For now, we'll decode without verification (not recommended for production)
-            id_token_claims = jwt.get_unverified_claims(token['id_token'])
-            return {
-                'access_token': token.get('access_token'),
-                'id_token_claims': id_token_claims
-            }
-        
-        # If no ID token, fetch user info from userinfo endpoint
-        if 'userinfo_endpoint' in discovery_doc:
-            async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(token_endpoint, data=data) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Token exchange failed: {error_text}"
+                    )
+                
+                token = await response.json()
+            
+            # Verify and decode ID token if present
+            if 'id_token' in token:
+                # For now, we'll decode without verification (not recommended for production)
+                id_token_claims = jwt.get_unverified_claims(token['id_token'])
+                return {
+                    'access_token': token.get('access_token'),
+                    'id_token_claims': id_token_claims
+                }
+            
+            # If no ID token, fetch user info from userinfo endpoint
+            if 'userinfo_endpoint' in discovery_doc:
                 headers = {'Authorization': f"Bearer {token['access_token']}"}
                 async with session.get(discovery_doc['userinfo_endpoint'], headers=headers) as response:
                     if response.status == 200:
@@ -195,7 +208,7 @@ async def exchange_oidc_code(
             detail="Unable to retrieve user information from OIDC provider"
         )
         
-    except AuthlibBaseError as e:
+    except Exception as e:
         raise HTTPException(
             status_code=400,
             detail=f"Error exchanging authorization code: {str(e)}"
