@@ -12,4 +12,17 @@
   .auth {
     @include mx.floating-card-surface;
   }
+
+  .oidc-login-section {
+    margin-top: 1rem;
+    
+    .oidc-login-button {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    p-divider {
+      margin: 1rem 0;
+    }
+  }
 }

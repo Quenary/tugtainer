@@ -17,7 +17,22 @@
       {{ 'SETTINGS.SECTIONS.APP_SETTINGS' | translate }}
     </p-accordion-header>
     <p-accordion-content>
-      <app-settings-page-form (OnSubmit)="onSubmitSettings($event)"></app-settings-page-form>
+      <app-settings-page-form 
+        [excludeKeys]="oidcSettingKeys" 
+        (OnSubmit)="onSubmitSettings($event)"
+      ></app-settings-page-form>
+    </p-accordion-content>
+  </p-accordion-panel>
+
+  <p-accordion-panel value="2">
+    <p-accordion-header>
+      {{ 'SETTINGS.SECTIONS.OIDC_SETTINGS' | translate }}
+    </p-accordion-header>
+    <p-accordion-content>
+      <app-settings-page-form 
+        [includeKeys]="oidcSettingKeys" 
+        (OnSubmit)="onSubmitSettings($event)"
+      ></app-settings-page-form>
     </p-accordion-content>
   </p-accordion-panel>
 </p-accordion>

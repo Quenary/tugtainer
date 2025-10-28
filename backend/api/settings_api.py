@@ -13,12 +13,13 @@ from backend.schemas.settings_schema import (
     SettingsPatchRequestItem,
     TestNotificationRequestBody,
 )
-from backend.core.notifications_core import send_notification
-from backend.core.cron_manager import CronManager
-from backend.enums.settings_enum import ESettingKey
-from backend.enums.cron_jobs_enum import ECronJob
-from backend.core.containers_core import check_all
-from backend.exception import TugException
+from app.core.auth_core import fetch_oidc_discovery
+from app.core.notifications_core import send_notification
+from app.core.cron_manager import CronManager
+from app.enums.settings_enum import ESettingKey
+from app.enums.cron_jobs_enum import ECronJob
+from app.core.containers_core import check_all
+from app.exception import TugException
 
 VALID_TIMEZONES = available_timezones()
 
@@ -123,3 +124,44 @@ This is test notification
 )
 def get_available_timezones() -> set[str]:
     return VALID_TIMEZONES
+
+
+@router.post(
+    "/test_oidc",
+    status_code=200,
+    description="Test OIDC well-known URL connectivity",
+)
+async def test_oidc_connection(data: dict):
+    """Test if the OIDC well-known URL is accessible and returns valid configuration"""
+    well_known_url = data.get("well_known_url")
+    if not well_known_url:
+        raise HTTPException(400, "well_known_url is required")
+    
+    try:
+        discovery_doc = await fetch_oidc_discovery(well_known_url)
+        
+        # Check if required endpoints exist
+        required_endpoints = ["authorization_endpoint", "token_endpoint"]
+        missing_endpoints = [ep for ep in required_endpoints if ep not in discovery_doc]
+        
+        if missing_endpoints:
+            raise HTTPException(
+                400, 
+                f"OIDC discovery document is missing required endpoints: {missing_endpoints}"
+            )
+        
+        return {
+            "status": "success",
+            "message": "OIDC configuration is valid",
+            "endpoints": {
+                "authorization_endpoint": discovery_doc.get("authorization_endpoint"),
+                "token_endpoint": discovery_doc.get("token_endpoint"),
+                "userinfo_endpoint": discovery_doc.get("userinfo_endpoint"),
+                "issuer": discovery_doc.get("issuer")
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Error testing OIDC connection: {str(e)}")

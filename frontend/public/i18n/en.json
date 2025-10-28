@@ -50,7 +50,9 @@
       "MEDIUM": "Average complexity",
       "STRONG": "Complex password"
     },
-    "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"]
+    "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"],
+    "OR": "Or",
+    "LOGIN_WITH_OIDC": "Login with OIDC"
   },
   "HOSTS": {
     "NO_HOSTS_FOUND": "No hosts found",
@@ -138,7 +140,8 @@
     "VALUE": "Value",
     "SECTIONS": {
       "CHANGE_PASSWORD": "Change password",
-      "APP_SETTINGS": "App settings"
+      "APP_SETTINGS": "App settings",
+      "OIDC_SETTINGS": "OIDC Authentication Settings"
     },
     "BY_KEY": {
       "CRONTAB_EXPR": {
@@ -155,6 +158,35 @@
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
+      },
+      "DOCKER_TIMEOUT": {
+        "LABEL": "Docker timeout",
+        "HINT": "Docker CLI call timeout. This applies primarily to API methods and does not apply to, for example, container re-creation or image pulling."
+      },
+      "OIDC_ENABLED": {
+        "LABEL": "Enable OIDC Authentication",
+        "HINT": "Enable OpenID Connect authentication alongside password authentication"
+      },
+      "OIDC_WELL_KNOWN_URL": {
+        "LABEL": "OIDC Well-Known URL",
+        "HINT": "The well-known configuration URL of your OIDC provider (e.g., https://auth.example.com/.well-known/openid_configuration)",
+        "TEST": "Test OIDC connection"
+      },
+      "OIDC_CLIENT_ID": {
+        "LABEL": "OIDC Client ID",
+        "HINT": "The client identifier registered with your OIDC provider"
+      },
+      "OIDC_CLIENT_SECRET": {
+        "LABEL": "OIDC Client Secret",
+        "HINT": "The client secret for your OIDC application (keep this secure)"
+      },
+      "OIDC_REDIRECT_URI": {
+        "LABEL": "OIDC Redirect URI",
+        "HINT": "The redirect URI configured in your OIDC provider (e.g., https://tugtainer.example.com/auth/oidc/callback)"
+      },
+      "OIDC_SCOPES": {
+        "LABEL": "OIDC Scopes",
+        "HINT": "Space-separated list of OAuth2 scopes to request (openid is always included)"
       }
     }
   }
