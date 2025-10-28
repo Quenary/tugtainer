@@ -193,7 +193,9 @@
       "CURRENT_USER": "Currently Authenticated User",
       "EMAIL": "Email",
       "NAME": "Name",
-      "USERNAME": "Username"
+      "USERNAME": "Username",
+      "REDIRECT_SETUP_TITLE": "Important: OIDC Provider Setup",
+      "REDIRECT_SETUP_MESSAGE": "In your OIDC provider, you must register this exact redirect URI as an allowed callback URL:"
     }
   }
 }

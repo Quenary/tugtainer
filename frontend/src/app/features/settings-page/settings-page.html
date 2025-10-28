@@ -29,6 +29,20 @@
       {{ 'SETTINGS.SECTIONS.OIDC_SETTINGS' | translate }}
     </p-accordion-header>
     <p-accordion-content>
+      <!-- OIDC Setup Info -->
+      <p-message 
+        severity="info" 
+        [closable]="false"
+        class="oidc-redirect-info">
+        <ng-template pTemplate="content">
+          <div class="redirect-url-info">
+            <strong>{{ 'SETTINGS.OIDC.REDIRECT_SETUP_TITLE' | translate }}</strong>
+            <p>{{ 'SETTINGS.OIDC.REDIRECT_SETUP_MESSAGE' | translate }}</p>
+            <code class="redirect-example">{{ currentUrl }}/api/auth/oidc/callback</code>
+          </div>
+        </ng-template>
+      </p-message>
+
       <app-settings-page-form 
         [includeKeys]="oidcSettingKeys" 
         (OnSubmit)="onSubmitSettings($event)"
