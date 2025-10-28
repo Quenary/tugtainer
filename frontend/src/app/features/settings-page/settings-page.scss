@@ -5,6 +5,30 @@
   overflow-y: auto;
 }
 
+.oidc-redirect-info {
+  margin-bottom: 1.5rem;
+  
+  .redirect-url-info {
+    p {
+      margin: 0.5rem 0;
+      line-height: 1.5;
+    }
+    
+    .redirect-example {
+      display: block;
+      margin-top: 0.75rem;
+      padding: 0.5rem;
+      background-color: var(--p-surface-100);
+      border: 1px solid var(--p-surface-300);
+      border-radius: var(--p-border-radius-sm);
+      font-family: 'Courier New', monospace;
+      color: var(--p-primary-color);
+      word-break: break-all;
+      font-size: 0.9rem;
+    }
+  }
+}
+
 .oidc-user-info {
   margin-top: 1rem;
   padding: 1rem;
