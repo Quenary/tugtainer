@@ -206,6 +206,12 @@
         "LABEL": "OIDC Scopes",
         "HINT": "Space-separated list of OAuth2 scopes to request (openid is always included)"
       }
+    },
+    "OIDC": {
+      "CURRENT_USER": "Currently Authenticated User",
+      "EMAIL": "Email",
+      "NAME": "Name",
+      "USERNAME": "Username"
     }
   }
 }
