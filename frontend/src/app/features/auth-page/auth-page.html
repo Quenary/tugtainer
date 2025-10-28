@@ -6,6 +6,26 @@
       (OnSubmit)="onSubmitLogin($event)"
     >
     </app-login-form>
+    
+    @if (isOidcEnabled()) {
+      <div class="oidc-login-section">
+        <p-divider type="horizontal" align="center">
+          <span>{{ 'AUTH.OR' | translate }}</span>
+        </p-divider>
+        
+        <p-button
+          [loading]="isLoading()"
+          severity="secondary"
+          class="oidc-login-button"
+          (onClick)="onOidcLogin()"
+        >
+          <i class="pi pi-id-card"></i>
+          <span pButtonLabel>
+            {{ 'AUTH.LOGIN_WITH_OIDC' | translate }}
+          </span>
+        </p-button>
+      </div>
+    }
   } @else {
     <app-new-password-form
       [isLoading]="isLoading()"

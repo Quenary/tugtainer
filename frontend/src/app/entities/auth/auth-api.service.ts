@@ -38,4 +38,17 @@ export class AuthApiService extends BaseApiService<'/auth'> {
   isPasswordSet(): Observable<boolean> {
     return this.httpClient.get<boolean>(`${this.basePath}/is_password_set`);
   }
+
+  isOidcEnabled(): Observable<boolean> {
+    return this.httpClient.get<boolean>(`${this.basePath}/oidc/enabled`);
+  }
+
+  initiateOidcLogin(): Observable<any> {
+    // This will redirect to the OIDC provider, so we don't expect a JSON response
+    window.location.href = `${this.basePath}/oidc/login`;
+    return new Observable(subscriber => {
+      // This observable won't emit since we're redirecting
+      subscriber.complete();
+    });
+  }
 }

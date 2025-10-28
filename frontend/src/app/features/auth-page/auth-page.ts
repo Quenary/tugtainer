@@ -7,10 +7,13 @@ import { NewPasswordForm } from 'src/app/shared/components/new-password-form/new
 import { LoginForm } from './login-form/login-form';
 import { Logo } from 'src/app/shared/components/logo/logo';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { ButtonModule } from 'primeng/button';
+import { DividerModule } from 'primeng/divider';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-auth',
-  imports: [NewPasswordForm, LoginForm, Logo],
+  imports: [NewPasswordForm, LoginForm, Logo, ButtonModule, DividerModule, TranslatePipe],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,9 +25,11 @@ export class AuthPage implements OnInit {
 
   public readonly isLoading = signal<boolean>(false);
   public readonly isPasswordSet = signal<boolean>(null);
+  public readonly isOidcEnabled = signal<boolean>(false);
 
   ngOnInit(): void {
     this.updateIsPasswordSet();
+    this.updateIsOidcEnabled();
   }
 
   private updateIsPasswordSet(): void {
@@ -71,5 +76,23 @@ export class AuthPage implements OnInit {
           this.toastService.error(error);
         },
       });
+  }
+
+  private updateIsOidcEnabled(): void {
+    this.authApiService
+      .isOidcEnabled()
+      .subscribe({
+        next: (res) => {
+          this.isOidcEnabled.set(res);
+        },
+        error: (error) => {
+          console.warn('Could not check OIDC status:', error);
+          this.isOidcEnabled.set(false);
+        },
+      });
+  }
+
+  onOidcLogin(): void {
+    this.authApiService.initiateOidcLogin().subscribe();
   }
 }

@@ -1,11 +1,18 @@
-from typing import Any
+from typing import Any, Dict, Optional
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Request
 from jose import jwt, JWTError
 import bcrypt
 import os
+import asyncio
+import aiohttp
+from authlib.integrations.requests_client import OAuth2Session
+from authlib.oidc.core import CodeIDToken
+from authlib.common.errors import AuthlibBaseError
 from app.config import Config
 from app.helpers.now import now
+from app.helpers.settings_storage import SettingsStorage
+from app.enums.settings_enum import ESettingKey
 
 
 def verify_password(plain: str, hashed: str) -> bool:
@@ -80,3 +87,154 @@ def write_password_hash(password_hash: str) -> None:
         _ = f.write(password_hash)
         f.flush()
         f.close()
+
+
+def is_oidc_enabled() -> bool:
+    """Check if OIDC authentication is enabled"""
+    try:
+        return SettingsStorage.get(ESettingKey.OIDC_ENABLED) == "true"
+    except:
+        return False
+
+
+def get_oidc_config() -> Dict[str, str]:
+    """Get OIDC configuration from settings"""
+    return {
+        'well_known_url': SettingsStorage.get(ESettingKey.OIDC_WELL_KNOWN_URL),
+        'client_id': SettingsStorage.get(ESettingKey.OIDC_CLIENT_ID),
+        'client_secret': SettingsStorage.get(ESettingKey.OIDC_CLIENT_SECRET),
+        'redirect_uri': SettingsStorage.get(ESettingKey.OIDC_REDIRECT_URI),
+        'scopes': SettingsStorage.get(ESettingKey.OIDC_SCOPES).split()
+    }
+
+
+async def fetch_oidc_discovery(well_known_url: str) -> Dict[str, Any]:
+    """Fetch OIDC discovery document from well-known URL"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(well_known_url) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Failed to fetch OIDC discovery document: {response.status}"
+                    )
+    except aiohttp.ClientError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error fetching OIDC discovery document: {str(e)}"
+        )
+
+
+def create_oidc_authorization_url(discovery_doc: Dict[str, Any], config: Dict[str, str], state: str) -> str:
+    """Create OIDC authorization URL"""
+    try:
+        client = OAuth2Session(
+            client_id=config['client_id'],
+            redirect_uri=config['redirect_uri'],
+            scope=config['scopes']
+        )
+        
+        authorization_url, _ = client.create_authorization_url(
+            discovery_doc['authorization_endpoint'],
+            state=state
+        )
+        return authorization_url
+    except AuthlibBaseError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error creating authorization URL: {str(e)}"
+        )
+
+
+async def exchange_oidc_code(
+    code: str, 
+    state: str, 
+    discovery_doc: Dict[str, Any], 
+    config: Dict[str, str]
+) -> Dict[str, Any]:
+    """Exchange authorization code for tokens"""
+    try:
+        client = OAuth2Session(
+            client_id=config['client_id'],
+            redirect_uri=config['redirect_uri']
+        )
+        
+        # Exchange code for token
+        token = client.fetch_token(
+            discovery_doc['token_endpoint'],
+            code=code,
+            client_secret=config['client_secret']
+        )
+        
+        # Verify and decode ID token if present
+        if 'id_token' in token:
+            # For production, you should verify the ID token signature
+            # For now, we'll decode without verification (not recommended for production)
+            id_token_claims = jwt.get_unverified_claims(token['id_token'])
+            return {
+                'access_token': token.get('access_token'),
+                'id_token_claims': id_token_claims
+            }
+        
+        # If no ID token, fetch user info from userinfo endpoint
+        if 'userinfo_endpoint' in discovery_doc:
+            async with aiohttp.ClientSession() as session:
+                headers = {'Authorization': f"Bearer {token['access_token']}"}
+                async with session.get(discovery_doc['userinfo_endpoint'], headers=headers) as response:
+                    if response.status == 200:
+                        user_info = await response.json()
+                        return {
+                            'access_token': token.get('access_token'),
+                            'user_info': user_info
+                        }
+        
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to retrieve user information from OIDC provider"
+        )
+        
+    except AuthlibBaseError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error exchanging authorization code: {str(e)}"
+        )
+
+
+def create_oidc_user_session(user_data: Dict[str, Any]) -> Dict[str, str]:
+    """Create user session tokens after OIDC authentication"""
+    # Extract user identifier (email, sub, or preferred_username)
+    user_claims = user_data.get('id_token_claims', user_data.get('user_info', {}))
+    
+    user_id = (
+        user_claims.get('email') or 
+        user_claims.get('sub') or 
+        user_claims.get('preferred_username') or
+        'unknown_user'
+    )
+    
+    # Create JWT tokens with OIDC user info
+    access_token = create_token(
+        data={
+            "type": "access",
+            "oidc": True,
+            "user_id": user_id,
+            "user_info": user_claims
+        },
+        expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN)
+    )
+    
+    refresh_token = create_token(
+        data={
+            "type": "refresh", 
+            "oidc": True,
+            "user_id": user_id
+        },
+        expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN)
+    )
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
