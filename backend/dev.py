@@ -25,7 +25,7 @@ if __name__ == "__main__":
             [
                 "fastapi",
                 "dev",
-                os.path.join(os.path.dirname(__file__), "app", "app.py"),
+                os.path.join(os.path.dirname(__file__), "app.py"),
                 "--host=0.0.0.0",
                 "--port=8000",
             ]

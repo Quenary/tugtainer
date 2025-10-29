@@ -27,5 +27,5 @@ def run_migrations():
 if __name__ == "__main__":
     run_migrations()
     uvicorn.run(
-        "backend.app.app:app", host="0.0.0.0", port=8000, log_level=log_level
+        "backend.app:app", host="0.0.0.0", port=8000, log_level=log_level
     )
