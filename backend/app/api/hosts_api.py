@@ -1,6 +1,5 @@
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Response
-from python_on_whales import DockerException
 import requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +12,6 @@ from backend.app.schemas import (
 from backend.app.db.session import get_async_session
 from backend.app.db.models import HostsModel
 from backend.app.api.util import get_host
-from backend.app.helpers.asyncall import asyncall
 
 router = APIRouter(
     prefix="/hosts",
@@ -130,8 +128,8 @@ async def get_status(
         HostStatusResponseBody(id=id)
     client = HostsManager.get_host_client(host)
     try:
-        _ = await asyncall(client.public.health)
-        _ = await asyncall(client.public.access)
+        _ = await client.public.health()
+        _ = await client.public.access()
         return HostStatusResponseBody(id=id, ok=True)
     except requests.exceptions.HTTPError as e:
         return HostStatusResponseBody(

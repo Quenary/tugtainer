@@ -28,15 +28,17 @@ from backend.app.core.containers_core import (
     check_host,
     check_group,
 )
-from backend.app.core.container.container_group import get_container_group
-from backend.app.core.container.util import update_containers_data_after_check
+from backend.app.core.container.container_group import (
+    get_container_group,
+)
+from backend.app.core.container.util import (
+    update_containers_data_after_check,
+)
 from backend.app.helpers.self_container import get_self_container
-from backend.app.helpers.asyncall import asyncall
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
 from .util import map_container_schema, get_host, get_host_containers
-from python_on_whales import Container
 
 router = APIRouter(
     prefix="/containers",
@@ -58,10 +60,8 @@ async def containers_list(
     if not host.enabled:
         raise HTTPException(409, "Host disabled")
     client = HostsManager.get_host_client(host)
-    containers = await asyncall(
-        lambda: client.container.list(
-            GetContainerListBodySchema(all=True)
-        )
+    containers = await client.container.list(
+        GetContainerListBodySchema(all=True)
     )
     result = await session.execute(
         select(ContainersModel).where(
@@ -101,9 +101,7 @@ async def patch_container_data(
     )
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    d_cont = await asyncall(
-        lambda: client.container.inspect(db_cont.name)
-    )
+    d_cont = await client.container.inspect(db_cont.name)
     return map_container_schema(host_id, d_cont, db_cont)
 
 
@@ -129,11 +127,9 @@ async def check_host_ep(
     containers = await get_host_containers(session, host_id)
     client = HostsManager.get_host_client(host)
     task = asyncio.create_task(
-        asyncall(
-            lambda: check_host(host, client, update, containers),
-            asyncall_timeout=None,
-        )
+        check_host(host, client, update, containers),
     )
+    # TODO убрать, добавить в кор, раз теперь он асинк
     task.add_done_callback(
         lambda t: asyncio.create_task(
             update_containers_data_after_check(t.result())
@@ -154,26 +150,20 @@ async def check_container_ep(
 ) -> str:
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    if not await asyncall(lambda: client.container.exists(c_name)):
+    if not await client.container.exists(c_name):
         raise HTTPException(404, "Container not found")
-    container = await asyncall(
-        lambda: client.container.inspect(c_name)
-    )
-    containers = await asyncall(
-        lambda: client.container.list(
-            GetContainerListBodySchema(all=True)
-        )
+    container = await client.container.inspect(c_name)
+    containers = await client.container.list(
+        GetContainerListBodySchema(all=True)
     )
     db_containers = await get_host_containers(session, host_id)
     group = get_container_group(
         container, containers, db_containers, update
     )
     task = asyncio.create_task(
-        asyncall(
-            lambda: check_group(client, host, group, update),
-            asyncall_timeout=None,
-        )
+        check_group(client, host, group, update)
     )
+    # TODO убрать
     task.add_done_callback(
         lambda t: asyncio.create_task(
             update_containers_data_after_check(t.result())

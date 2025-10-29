@@ -1,4 +1,3 @@
-from typing import cast
 from fastapi import APIRouter, Depends
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
@@ -7,10 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.core.auth_core import is_authorized
 from backend.app.schemas import ImageGetResponseBody
 from backend.app.api.util import map_image_schema, get_host
-from python_on_whales import Container
 from backend.app.core import HostsManager
 from backend.app.db.session import get_async_session
-from backend.app.helpers.asyncall import asyncall
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
@@ -34,23 +31,21 @@ async def get_list(
 ) -> list[ImageGetResponseBody]:
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    containers: list[ContainerInspectResult] = await asyncall(
-        lambda: client.container.list(
+    containers: list[ContainerInspectResult] = (
+        await client.container.list(
             GetContainerListBodySchema(all=True)
         )
     )
     used_images: list[str] = [c.image for c in containers if c.image]
     dangling_images: list[str] = [
         str(i.id)
-        for i in await asyncall(
-            lambda: client.image.list(
-                GetImageListBodySchema(filters={"dangling": "true"})
-            )
+        for i in await client.image.list(
+            GetImageListBodySchema(filters={"dangling": "true"})
         )
     ]
     res: list[ImageGetResponseBody] = []
-    for image in await asyncall(
-        lambda: client.image.list(GetImageListBodySchema(all=True))
+    for image in await client.image.list(
+        GetImageListBodySchema(all=True)
     ):
         dangling = image.id in dangling_images
         unused = image.id not in used_images
@@ -64,8 +59,6 @@ async def prune(
 ) -> str:
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    return await asyncall(
-        lambda: client.image.prune(
-            PruneImagesRequestBodySchema(all=True)
-        )
+    return await client.image.prune(
+        PruneImagesRequestBodySchema(all=True)
     )

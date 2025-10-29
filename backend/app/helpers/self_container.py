@@ -9,7 +9,6 @@ import logging
 from backend.app.core.hosts_manager import HostsManager
 from backend.app.db.models import ContainersModel
 from backend.app.db.session import async_session_maker
-from .asyncall import asyncall
 from .now import now
 
 HEX64_RE = r"([0-9a-f]{64})"
@@ -120,12 +119,8 @@ async def get_self_container(
     clients = HostsManager.get_all()
     for clid, cli in clients:
         try:
-            if await asyncall(
-                lambda: cli.container.exists(self_container_id)
-            ):
-                cont = await asyncall(
-                    lambda: cli.container.inspect(self_container_id)
-                )
+            if await cli.container.exists(self_container_id):
+                cont = await cli.container.inspect(self_container_id)
                 stmt = (
                     select(ContainersModel)
                     .where(

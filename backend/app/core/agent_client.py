@@ -1,5 +1,5 @@
 from inspect import signature
-from typing import Any, Literal, cast
+from typing import Any, Literal
 from pydantic import BaseModel, TypeAdapter
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
@@ -7,7 +7,6 @@ from python_on_whales.components.container.models import (
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-import requests
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
@@ -23,6 +22,7 @@ from shared.schemas.image_schemas import (
     TagImageRequestBodySchema,
 )
 from shared.util.signature import get_signature_headers
+import aiohttp
 
 
 class AgentClient:
@@ -35,7 +35,7 @@ class AgentClient:
         self.image = AgentClientImage(self)
         self.command = AgentClientCommand(self)
 
-    def _request(
+    async def _request(
         self,
         method: Literal["GET", "POST", "PUT", "DELETE"],
         path: str,
@@ -49,24 +49,32 @@ class AgentClient:
         headers = get_signature_headers(
             self._secret, method, url, _body
         )
-        resp = requests.request(
-            method, url, headers=headers, json=_body, timeout=5
-        )
-        resp.raise_for_status()
-        return resp.json() if resp.content else None
+        timeout = aiohttp.ClientTimeout(total=5)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.request(
+                method, url, headers=headers, json=_body
+            ) as resp:
+                resp.raise_for_status()
+                if resp.content_length and resp.content_length > 0:
+                    return await resp.json()
+                # Для chunked-ответов без content_length
+                if resp.headers.get("Transfer-Encoding") == "chunked":
+                    text = await resp.text()
+                    return await resp.json() if text else None
+                return None
 
 
 class AgentClientPublic:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    def health(self):
-        return self._agent_client._request(
+    async def health(self):
+        return await self._agent_client._request(
             "GET", "/api/public/health"
         )
 
-    def access(self):
-        return self._agent_client._request(
+    async def access(self):
+        return await self._agent_client._request(
             "GET", "/api/public/access"
         )
 
@@ -75,50 +83,52 @@ class AgentClientContainer:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    def list(
+    async def list(
         self, body: GetContainerListBodySchema
     ) -> list[ContainerInspectResult]:
-        data = self._agent_client._request(
+        data = await self._agent_client._request(
             "POST", f"/api/container/list", body
         )
         return TypeAdapter(
             list[ContainerInspectResult]
         ).validate_python(data or [])
 
-    def exists(self, name_or_id: str) -> bool:
-        data = self._agent_client._request(
+    async def exists(self, name_or_id: str) -> bool:
+        data = await self._agent_client._request(
             "GET", f"/api/container/exists/{name_or_id}"
         )
         return bool(data)
 
-    def inspect(self, name_or_id: str) -> ContainerInspectResult:
-        data = self._agent_client._request(
+    async def inspect(
+        self, name_or_id: str
+    ) -> ContainerInspectResult:
+        data = await self._agent_client._request(
             "GET", f"/api/container/inspect/{name_or_id}"
         )
         return ContainerInspectResult.model_validate(data)
 
-    def create(
+    async def create(
         self, body: CreateContainerRequestBodySchema
     ) -> ContainerInspectResult:
-        data = self._agent_client._request(
+        data = await self._agent_client._request(
             "POST", f"/api/container/create", body
         )
         return ContainerInspectResult.model_validate(data)
 
-    def start(self, name_or_id: str) -> str:
-        data = self._agent_client._request(
+    async def start(self, name_or_id: str) -> str:
+        data = await self._agent_client._request(
             "POST", f"/api/container/start/{name_or_id}"
         )
         return str(data)
 
-    def stop(self, name_or_id: str) -> str:
-        data = self._agent_client._request(
+    async def stop(self, name_or_id: str) -> str:
+        data = await self._agent_client._request(
             "POST", f"/api/container/stop/{name_or_id}"
         )
         return str(data)
 
-    def remove(self, name_or_id: str) -> str:
-        data = self._agent_client._request(
+    async def remove(self, name_or_id: str) -> str:
+        data = await self._agent_client._request(
             "DELETE", f"/api/container/remove/{name_or_id}"
         )
         return str(data)
@@ -128,40 +138,40 @@ class AgentClientImage:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    def inspect(
+    async def inspect(
         self, body: InspectImageRequestBodySchema
     ) -> ImageInspectResult:
-        data = self._agent_client._request(
+        data = await self._agent_client._request(
             "GET", f"/api/image/inspect", body
         )
         return ImageInspectResult.model_validate(data)
 
-    def list(
+    async def list(
         self, body: GetImageListBodySchema
     ) -> list[ImageInspectResult]:
-        data = self._agent_client._request(
+        data = await self._agent_client._request(
             "POST", f"/api/image/list", body
         )
         return TypeAdapter(list[ImageInspectResult]).validate_python(
             data or []
         )
 
-    def prune(self, body: PruneImagesRequestBodySchema) -> str:
-        data = self._agent_client._request(
+    async def prune(self, body: PruneImagesRequestBodySchema) -> str:
+        data = await self._agent_client._request(
             "POST", f"/api/image/prune", body
         )
         return str(data)
 
-    def pull(
+    async def pull(
         self, body: PullImageRequestBodySchema
     ) -> ImageInspectResult:
-        data = self._agent_client._request(
+        data = await self._agent_client._request(
             "POST", f"/api/image/pull", body
         )
         return ImageInspectResult.model_validate(data)
 
-    def tag(self, body: TagImageRequestBodySchema):
-        return self._agent_client._request(
+    async def tag(self, body: TagImageRequestBodySchema):
+        return await self._agent_client._request(
             "POST", f"/api/image/tag", body
         )
 
@@ -170,10 +180,10 @@ class AgentClientCommand:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    def run(
+    async def run(
         self, body: RunCommandRequestBodySchema
     ) -> tuple[str, str]:
-        data = self._agent_client._request(
+        data = await self._agent_client._request(
             "POST", f"/api/command/run", body
         )
         return TypeAdapter(tuple[str, str]).validate_python(data)

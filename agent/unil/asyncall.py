@@ -21,7 +21,7 @@ async def asyncall(
 ) -> R:
     """
     Run sync func asynchronously with ThreadPoolExecutor.
-    :param asyncall_timeout: timeout to an error (if not explicitly None, then default is ESettingKey.DOCKER_TIMEOUT)
+    :param asyncall_timeout: timeout to an error (if not explicitly None, then default is Config.DOCKER_TIMEOUT)
     :param asyncall_loop: set loop explicitly (default is asyncio.get_event_loop())
     """
     if asyncall_timeout is _timeout_sentinel:
