@@ -57,7 +57,7 @@ def upgrade() -> None:
         )
 
     conn.execute(
-        sa.text("UPDATE hosts SET url = 'http://localhost:8001'")
+        sa.text("UPDATE hosts SET url = 'http://127.0.0.1:8001'")
     )
     with op.batch_alter_table("hosts", schema=None) as batch_op:
         batch_op.alter_column(

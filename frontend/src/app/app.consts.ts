@@ -10,3 +10,7 @@ export const ERegexp = {
    */
   password: /(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,64}/,
 };
+/**
+ * Url to tugtainer deploy guideline
+ */
+export const DeployGuidelineUrl = 'https://github.com/Quenary/tugtainer?tab=readme-ov-file#deploy';

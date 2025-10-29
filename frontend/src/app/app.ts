@@ -16,6 +16,7 @@ import { Logo } from './shared/components/logo/logo';
 import { DrawerModule } from 'primeng/drawer';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToolbarModule } from 'primeng/toolbar';
+import { DeployGuidelineUrl } from './app.consts';
 
 @Component({
   selector: 'app-root',
@@ -106,5 +107,9 @@ export class App {
         }),
       )
       .subscribe();
+  }
+
+  public openDeployGuideline(): void {
+    window.open(DeployGuidelineUrl, '_blank');
   }
 }
