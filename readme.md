@@ -47,89 +47,69 @@ Automatic updates are disabled by default. You can choose only what you need.
       quenary/tugtainer:latest
   ```
 
-- ### Remote Hosts / Proxy socket
+- ### Remote Hosts
 
-  - SSH:
+  To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.
+  To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or following docker commands.
+
+  After deploying the agent, in the UI of the main instance, follow Menu -> Hosts, and add it with the corresponding parameters.
+
+  Remember that the machine with the agent must be accessible for the primary instance.
+
+  Don't forget to change **AGENT_SECRET** variable. It is used for backend-agent requests signature.
+
+  Backend and agent use http to communicate, so you can utilize reverse proxy for https.
 
   ```bash
-  # Mount ssh key to the container
-  # Don't forget to add known hosts (ssh to remote at least once).
-  docker run -d -p 9412:80 \
-      --name=tugtainer \
+  # pull image
+  docker pull quenary/tugtainer-agent:latest
+
+  # run container
+  docker run -d -p 9413:8001 \
+      --name=tugtainer-agent \
       --restart=unless-stopped \
-      -v tugtainer_data:/tugtainer \
-      -v ~/.ssh:/root/.ssh:ro \
-      quenary/tugtainer:latest
-
-  # And create a host in the UI with
-  HOST: ssh://my-user@my-host
+      -e AGENT_SECRET="CHANGE_ME!"
+      -v /var/run/docker.sock:/var/run/docker.sock:ro \
+      quenary/tugtainer-agent:latest
   ```
 
-  - Socket proxy:
+- ### Socket proxy
 
-  ```bash
-  # Create socket proxy container, e.g. https://hub.docker.com/r/linuxserver/socket-proxy
-  # Of course, you should remember not to update proxy container from the app.
-  # Enable at least CONTAINERS, IMAGES, POST, INFO, PING for the check feature, and NETWORKS for the update feature.
+  You can use Tugtainer and Tugtainer Agent without direct mount of docker socket.
 
-  # Run the app with only the data volume.
-  docker run -d -p 9412:80 \
-      --name=tugtainer \
-      --restart=unless-stopped \
-      -v tugtainer_data:/tugtainer \
-      quenary/tugtainer:latest
+  To do so, you have to:
 
-  # And create a host in the UI with
-  HOST: tcp://my-socket-proxy:my-port
-  ```
-
-  - Combine ssh tunnel and socket proxy:
-
-  ```bash
-  # Create persistent tunnel outside the container.
-  autossh -M 0 -f -N -L 23750:127.0.0.1:2375 \
-    -o ServerAliveInterval=60 \
-    -o ServerAliveCountMax=3 \
-    my-user@my-host
-
-  # Run the app with only the data volume.
-  docker run -d -p 9412:80 \
-    --name=tugtainer \
-    --restart=unless-stopped \
-    -v tugtainer_data:/tugtainer \
-    quenary/tugtainer:latest
-
-  # And create a host in the UI with
-  HOST: tcp://127.0.0.1:23750
-  ```
-
-  - TLS:
-    You can try to utilize a tls certificates if you wish. In this case you have to mount ca/cert/key to the container and specify appropriate paths in the UI
+  - Deploy socket-proxy e.g. https://hub.docker.com/r/linuxserver/socket-proxy
+  - Enable at least **CONTAINERS, IMAGES, POST, INFO, PING** for the **check** feature, and **NETWORKS** for the **update** feature;
+  - Set env var DOCKER_HOST="tcp://my-socket-proxy:port" to the Tugtainer(-agent) container(s);
 
 ## Check/update process:
 
 - ### Groups
+
   Every check/update process performed by a group of containers. It's not some fancy term, but just that some containers will be grouped together. For now, this only applies to the valid compose projects. Containers with the same 'com.docker.compose.project' label will be grouped and processed together. Otherwise, there will be a group of one container. In future, i plan to add custom dependency label or an UI setting to link containers together (even if they are not in the same project).
 
 - ### Actual process
+
   - **Image pull** performed for containers marked for **check**;
   - If there are a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
   - After that, all containers in the group are stopped in **order from most dependent**;
   - Then, **in reverse order** (from most dependable):
-      - Updatable containers being recreated and started;
-      - Non-updatable containers being started;
+    - Updatable containers being recreated and started;
+    - Non-updatable containers being started;
 
 - ### Scheduled:
+
   - For each **host defined in the UI**, the check/update process starts at time specified in the settings;
   - All containers of the host are distributed among **groups**;
   - Each container in the group receives an **action based on your selection in the UI** (check/update/none);
-  - *Actual process*
+  - _Actual process_
 
 - ### Click of check/update button:
   - **The container** (and **possible participants** from compose) added to a group;
   - **The container** receives an action based on the button you've clicked (check or update);
   - **Other possible participants** receives an **action based on your selection in the UI**. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked for auto-update** and there is **new image** for it, **it will also be updated**. Otherwise, **participant** will not be updated even if there is a new image for it.
-  - *Actual process*
+  - _Actual process_
 
 ## Env:
 
@@ -138,8 +118,10 @@ Environment variables are not required, but you can still define some. There is 
 ## Develop:
 
 - angular for frontend
-- python for backend
+- python for backend and agent
 - there are a readme files in corresponding directories
+- run install.sh to prepare environment
+- clear python cache: find . | grep -E "(/**pycache**$|\.pyc$|\.pyo$)" | xargs rm -rf
 
 ### TODO:
 
