@@ -2,15 +2,14 @@ from sqlalchemy import and_, select
 from backend.app.db.models.containers_model import ContainersModel
 from backend.app.core.container.schemas.check_result import (
     GroupCheckResult,
-    HostCheckResult,
 )
 from backend.app.helpers.now import now
 from backend.app.db.session import async_session_maker
 
 
 async def update_containers_data_after_check(
-    result: GroupCheckResult | HostCheckResult | None,
-):
+    result: GroupCheckResult | None,
+) -> None:
     """Update containers in db after check/update process"""
     if not result:
         return
@@ -30,6 +29,7 @@ async def update_containers_data_after_check(
                 .limit(1)
             )
             return res.scalar_one_or_none()
+
         for c in result.not_available:
             c_db = await get_cont(c.name)
             if c_db:

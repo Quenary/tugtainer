@@ -10,9 +10,6 @@ from sqlalchemy import select
 import asyncio
 from backend.app.db.session import async_session_maker
 from backend.app.db.models import ContainersModel, HostsModel
-from backend.app.core.container.util import (
-    update_containers_data_after_check,
-)
 from backend.app.core.container.schemas.check_result import (
     CheckContainerUpdateAvailableResult,
     GroupCheckResult,
@@ -299,9 +296,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 await client.container.start(c_name)
                 await run_commands(gc.commands)
                 logging.info("Waiting for healthchecks...")
-                if await wait_for_container_healthy(
-                    client, new_c
-                ):
+                if await wait_for_container_healthy(client, new_c):
                     logging.info("Container is healthy!")
                     gc.container = new_c
                     gc.available = False
@@ -386,6 +381,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             if item.available
         ]
     )
+    await update_containers_data_after_check(result)
     logging.info(
         f"""Group update completed.
 ================================================================="""
@@ -539,9 +535,6 @@ async def check_all(update: bool):
             }
         )
         results = await asyncio.gather(*tasks)
-
-        for r in results:
-            await update_containers_data_after_check(r)
 
         CACHE.update({"status": ECheckStatus.DONE})
         await _send_notification(results)

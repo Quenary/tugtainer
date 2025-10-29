@@ -31,9 +31,6 @@ from backend.app.core.containers_core import (
 from backend.app.core.container.container_group import (
     get_container_group,
 )
-from backend.app.core.container.util import (
-    update_containers_data_after_check,
-)
 from backend.app.helpers.self_container import get_self_container
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
@@ -126,14 +123,8 @@ async def check_host_ep(
     host = await get_host(host_id, session)
     containers = await get_host_containers(session, host_id)
     client = HostsManager.get_host_client(host)
-    task = asyncio.create_task(
+    _ = asyncio.create_task(
         check_host(host, client, update, containers),
-    )
-    # TODO убрать, добавить в кор, раз теперь он асинк
-    task.add_done_callback(
-        lambda t: asyncio.create_task(
-            update_containers_data_after_check(t.result())
-        )
     )
     return get_host_cache_key(host)
 
@@ -160,15 +151,7 @@ async def check_container_ep(
     group = get_container_group(
         container, containers, db_containers, update
     )
-    task = asyncio.create_task(
-        check_group(client, host, group, update)
-    )
-    # TODO убрать
-    task.add_done_callback(
-        lambda t: asyncio.create_task(
-            update_containers_data_after_check(t.result())
-        )
-    )
+    _ = asyncio.create_task(check_group(client, host, group, update))
     return get_group_cache_key(host, group)
 
 
