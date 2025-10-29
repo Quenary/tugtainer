@@ -2,6 +2,9 @@ networks:
   tugtainer_agent:
     driver: bridge
 services:
+  # Socket proxy is used by default,
+  # but you can mount docker socket directly to the agent
+  # and remove this service and DOCKER_HOST variable
   socket-proxy:
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: socket-proxy
@@ -28,8 +31,8 @@ services:
     container_name: tugtainer-agent
     image: quenary/tugtainer-agent:latest
     # volumes:
-      # Either uncomment to mount socket directly
-      # or use DOCKER_HOST and socket-proxy
+      # You can uncomment this to mount socket directly to the agent,
+      # and remove socket-proxy service and DOCKER_HOST variable
       # - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     ports:
@@ -43,11 +46,11 @@ services:
       # HOSTNAME: myhostname
       # Default is WARNING
       # LOG_LEVEL: WARNING
-      # This value is used for run without mounting docker socket in the container,
-      # with for example socket-proxy
+      # This value is used for run the agent without direct socket mount
       DOCKER_HOST: tcp://:socket-proxy:2375
       # Docker CLI timeout that applies primarily to API methods 
       # and doesn't apply to e.g. container re-creation or image pulling.
+      # Default is 15 seconds.
       # DOCKER_TIMEOUT: 15
     read_only: true
     tmpfs:

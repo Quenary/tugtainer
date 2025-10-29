@@ -36,7 +36,7 @@ def get_signature_headers(
 def verify_signature_headers(
     secret_key: str | None,
     signature_lifetime: int,
-    headers: dict[str, str] | Mapping[str, str],
+    headers: dict[str, str],
     method: str,
     url: str,
     body: Any,

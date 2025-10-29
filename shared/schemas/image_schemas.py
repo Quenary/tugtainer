@@ -11,13 +11,13 @@ class InspectImageRequestBodySchema(BaseModel):
 
 class GetImageListBodySchema(BaseModel):
     repository_or_tag: Optional[str] = None
-    filters: Optional[Mapping[str, Any]] = {}
+    filters: Optional[dict[str, Any]] = {}
     all: Optional[bool] = True
 
 
 class PruneImagesRequestBodySchema(BaseModel):
     all: Optional[bool] = True
-    filters: Optional[Mapping[str, Any]] = {}
+    filters: Optional[dict[str, Any]] = {}
 
 
 class PullImageRequestBodySchema(BaseModel):

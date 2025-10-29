@@ -1,6 +1,6 @@
 from inspect import signature
 from typing import Any, Literal, cast
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -26,12 +26,10 @@ from shared.util.signature import get_signature_headers
 
 
 class AgentClient:
-    def __init__(
-        self, id: int, url: str, agent_secret: str | None = None
-    ):
+    def __init__(self, id: int, url: str, secret: str | None = None):
         self._id = id
         self._url = url
-        self._agent_secret = agent_secret
+        self._secret = secret
         self.public = AgentClientPublic(self)
         self.container = AgentClientContainer(self)
         self.image = AgentClientImage(self)
@@ -41,13 +39,19 @@ class AgentClient:
         self,
         method: Literal["GET", "POST", "PUT", "DELETE"],
         path: str,
-        body: Any = None,
+        body: dict | BaseModel | None = None,
     ) -> Any | None:
         url = f"{self._url.rstrip('/')}/{path.lstrip('/')}"
+        if isinstance(body, BaseModel):
+            _body = body.model_dump(exclude_unset=True)
+        else:
+            _body = body
         headers = get_signature_headers(
-            self._agent_secret, method, url, body
+            self._secret, method, url, _body
         )
-        resp = requests.request(method, url, json=body, timeout=5)
+        resp = requests.request(
+            method, url, headers=headers, json=_body, timeout=5
+        )
         resp.raise_for_status()
         return resp.json() if resp.content else None
 
@@ -74,9 +78,8 @@ class AgentClientContainer:
     def list(
         self, body: GetContainerListBodySchema
     ) -> list[ContainerInspectResult]:
-        _body = body.model_dump(exclude_unset=True)
         data = self._agent_client._request(
-            "POST", f"/api/container/list", _body
+            "POST", f"/api/container/list", body
         )
         return TypeAdapter(
             list[ContainerInspectResult]
@@ -97,9 +100,8 @@ class AgentClientContainer:
     def create(
         self, body: CreateContainerRequestBodySchema
     ) -> ContainerInspectResult:
-        _body = body.model_dump(exclude_unset=True)
         data = self._agent_client._request(
-            "POST", f"/api/container/create", _body
+            "POST", f"/api/container/create", body
         )
         return ContainerInspectResult.model_validate(data)
 
@@ -117,7 +119,7 @@ class AgentClientContainer:
 
     def remove(self, name_or_id: str) -> str:
         data = self._agent_client._request(
-            "POST", f"/api/container/remove/{name_or_id}"
+            "DELETE", f"/api/container/remove/{name_or_id}"
         )
         return str(data)
 
@@ -129,43 +131,38 @@ class AgentClientImage:
     def inspect(
         self, body: InspectImageRequestBodySchema
     ) -> ImageInspectResult:
-        _body = body.model_dump(exclude_unset=True)
         data = self._agent_client._request(
-            "GET", f"/api/image/inspect", _body
+            "GET", f"/api/image/inspect", body
         )
         return ImageInspectResult.model_validate(data)
 
     def list(
         self, body: GetImageListBodySchema
     ) -> list[ImageInspectResult]:
-        _body = body.model_dump(exclude_unset=True)
         data = self._agent_client._request(
-            "POST", f"/api/image/list", _body
+            "POST", f"/api/image/list", body
         )
         return TypeAdapter(list[ImageInspectResult]).validate_python(
             data or []
         )
 
     def prune(self, body: PruneImagesRequestBodySchema) -> str:
-        _body = body.model_dump(exclude_unset=True)
         data = self._agent_client._request(
-            "POST", f"/api/image/prune", _body
+            "POST", f"/api/image/prune", body
         )
         return str(data)
 
     def pull(
         self, body: PullImageRequestBodySchema
     ) -> ImageInspectResult:
-        _body = body.model_dump(exclude_unset=True)
         data = self._agent_client._request(
-            "POST", f"/api/image/pull", _body
+            "POST", f"/api/image/pull", body
         )
         return ImageInspectResult.model_validate(data)
 
     def tag(self, body: TagImageRequestBodySchema):
-        _body = body.model_dump(exclude_unset=True)
         return self._agent_client._request(
-            "POST", f"/api/image/tag", _body
+            "POST", f"/api/image/tag", body
         )
 
 
@@ -176,9 +173,8 @@ class AgentClientCommand:
     def run(
         self, body: RunCommandRequestBodySchema
     ) -> tuple[str, str]:
-        _body = body.model_dump(exclude_unset=True)
         data = self._agent_client._request(
-            "POST", f"/api/command/run", _body
+            "POST", f"/api/command/run", body
         )
         return TypeAdapter(tuple[str, str]).validate_python(data)
 

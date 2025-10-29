@@ -13,7 +13,7 @@ from shared.util.endpoint_logging_filter import EndpointLoggingFilter
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
-    format="%(levelname)s %(asctime)s %(message)s",
+    format="AGENT - %(levelname)s - %(asctime)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 

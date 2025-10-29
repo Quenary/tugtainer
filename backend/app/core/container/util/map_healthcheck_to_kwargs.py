@@ -12,8 +12,8 @@ def map_healthcheck_to_kwargs(
     if not cfg:
         return {"healthcheck": False}
 
-    def ns_to_td(ns: Optional[int]) -> Optional[timedelta]:
-        return timedelta(seconds=ns / 1_000_000_000) if ns else None
+    def ns_to_sec(ns: Optional[int]) -> Optional[int]:
+        return int(ns / 1_000_000_000) if ns else None
 
     test = cfg.test
     health_cmd = None
@@ -26,8 +26,8 @@ def map_healthcheck_to_kwargs(
     return {
         "healthcheck": True,
         "health_cmd": health_cmd,
-        "health_interval": ns_to_td(cfg.interval),
-        "health_timeout": ns_to_td(cfg.timeout),
+        "health_interval": ns_to_sec(cfg.interval),
+        "health_timeout": ns_to_sec(cfg.timeout),
         "health_retries": cfg.retries,
-        "health_start_period": ns_to_td(cfg.start_period),
+        "health_start_period": ns_to_sec(cfg.start_period),
     }

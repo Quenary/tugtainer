@@ -28,6 +28,7 @@ from .filter_valid_docker_labels import filter_valid_docker_labels
 from .map_device_requests_to_gpus import map_device_requests_to_gpus
 from .map_env_to_dict import map_env_to_dict
 from .get_container_net_kwargs import get_container_net_kwargs
+from .get_container_entrypoint_str import get_container_entrypoint_str
 import logging
 
 
@@ -93,7 +94,9 @@ def merge_container_config_with_image(
     }
     merged_config = _drop_empty_keys(merged_config)
 
-    return CreateContainerRequestBodySchema(**merged_config)
+    return CreateContainerRequestBodySchema.model_validate(
+        merged_config
+    )
 
 
 def get_container_config(
@@ -148,7 +151,7 @@ def get_container_config(
         "device_write_iops": HOST_CONFIG.blkio_device_write_iops,
         **NET_KWARGS,
         "domainname": CONFIG.domainname,
-        "entrypoint": CONFIG.entrypoint,
+        "entrypoint": get_container_entrypoint_str(CONFIG.entrypoint),
         "envs": ENVS,
         "gpus": map_device_requests_to_gpus(
             HOST_CONFIG.device_requests
@@ -194,4 +197,7 @@ def get_container_config(
     }
     CONFIG = _drop_empty_keys(CONFIG)
 
-    return CreateContainerRequestBodySchema(**CONFIG), COMMANDS
+    return (
+        CreateContainerRequestBodySchema.model_validate(CONFIG),
+        COMMANDS,
+    )
