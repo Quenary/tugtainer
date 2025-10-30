@@ -19,4 +19,7 @@ router = APIRouter(
 )
 async def run(body: RunCommandRequestBodySchema) -> tuple[str, str]:
     _command = DOCKER.config.docker_cmd + body.command
-    return await asyncall(lambda: docker_run_cmd(_command))
+    return await asyncall(
+        lambda: docker_run_cmd(_command),
+        asyncall_timeout=600,
+    )

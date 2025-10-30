@@ -67,7 +67,7 @@ async def inspect(name_or_id: str, _=Depends(is_exists)):
 async def create(body: CreateContainerRequestBodySchema):
     args = body.model_dump(exclude_unset=True)
     return await asyncall(
-        lambda: DOCKER.container.create(**args), asyncall_timeout=None
+        lambda: DOCKER.container.create(**args), asyncall_timeout=600
     )
 
 
@@ -79,7 +79,7 @@ async def create(body: CreateContainerRequestBodySchema):
 async def start(name_or_id: str, _=Depends(is_exists)) -> str:
     __ = await asyncall(
         lambda: DOCKER.container.start(name_or_id),
-        asyncall_timeout=None,
+        asyncall_timeout=600,
     )
     return name_or_id
 
@@ -92,7 +92,7 @@ async def start(name_or_id: str, _=Depends(is_exists)) -> str:
 async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
     __ = await asyncall(
         lambda: DOCKER.container.stop(name_or_id),
-        asyncall_timeout=None,
+        asyncall_timeout=600,
     )
     return name_or_id
 
@@ -105,6 +105,6 @@ async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
 async def remove(name_or_id: str, _=Depends(is_exists)) -> str:
     __ = await asyncall(
         lambda: DOCKER.container.remove(name_or_id),
-        asyncall_timeout=None,
+        asyncall_timeout=600,
     )
     return name_or_id

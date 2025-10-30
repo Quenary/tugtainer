@@ -58,7 +58,10 @@ async def list(body: GetImageListBodySchema):
 )
 async def prune(body: PruneImagesRequestBodySchema) -> str:
     args = body.model_dump(exclude_unset=True)
-    return await asyncall(lambda: DOCKER.image.prune(**args))
+    return await asyncall(
+        lambda: DOCKER.image.prune(**args),
+        asyncall_timeout=600,
+    )
 
 
 @router.post(
@@ -67,7 +70,10 @@ async def prune(body: PruneImagesRequestBodySchema) -> str:
     response_model=ImageInspectResult,
 )
 async def pull(body: PullImageRequestBodySchema):
-    return await asyncall(lambda: DOCKER.image.pull(body.image))
+    return await asyncall(
+        lambda: DOCKER.image.pull(body.image),
+        asyncall_timeout=600,
+    )
 
 
 @router.post(
