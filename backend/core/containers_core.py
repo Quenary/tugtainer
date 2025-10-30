@@ -194,6 +194,8 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 if item.available
             ]
         )
+        await update_containers_data_after_check(result)
+        CACHE.update({"status": ECheckStatus.ERROR})
         return result
 
     async def run_commands(commands: list[list[str]]):
@@ -210,6 +212,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                     logging.error(err)
             except Exception as e:
                 logging.exception(e)
+                logging.error(f"Error while running command {c}")
 
     # endregion
 
@@ -218,11 +221,6 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         > 0
     )
     if not update or group.is_self or not any_for_update:
-        logging.info(
-            f"""Group check completed.
-================================================================="""
-        )
-        CACHE.update({"status": ECheckStatus.DONE})
         result.available = _get_shrinked_containers(
             [
                 item.container
@@ -230,6 +228,12 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 if item.available
             ]
         )
+        await update_containers_data_after_check(result)
+        logging.info(
+            f"""Group check completed.
+================================================================="""
+        )
+        CACHE.update({"status": ECheckStatus.DONE})
         return result
 
     logging.info("Starting to update a group...")
@@ -252,7 +256,6 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                     """Failed to get config for updatable container. Exiting group update.
 ================================================================="""
                 )
-                CACHE.update({"status": ECheckStatus.ERROR})
                 return await on_stop_fail()
         # Stopping all containers
         try:
@@ -264,7 +267,6 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 """Failed to stop container. Exiting group update.
 ================================================================="""
             )
-            CACHE.update({"status": ECheckStatus.ERROR})
             return await on_stop_fail()
 
     # Starting from most dependable.
