@@ -21,21 +21,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    conn = op.get_bind()
-    hosts = conn.execute(sa.text("SELECT id, host FROM hosts")).all()
-    if hosts:
-        not_local = [item for item in hosts if item[1]]
-        for nl in not_local:
-            conn.execute(
-                sa.text(
-                    "DELETE FROM containers WHERE host_id = :hid"
-                ),
-                {"hid": nl[0]},
-            )
-            conn.execute(
-                sa.text("DELETE FROM hosts WHERE id = :hid"),
-                {"hid": nl[0]},
-            )
+    op.execute(
+        sa.text(
+            """
+        DELETE FROM containers 
+        WHERE host_id IN (SELECT id FROM hosts WHERE host IS NOT NULL AND host != '')
+    """
+        )
+    )
+    op.execute(
+        sa.text(
+            "DELETE FROM hosts WHERE host IS NOT NULL AND host != ''"
+        )
+    )
 
     with op.batch_alter_table("hosts", schema=None) as batch_op:
         batch_op.drop_column("config")
@@ -55,20 +53,33 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("secret", sa.String(), nullable=True)
         )
+        batch_op.add_column(
+            sa.Column(
+                "timeout",
+                sa.Integer(),
+                nullable=False,
+                default=5,
+                server_default=sa.text("5"),
+            )
+        )
 
-    conn.execute(
+    op.execute(
         sa.text("UPDATE hosts SET url = 'http://127.0.0.1:8001'")
     )
     with op.batch_alter_table("hosts", schema=None) as batch_op:
         batch_op.alter_column(
             "url", existing_type=sa.String(), nullable=False
         )
+    op.execute(
+        sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'")
+    )
 
 
 def downgrade() -> None:
     with op.batch_alter_table("hosts") as batch_op:
         batch_op.drop_column("url")
         batch_op.drop_column("secret")
+        batch_op.drop_column("timeout")
         batch_op.add_column(
             sa.Column("config", sa.String(), nullable=True)
         )
@@ -106,3 +117,8 @@ def downgrade() -> None:
         batch_op.add_column(
             sa.Column("client_type", sa.String(), nullable=True)
         )
+    op.execute(
+        sa.text(
+            "INSERT INTO settings (key, value, value_type) VALUES ('DOCKER_TIMEOUT', '15', 'int')"
+        )
+    )

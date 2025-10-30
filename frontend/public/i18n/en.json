@@ -83,7 +83,9 @@
         "PRUNE_HINT": "Enable auto-pruning of images after scheduled process.",
         "URL": "Agent address",
         "URL_PLACEHOLDER": "http://127.0.0.1:8001",
-        "SECRET": "Agent secret"
+        "SECRET": "Agent secret",
+        "TIMEOUT": "Agent timeout",
+        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. Does not affect potentially long requests such as create, start, etc."
       }
     }
   },
@@ -153,10 +155,6 @@
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
-      },
-      "DOCKER_TIMEOUT": {
-        "LABEL": "Docker timeout",
-        "HINT": "Docker CLI timeout that applies primarily to API methods and does not apply to e.g. container re-creation or image pulling."
       }
     }
   }

@@ -26,10 +26,20 @@ import aiohttp
 
 
 class AgentClient:
-    def __init__(self, id: int, url: str, secret: str | None = None):
+    def __init__(
+        self,
+        id: int,
+        url: str,
+        secret: str | None = None,
+        timeout: int = 5,
+    ):
         self._id = id
         self._url = url
         self._secret = secret
+        self._timeout = timeout
+        self._long_timeout = (
+            600  # timeout for potentially long requests
+        )
         self.public = AgentClientPublic(self)
         self.container = AgentClientContainer(self)
         self.image = AgentClientImage(self)
@@ -40,7 +50,10 @@ class AgentClient:
         method: Literal["GET", "POST", "PUT", "DELETE"],
         path: str,
         body: dict | BaseModel | None = None,
+        timeout: int | None = None,
     ) -> Any | None:
+        if not timeout:
+            timeout = self._timeout
         url = f"{self._url.rstrip('/')}/{path.lstrip('/')}"
         if isinstance(body, BaseModel):
             _body = body.model_dump(exclude_unset=True)
@@ -49,8 +62,9 @@ class AgentClient:
         headers = get_signature_headers(
             self._secret, method, url, _body
         )
-        timeout = aiohttp.ClientTimeout(total=5)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=timeout)
+        ) as session:
             async with session.request(
                 method, url, headers=headers, json=_body
             ) as resp:
@@ -111,25 +125,34 @@ class AgentClientContainer:
         self, body: CreateContainerRequestBodySchema
     ) -> ContainerInspectResult:
         data = await self._agent_client._request(
-            "POST", f"/api/container/create", body
+            "POST",
+            f"/api/container/create",
+            body,
+            timeout=self._agent_client._long_timeout,
         )
         return ContainerInspectResult.model_validate(data)
 
     async def start(self, name_or_id: str) -> str:
         data = await self._agent_client._request(
-            "POST", f"/api/container/start/{name_or_id}"
+            "POST",
+            f"/api/container/start/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
         )
         return str(data)
 
     async def stop(self, name_or_id: str) -> str:
         data = await self._agent_client._request(
-            "POST", f"/api/container/stop/{name_or_id}"
+            "POST",
+            f"/api/container/stop/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
         )
         return str(data)
 
     async def remove(self, name_or_id: str) -> str:
         data = await self._agent_client._request(
-            "DELETE", f"/api/container/remove/{name_or_id}"
+            "DELETE",
+            f"/api/container/remove/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
         )
         return str(data)
 
@@ -158,7 +181,10 @@ class AgentClientImage:
 
     async def prune(self, body: PruneImagesRequestBodySchema) -> str:
         data = await self._agent_client._request(
-            "POST", f"/api/image/prune", body
+            "POST",
+            f"/api/image/prune",
+            body,
+            timeout=self._agent_client._long_timeout,
         )
         return str(data)
 
@@ -166,7 +192,10 @@ class AgentClientImage:
         self, body: PullImageRequestBodySchema
     ) -> ImageInspectResult:
         data = await self._agent_client._request(
-            "POST", f"/api/image/pull", body
+            "POST",
+            f"/api/image/pull",
+            body,
+            timeout=self._agent_client._long_timeout,
         )
         return ImageInspectResult.model_validate(data)
 
@@ -184,7 +213,10 @@ class AgentClientCommand:
         self, body: RunCommandRequestBodySchema
     ) -> tuple[str, str]:
         data = await self._agent_client._request(
-            "POST", f"/api/command/run", body
+            "POST",
+            f"/api/command/run",
+            body,
+            timeout=self._agent_client._long_timeout,
         )
         return TypeAdapter(tuple[str, str]).validate_python(data)
 

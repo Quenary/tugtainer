@@ -52,7 +52,7 @@ Automatic updates are disabled by default. You can choose only what you need.
   To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.
   To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or following docker commands.
 
-  After deploying the agent, in the UI of the main instance, follow Menu -> Hosts, and add it with the corresponding parameters.
+  After deploying the agent, in the UI follow Menu -> Hosts, and add it with the corresponding parameters.
 
   Remember that the machine with the agent must be accessible for the primary instance.
 
@@ -131,3 +131,4 @@ Environment variables are not required, but you can still define some. There is 
 - Swarm support?
 - Try to add release notes (from labels or something)
 - Remove unused deps
+- Do not update stopped containers

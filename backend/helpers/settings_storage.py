@@ -31,9 +31,6 @@ class SettingsStorage:
     @overload
     def get(cls, key: Literal[ESettingKey.TIMEZONE]) -> str: ...
     @classmethod
-    @overload
-    def get(cls, key: Literal[ESettingKey.DOCKER_TIMEOUT]) -> int: ...
-    @classmethod
     def get(cls, key: ESettingKey, default=None):
         """Get value of setting"""
         return cls._VALUES.get(key, default)

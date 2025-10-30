@@ -37,6 +37,9 @@ class HostsModel(BaseModel):
     secret: Mapped[Optional[str]] = mapped_column(
         String, nullable=True
     )
+    timeout: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=5, server_default=text("5")
+    )
 
     containers: Mapped[list["ContainersModel"]] = relationship(
         "ContainersModel",

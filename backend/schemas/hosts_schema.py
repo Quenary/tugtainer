@@ -8,6 +8,7 @@ class HostBase(BaseModel):
     prune: bool
     url: str
     secret: Optional[str] = None
+    timeout: int
 
 
 class HostInfo(HostBase):

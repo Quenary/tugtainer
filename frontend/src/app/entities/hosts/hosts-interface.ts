@@ -4,6 +4,7 @@ export interface ICreateHost {
   prune: boolean;
   url: string;
   secret: string;
+  timeout: number;
 }
 export interface IHostInfo extends ICreateHost {
   id: number;

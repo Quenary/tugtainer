@@ -30,6 +30,9 @@ import { ConfirmationService } from 'primeng/api';
 import { PasswordModule } from 'primeng/password';
 import { TooltipModule } from 'primeng/tooltip';
 import { DeployGuidelineUrl } from 'src/app/app.consts';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 
 @Component({
   selector: 'app-host-page-card',
@@ -50,6 +53,9 @@ import { DeployGuidelineUrl } from 'src/app/app.consts';
     ConfirmPopupModule,
     PasswordModule,
     TooltipModule,
+    InputNumberModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './hosts-page-card.html',
@@ -80,6 +86,7 @@ export class HostsPageCard implements OnInit {
     return {
       enabled: true,
       prune: false,
+      timeout: 5,
     };
   }
 
@@ -89,6 +96,7 @@ export class HostsPageCard implements OnInit {
     prune: new FormControl<boolean>(null, [Validators.required]),
     url: new FormControl<string>(null, [Validators.required]),
     secret: new FormControl<string>(null),
+    timeout: new FormControl<number>(null, [Validators.required]),
   });
 
   ngOnInit(): void {
