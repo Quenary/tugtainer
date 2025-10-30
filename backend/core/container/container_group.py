@@ -63,13 +63,18 @@ class ContainerGroup:
     containers: list[ContainerGroupItem]
 
 
-def _get_project_name(container: ContainerInspectResult) -> str:
-    labels = (
-        container.config.labels
-        if container.config and container.config.labels
-        else {}
-    )
-    return labels.get("com.docker.compose.project", "")
+def _get_group_name(c: ContainerInspectResult) -> str:
+    """
+    Get container's group name.
+    If container is a part of compose project, it will be extracted from labels.
+    If not, container name is used.
+    """
+    labels = c.config.labels if c.config and c.config.labels else {}
+    proj = labels.get("com.docker.compose.project", "")
+    fil = labels.get("com.docker.compose.project.config_files", "")
+    if proj or fil:
+        return f"{proj}:{fil}"
+    return c.name if c.name else str(uuid.uuid4())
 
 
 def _get_service_name(container: ContainerInspectResult) -> str:
@@ -153,11 +158,20 @@ def _sort_containers_by_dependencies(
 
 
 def _get_action(
-    db_item: ContainersModel,
+    db_item: ContainersModel | None,
 ) -> Literal["update", "check", None]:
     if db_item and db_item.check_enabled:
         return "update" if db_item.update_enabled else "check"
     return None
+
+
+def _get_db_item(
+    c: ContainerInspectResult, items: list[ContainersModel]
+) -> ContainersModel | None:
+    return next(
+        (item for item in items if item.name == c.name),
+        None,
+    )
 
 
 def get_container_group(
@@ -168,9 +182,9 @@ def get_container_group(
 ) -> ContainerGroup:
     """
     Get container group by single container.
-    :param host_id: docker host id
     :param target: target container
     :param containers: list of all host's containers
+    :param containers_db: list of  all host's container's db data
     :param update: force update flag (for manual update, ignores selection)
     :returns: group of containers which contains target
     """
@@ -183,50 +197,35 @@ def get_container_group(
             containers=[target_item],
             is_self=True,
         )
-    target_c_project = _get_project_name(target)
-    target_db_item = next(
-        (item for item in containers_db if item.name == target.name),
-        None,
-    )
+    target_c_gn = _get_group_name(target)
+    target_db_item = _get_db_item(target, containers_db)
     action = _get_action(target_db_item)
     if update:
         action = "update"
     target_item = ContainerGroupItem(container=target, action=action)
-    if target_c_project:
-        # Compose container
-        group = ContainerGroup(
-            name=target_c_project,
-            containers=[target_item],
-            is_self=False,
-        )
-        for c in containers:
-            if c != target:
-                c_project = _get_project_name(c)
-                if c_project == target_c_project:
-                    c_db = next(
-                        (
-                            item
-                            for item in containers_db
-                            if item.name == c.name
-                        ),
-                        None,
-                    )
-                    item = ContainerGroupItem(
-                        container=c, action=_get_action(c_db)
-                    )
-                    group.containers.append(item)
+    group = ContainerGroup(
+        name=target_c_gn,
+        containers=[target_item],
+        is_self=False,
+    )
+    others = [
+        item
+        for item in containers
+        if not is_self_container(item) and item != target
+    ]
+    for c in others:
+        c_gn = _get_group_name(c)
+        if c_gn == target_c_gn:
+            c_db = _get_db_item(c, containers_db)
+            item = ContainerGroupItem(
+                container=c, action=_get_action(c_db)
+            )
+            group.containers.append(item)
 
-        group.containers = _sort_containers_by_dependencies(
-            group.containers
-        )
-        return group
-    else:
-        # Standalone container
-        return ContainerGroup(
-            name=target.name if target.name else str(uuid.uuid4()),
-            containers=[target_item],
-            is_self=False,
-        )
+    group.containers = _sort_containers_by_dependencies(
+        group.containers
+    )
+    return group
 
 
 def get_containers_groups(
@@ -250,36 +249,19 @@ def get_containers_groups(
             )
             continue
 
-        db_item = next(
-            (item for item in containers_db if item.name == c.name),
-            None,
-        )
-        action: Literal["update", "check", None] = None
-        if db_item and db_item.check_enabled:
-            action = "update" if db_item.update_enabled else "check"
+        db_item = _get_db_item(c, containers_db)
+        action = _get_action(db_item)
         item = ContainerGroupItem(container=c, action=action)
 
-        c_project = _get_project_name(c)
-        if c_project:
-            # Compose container
-            group = groups.get(c_project, None)
-            if not group:
-                group = ContainerGroup(
-                    name=c_project, containers=[], is_self=False
-                )
-                groups[c_project] = group
-
-            group.containers.append(item)
-        else:
-            name = c.name if c.name else str(uuid.uuid4())
-            # Standalone container
+        c_gn = _get_group_name(c)
+        group = groups.get(c_gn, None)
+        if not group:
             group = ContainerGroup(
-                name=name, containers=[item], is_self=False
+                name=c_gn, containers=[], is_self=False
             )
-            groups[name] = group
-        # TODO add support of custom label or db depends-on field?
+            groups[c_gn] = group
+        group.containers.append(item)
 
     for g in groups.values():
         g.containers = _sort_containers_by_dependencies(g.containers)
-
     return groups
