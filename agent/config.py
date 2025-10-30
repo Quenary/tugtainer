@@ -9,7 +9,7 @@ class Config:
     HOSTNAME: ClassVar[str]
     LOG_LEVEL: ClassVar[str]
     AGENT_SECRET: ClassVar[str | None]
-    AGENT_SIGNATURE_LIFETIME: ClassVar[int]
+    AGENT_SIGNATURE_TTL: ClassVar[int]
     DOCKER_TIMEOUT: ClassVar[int]
     DOCKER_HOST: ClassVar[str | None]
 
@@ -22,8 +22,8 @@ class Config:
                 os.getenv("LOG_LEVEL") or "warning"
             ).upper()
             cls.AGENT_SECRET = os.getenv("AGENT_SECRET") or None
-            cls.AGENT_SIGNATURE_LIFETIME = int(
-                os.getenv("AGENT_SIGNATURE_LIFETIME") or 10
+            cls.AGENT_SIGNATURE_TTL = int(
+                os.getenv("AGENT_SIGNATURE_TTL") or 5
             )
             cls.DOCKER_TIMEOUT = int(
                 os.getenv("DOCKER_TIMEOUT") or 15

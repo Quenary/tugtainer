@@ -14,8 +14,8 @@ async def verify_signature(req: Request):
         body = None
     verify_signature_headers(
         Config.AGENT_SECRET,
-        Config.AGENT_SIGNATURE_LIFETIME,
-        req.headers,
+        Config.AGENT_SIGNATURE_TTL,
+        dict(req.headers),
         req.method,
         str(req.url),
         body,

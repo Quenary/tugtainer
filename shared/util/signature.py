@@ -44,7 +44,7 @@ def verify_signature_headers(
     """
     Verify signature headers
     :param secret_key: AGENT_SECRET
-    :param signature_lifetime: AGENT_SIGNATURE_LIFETIME
+    :param signature_lifetime: AGENT_SIGNATURE_TTL
     :param headers:  headers of the request
     :param method: method of the req
     :param url: url of the req

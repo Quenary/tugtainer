@@ -41,7 +41,7 @@ services:
       # Secret key for backend-agent requests
       AGENT_SECRET: CHANGE_ME!
       # Backend-agent requests signature timeout in seconds
-      # AGENT_SIGNATURE_LIFETIME: 10
+      # AGENT_SIGNATURE_TTL: 5
       # Default is container's short id
       # HOSTNAME: myhostname
       # Default is WARNING
