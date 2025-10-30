@@ -19,7 +19,7 @@ from backend.helpers.self_container import (
     clear_self_container_update_available,
 )
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter
-from aiohttp.client_exceptions import ClientResponseError
+from aiohttp.client_exceptions import ClientError
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
@@ -59,8 +59,10 @@ app.include_router(images_router)
 app.include_router(hosts_router)
 
 
-@app.exception_handler(ClientResponseError)
+@app.exception_handler(ClientError)
 async def requests_exception_handler(
-    request: Request, exc: ClientResponseError
+    request: Request, exc: ClientError
 ):
-    raise HTTPException(status.HTTP_424_FAILED_DEPENDENCY, str(exc))
+    raise HTTPException(
+        status.HTTP_424_FAILED_DEPENDENCY, f"Agent error:\n{str(exc)}"
+    )
