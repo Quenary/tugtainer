@@ -1,8 +1,5 @@
-import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, status
-from python_on_whales import DockerException
-import requests
 from backend.core import (
     schedule_check_on_init,
     load_hosts_on_init,
@@ -22,6 +19,7 @@ from backend.helpers.self_container import (
     clear_self_container_update_available,
 )
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter
+from aiohttp.client_exceptions import ClientResponseError
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
@@ -61,18 +59,8 @@ app.include_router(images_router)
 app.include_router(hosts_router)
 
 
-@app.exception_handler(asyncio.TimeoutError)
-async def timeout_exception_handler(
-    request: Request, exc: asyncio.TimeoutError
-):
-    raise HTTPException(
-        status.HTTP_500_INTERNAL_SERVER_ERROR,
-        "Timeout error. The problem is most likely related to connecting to the docker host.",
-    )
-
-
-@app.exception_handler(requests.exceptions.HTTPError)
+@app.exception_handler(ClientResponseError)
 async def requests_exception_handler(
-    request: Request, exc: requests.exceptions.HTTPError
+    request: Request, exc: ClientResponseError
 ):
     raise HTTPException(status.HTTP_424_FAILED_DEPENDENCY, str(exc))

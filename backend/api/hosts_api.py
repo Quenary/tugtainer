@@ -1,6 +1,4 @@
-import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Response
-import requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core import is_authorized, HostsManager
@@ -12,6 +10,7 @@ from backend.schemas import (
 from backend.db.session import get_async_session
 from backend.db.models import HostsModel
 from backend.api.util import get_host
+from aiohttp.client_exceptions import ClientResponseError
 
 router = APIRouter(
     prefix="/hosts",
@@ -131,17 +130,11 @@ async def get_status(
         _ = await client.public.health()
         _ = await client.public.access()
         return HostStatusResponseBody(id=id, ok=True)
-    except requests.exceptions.HTTPError as e:
+    except ClientResponseError as e:
         return HostStatusResponseBody(
             id=id,
             ok=False,
             err=str(e),
-        )
-    except asyncio.TimeoutError as e:
-        return HostStatusResponseBody(
-            id=id,
-            ok=False,
-            err="Timeout error",
         )
     except Exception as e:
         return HostStatusResponseBody(
