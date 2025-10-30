@@ -85,7 +85,7 @@
         "URL_PLACEHOLDER": "http://127.0.0.1:8001",
         "SECRET": "Agent secret",
         "TIMEOUT": "Agent timeout",
-        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. Does not affect potentially long requests such as create, start, etc."
+        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. It does not affect potentially long requests such as container create or image pull."
       }
     }
   },

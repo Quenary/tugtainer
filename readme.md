@@ -31,6 +31,8 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 - ### Quick start
 
+  Use [docker-compose.app.yml](./docker-compose.app.yml) or following docker commands.
+
   ```bash
   # create volume
   docker volume create tugtainer_data
@@ -43,16 +45,16 @@ Automatic updates are disabled by default. You can choose only what you need.
       --name=tugtainer \
       --restart=unless-stopped \
       -v tugtainer_data:/tugtainer \
-      -v /var/run/docker.sock:/var/run/docker.sock \
+      -v /var/run/docker.sock:/var/run/docker.sock:ro \
       quenary/tugtainer:latest
   ```
 
-- ### Remote Hosts
+- ### Remote hosts
 
   To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.
   To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or following docker commands.
 
-  After deploying the agent, in the UI follow Menu -> Hosts, and add it with the corresponding parameters.
+  After deploying the agent, in the UI follow Menu -> Hosts, and add it with the respective parameters.
 
   Remember that the machine with the agent must be accessible for the primary instance.
 
@@ -77,7 +79,9 @@ Automatic updates are disabled by default. You can choose only what you need.
 
   You can use Tugtainer and Tugtainer Agent without direct mount of docker socket.
 
-  To do so, you have to:
+  [docker-compose.app.yml](./docker-compose.app.yml) and [docker-compose.agent.yml](./docker-compose.agent.yml) use this approach by default.
+
+  Manual setup:
 
   - Deploy socket-proxy e.g. https://hub.docker.com/r/linuxserver/socket-proxy
   - Enable at least **CONTAINERS, IMAGES, POST, INFO, PING** for the **check** feature, and **NETWORKS** for the **update** feature;
@@ -87,7 +91,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 - ### Groups
 
-  Every check/update process performed by a group of containers. It's not some fancy term, but just that some containers will be grouped together. For now, this only applies to the valid compose projects. Containers with the same 'com.docker.compose.project' label will be grouped and processed together. Otherwise, there will be a group of one container. In future, i plan to add custom dependency label or an UI setting to link containers together (even if they are not in the same project).
+  Every check/update process performed by a group of containers. It's not some fancy term, but just that some containers will be grouped together. For now, this only applies to the valid compose projects. Containers with the same _'com.docker.compose.project'_ and _'com.docker.compose.project.config_files'_ label will be grouped and processed together. Otherwise, there will be a group of one container. In future, i plan to add custom dependency label or an UI setting to link containers together (even if they are not in the same project).
 
 - ### Actual process
 
@@ -119,7 +123,7 @@ Environment variables are not required, but you can still define some. There is 
 
 - angular for frontend
 - python for backend and agent
-- there are a readme files in corresponding directories
+- there are a readme files in respective directories
 - run install.sh to prepare environment
 - clear python cache: find . | grep -E "(/**pycache**$|\.pyc$|\.pyo$)" | xargs rm -rf
 

@@ -1,6 +1,8 @@
 networks:
-  tugtainer_agent:
+  tugtainer:
     driver: bridge
+volumes:
+  tugtainer_data:
 services:
   # Socket proxy is used by default,
   # but you can mount docker socket directly
@@ -26,14 +28,15 @@ services:
     tmpfs:
       - /run
     networks:
-      - tugtainer_agent
-  agent:
+      - tugtainer
+  app:
     depends_on:
       socket-proxy:
         condition: service_healthy
-    container_name: tugtainer-agent
-    image: quenary/tugtainer-agent:latest
+    container_name: tugtainer
+    image: quenary/tugtainer:latest
     volumes:
+      - tugtainer_data:/tugtainer
       # You can uncomment this to mount socket directly,
       # and remove socket-proxy service and DOCKER_HOST variable
       # - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -42,10 +45,7 @@ services:
       # The list of available variables is in env.example
       AGENT_SECRET: CHANGE_ME!
       DOCKER_HOST: tcp://:socket-proxy:2375
-    read_only: true
-    tmpfs:
-      - /run
     networks:
-      - tugtainer_agent
+      - tugtainer
     ports:
-      - '9413:8001'
+      - '9412:80'
