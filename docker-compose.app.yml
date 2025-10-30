@@ -31,8 +31,7 @@ services:
       - tugtainer
   app:
     depends_on:
-      socket-proxy:
-        condition: service_healthy
+      - socket-proxy
     container_name: tugtainer
     image: quenary/tugtainer:latest
     volumes:
@@ -44,7 +43,7 @@ services:
     environment:
       # The list of available variables is in env.example
       AGENT_SECRET: CHANGE_ME!
-      DOCKER_HOST: tcp://:socket-proxy:2375
+      DOCKER_HOST: tcp://socket-proxy:2375
     networks:
       - tugtainer
     ports:

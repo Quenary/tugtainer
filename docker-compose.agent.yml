@@ -29,11 +29,10 @@ services:
       - tugtainer_agent
   agent:
     depends_on:
-      socket-proxy:
-        condition: service_healthy
+      - socket-proxy
     container_name: tugtainer-agent
     image: quenary/tugtainer-agent:latest
-    volumes:
+    # volumes:
       # You can uncomment this to mount socket directly,
       # and remove socket-proxy service and DOCKER_HOST variable
       # - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -41,7 +40,7 @@ services:
     environment:
       # The list of available variables is in env.example
       AGENT_SECRET: CHANGE_ME!
-      DOCKER_HOST: tcp://:socket-proxy:2375
+      DOCKER_HOST: tcp://socket-proxy:2375
     read_only: true
     tmpfs:
       - /run
