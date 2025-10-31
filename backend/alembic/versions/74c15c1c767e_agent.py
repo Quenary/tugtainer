@@ -24,21 +24,22 @@ def upgrade() -> None:
     op.execute(
         sa.text(
             """
-        DELETE FROM containers 
-        WHERE host_id IN (SELECT id FROM hosts WHERE host IS NOT NULL AND host != '')
-    """
+            UPDATE hosts SET host = 'http://127.0.0.1:8001'
+            WHERE host IS NULL OR host = ''
+            """
         )
     )
     op.execute(
         sa.text(
-            "DELETE FROM hosts WHERE host IS NOT NULL AND host != ''"
+            """
+            UPDATE hosts SET host = 'http://unknown'
+            WHERE host != 'http://127.0.0.1:8001'
+            """
         )
     )
-
     with op.batch_alter_table("hosts", schema=None) as batch_op:
         batch_op.drop_column("config")
         batch_op.drop_column("context")
-        batch_op.drop_column("host")
         batch_op.drop_column("tls")
         batch_op.drop_column("tlscacert")
         batch_op.drop_column("tlscert")
@@ -47,8 +48,11 @@ def upgrade() -> None:
         batch_op.drop_column("client_binary")
         batch_op.drop_column("client_call")
         batch_op.drop_column("client_type")
-        batch_op.add_column(
-            sa.Column("url", sa.String(), nullable=True)
+        batch_op.alter_column(
+            "host",
+            new_column_name="url",
+            existing_type=sa.String(),
+            nullable=False,
         )
         batch_op.add_column(
             sa.Column("secret", sa.String(), nullable=True)
@@ -62,14 +66,6 @@ def upgrade() -> None:
                 server_default=sa.text("5"),
             )
         )
-
-    op.execute(
-        sa.text("UPDATE hosts SET url = 'http://127.0.0.1:8001'")
-    )
-    with op.batch_alter_table("hosts", schema=None) as batch_op:
-        batch_op.alter_column(
-            "url", existing_type=sa.String(), nullable=False
-        )
     op.execute(
         sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'")
     )
@@ -77,17 +73,19 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     with op.batch_alter_table("hosts") as batch_op:
-        batch_op.drop_column("url")
         batch_op.drop_column("secret")
         batch_op.drop_column("timeout")
+        batch_op.alter_column(
+            column_name="url",
+            new_column_name="host",
+            existing_type=sa.String(),
+            nullable=True,
+        )
         batch_op.add_column(
             sa.Column("config", sa.String(), nullable=True)
         )
         batch_op.add_column(
             sa.Column("context", sa.String(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("host", sa.String(), nullable=True)
         )
         batch_op.add_column(
             sa.Column("tls", sa.Boolean(), nullable=True)
