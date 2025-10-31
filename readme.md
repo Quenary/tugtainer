@@ -70,7 +70,7 @@ Automatic updates are disabled by default. You can choose only what you need.
   docker run -d -p 9413:8001 \
       --name=tugtainer-agent \
       --restart=unless-stopped \
-      -e AGENT_SECRET="CHANGE_ME!"
+      -e AGENT_SECRET="CHANGE_ME!" \
       -v /var/run/docker.sock:/var/run/docker.sock:ro \
       quenary/tugtainer-agent:latest
   ```
