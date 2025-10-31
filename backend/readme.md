@@ -1,4 +1,6 @@
-# Backend part of Tugtainer
+# Tugtainer Backend
+
+It is the main backend that responds to frontend requests and performs container's checking/updating.
 
 ### Preparations
 
@@ -7,15 +9,15 @@ You may also need following packages `pip3 install python-is-python3 python3-dev
 
 ### Run the app
 
-- create .env file (next to that readme, in /backend directory) with at least this variables
+- Run install.sh script to prepare python environment or do it manually
+- In the root of the workspace, create an .env file with at least these variables
+
 ```bash
 DB_URL=sqlite+aiosqlite:///./tugtainer.db
 PASSWORD_FILE=password_hash
 ```
-- create venv `python -m venv venv`
-- activate with `source venv/bin/activate` or `venv/scripts/activate`
-- install deps `pip install -r requirements.txt`
-- run app with ```python dev.py``` or ```python start.py```
+
+- Run the app with `python -m backend.dev` or `python -m backend.start`
 
 ### Migrations
 

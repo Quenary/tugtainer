@@ -1,6 +1,6 @@
 <p-table
   #dt2
-  [globalFilterFields]="['id', 'name', 'host']"
+  [globalFilterFields]="['id', 'name', 'url']"
   dataKey="id"
   sortField="id"
   [scrollable]="true"
@@ -47,9 +47,9 @@
         {{ 'HOSTS.TABLE.NAME' | translate }}
         <p-sortIcon field="name"></p-sortIcon>
       </th>
-      <th pSortableColumn="host">
-        {{ 'HOSTS.TABLE.HOST' | translate }}
-        <p-sortIcon field="host"></p-sortIcon>
+      <th pSortableColumn="url">
+        {{ 'HOSTS.TABLE.URL' | translate }}
+        <p-sortIcon field="url"></p-sortIcon>
       </th>
       <th
         pSortableColumn="status"
@@ -78,7 +78,7 @@
         }
       </td>
       <td>
-        {{ host.host }}
+        {{ host.url }}
       </td>
       <td>
         <app-host-status [host]="host"></app-host-status>

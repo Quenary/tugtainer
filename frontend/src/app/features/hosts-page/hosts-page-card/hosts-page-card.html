@@ -16,32 +16,16 @@
       </p-accordion-header>
       <p-accordion-content>
         <section class="accordion-content">
-          <div>
-            {{ 'HOSTS.CARD.HELP.TEXT' | translate }}
-          </div>
-          <div>
-            {{'HOSTS.CARD.HELP.TEXT_2' | translate}}
-          </div>
+          @for (t of 'HOSTS.CARD.HELP.TEXT' | translate; track t) {
+            <div>{{ t }}</div>
+          }
           <section class="help-buttons">
             <p-button
+              icon="pi pi-link"
+              severity="success"
               [label]="'HOSTS.CARD.HELP.HELP_BTN' | translate"
-              icon="pi pi-external-link"
               (onClick)="openHelp()"
             ></p-button>
-            <p-button-group>
-              <p-button
-                icon="pi pi-file-import"
-                severity="success"
-                [label]="'HOSTS.CARD.HELP.SSH_TMPL' | translate"
-                (onClick)="setSshTmpl()"
-              ></p-button>
-              <p-button
-                icon="pi pi-file-import"
-                severity="success"
-                [label]="'HOSTS.CARD.HELP.PROXY_TMPL' | translate"
-                (onClick)="setProxyTmpl()"
-              ></p-button>
-            </p-button-group>
             @if (id()) {
               <p-button
                 icon="pi pi-delete"
@@ -79,6 +63,12 @@
             ></p-toggle-switch>
             <label for="host-prune">
               {{ 'HOSTS.CARD.GENERAL.PRUNE' | translate }}
+              <i
+                class="pi pi-question-circle"
+                style="margin: 0 0.5rem"
+                [pTooltip]="'HOSTS.CARD.GENERAL.PRUNE_HINT' | translate"
+                tooltipPosition="left"
+              ></i>
             </label>
           </span>
 
@@ -98,158 +88,45 @@
             <input
               fluid
               pInputText
-              id="host-host"
-              formControlName="host"
-              [placeholder]="'HOSTS.CARD.GENERAL.HOST_PLACEHOLDER' | translate"
+              id="host-url"
+              formControlName="url"
+              [placeholder]="'HOSTS.CARD.GENERAL.URL_PLACEHOLDER' | translate"
             />
-            <label for="host-host">
-              {{ 'HOSTS.CARD.GENERAL.HOST' | translate }}
-            </label>
-          </p-iftaLabel>
-        </section>
-      </p-accordion-content>
-    </p-accordion-panel>
-
-    <p-accordion-panel value="tls">
-      <p-accordion-header>
-        {{ 'HOSTS.CARD.TLS.LABEL' | translate }}
-      </p-accordion-header>
-      <p-accordion-content>
-        <section class="accordion-content">
-          <span
-            class="switch-field"
-            fluid
-          >
-            <p-toggle-switch
-              [inputId]="'host-tls'"
-              formControlName="tls"
-            ></p-toggle-switch>
-            <label for="host-tls">
-              {{ 'HOSTS.CARD.TLS.TLS' | translate }}
-            </label>
-
-            <p-toggle-switch
-              [inputId]="'host-tlsverify'"
-              formControlName="tlsverify"
-            ></p-toggle-switch>
-            <label for="host-tlsverify">
-              {{ 'HOSTS.CARD.TLS.TLS_VERIFY' | translate }}
-            </label>
-          </span>
-
-          <p-iftaLabel fluid>
-            <input
-              fluid
-              pInputText
-              id="host-tlscacert"
-              formControlName="tlscacert"
-              [placeholder]="'HOSTS.CARD.TLS.TLS_CACERT_PLACEHOLDER' | translate"
-            />
-            <label for="host-tlscacert">
-              {{ 'HOSTS.CARD.TLS.TLS_CACERT' | translate }}
+            <label for="host-url">
+              {{ 'HOSTS.CARD.GENERAL.URL' | translate }}
             </label>
           </p-iftaLabel>
 
           <p-iftaLabel fluid>
-            <input
+            <p-password
               fluid
-              pInputText
-              id="host-tlscert"
-              formControlName="tlscert"
-              [placeholder]="'HOSTS.CARD.TLS.TLS_CERT_PLACEHOLDER' | translate"
-            />
-            <label for="host-tlscert">
-              {{ 'HOSTS.CARD.TLS.TLS_CERT' | translate }}
-            </label>
-          </p-iftaLabel>
-
-          <p-iftaLabel fluid>
-            <input
-              fluid
-              pInputText
-              id="host-tlskey"
-              formControlName="tlskey"
-              [placeholder]="'HOSTS.CARD.TLS.TLS_KEY_PLACEHOLDER' | translate"
-            />
-            <label for="host-tlskey">
-              {{ 'HOSTS.CARD.TLS.TLS_KEY' | translate }}
-            </label>
-          </p-iftaLabel>
-        </section>
-      </p-accordion-content>
-    </p-accordion-panel>
-
-    <p-accordion-panel value="extra">
-      <p-accordion-header>
-        {{ 'HOSTS.CARD.EXTRA.LABEL' | translate }}
-      </p-accordion-header>
-      <p-accordion-content>
-        <section class="accordion-content">
-          <p-iftaLabel fluid>
-            <input
-              fluid
-              pInputText
-              id="host-config"
-              formControlName="config"
-              [placeholder]="'HOSTS.CARD.EXTRA.CONFIG_PLACEHOLDER' | translate"
-            />
-            <label for="host-config">
-              {{ 'HOSTS.CARD.EXTRA.CONFIG' | translate }}
-            </label>
-          </p-iftaLabel>
-
-          <p-iftaLabel fluid>
-            <input
-              fluid
-              pInputText
-              id="host-context"
-              formControlName="context"
-              [placeholder]="'HOSTS.CARD.EXTRA.CONTEXT_PLACEHOLDER' | translate"
-            />
-            <label for="host-context">
-              {{ 'HOSTS.CARD.EXTRA.CONTEXT' | translate }}
-            </label>
-          </p-iftaLabel>
-
-          <p-iftaLabel fluid>
-            <input
-              fluid
-              pInputText
-              id="host-client_binary"
-              formControlName="client_binary"
-              [placeholder]="'HOSTS.CARD.EXTRA.CLIENT_BINARY_PLACEHOLDER' | translate"
-            />
-            <label for="host-client_binary">
-              {{ 'HOSTS.CARD.EXTRA.CLIENT_BINARY' | translate }}
-            </label>
-          </p-iftaLabel>
-
-          <p-iftaLabel fluid>
-            <p-autocomplete
-              fluid
-              [inputId]="'host-client_call'"
-              formControlName="client_call"
-              [typeahead]="false"
-              [multiple]="true"
-              appendTo="body"
-              [placeholder]="'HOSTS.CARD.EXTRA.CLIENT_CALL_PLACEHOLDER' | translate"
+              [inputId]="'host-secret'"
+              autocomplete="agent-secret"
+              formControlName="secret"
+              [toggleMask]="true"
+              [feedback]="false"
             >
-            </p-autocomplete>
-            <label for="host-client_call">
-              {{ 'HOSTS.CARD.EXTRA.CLIENT_CALL' | translate }}
+            </p-password>
+            <label for="host-secret">
+              {{ 'HOSTS.CARD.GENERAL.SECRET' | translate }}
             </label>
           </p-iftaLabel>
 
           <p-iftaLabel fluid>
-            <input
-              fluid
-              pInputText
-              id="host-client_type"
-              formControlName="client_type"
-              [placeholder]="'HOSTS.CARD.EXTRA.CLIENT_TYPE_PLACEHOLDER' | translate"
-            />
-            <label for="host-client_type">
-              {{ 'HOSTS.CARD.EXTRA.CLIENT_TYPE' | translate }}
+            <p-iconfield>
+              <p-input-number
+                fluid
+                inputId="host-timeout"
+                formControlName="timeout"
+              >
+              </p-input-number>
+              <p-inputicon
+                class="pi pi-question-circle"
+                [pTooltip]="'HOSTS.CARD.GENERAL.TIMEOUT_HINT' | translate"
+              ></p-inputicon>
+            </p-iconfield>
+            <label for="host-secret">
+              {{ 'HOSTS.CARD.GENERAL.TIMEOUT' | translate }}
             </label>
           </p-iftaLabel>
         </section>
@@ -259,7 +136,7 @@
 
   <p-button-group style="padding-top: 1rem">
     <p-button
-      [label]="'GENERAL.CANCEL' | translate"
+      [label]="'GENERAL.CLOSE' | translate"
       routerLink="/hosts"
       severity="secondary"
     ></p-button>

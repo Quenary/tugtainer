@@ -1,0 +1,33 @@
+# Agent stage
+FROM python:3.13 AS agent-builder
+WORKDIR /app
+RUN pip install --upgrade pip setuptools
+COPY agent/requirements.txt agent/requirements.txt
+RUN pip install --no-cache-dir -r agent/requirements.txt
+COPY agent ./agent
+COPY shared ./shared
+
+# Container build
+FROM python:3.13-slim AS runtime
+WORKDIR /app
+
+ARG VERSION
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl docker-cli \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+COPY --from=agent-builder /app/agent /app/agent
+COPY --from=agent-builder /app/shared /app/shared
+COPY --from=agent-builder /usr/local/lib/python3.13 /usr/local/lib/python3.13
+COPY --from=agent-builder /usr/local/bin /usr/local/bin
+COPY .env* /app/
+RUN echo "$VERSION" > /app/version
+
+EXPOSE 8001
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:8001/api/public/health || exit 1
+
+ENTRYPOINT ["python", "-m", "agent.start"]
