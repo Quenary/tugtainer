@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/Quenary/tugtainer/compare/v1.4.2...v1.5.0) (2025-10-31)
+
+
+### Features
+
+* tugtainer agent ([#34](https://github.com/Quenary/tugtainer/issues/34)) ([32ed9bf](https://github.com/Quenary/tugtainer/commit/32ed9bffee440e24fd631d3c32faf189941c05fe)), closes [#31](https://github.com/Quenary/tugtainer/issues/31) [#32](https://github.com/Quenary/tugtainer/issues/32)
+
 ## [1.4.2](https://github.com/Quenary/tugtainer/compare/v1.4.1...v1.4.2) (2025-10-26)
 
 
