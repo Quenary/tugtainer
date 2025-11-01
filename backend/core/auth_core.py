@@ -7,10 +7,10 @@ import os
 import asyncio
 import aiohttp
 from urllib.parse import urlencode
-from app.config import Config
-from app.helpers.now import now
-from app.helpers.settings_storage import SettingsStorage
-from app.enums.settings_enum import ESettingKey
+from backend.config import Config
+from backend.helpers.now import now
+from backend.helpers.settings_storage import SettingsStorage
+from backend.enums.settings_enum import ESettingKey
 
 
 def verify_password(plain: str, hashed: str) -> bool:

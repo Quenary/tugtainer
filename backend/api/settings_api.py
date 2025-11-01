@@ -13,13 +13,13 @@ from backend.schemas.settings_schema import (
     SettingsPatchRequestItem,
     TestNotificationRequestBody,
 )
-from app.core.auth_core import fetch_oidc_discovery
-from app.core.notifications_core import send_notification
-from app.core.cron_manager import CronManager
-from app.enums.settings_enum import ESettingKey
-from app.enums.cron_jobs_enum import ECronJob
-from app.core.containers_core import check_all
-from app.exception import TugException
+from backend.core.auth_core import fetch_oidc_discovery
+from backend.core.notifications_core import send_notification
+from backend.core.cron_manager import CronManager
+from backend.enums.settings_enum import ESettingKey
+from backend.enums.cron_jobs_enum import ECronJob
+from backend.core.containers_core import check_all
+from backend.exception import TugException
 
 VALID_TIMEZONES = available_timezones()
 

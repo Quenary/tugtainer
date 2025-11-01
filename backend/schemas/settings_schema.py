@@ -1,7 +1,7 @@
 from pydantic import BaseModel, RootModel, model_validator
 from typing import Union, cast
 from datetime import datetime
-from app.enums.settings_enum import ESettingKey
+from backend.enums.settings_enum import ESettingKey
 from .validators import (
     validate_cron_expr, 
     validate_timezone,
