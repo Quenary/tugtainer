@@ -3,6 +3,7 @@ from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from backend.config import Config
 from backend.core.auth_core import is_authorized
 from backend.db.session import get_async_session
 from backend.db.models import SettingModel
@@ -102,7 +103,12 @@ async def change_system_settings(
 async def test_notification(data: TestNotificationRequestBody):
     try:
         await send_notification(
-            "Tugtainer", "This is test notification", data.url
+            body=f"""
+# Tugtainer ({Config.HOSTNAME})
+
+This is test notification
+            """,
+            url=data.url,
         )
         return {}
     except (TugException, AppriseException) as e:

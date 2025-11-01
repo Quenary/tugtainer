@@ -554,37 +554,38 @@ async def _send_notification(results: list[HostCheckResult | None]):
     """
 
     def get_cont_str(c: ShrinkedContainer) -> str:
-        return f"    - {c.name}  {c.image_spec}\n"
+        return f"- {c.name} {c.image_spec}\n"
 
-    title: str = f"Tugtainer ({Config.HOSTNAME})"
     body: str = ""
     for res in results:
         if not res:
             continue
         host_part: str = ""
         if res.updated:
-            host_part += "  Updated:\n"
+            host_part += "### *Updated*:\n"
             for c in res.updated:
                 host_part += get_cont_str(c)
         if res.available:
-            host_part += "  Update available for:\n"
+            host_part += "### *Available*:\n"
             for c in res.available:
                 host_part += get_cont_str(c)
         if res.rolled_back:
-            host_part += "  Rolled-back after fail:\n"
+            host_part += "### *Rolled-back after fail*:\n"
             for c in res.rolled_back:
                 host_part += get_cont_str(c)
         if res.failed:
-            host_part += f"Failed and not rolled-back:\n"
+            host_part += f"### *Failed and not rolled-back*:\n"
             for c in res.failed:
                 host_part += get_cont_str(c)
         if res.prune_res:
-            host_part += f"  {res.prune_res}\n"
+            host_part += f"{res.prune_res}"
         if host_part:
-            body += f"\nHost: {res.host_name}\n" + host_part
+            body += f"\n## Host: {res.host_name}\n" + host_part
+    if body:
+        body = f"# Tugtainer ({Config.HOSTNAME})\n"
     try:
         if body:
-            await send_notification(title, body)
+            await send_notification(body=body)
     except Exception as e:
         logging.exception(e)
         logging.error("Failed to send notification")
