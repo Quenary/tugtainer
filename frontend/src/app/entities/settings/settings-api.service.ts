@@ -24,4 +24,8 @@ export class SettingsApiService extends BaseApiService<'/settings'> {
   getAvailableTimezones(): Observable<string[]> {
     return this.httpClient.get<string[]>(`${this.basePath}/available_timezones`);
   }
+
+  testOidcConnection(well_known_url: string): Observable<any> {
+    return this.httpClient.post(`${this.basePath}/test_oidc`, { well_known_url });
+  }
 }

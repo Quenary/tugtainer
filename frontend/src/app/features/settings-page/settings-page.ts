@@ -6,7 +6,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import { finalize } from 'rxjs';
-import { ISettingUpdate } from 'src/app/entities/settings/settings-interface';
+import { ISettingUpdate, ESettingKey } from 'src/app/entities/settings/settings-interface';
 import { DividerModule } from 'primeng/divider';
 import { AccordionModule } from 'primeng/accordion';
 import { ToastService } from 'src/app/core/services/toast.service';
@@ -24,6 +24,15 @@ export class SettingsPage {
   private readonly settingsApiService = inject(SettingsApiService);
 
   public readonly isLoading = signal<boolean>(false);
+  
+  public readonly oidcSettingKeys = [
+    ESettingKey.OIDC_ENABLED,
+    ESettingKey.OIDC_WELL_KNOWN_URL,
+    ESettingKey.OIDC_CLIENT_ID,
+    ESettingKey.OIDC_CLIENT_SECRET,
+    ESettingKey.OIDC_REDIRECT_URI,
+    ESettingKey.OIDC_SCOPES
+  ];
 
   public onSubmitNewPassword(body: ISetPasswordBody): void {
     this.isLoading.set(true);

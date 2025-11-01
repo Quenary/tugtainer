@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  input,
   output,
   signal,
 } from '@angular/core';
@@ -19,6 +20,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, finalize, of } from 'rxjs';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
+import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
 import {
   ESettingKey,
   ESettingValueType,
@@ -57,10 +59,13 @@ import { ToastService } from 'src/app/core/services/toast.service';
 })
 export class SettingsPageForm {
   private readonly settingsApiService = inject(SettingsApiService);
+  private readonly authApiService = inject(AuthApiService);
   private readonly translateService = inject(TranslateService);
   private readonly toastService = inject(ToastService);
 
   public readonly OnSubmit = output<ISettingUpdate[]>();
+  public readonly includeKeys = input<ESettingKey[]>();
+  public readonly excludeKeys = input<ESettingKey[]>();
 
   public readonly ESettingKey = ESettingKey;
   public readonly keyTranslates = this.translateService.instant('SETTINGS.BY_KEY');
@@ -70,6 +75,10 @@ export class SettingsPageForm {
   private readonly timezones = toSignal(
     this.settingsApiService.getAvailableTimezones().pipe(catchError(() => of([]))),
   );
+
+  // User info signals
+  public readonly userInfo = signal<any>(null);
+  public readonly isLoadingUserInfo = signal<boolean>(false);
   public readonly timezonesSearch = signal<string>(null);
   public readonly displayedTimezones = computed<string[]>(() => {
     const timezones = this.timezones();
@@ -100,8 +109,22 @@ export class SettingsPageForm {
     return null;
   };
 
+  private urlValidator: ValidatorFn = (control: AbstractControl<string>) => {
+    const value = control.value;
+    if (!!value) {
+      try {
+        new URL(value);
+        return null;
+      } catch {
+        return { urlValidator: true };
+      }
+    }
+    return null;
+  };
+
   constructor() {
     this.updateSettings();
+    this.loadUserInfo();
   }
 
   private updateSettings(): void {
@@ -116,13 +139,45 @@ export class SettingsPageForm {
       .subscribe({
         next: (list) => {
           this.formArray.clear();
-          for (const item of list) {
+          let filteredList = list;
+          
+          // Filter based on includeKeys or excludeKeys
+          const includeKeys = this.includeKeys();
+          const excludeKeys = this.excludeKeys();
+          
+          if (includeKeys && includeKeys.length > 0) {
+            filteredList = list.filter(item => includeKeys.includes(item.key));
+          } else if (excludeKeys && excludeKeys.length > 0) {
+            filteredList = list.filter(item => !excludeKeys.includes(item.key));
+          }
+          
+          for (const item of filteredList) {
             const form = this.getFormGroup(item);
             this.formArray.push(form);
           }
         },
         error: (error) => {
           this.toastService.error(error);
+        },
+      });
+  }
+
+  private loadUserInfo(): void {
+    this.isLoadingUserInfo.set(true);
+    this.authApiService
+      .getUserInfo()
+      .pipe(
+        finalize(() => {
+          this.isLoadingUserInfo.set(false);
+        }),
+        catchError((error) => {
+          // Silently fail if user is not authenticated (e.g., using password auth)
+          return of(null);
+        }),
+      )
+      .subscribe({
+        next: (userInfo) => {
+          this.userInfo.set(userInfo);
         },
       });
   }
@@ -148,6 +203,12 @@ export class SettingsPageForm {
         return [Validators.required, this.cronValidator];
       case ESettingKey.TIMEZONE:
         return [Validators.required, this.timezoneValidator];
+      case ESettingKey.OIDC_WELL_KNOWN_URL:
+        return [this.urlValidator];
+      case ESettingKey.OIDC_CLIENT_ID:
+        return [];
+      case ESettingKey.OIDC_REDIRECT_URI:
+        return [this.urlValidator];
       default:
         return [];
     }
@@ -169,6 +230,31 @@ export class SettingsPageForm {
       .subscribe({
         next: () => {
           this.toastService.success();
+        },
+        error: (error) => {
+          this.toastService.error(error);
+        },
+      });
+  }
+
+  public onTestOidc(): void {
+    this.isLoading.set(true);
+    const wellKnownUrl = this.formArray.value.find(
+      (item) => item.key === ESettingKey.OIDC_WELL_KNOWN_URL,
+    ).value as string;
+    
+    if (!wellKnownUrl) {
+      this.toastService.error('OIDC Well-Known URL is required for testing');
+      this.isLoading.set(false);
+      return;
+    }
+    
+    this.settingsApiService
+      .testOidcConnection(wellKnownUrl)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (response) => {
+          this.toastService.success(`OIDC Connection Test Successful. Provider: ${response.endpoints?.issuer || 'Unknown'}`);
         },
         error: (error) => {
           this.toastService.error(error);
