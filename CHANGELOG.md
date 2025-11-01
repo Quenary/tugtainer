@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/Quenary/tugtainer/compare/v1.5.0...v1.5.1) (2025-11-01)
+
+
+### Bug Fixes
+
+* **backend:** notification formatting ([5bddde0](https://github.com/Quenary/tugtainer/commit/5bddde0d2c39a4e780e577fe7ef42b517186fc29)), closes [#26](https://github.com/Quenary/tugtainer/issues/26)
+
 # [1.5.0](https://github.com/Quenary/tugtainer/compare/v1.4.2...v1.5.0) (2025-10-31)
 
 
