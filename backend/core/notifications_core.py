@@ -1,5 +1,5 @@
 import logging
-import apprise
+from apprise import Apprise, NotifyFormat
 from apprise.exception import AppriseException
 from typing import cast
 from sqlalchemy import select
@@ -12,7 +12,10 @@ _url_sentinel = object()
 
 
 async def send_notification(
-    title: str, body: str, url: str | None = cast(None, _url_sentinel)
+    title: str | None = None,
+    body: str | None = None,
+    body_format: NotifyFormat = NotifyFormat.MARKDOWN,
+    url: str | None = cast(None, _url_sentinel),
 ):
     async with async_session_maker() as session:
         logging.info(f"Sending notification")
@@ -33,10 +36,12 @@ async def send_notification(
 
         if _url:
             try:
-                _apprise = apprise.Apprise()
+                _apprise = Apprise()
                 _apprise.add(_url)
                 result = await _apprise.async_notify(
-                    title=title, body=body, interpret_escapes=True
+                    title=title,
+                    body=body,
+                    body_format=body_format,
                 )
                 if result == False:
                     message = "Failed to send notification, but no exception was raised by Apprise."
