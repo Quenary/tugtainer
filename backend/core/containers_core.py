@@ -582,7 +582,7 @@ async def _send_notification(results: list[HostCheckResult | None]):
         if host_part:
             body += f"\n## Host: {res.host_name}\n" + host_part
     if body:
-        body = f"# Tugtainer ({Config.HOSTNAME})\n"
+        body = f"# Tugtainer ({Config.HOSTNAME})\n" + body
     try:
         if body:
             await send_notification(body=body)
