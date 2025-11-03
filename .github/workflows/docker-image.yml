@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: quenary/tugtainer
+      AGENT_IMAGE_NAME: quenary/tugtainer-agent
       TAG: ${{ github.event.inputs.tag }}
 
     steps:
@@ -32,10 +33,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push full image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile.app
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -44,7 +46,27 @@ jobs:
             VERSION=${{ env.TAG }}
           labels: |
             org.opencontainers.image.title=Tugtainer
-            org.opencontainers.image.description="Containerized app for automating updates of docker containers"
+            org.opencontainers.image.description="Containerized app for automating updates of docker containers."
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}
+            org.opencontainers.image.created=${{ github.run_started_at }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+
+      - name: Build and push agent image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.agent
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
+          build-args: |
+            VERSION=${{ env.TAG }}
+          labels: |
+            org.opencontainers.image.title="Tugtainer Agent"
+            org.opencontainers.image.description="Agent part of Tugtainer app, providing secure remote access to Docker hosts."
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}
             org.opencontainers.image.created=${{ github.run_started_at }}

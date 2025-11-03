@@ -5,6 +5,7 @@
     "ADD": "Add",
     "CONFIRM": "Confirm",
     "CANCEL": "Cancel",
+    "CLOSE": "Close",
     "DELETE": "Delete",
     "ENABLED": "Enabled",
     "DISABLED": "Disabled",
@@ -56,10 +57,10 @@
   "HOSTS": {
     "NO_HOSTS_FOUND": "No hosts found",
     "TABLE": {
-      "SEARCH_PLACEHOLDER": "ID, name, host",
+      "SEARCH_PLACEHOLDER": "ID, name, url",
       "ADD": "Add host",
       "NAME": "Name",
-      "HOST": "Host",
+      "URL": "Agent address",
       "STATUS": "Status",
       "STATUS_OK": "Ok",
       "STATUS_ERROR": "Error"
@@ -68,11 +69,12 @@
       "DELETE_CONFIRM": "Do you want to delete this host?",
       "HELP": {
         "LABEL": "Help",
-        "TEXT": "Most of the settings are passed directly as python-on-whales library parameters. Click the button below to view their description.",
-        "TEXT_2": "For a local docker socket, just the name will be enough.",
-        "HELP_BTN": "Help",
-        "PROXY_TMPL": "Socket proxy template",
-        "SSH_TMPL": "SSH template"
+        "TEXT": [
+          "If you did not mount docker socket directly to the container, then DOCKER_HOST environment variable is required which you can set in docker-compose or docker command.",
+          "For the main Tugtainer instance the agent address is http://127.0.0.1:8001 and the secret is undefined by default, which you can change with AGENT_SECRET environment variable.",
+          "For remote hosts you have to deploy Tugtainer Agent (quenary/tugtainer-agent) and use it's address and secret in the corresponding fields."
+        ],
+        "HELP_BTN": "Deploy guideline"
       },
       "GENERAL": {
         "LABEL": "General",
@@ -80,32 +82,12 @@
         "NAME": "Name",
         "ENABLED": "Enabled",
         "PRUNE": "Prune",
-        "HOST": "Host",
-        "HOST_PLACEHOLDER": "ssh://my-user@my-host"
-      },
-      "TLS": {
-        "LABEL": "TLS",
-        "TLS": "TLS",
-        "TLS_CACERT": "TLS CA Cert",
-        "TLS_CACERT_PLACEHOLDER": "~/.docker/ca.pem",
-        "TLS_CERT": "TLS Cert",
-        "TLS_CERT_PLACEHOLDER": "~/.docker/cert.pem",
-        "TLS_KEY": "TLS Key",
-        "TLS_KEY_PLACEHOLDER": "~/.docker/key.pem",
-        "TLS_VERIFY": "TLS Verify"
-      },
-      "EXTRA": {
-        "LABEL": "Extra",
-        "CONFIG": "Config",
-        "CONFIG_PLACEHOLDER": "~/.docker",
-        "CONTEXT": "Context",
-        "CONTEXT_PLACEHOLDER": "my-remote-server",
-        "CLIENT_BINARY": "Client binary",
-        "CLIENT_BINARY_PLACEHOLDER": "docker",
-        "CLIENT_CALL": "Client call",
-        "CLIENT_CALL_PLACEHOLDER": "List e.g. ['docker'], press enter to add item",
-        "CLIENT_TYPE": "Client type",
-        "CLIENT_TYPE_PLACEHOLDER": "docker | podman | nerdctl | unknown"
+        "PRUNE_HINT": "Enable auto-pruning of images after scheduled process.",
+        "URL": "Agent address",
+        "URL_PLACEHOLDER": "http://127.0.0.1:8001",
+        "SECRET": "Agent secret",
+        "TIMEOUT": "Agent timeout",
+        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. It does not affect potentially long requests such as container create or image pull."
       }
     }
   },
@@ -158,7 +140,8 @@
     "VALUE": "Value",
     "SECTIONS": {
       "CHANGE_PASSWORD": "Change password",
-      "APP_SETTINGS": "App settings"
+      "APP_SETTINGS": "App settings",
+      "OIDC_SETTINGS": "OIDC Authentication Settings"
     },
     "BY_KEY": {
       "CRONTAB_EXPR": {
@@ -179,7 +162,41 @@
       "DOCKER_TIMEOUT": {
         "LABEL": "Docker timeout",
         "HINT": "Docker CLI call timeout. This applies primarily to API methods and does not apply to, for example, container re-creation or image pulling."
+      },
+      "OIDC_ENABLED": {
+        "LABEL": "Enable OIDC Authentication",
+        "HINT": "Enable OpenID Connect authentication alongside password authentication"
+      },
+      "OIDC_WELL_KNOWN_URL": {
+        "LABEL": "OIDC Well-Known URL",
+        "HINT": "The well-known configuration URL of your OIDC provider (e.g., https://auth.example.com/.well-known/openid_configuration)",
+        "TEST": "Test OIDC connection"
+      },
+      "OIDC_CLIENT_ID": {
+        "LABEL": "OIDC Client ID",
+        "HINT": "The client identifier registered with your OIDC provider"
+      },
+      "OIDC_CLIENT_SECRET": {
+        "LABEL": "OIDC Client Secret",
+        "HINT": "The client secret for your OIDC application (keep this secure)"
+      },
+      "OIDC_REDIRECT_URI": {
+        "LABEL": "OIDC Redirect URI",
+        "HINT": "The redirect URI configured in your OIDC provider (e.g., https://tugtainer.example.com/auth/oidc/callback)"
+      },
+      "OIDC_SCOPES": {
+        "LABEL": "OIDC Scopes",
+        "HINT": "Space-separated list of OAuth2 scopes to request (openid is always included)"
       }
+    },
+    "OIDC": {
+      "CURRENT_USER": "Currently Authenticated User",
+      "EMAIL": "Email",
+      "NAME": "Name",
+      "USERNAME": "Username",
+      "REDIRECT_SETUP_TITLE": "Important: OIDC Provider Setup", 
+      "REDIRECT_SETUP_MESSAGE": "In your OIDC provider, you must register your Tugtainer URL followed by '/api/auth/oidc/callback' as an allowed callback URL.",
+      "REDIRECT_SETUP_EXAMPLE": "Example: https://your-tugtainer-domain.com/api/auth/oidc/callback"
     }
   }
 }

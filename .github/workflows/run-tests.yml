@@ -1,6 +1,7 @@
 name: Run Tests
 
-# on:
+on:
+  workflow_dispatch:
 #   pull_request:
 #     branches: [main]
 

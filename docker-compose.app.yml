@@ -1,0 +1,50 @@
+networks:
+  tugtainer:
+    driver: bridge
+volumes:
+  tugtainer_data:
+services:
+  # Socket proxy is used by default,
+  # but you can mount docker socket directly
+  # and remove this service and DOCKER_HOST variable
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: Europe/Moscow
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer
+  app:
+    depends_on:
+      - socket-proxy
+    container_name: tugtainer
+    image: quenary/tugtainer:latest
+    volumes:
+      - tugtainer_data:/tugtainer
+      # You can uncomment this to mount socket directly,
+      # and remove socket-proxy service and DOCKER_HOST variable
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    environment:
+      # The list of available variables is in env.example
+      AGENT_SECRET: CHANGE_ME!
+      DOCKER_HOST: tcp://socket-proxy:2375
+    networks:
+      - tugtainer
+    ports:
+      - '9412:80'

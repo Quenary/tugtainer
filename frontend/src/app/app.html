@@ -33,12 +33,12 @@
           </p-tag>
         }
         @if (isUpdateAvailable$ | async) {
-        <p-tag
-          severity="success"
-          (click)="showNewVersionDialog.set(true)"
-        >
-          {{ 'MENU.UPDATE' | translate }}
-        </p-tag>
+          <p-tag
+            severity="success"
+            (click)="showNewVersionDialog.set(true)"
+          >
+            {{ 'MENU.UPDATE' | translate }}
+          </p-tag>
         }
         <p-button
           severity="contrast"
@@ -70,18 +70,12 @@
       </span>
     }
     <ng-template #footer>
-      <a
-        pButton
+      <p-button
+        icon="pi pi-link"
         severity="success"
-        href="https://github.com/Quenary/tugtainer?tab=readme-ov-file#deploy"
-        target="_blank"
-      >
-        <span
-          pButtonIcon
-          class="pi pi-link"
-        ></span>
-        <span pButtonLabel>GitHub</span>
-      </a>
+        label="GitHub"
+        (onClick)="openDeployGuideline()"
+      ></p-button>
     </ng-template>
   </p-dialog>
 }

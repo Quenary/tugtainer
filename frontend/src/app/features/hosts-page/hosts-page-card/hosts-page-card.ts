@@ -21,12 +21,18 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { finalize, map } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsApiService } from 'src/app/entities/hosts/hosts-api.service';
-import { ICreateHost, IHostInfo, THostClientType } from 'src/app/entities/hosts/hosts-interface';
+import { ICreateHost, IHostInfo } from 'src/app/entities/hosts/hosts-interface';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import { RouterLink } from '@angular/router';
 import { ButtonGroup } from 'primeng/buttongroup';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { ConfirmationService } from 'primeng/api';
+import { PasswordModule } from 'primeng/password';
+import { TooltipModule } from 'primeng/tooltip';
+import { DeployGuidelineUrl } from 'src/app/app.consts';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 
 @Component({
   selector: 'app-host-page-card',
@@ -45,6 +51,11 @@ import { ConfirmationService } from 'primeng/api';
     ButtonGroup,
     AutoCompleteModule,
     ConfirmPopupModule,
+    PasswordModule,
+    TooltipModule,
+    InputNumberModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './hosts-page-card.html',
@@ -75,6 +86,7 @@ export class HostsPageCard implements OnInit {
     return {
       enabled: true,
       prune: false,
+      timeout: 5,
     };
   }
 
@@ -82,28 +94,10 @@ export class HostsPageCard implements OnInit {
     name: new FormControl<string>(null, [Validators.required]),
     enabled: new FormControl<boolean>(null, [Validators.required]),
     prune: new FormControl<boolean>(null, [Validators.required]),
-    config: new FormControl<string>(null),
-    context: new FormControl<string>(null),
-    host: new FormControl<string>(null),
-    tls: new FormControl<boolean>(null),
-    tlscacert: new FormControl<string>(null),
-    tlscert: new FormControl<string>(null),
-    tlskey: new FormControl<string>(null),
-    tlsverify: new FormControl<boolean>(null),
-    client_binary: new FormControl<string>(null),
-    client_call: new FormControl<string[]>(null),
-    client_type: new FormControl<THostClientType>(null),
+    url: new FormControl<string>(null, [Validators.required]),
+    secret: new FormControl<string>(null),
+    timeout: new FormControl<number>(null, [Validators.required]),
   });
-
-  constructor() {
-    this.form.controls.client_call.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
-      if (Array.isArray(value) && value.length == 0) {
-        this.form.patchValue({
-          client_call: null,
-        });
-      }
-    });
-  }
 
   ngOnInit(): void {
     const id = this.id();
@@ -174,24 +168,6 @@ export class HostsPageCard implements OnInit {
       });
   }
 
-  openHelp(): void {
-    window.open('https://gabrieldemarmiesse.github.io/python-on-whales/docker_client', '_blank');
-  }
-
-  setProxyTmpl(): void {
-    this.form.reset({
-      ...this.defaultFormValues,
-      host: 'tcp://my-socket-proxy:my-port',
-    });
-  }
-
-  setSshTmpl(): void {
-    this.form.reset({
-      ...this.defaultFormValues,
-      host: 'ssh://my-user@my-host',
-    });
-  }
-
   confirmDelete($event: Event): void {
     this.confirmationService.confirm({
       target: $event.currentTarget,
@@ -226,5 +202,9 @@ export class HostsPageCard implements OnInit {
           this.toastService.error(error);
         },
       });
+  }
+
+  public openHelp(): void {
+    window.open(DeployGuidelineUrl, '_blank');
   }
 }

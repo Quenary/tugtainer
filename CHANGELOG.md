@@ -1,3 +1,17 @@
+## [1.5.1](https://github.com/Quenary/tugtainer/compare/v1.5.0...v1.5.1) (2025-11-01)
+
+
+### Bug Fixes
+
+* **backend:** notification formatting ([5bddde0](https://github.com/Quenary/tugtainer/commit/5bddde0d2c39a4e780e577fe7ef42b517186fc29)), closes [#26](https://github.com/Quenary/tugtainer/issues/26)
+
+# [1.5.0](https://github.com/Quenary/tugtainer/compare/v1.4.2...v1.5.0) (2025-10-31)
+
+
+### Features
+
+* tugtainer agent ([#34](https://github.com/Quenary/tugtainer/issues/34)) ([32ed9bf](https://github.com/Quenary/tugtainer/commit/32ed9bffee440e24fd631d3c32faf189941c05fe)), closes [#31](https://github.com/Quenary/tugtainer/issues/31) [#32](https://github.com/Quenary/tugtainer/issues/32)
+
 ## [1.4.2](https://github.com/Quenary/tugtainer/compare/v1.4.1...v1.4.2) (2025-10-26)
 
 
