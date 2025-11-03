@@ -18,56 +18,10 @@
     </p-accordion-header>
     <p-accordion-content>
       <app-settings-page-form 
-        [excludeKeys]="oidcSettingKeys" 
         (OnSubmit)="onSubmitSettings($event)"
       ></app-settings-page-form>
     </p-accordion-content>
   </p-accordion-panel>
 
-  <p-accordion-panel value="2">
-    <p-accordion-header>
-      {{ 'SETTINGS.SECTIONS.OIDC_SETTINGS' | translate }}
-    </p-accordion-header>
-    <p-accordion-content>
-      <!-- OIDC Setup Info -->
-      <div class="oidc-redirect-info">
-        <div class="redirect-url-info">
-          <strong>{{ 'SETTINGS.OIDC.REDIRECT_SETUP_TITLE' | translate }}</strong>
-          <p>{{ 'SETTINGS.OIDC.REDIRECT_SETUP_MESSAGE' | translate }}</p>
-          <code class="redirect-example">{{ 'SETTINGS.OIDC.REDIRECT_SETUP_EXAMPLE' | translate }}</code>
-        </div>
-      </div>
 
-      <app-settings-page-form 
-        [includeKeys]="oidcSettingKeys" 
-        (OnSubmit)="onSubmitSettings($event)"
-        #oidcSettingsForm
-      ></app-settings-page-form>
-
-      <!-- OIDC User Info Display -->
-      @if (oidcSettingsForm.userInfo(); as userInfo) {
-        @if (userInfo.is_oidc) {
-          <div class="oidc-user-info">
-            <h4>{{ 'SETTINGS.OIDC.CURRENT_USER' | translate }}</h4>
-            <div class="user-info-field">
-              <strong>{{ 'SETTINGS.OIDC.EMAIL' | translate }}:</strong> 
-              <span>{{ userInfo.email || 'N/A' }}</span>
-            </div>
-            @if (userInfo.name) {
-              <div class="user-info-field">
-                <strong>{{ 'SETTINGS.OIDC.NAME' | translate }}:</strong> 
-                <span>{{ userInfo.name }}</span>
-              </div>
-            }
-            @if (userInfo.preferred_username) {
-              <div class="user-info-field">
-                <strong>{{ 'SETTINGS.OIDC.USERNAME' | translate }}:</strong> 
-                <span>{{ userInfo.preferred_username }}</span>
-              </div>
-            }
-          </div>
-        }
-      }
-    </p-accordion-content>
-  </p-accordion-panel>
 </p-accordion>

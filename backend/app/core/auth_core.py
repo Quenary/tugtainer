@@ -89,20 +89,17 @@ def write_password_hash(password_hash: str) -> None:
 
 def is_oidc_enabled() -> bool:
     """Check if OIDC authentication is enabled"""
-    try:
-        return SettingsStorage.get(ESettingKey.OIDC_ENABLED) is True
-    except:
-        return False
+    return Config.OIDC_ENABLED
 
 
 def get_oidc_config() -> Dict[str, str]:
-    """Get OIDC configuration from settings"""
+    """Get OIDC configuration from environment variables"""
     return {
-        'well_known_url': SettingsStorage.get(ESettingKey.OIDC_WELL_KNOWN_URL),
-        'client_id': SettingsStorage.get(ESettingKey.OIDC_CLIENT_ID),
-        'client_secret': SettingsStorage.get(ESettingKey.OIDC_CLIENT_SECRET),
-        'redirect_uri': SettingsStorage.get(ESettingKey.OIDC_REDIRECT_URI),
-        'scopes': SettingsStorage.get(ESettingKey.OIDC_SCOPES).split()
+        'well_known_url': Config.OIDC_WELL_KNOWN_URL,
+        'client_id': Config.OIDC_CLIENT_ID,
+        'client_secret': Config.OIDC_CLIENT_SECRET,
+        'redirect_uri': Config.OIDC_REDIRECT_URI,
+        'scopes': Config.OIDC_SCOPES.split() if Config.OIDC_SCOPES else []
     }
 
 

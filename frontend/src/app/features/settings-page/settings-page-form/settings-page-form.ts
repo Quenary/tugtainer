@@ -20,7 +20,6 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, finalize, of } from 'rxjs';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
-import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
 import {
   ESettingKey,
   ESettingValueType,
@@ -59,7 +58,6 @@ import { ToastService } from 'src/app/core/services/toast.service';
 })
 export class SettingsPageForm {
   private readonly settingsApiService = inject(SettingsApiService);
-  private readonly authApiService = inject(AuthApiService);
   private readonly translateService = inject(TranslateService);
   private readonly toastService = inject(ToastService);
 
@@ -76,9 +74,6 @@ export class SettingsPageForm {
     this.settingsApiService.getAvailableTimezones().pipe(catchError(() => of([]))),
   );
 
-  // User info signals
-  public readonly userInfo = signal<any>(null);
-  public readonly isLoadingUserInfo = signal<boolean>(false);
   public readonly timezonesSearch = signal<string>(null);
   public readonly displayedTimezones = computed<string[]>(() => {
     const timezones = this.timezones();
@@ -124,7 +119,6 @@ export class SettingsPageForm {
 
   constructor() {
     this.updateSettings();
-    this.loadUserInfo();
   }
 
   private updateSettings(): void {
@@ -162,26 +156,6 @@ export class SettingsPageForm {
       });
   }
 
-  private loadUserInfo(): void {
-    this.isLoadingUserInfo.set(true);
-    this.authApiService
-      .getUserInfo()
-      .pipe(
-        finalize(() => {
-          this.isLoadingUserInfo.set(false);
-        }),
-        catchError((error) => {
-          // Silently fail if user is not authenticated (e.g., using password auth)
-          return of(null);
-        }),
-      )
-      .subscribe({
-        next: (userInfo) => {
-          this.userInfo.set(userInfo);
-        },
-      });
-  }
-
   private getFormGroup(data: ISetting): FormGroup<TInterfaceToForm<ISetting>> {
     const form = new FormGroup<TInterfaceToForm<ISetting>>({
       key: new FormControl<ESettingKey>(data.key),
@@ -203,12 +177,6 @@ export class SettingsPageForm {
         return [Validators.required, this.cronValidator];
       case ESettingKey.TIMEZONE:
         return [Validators.required, this.timezoneValidator];
-      case ESettingKey.OIDC_WELL_KNOWN_URL:
-        return [this.urlValidator];
-      case ESettingKey.OIDC_CLIENT_ID:
-        return [];
-      case ESettingKey.OIDC_REDIRECT_URI:
-        return [this.urlValidator];
       default:
         return [];
     }
@@ -230,31 +198,6 @@ export class SettingsPageForm {
       .subscribe({
         next: () => {
           this.toastService.success();
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
-  }
-
-  public onTestOidc(): void {
-    this.isLoading.set(true);
-    const wellKnownUrl = this.formArray.value.find(
-      (item) => item.key === ESettingKey.OIDC_WELL_KNOWN_URL,
-    ).value as string;
-    
-    if (!wellKnownUrl) {
-      this.toastService.error('OIDC Well-Known URL is required for testing');
-      this.isLoading.set(false);
-      return;
-    }
-    
-    this.settingsApiService
-      .testOidcConnection(wellKnownUrl)
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: (response) => {
-          this.toastService.success(`OIDC Connection Test Successful. Provider: ${response.endpoints?.issuer || 'Unknown'}`);
         },
         error: (error) => {
           this.toastService.error(error);

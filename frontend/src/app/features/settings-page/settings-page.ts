@@ -25,14 +25,7 @@ export class SettingsPage {
 
   public readonly isLoading = signal<boolean>(false);
   
-  public readonly oidcSettingKeys = [
-    ESettingKey.OIDC_ENABLED,
-    ESettingKey.OIDC_WELL_KNOWN_URL,
-    ESettingKey.OIDC_CLIENT_ID,
-    ESettingKey.OIDC_CLIENT_SECRET,
-    ESettingKey.OIDC_REDIRECT_URI,
-    ESettingKey.OIDC_SCOPES
-  ];
+
 
   public onSubmitNewPassword(body: ISetPasswordBody): void {
     this.isLoading.set(true);

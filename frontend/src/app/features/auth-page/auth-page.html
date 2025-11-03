@@ -1,21 +1,13 @@
 <div class="auth">
   <app-logo class="logo"></app-logo>
   @if (isPasswordSet()) {
-    <app-login-form
-      [isLoading]="isLoading()"
-      (OnSubmit)="onSubmitLogin($event)"
-    >
-    </app-login-form>
-    
+    <!-- Show OIDC login if enabled, otherwise show password login -->
     @if (isOidcEnabled()) {
-      <div class="oidc-login-section">
-        <p-divider align="center">
-          <span>{{ 'AUTH.OR' | translate }}</span>
-        </p-divider>
-        
+      <div class="oidc-only-login">
         <p-button
           [loading]="isLoading()"
-          severity="secondary"
+          severity="primary"
+          size="large"
           class="oidc-login-button"
           (onClick)="onOidcLogin()"
         >
@@ -25,6 +17,12 @@
           </span>
         </p-button>
       </div>
+    } @else {
+      <app-login-form
+        [isLoading]="isLoading()"
+        (OnSubmit)="onSubmitLogin($event)"
+      >
+      </app-login-form>
     }
   } @else {
     <app-new-password-form

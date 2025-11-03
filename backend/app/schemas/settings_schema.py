@@ -4,10 +4,7 @@ from datetime import datetime
 from app.enums.settings_enum import ESettingKey
 from .validators import (
     validate_cron_expr, 
-    validate_timezone,
-    validate_oidc_well_known_url,
-    validate_oidc_client_id,
-    validate_oidc_scopes
+    validate_timezone
 )
 
 
@@ -22,15 +19,6 @@ class SettingsPatchRequestItem(BaseModel):
             return self
         elif self.key == ESettingKey.TIMEZONE:
             _ = validate_timezone(cast(str, self.value))
-            return self
-        elif self.key == ESettingKey.OIDC_WELL_KNOWN_URL:
-            self.value = validate_oidc_well_known_url(cast(str, self.value))
-            return self
-        elif self.key == ESettingKey.OIDC_CLIENT_ID:
-            self.value = validate_oidc_client_id(cast(str, self.value))
-            return self
-        elif self.key == ESettingKey.OIDC_SCOPES:
-            self.value = validate_oidc_scopes(cast(str, self.value))
             return self
         else:
             return self

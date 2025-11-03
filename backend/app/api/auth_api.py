@@ -66,18 +66,18 @@ async def login(response: Response, password: str):
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="strict",
-        secure=Config.HTTPS,
-        domain=Config.DOMAIN,
+        samesite="lax",  # Changed from "strict" to "lax" for better localhost compatibility
+        secure=False,    # Always False for localhost development
+        domain=None,     # No domain restriction for localhost
         max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        samesite="strict",
-        secure=Config.HTTPS,
-        domain=Config.DOMAIN,
+        samesite="lax",  # Changed from "strict" to "lax" for better localhost compatibility
+        secure=False,    # Always False for localhost development
+        domain=None,     # No domain restriction for localhost
         max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
     )
     response.status_code = status.HTTP_200_OK
@@ -321,18 +321,18 @@ async def oidc_callback(
             key="access_token",
             value=tokens["access_token"],
             httponly=True,
-            samesite="strict",
-            secure=Config.HTTPS,
-            domain=Config.DOMAIN if Config.DOMAIN else None,
+            samesite="lax",  # Changed from "strict" to "lax" for better localhost compatibility
+            secure=False,    # Always False for localhost development
+            domain=None,     # No domain restriction for localhost
             max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
         )
         response.set_cookie(
             key="refresh_token",
             value=tokens["refresh_token"],
             httponly=True,
-            samesite="strict",
-            secure=Config.HTTPS,
-            domain=Config.DOMAIN if Config.DOMAIN else None,
+            samesite="lax",  # Changed from "strict" to "lax" for better localhost compatibility
+            secure=False,    # Always False for localhost development
+            domain=None,     # No domain restriction for localhost
             max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
         )
         
