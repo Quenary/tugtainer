@@ -13,10 +13,10 @@ async def verify_signature(req: Request):
     except:
         body = None
     verify_signature_headers(
-        Config.AGENT_SECRET,
-        Config.AGENT_SIGNATURE_TTL,
-        dict(req.headers),
-        req.method,
-        str(req.url),
-        body,
+        secret_key=Config.AGENT_SECRET,
+        signature_ttl=Config.AGENT_SIGNATURE_TTL,
+        headers=dict(req.headers),
+        method=req.method,
+        path=req.url.path,
+        body=body,
     )

@@ -60,7 +60,10 @@ class AgentClient:
         else:
             _body = body
         headers = get_signature_headers(
-            self._secret, method, url, _body
+            secret_key=self._secret,
+            method=method,
+            path=path,
+            body=_body,
         )
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=timeout)
