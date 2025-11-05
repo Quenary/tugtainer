@@ -47,8 +47,4 @@ export class AuthApiService extends BaseApiService<'/auth'> {
     // This will redirect to the OIDC provider, so we don't expect a JSON response
     window.location.href = `${this.basePath}/oidc/login`;
   }
-
-  getUserInfo(): Observable<any> {
-    return this.httpClient.get(`${this.basePath}/user/info`, { withCredentials: true });
-  }
 }
