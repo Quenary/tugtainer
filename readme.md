@@ -49,6 +49,14 @@ Automatic updates are disabled by default. You can choose only what you need.
       quenary/tugtainer:latest
   ```
 
+- ### <span style="color: orange">Important note about next sections:</span>
+
+  Keep in mind that you **cannot update** an **agent** or a **socket-proxy** from within the app because they are used to communicate with the Docker CLI.
+
+  Avoid including these containers in a docker-compose that contains other containers you want to update automatically, as this will result in an error during the update.
+
+  To keep them updated, you can activate the "check" only to receive notifications, and recreate manually or from another tool, such as Portainer.
+
 - ### Remote hosts
 
   To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.

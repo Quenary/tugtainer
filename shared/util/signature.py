@@ -2,69 +2,86 @@ import hmac
 import hashlib
 import base64
 import json
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 import time
 from fastapi import HTTPException, status
+import logging
+
+
+X_TIMESTAMP = "x-tugtainer-timestamp"
+X_SIGNATURE = "x-tugtainer-signature"
 
 
 def get_signature_headers(
     secret_key: str | None,
     method: str,
-    url: str,
+    path: str,
     body: Any,
 ) -> dict[str, str]:
     """
     Get signature headers
     :param secret_key: AGENT_SECRET
     :param method: method of the req
-    :param url: url of the req
+    :param path: path of the req e.g. /api/containers/list
     :param body: body of the req
     """
-    url = _normalize_url(url)
+    logging.debug(
+        f"Getting signature headers for: \n{method} \n{path} \n{body}"
+    )
     timestamp = int(time.time())
-    headers = {"X-Timestamp": str(timestamp)}
+    headers = {X_TIMESTAMP: str(timestamp)}
     if not secret_key:
         return headers
 
     signature = _get_req_signature(
-        secret_key, timestamp, method, url, body
+        secret_key, timestamp, method, path, body
     )
-    headers["X-Signature"] = signature
+    headers[X_SIGNATURE] = signature
+    logging.debug(f"Signature headers: {headers}")
     return headers
 
 
 def verify_signature_headers(
     secret_key: str | None,
-    signature_lifetime: int,
+    signature_ttl: int,
     headers: dict[str, str],
     method: str,
-    url: str,
+    path: str,
     body: Any,
 ) -> Literal[True]:
     """
     Verify signature headers
     :param secret_key: AGENT_SECRET
-    :param signature_lifetime: AGENT_SIGNATURE_TTL
+    :param signature_ttl: AGENT_SIGNATURE_TTL
     :param headers:  headers of the request
     :param method: method of the req
-    :param url: url of the req
+    :param path: path of the req e.g. /api/containers/list
     :param body: body of the req
     """
-    url = _normalize_url(url)
-    timestamp = int(headers.get("x-timestamp", "0"))
-    signature = headers.get("x-signature", "")
-    if abs(time.time() - timestamp) > signature_lifetime:
+    timestamp = int(headers.get(X_TIMESTAMP, "0"))
+    signature = headers.get(X_SIGNATURE, "")
+    logging.debug(
+        f"Verifying signature headers for: \n{method} \n{path} \n{body}"
+    )
+    logging.debug(f"Headers: {headers}")
+    if abs(time.time() - timestamp) > signature_ttl:
+        message = (
+            f"Signature expired (age={int(time.time() - timestamp)}s)"
+        )
+        logging.warning(message)
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
-            f"Signature lifetime expired (age={int(time.time() - timestamp)}s)",
+            message,
         )
     if not secret_key:
         return True
     expected = _get_req_signature(
-        secret_key, timestamp, method, url, body
+        secret_key, timestamp, method, path, body
     )
     if not hmac.compare_digest(expected, signature):
-        raise HTTPException(401, "Invalid signature")
+        message = f"Invalid signature for: {method} {path} {body}"
+        logging.warning(message)
+        raise HTTPException(401, message)
     return True
 
 
@@ -72,23 +89,18 @@ def _get_req_signature(
     secret_key: str,
     timestamp: int,
     method: str,
-    url: str,
+    path: str,
     body: Any,
 ) -> str:
     if not secret_key:
         return ""
-    url = _normalize_url(url)
     sig_bytes = (
         method.upper().encode()
-        + url.encode()
+        + path.encode()
         + _get_body_bytes(body)
         + str(timestamp).encode()
     )
     return _get_sig_encoded(secret_key, sig_bytes)
-
-
-def _normalize_url(url: str) -> str:
-    return "/" + url.lstrip("/")
 
 
 def _get_sig_encoded(secret_key: str, sig_bytes: bytes) -> str:
