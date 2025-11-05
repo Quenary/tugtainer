@@ -6,54 +6,19 @@
   .logo {
     width: 100%;
     display: block;
-    padding-bottom: 16px;
+    padding-bottom: 1rem;
   }
 
   .auth {
     @include mx.floating-card-surface;
   }
 
-  .oidc-login-section {
-    margin-top: 1rem;
-    
-    .oidc-login-button {
-      width: 100%;
-      justify-content: center;
-    }
-    
-    p-divider {
-      margin: 1rem 0;
-    }
-  }
-
   .oidc-only-login {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    text-align: center;
     gap: 2rem;
-    padding-top: 1rem;
-    min-height: 200px; // Ensure adequate space for centering
-    
-    .oidc-login-button {
-      width: 80%;
-      max-width: 300px;
-      min-height: 52px;
-      justify-content: center;
-      gap: 0.75rem;
-      font-size: 1.1rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      
-      i {
-        font-size: 1.3rem;
-      }
-      
-      span {
-        font-size: 1.1rem;
-        font-weight: 600;
-      }
-    }
+    width: 100%;
   }
 }

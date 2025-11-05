@@ -1,19 +1,19 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 from typing import Any, Literal, cast
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import PlainTextResponse
-
 from backend.schemas.auth_schema import PasswordSetRequestBody
 from .auth_provider import AuthProvider
 from backend.config import Config
 import bcrypt
 import os
-from jose import jwt, JWTError
-from backend.helpers.now import now
 
 
 class AuthPasswordProvider(AuthProvider):
     async def is_enabled(self):
+        # For now OIDC replaces password auth
+        # But maybe it worth have an option to enable both
+        # (or several if another provider is added)
         return not Config.OIDC_ENABLED
 
     async def login(self, request: Request, response: Response):
@@ -132,14 +132,26 @@ class AuthPasswordProvider(AuthProvider):
         res = self._verify_token(token)
         return cast(Literal[True], bool(res))
 
-    def set_password(self, request: Request, payload: PasswordSetRequestBody):
+    async def callback(
+        self, request: Request, response: Response
+    ) -> Any:
+        raise NotImplementedError()
+
+    def set_password(
+        self, request: Request, payload: PasswordSetRequestBody
+    ):
         """
         Set new password if there is no password yet or if user authorized.
         """
+
         def write_and_return():
-            password_hash: str = self._get_password_hash(payload.password)
+            password_hash: str = self._get_password_hash(
+                payload.password
+            )
             self._write_password_hash(password_hash)
-            return PlainTextResponse(status_code=status.HTTP_201_CREATED)
+            return PlainTextResponse(
+                status_code=status.HTTP_201_CREATED
+            )
 
         if not self._read_password_hash():
             return write_and_return()
@@ -147,7 +159,7 @@ class AuthPasswordProvider(AuthProvider):
         _ = self.is_authorized(request)
         write_and_return()
 
-    def is_password_set(self)->bool:
+    def is_password_set(self) -> bool:
         """Check if a password is set"""
         password_hash: str | None = self._read_password_hash()
         return password_hash not in [None, ""]

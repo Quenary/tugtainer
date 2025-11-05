@@ -1,4 +1,6 @@
 export interface ISetPasswordBody {
-    password: string;
-    confirm_password: string;
+  password: string;
+  confirm_password: string;
 }
+
+export type TAuthProvider = 'password' | 'oidc';

@@ -1,7 +1,7 @@
 from datetime import timedelta
 import logging
 from jose import jwt
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, Response
 import secrets
 from typing import Any, Literal, cast
 from urllib.parse import urlencode
@@ -73,8 +73,10 @@ class AuthOidcProvider(AuthProvider):
                 detail=f"Error initiating OIDC login: {str(e)}",
             )
 
-    async def logout(self, request: Request, response: Response):
-        # TODO add oidc logout call
+    async def logout(
+        self, request: Request, response: Response
+    ) -> Response:
+        # TODO add logout call
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
         response.status_code = status.HTTP_200_OK
@@ -83,10 +85,11 @@ class AuthOidcProvider(AuthProvider):
     async def refresh(
         self, request: Request, response: Response
     ) -> Any:
+        # TODO add refresh call
         raise NotImplementedError()
 
     async def is_authorized(self, request: Request):
-        # TODO add oidc check call
+        # TODO add check call
         token = request.cookies.get("access_token")
         if not token:
             raise HTTPException(
@@ -96,14 +99,15 @@ class AuthOidcProvider(AuthProvider):
         res = self._verify_token(token)
         return cast(Literal[True], bool(res))
 
-    async def oidc_callback(
+    async def callback(
         self,
         request: Request,
         response: Response,
-        code: str | None = None,
-        state: str | None = None,
-        error: str | None = None,
-    ):
+    ) -> RedirectResponse:
+        code = request.query_params.get("code", "")
+        state = request.query_params.get("state", "")
+        error = request.query_params.get("error", "")
+
         if error:
             raise HTTPException(
                 status_code=400,

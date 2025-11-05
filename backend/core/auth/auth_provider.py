@@ -39,6 +39,13 @@ class AuthProvider(ABC):
         """Whether user is authorized. Should raise 401 if not."""
         pass
 
+    @abstractmethod
+    async def callback(
+        self, request: Request, response: Response
+    ) -> Any:
+        """Provider callback endpoint handler"""
+        pass
+
     def _create_token(
         self, data: dict[str, Any], expires_delta: timedelta
     ) -> str:

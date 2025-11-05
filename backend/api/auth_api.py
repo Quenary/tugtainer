@@ -5,12 +5,15 @@ from fastapi import (
     Request,
     status,
 )
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, RedirectResponse
+from backend.core.auth.auth_provider import AuthProvider
 from backend.core.auth.auth_provider_chore import (
     AUTH_OIDC_PROVIDER,
     AUTH_PASSWORD_PROVIDER,
-    is_authorized,
+    AUTH_PROVIDERS,
+    active_auth_provider,
 )
+from backend.exception import TugNoAuthProviderException
 from backend.helpers.delay_to_minimum import delay_to_minimum
 from backend.schemas.auth_schema import PasswordSetRequestBody
 
@@ -18,24 +21,44 @@ from backend.schemas.auth_schema import PasswordSetRequestBody
 router: APIRouter = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# For now endpoints are tied to a specific provider
-# Maybe they should be more universal
+@router.get(
+    path="/{provider}/enabled",
+    description="Check if auth provider is enabled",
+    response_model=bool,
+)
+async def is_provider_enabled(provider: str) -> bool:
+    _provider = AUTH_PROVIDERS.get(provider, None)
+    if not _provider:
+        raise TugNoAuthProviderException()
+    return await _provider.is_enabled()
 
 
 @router.post(path="/login")
 @delay_to_minimum(1)
-async def login(request: Request, response: Response):
-    return await AUTH_PASSWORD_PROVIDER.login(request, response)
+async def login(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    return await provider.login(request, response)
 
 
 @router.post(path="/refresh")
-async def refresh(request: Request, response: Response):
-    return await AUTH_PASSWORD_PROVIDER.refresh(request, response)
+async def refresh(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    return await provider.refresh(request, response)
 
 
 @router.post(path="/logout")
-async def logout(request: Request, response: Response):
-    return await AUTH_PASSWORD_PROVIDER.logout(request, response)
+async def logout(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    return await provider.logout(request, response)
 
 
 @router.get(
@@ -43,7 +66,11 @@ async def logout(request: Request, response: Response):
     description="Check if session is authorized",
     response_model=bool,
 )
-def is_authorized_req(_=Depends(is_authorized)):
+def is_authorized_req(
+    request: Request,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    _ = provider.is_authorized(request)
     return PlainTextResponse(status_code=status.HTTP_200_OK)
 
 
@@ -65,33 +92,23 @@ def is_password_set() -> bool:
 
 
 @router.get(
-    path="/oidc/enabled",
-    description="Check if OIDC authentication is enabled",
-    response_model=bool,
+    path="/{provider}/login", description="Login with provider"
 )
-async def oidc_enabled() -> bool:
-    return await AUTH_OIDC_PROVIDER.is_enabled()
-
-
-@router.get(
-    path="/oidc/login",
-    description="Initiate OIDC login flow",
-)
-async def oidc_login(request: Request, response: Response):
-    return await AUTH_OIDC_PROVIDER.login(request, response)
-
-
-@router.get(
-    path="/oidc/callback",
-    description="Handle OIDC callback",
-)
-async def oidc_callback(
+async def provider_login(
     request: Request,
     response: Response,
-    code: str | None = None,
-    state: str | None = None,
-    error: str | None = None,
+    provider: AuthProvider = Depends(active_auth_provider),
+) -> RedirectResponse:
+    return await provider.login(request, response)
+
+
+@router.get(
+    path="/{provider}/callback",
+    description="Auth provider callback endpoint",
+)
+async def provider_callback(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
 ):
-    return await AUTH_OIDC_PROVIDER.oidc_callback(
-        request, response, code, state, error
-    )
+    return await provider.callback(request, response)
