@@ -140,8 +140,7 @@
     "VALUE": "Value",
     "SECTIONS": {
       "CHANGE_PASSWORD": "Change password",
-      "APP_SETTINGS": "App settings",
-      "OIDC_SETTINGS": "OIDC Authentication Settings"
+      "APP_SETTINGS": "App settings"
     },
     "BY_KEY": {
       "CRONTAB_EXPR": {
@@ -162,41 +161,7 @@
       "DOCKER_TIMEOUT": {
         "LABEL": "Docker timeout",
         "HINT": "Docker CLI call timeout. This applies primarily to API methods and does not apply to, for example, container re-creation or image pulling."
-      },
-      "OIDC_ENABLED": {
-        "LABEL": "Enable OIDC Authentication",
-        "HINT": "Enable OpenID Connect authentication alongside password authentication"
-      },
-      "OIDC_WELL_KNOWN_URL": {
-        "LABEL": "OIDC Well-Known URL",
-        "HINT": "The well-known configuration URL of your OIDC provider (e.g., https://auth.example.com/.well-known/openid_configuration)",
-        "TEST": "Test OIDC connection"
-      },
-      "OIDC_CLIENT_ID": {
-        "LABEL": "OIDC Client ID",
-        "HINT": "The client identifier registered with your OIDC provider"
-      },
-      "OIDC_CLIENT_SECRET": {
-        "LABEL": "OIDC Client Secret",
-        "HINT": "The client secret for your OIDC application (keep this secure)"
-      },
-      "OIDC_REDIRECT_URI": {
-        "LABEL": "OIDC Redirect URI",
-        "HINT": "The redirect URI configured in your OIDC provider (e.g., https://tugtainer.example.com/auth/oidc/callback)"
-      },
-      "OIDC_SCOPES": {
-        "LABEL": "OIDC Scopes",
-        "HINT": "Space-separated list of OAuth2 scopes to request (openid is always included)"
       }
-    },
-    "OIDC": {
-      "CURRENT_USER": "Currently Authenticated User",
-      "EMAIL": "Email",
-      "NAME": "Name",
-      "USERNAME": "Username",
-      "REDIRECT_SETUP_TITLE": "Important: OIDC Provider Setup", 
-      "REDIRECT_SETUP_MESSAGE": "In your OIDC provider, you must register your Tugtainer URL followed by '/api/auth/oidc/callback' as an allowed callback URL.",
-      "REDIRECT_SETUP_EXAMPLE": "Example: https://your-tugtainer-domain.com/api/auth/oidc/callback"
     }
   }
 }

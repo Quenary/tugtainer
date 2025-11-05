@@ -182,13 +182,13 @@ def get_current_user(request: Request) -> dict[str, Any]:
         raise HTTPException(
             status_code=401, detail="Missing access token"
         )
-    
+
     payload: dict[str, Any] = verify_token(access_token)
     if payload.get("type") != "access":
         raise HTTPException(
             status_code=401, detail="Invalid access token"
         )
-    
+
     return payload
 
 
@@ -196,22 +196,28 @@ def get_current_user(request: Request) -> dict[str, Any]:
     path="/user/info",
     description="Get current authenticated user information",
 )
-def get_user_info(current_user: dict[str, Any] = Depends(get_current_user)):
+def get_user_info(
+    current_user: dict[str, Any] = Depends(get_current_user),
+):
     user_info = {
         "is_oidc": current_user.get("oidc", False),
         "user_id": current_user.get("user_id", ""),
     }
-    
+
     # If OIDC user, include additional user info
     if current_user.get("oidc") and current_user.get("user_info"):
         oidc_info = current_user.get("user_info", {})
-        user_info.update({
-            "email": oidc_info.get("email", ""),
-            "name": oidc_info.get("name", ""),
-            "preferred_username": oidc_info.get("preferred_username", ""),
-            "sub": oidc_info.get("sub", ""),
-        })
-    
+        user_info.update(
+            {
+                "email": oidc_info.get("email", ""),
+                "name": oidc_info.get("name", ""),
+                "preferred_username": oidc_info.get(
+                    "preferred_username", ""
+                ),
+                "sub": oidc_info.get("sub", ""),
+            }
+        )
+
     return user_info
 
 
@@ -231,27 +237,40 @@ def oidc_enabled():
 async def oidc_login(request: Request):
     if not is_oidc_enabled():
         raise HTTPException(
-            status_code=400, detail="OIDC authentication is not enabled"
+            status_code=400,
+            detail="OIDC authentication is not enabled",
         )
-    
+
     config = get_oidc_config()
-    
-    if not all([config['well_known_url'], config['client_id'], config['redirect_uri']]):
+
+    if not all(
+        [
+            config["well_known_url"],
+            config["client_id"],
+            config["redirect_uri"],
+        ]
+    ):
         raise HTTPException(
             status_code=400, detail="OIDC configuration is incomplete"
         )
-    
+
     # Generate state parameter for CSRF protection
     state = secrets.token_urlsafe(32)
-    
+
     # Store state in session/cookie for verification later
     # For simplicity, we'll use a cookie (in production, consider using a database)
-    
+
     try:
-        discovery_doc = await fetch_oidc_discovery(config['well_known_url'])
-        authorization_url = create_oidc_authorization_url(discovery_doc, config, state)
-        
-        response = RedirectResponse(url=authorization_url, status_code=302)
+        discovery_doc = await fetch_oidc_discovery(
+            config["well_known_url"]
+        )
+        authorization_url = create_oidc_authorization_url(
+            discovery_doc, config, state
+        )
+
+        response = RedirectResponse(
+            url=authorization_url, status_code=302
+        )
         response.set_cookie(
             key="oidc_state",
             value=state,
@@ -261,11 +280,11 @@ async def oidc_login(request: Request):
             max_age=300,  # 5 minutes
         )
         return response
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Error initiating OIDC login: {str(e)}"
+            detail=f"Error initiating OIDC login: {str(e)}",
         )
 
 
@@ -276,46 +295,60 @@ async def oidc_login(request: Request):
 async def oidc_callback(
     request: Request,
     response: Response,
-    code: str = None,
-    state: str = None,
-    error: str = None,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
 ):
     if error:
         raise HTTPException(
             status_code=400,
-            detail=f"OIDC authentication error: {error}"
+            detail=f"OIDC authentication error: {error}",
         )
-    
+
     if not code or not state:
         raise HTTPException(
             status_code=400,
-            detail="Missing authorization code or state parameter"
+            detail="Missing authorization code or state parameter",
         )
-    
+
     # Verify state parameter
     stored_state = request.cookies.get("oidc_state")
-    print(f"OIDC Callback Debug - Received state: {state}, Stored state: {stored_state}")  # Debug print
-    print(f"OIDC Callback Debug - All cookies: {dict(request.cookies)}")  # Debug print
+    print(
+        f"OIDC Callback Debug - Received state: {state}, Stored state: {stored_state}"
+    )  # Debug print
+    print(
+        f"OIDC Callback Debug - All cookies: {dict(request.cookies)}"
+    )  # Debug print
     if not stored_state or stored_state != state:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid state parameter - received: {state}, stored: {stored_state}"
+            detail=f"Invalid state parameter - received: {state}, stored: {stored_state}",
         )
-    
+
     config = get_oidc_config()
-    
+
     try:
-        print(f"OIDC Callback - Code: {code}, State: {state}")  # Debug print
-        discovery_doc = await fetch_oidc_discovery(config['well_known_url'])
+        print(
+            f"OIDC Callback - Code: {code}, State: {state}"
+        )  # Debug print
+        discovery_doc = await fetch_oidc_discovery(
+            config["well_known_url"]
+        )
         print(f"OIDC Discovery successful")  # Debug print
-        user_data = await exchange_oidc_code(code, state, discovery_doc, config)
-        print(f"OIDC Token exchange successful: {user_data}")  # Debug print
+        user_data = await exchange_oidc_code(
+            code, state, discovery_doc, config
+        )
+        print(
+            f"OIDC Token exchange successful: {user_data}"
+        )  # Debug print
         tokens = create_oidc_user_session(user_data)
         print(f"OIDC Session created")  # Debug print
-        
+
         # Create response for redirect
-        response = RedirectResponse(url="/containers", status_code=302)
-        
+        response = RedirectResponse(
+            url="/containers", status_code=302
+        )
+
         # Set authentication cookies
         response.set_cookie(
             key="access_token",
@@ -335,14 +368,14 @@ async def oidc_callback(
             domain=Config.DOMAIN if Config.DOMAIN else None,
             max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
         )
-        
+
         # Clear the state cookie
         response.delete_cookie("oidc_state")
-        
+
         return response
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Error processing OIDC callback: {str(e)}"
+            detail=f"Error processing OIDC callback: {str(e)}",
         )

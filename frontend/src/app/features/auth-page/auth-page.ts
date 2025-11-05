@@ -79,20 +79,18 @@ export class AuthPage implements OnInit {
   }
 
   private updateIsOidcEnabled(): void {
-    this.authApiService
-      .isOidcEnabled()
-      .subscribe({
-        next: (res) => {
-          this.isOidcEnabled.set(res);
-        },
-        error: (error) => {
-          console.warn('Could not check OIDC status:', error);
-          this.isOidcEnabled.set(false);
-        },
-      });
+    this.authApiService.isOidcEnabled().subscribe({
+      next: (res) => {
+        this.isOidcEnabled.set(res);
+      },
+      error: (error) => {
+        console.warn('Could not check OIDC status:', error);
+        this.isOidcEnabled.set(false);
+      },
+    });
   }
 
   onOidcLogin(): void {
-    this.authApiService.initiateOidcLogin().subscribe();
+    this.authApiService.initiateOidcLogin();
   }
 }
