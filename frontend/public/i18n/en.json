@@ -157,10 +157,6 @@
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
-      },
-      "DOCKER_TIMEOUT": {
-        "LABEL": "Docker timeout",
-        "HINT": "Docker CLI call timeout. This applies primarily to API methods and does not apply to, for example, container re-creation or image pulling."
       }
     }
   }
