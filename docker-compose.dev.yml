@@ -20,13 +20,5 @@ services:
       - tugtainer
     ports:
       - '9412:80'
-    environment:
-      # OIDC Configuration
-      OIDC_ENABLED: "false"
-      OIDC_WELL_KNOWN_URL: ""
-      OIDC_CLIENT_ID: ""
-      OIDC_CLIENT_SECRET: ""
-      OIDC_REDIRECT_URI: ""
-      OIDC_SCOPES: "openid profile email"
 volumes:
   tugtainer_data_dev:

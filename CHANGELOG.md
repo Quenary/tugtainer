@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/Quenary/tugtainer/compare/v1.5.2...v1.5.3) (2025-11-04)
+
+
+### Bug Fixes
+
+* 401 (424) error if agent reverse proxied ([d7dbf96](https://github.com/Quenary/tugtainer/commit/d7dbf967c442a2241da86e97fabe51d1d7b95945)), closes [#43](https://github.com/Quenary/tugtainer/issues/43)
+
 ## [1.5.2](https://github.com/Quenary/tugtainer/compare/v1.5.1...v1.5.2) (2025-11-02)
 
 

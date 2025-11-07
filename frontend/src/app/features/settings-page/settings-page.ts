@@ -6,7 +6,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import { finalize } from 'rxjs';
-import { ISettingUpdate, ESettingKey } from 'src/app/entities/settings/settings-interface';
+import { ISettingUpdate } from 'src/app/entities/settings/settings-interface';
 import { DividerModule } from 'primeng/divider';
 import { AccordionModule } from 'primeng/accordion';
 import { ToastService } from 'src/app/core/services/toast.service';
@@ -24,8 +24,6 @@ export class SettingsPage {
   private readonly settingsApiService = inject(SettingsApiService);
 
   public readonly isLoading = signal<boolean>(false);
-  
-
 
   public onSubmitNewPassword(body: ISetPasswordBody): void {
     this.isLoading.set(true);

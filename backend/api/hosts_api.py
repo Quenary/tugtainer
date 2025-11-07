@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.core import is_authorized, HostsManager
+from backend.core import HostsManager
+from backend.core.auth.auth_provider_chore import is_authorized
 from backend.schemas import (
     HostInfo,
     HostBase,

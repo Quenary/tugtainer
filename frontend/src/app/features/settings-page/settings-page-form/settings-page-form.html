@@ -32,17 +32,6 @@
             >
             </p-button>
           }
-          @case (ESettingKey.OIDC_WELL_KNOWN_URL) {
-            <p-button
-              icon="pi pi-link"
-              severity="contrast"
-              rounded="true"
-              [pTooltip]="'SETTINGS.BY_KEY.OIDC_WELL_KNOWN_URL.TEST' | translate"
-              tooltipPosition="left"
-              (onClick)="onTestOidc()"
-            >
-            </p-button>
-          }
         }
 
         @if (keyTranslates[key]?.HINT; as hint) {
