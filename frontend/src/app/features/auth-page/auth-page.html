@@ -1,15 +1,30 @@
 <div class="auth">
   <app-logo class="logo"></app-logo>
-  @if (isPasswordSet()) {
-    <app-login-form
-      [isLoading]="isLoading()"
-      (OnSubmit)="onSubmitLogin($event)"
-    >
-    </app-login-form>
-  } @else {
-    <app-new-password-form
-      [isLoading]="isLoading()"
-      (OnSubmit)="onSubmitNewPassword($event)"
-    ></app-new-password-form>
+  @if (isPasswordEnabled.value()) {
+    @if (isPasswordSet.value()) {
+      <app-login-form
+        [isLoading]="isLoading()"
+        (OnSubmit)="onSubmitLogin($event)"
+      >
+      </app-login-form>
+    } @else {
+      <app-new-password-form
+        [isLoading]="isLoading()"
+        (OnSubmit)="onSubmitNewPassword($event)"
+      ></app-new-password-form>
+    }
+  }
+  @if (isOidcEnabled.value()) {
+    <div class="oidc-only-login">
+      <p-button
+        [loading]="isLoading()"
+        severity="primary"
+        size="large"
+        icon="pi pi-id-card"
+        [label]="'AUTH.LOGIN_WITH_OIDC' | translate"
+        (onClick)="onOidcLogin()"
+      >
+      </p-button>
+    </div>
   }
 </div>

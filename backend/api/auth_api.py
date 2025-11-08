@@ -1,135 +1,64 @@
-from typing import Any
-from datetime import timedelta
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     Response,
     Request,
     status,
 )
-from fastapi.responses import PlainTextResponse
-from backend.helpers.delay_to_minimum import delay_to_minimum
-from backend.config import Config
-from backend.helpers.now import now
-from backend.core.auth_core import (
-    get_password_hash,
-    verify_token,
-    verify_password,
-    create_token,
-    is_authorized,
-    read_password_hash,
-    write_password_hash,
+from fastapi.responses import PlainTextResponse, RedirectResponse
+from backend.core.auth.auth_provider import AuthProvider
+from backend.core.auth.auth_provider_chore import (
+    AUTH_OIDC_PROVIDER,
+    AUTH_PASSWORD_PROVIDER,
+    AUTH_PROVIDERS,
+    active_auth_provider,
 )
+from backend.exception import TugNoAuthProviderException
+from backend.helpers.delay_to_minimum import delay_to_minimum
 from backend.schemas.auth_schema import PasswordSetRequestBody
 
 
 router: APIRouter = APIRouter(prefix="/auth", tags=["auth"])
 
 
+@router.get(
+    path="/{provider}/enabled",
+    description="Check if auth provider is enabled",
+    response_model=bool,
+)
+async def is_provider_enabled(provider: str) -> bool:
+    _provider = AUTH_PROVIDERS.get(provider, None)
+    if not _provider:
+        raise TugNoAuthProviderException()
+    return await _provider.is_enabled()
+
+
 @router.post(path="/login")
 @delay_to_minimum(1)
-async def login(response: Response, password: str):
-    STORED_PASSWORD_HASH: str | None = read_password_hash()
-
-    if not STORED_PASSWORD_HASH:
-        raise HTTPException(
-            status_code=401, detail="Password not set"
-        )
-
-    if not verify_password(password, STORED_PASSWORD_HASH):
-        raise HTTPException(
-            status_code=401, detail="Invalid password"
-        )
-
-    access_token: str = create_token(
-        data={"type": "access"},
-        expires_delta=timedelta(
-            minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
-        ),
-    )
-    refresh_token: str = create_token(
-        data={"type": "refresh"},
-        expires_delta=timedelta(
-            minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
-        ),
-    )
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        samesite="strict",
-        secure=Config.HTTPS,
-        domain=Config.DOMAIN,
-        max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        samesite="strict",
-        secure=Config.HTTPS,
-        domain=Config.DOMAIN,
-        max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
-    )
-    response.status_code = status.HTTP_200_OK
-    return response
+async def login(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    return await provider.login(request, response)
 
 
 @router.post(path="/refresh")
-async def refresh(request: Request, response: Response):
-    refresh_token: str | None = request.cookies.get("refresh_token")
-    if not refresh_token:
-        raise HTTPException(
-            status_code=401, detail="Missing refresh token"
-        )
-
-    payload: dict[str, Any] = verify_token(refresh_token)
-    if payload.get("type") != "refresh":
-        raise HTTPException(
-            status_code=401, detail="Invalid refresh token"
-        )
-
-    new_access_token: str = create_token(
-        data={"type": "access"},
-        expires_delta=timedelta(
-            minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
-        ),
-    )
-    new_refresh_token: str = create_token(
-        data={"type": "refresh"},
-        expires_delta=timedelta(
-            minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
-        ),
-    )
-    response.set_cookie(
-        key="access_token",
-        value=new_access_token,
-        httponly=True,
-        samesite="strict",
-        secure=Config.HTTPS,
-        domain=Config.DOMAIN,
-        max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh_token,
-        httponly=True,
-        samesite="strict",
-        secure=Config.HTTPS,
-        domain=Config.DOMAIN,
-        max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
-    )
-    response.status_code = status.HTTP_200_OK
-    return response
+async def refresh(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    return await provider.refresh(request, response)
 
 
 @router.post(path="/logout")
-def logout(response: Response):
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
-    response.status_code = status.HTTP_200_OK
-    return response
+async def logout(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    return await provider.logout(request, response)
 
 
 @router.get(
@@ -137,7 +66,11 @@ def logout(response: Response):
     description="Check if session is authorized",
     response_model=bool,
 )
-def is_authorized_req(_=Depends(is_authorized)):
+def is_authorized_req(
+    request: Request,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    _ = provider.is_authorized(request)
     return PlainTextResponse(status_code=status.HTTP_200_OK)
 
 
@@ -146,15 +79,7 @@ def is_authorized_req(_=Depends(is_authorized)):
     description="Set password for web UI. Password can be set only if password is not set yet or if user is authorized.",
 )
 def set_password(request: Request, payload: PasswordSetRequestBody):
-    password_hash: str = get_password_hash(payload.password)
-
-    if not read_password_hash():
-        write_password_hash(password_hash)
-        return PlainTextResponse(status_code=status.HTTP_201_CREATED)
-
-    _ = is_authorized(request)
-    write_password_hash(password_hash)
-    return PlainTextResponse(status_code=status.HTTP_200_OK)
+    return AUTH_PASSWORD_PROVIDER.set_password(request, payload)
 
 
 @router.get(
@@ -162,6 +87,28 @@ def set_password(request: Request, payload: PasswordSetRequestBody):
     description="Check if password is set",
     response_model=bool,
 )
-def is_password_set():
-    password_hash: str | None = read_password_hash()
-    return password_hash not in [None, ""]
+def is_password_set() -> bool:
+    return AUTH_PASSWORD_PROVIDER.is_password_set()
+
+
+@router.get(
+    path="/{provider}/login", description="Login with provider"
+)
+async def provider_login(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+) -> RedirectResponse:
+    return await provider.login(request, response)
+
+
+@router.get(
+    path="/{provider}/callback",
+    description="Auth provider callback endpoint",
+)
+async def provider_callback(
+    request: Request,
+    response: Response,
+    provider: AuthProvider = Depends(active_auth_provider),
+):
+    return await provider.callback(request, response)

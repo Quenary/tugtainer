@@ -50,7 +50,9 @@
       "MEDIUM": "Average complexity",
       "STRONG": "Complex password"
     },
-    "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"]
+    "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"],
+    "OR": "Or",
+    "LOGIN_WITH_OIDC": "Login with OIDC"
   },
   "HOSTS": {
     "NO_HOSTS_FOUND": "No hosts found",

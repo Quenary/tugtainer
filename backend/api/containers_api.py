@@ -2,7 +2,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.core.auth_core import is_authorized
+from backend.core.auth.auth_provider_chore import is_authorized
 from backend.schemas.containers_schema import (
     ContainerPatchRequestBody,
     ContainerGetResponseBody,

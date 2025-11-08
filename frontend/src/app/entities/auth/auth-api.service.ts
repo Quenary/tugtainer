@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../base/base-api.service';
 import { Observable } from 'rxjs';
-import { ISetPasswordBody } from './auth-interface';
+import { ISetPasswordBody, TAuthProvider } from './auth-interface';
 
 @Injectable({
   providedIn: 'root',
@@ -9,12 +9,31 @@ import { ISetPasswordBody } from './auth-interface';
 export class AuthApiService extends BaseApiService<'/auth'> {
   protected override readonly prefix = '/auth';
 
-  login(password: string): Observable<any> {
-    return this.httpClient.post(
-      `${this.basePath}/login`,
-      {},
-      { params: { password }, withCredentials: true },
-    );
+  /**
+   * Check if auth provider enabled
+   * @param provider provider code
+   * @returns
+   */
+  isAuthProviderEnabled(provider: TAuthProvider): Observable<boolean> {
+    return this.httpClient.get<boolean>(`${this.basePath}/${provider}/enabled`);
+  }
+
+  /**
+   * Auth with active auth provider
+   * @param body
+   * @param params
+   * @returns
+   */
+  login(body: { [K: string]: any } = {}, params: { [K: string]: any } = {}): Observable<any> {
+    return this.httpClient.post(`${this.basePath}/login`, body, { params, withCredentials: true });
+  }
+
+  /**
+   * Login with redirection to provider
+   * @param provider
+   */
+  initiateLogin(provider: TAuthProvider): void {
+    window.location.href = `${this.basePath}/${provider}/login`;
   }
 
   refresh(): Observable<any> {

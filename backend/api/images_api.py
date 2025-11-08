@@ -3,7 +3,7 @@ from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.core.auth_core import is_authorized
+from backend.core.auth.auth_provider_chore import is_authorized
 from backend.schemas import ImageGetResponseBody
 from backend.api.util import map_image_schema, get_host
 from backend.core import HostsManager

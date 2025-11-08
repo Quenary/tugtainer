@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  input,
   output,
   signal,
 } from '@angular/core';
@@ -61,6 +62,8 @@ export class SettingsPageForm {
   private readonly toastService = inject(ToastService);
 
   public readonly OnSubmit = output<ISettingUpdate[]>();
+  public readonly includeKeys = input<ESettingKey[]>();
+  public readonly excludeKeys = input<ESettingKey[]>();
 
   public readonly ESettingKey = ESettingKey;
   public readonly keyTranslates = this.translateService.instant('SETTINGS.BY_KEY');
@@ -70,6 +73,7 @@ export class SettingsPageForm {
   private readonly timezones = toSignal(
     this.settingsApiService.getAvailableTimezones().pipe(catchError(() => of([]))),
   );
+
   public readonly timezonesSearch = signal<string>(null);
   public readonly displayedTimezones = computed<string[]>(() => {
     const timezones = this.timezones();
@@ -100,6 +104,19 @@ export class SettingsPageForm {
     return null;
   };
 
+  private urlValidator: ValidatorFn = (control: AbstractControl<string>) => {
+    const value = control.value;
+    if (!!value) {
+      try {
+        new URL(value);
+        return null;
+      } catch {
+        return { urlValidator: true };
+      }
+    }
+    return null;
+  };
+
   constructor() {
     this.updateSettings();
   }
@@ -116,7 +133,19 @@ export class SettingsPageForm {
       .subscribe({
         next: (list) => {
           this.formArray.clear();
-          for (const item of list) {
+          let filteredList = list;
+          
+          // Filter based on includeKeys or excludeKeys
+          const includeKeys = this.includeKeys();
+          const excludeKeys = this.excludeKeys();
+          
+          if (includeKeys && includeKeys.length > 0) {
+            filteredList = list.filter(item => includeKeys.includes(item.key));
+          } else if (excludeKeys && excludeKeys.length > 0) {
+            filteredList = list.filter(item => !excludeKeys.includes(item.key));
+          }
+          
+          for (const item of filteredList) {
             const form = this.getFormGroup(item);
             this.formArray.push(form);
           }

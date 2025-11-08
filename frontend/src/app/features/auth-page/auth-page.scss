@@ -6,10 +6,19 @@
   .logo {
     width: 100%;
     display: block;
-    padding-bottom: 16px;
+    padding-bottom: 1rem;
   }
 
   .auth {
     @include mx.floating-card-surface;
+  }
+
+  .oidc-only-login {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
   }
 }

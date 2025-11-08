@@ -17,6 +17,14 @@ class Config:
     PASSWORD_FILE: ClassVar[str]
     HTTPS: ClassVar[bool]
     DOMAIN: ClassVar[str | None]
+    
+    # OIDC Configuration
+    OIDC_ENABLED: ClassVar[bool]
+    OIDC_WELL_KNOWN_URL: ClassVar[str]
+    OIDC_CLIENT_ID: ClassVar[str]
+    OIDC_CLIENT_SECRET: ClassVar[str]
+    OIDC_REDIRECT_URI: ClassVar[str]
+    OIDC_SCOPES: ClassVar[str]
 
     @classmethod
     def load(cls):
@@ -47,6 +55,14 @@ class Config:
             )
             cls.HTTPS = os.getenv("HTTPS", "false").lower() == "true"
             cls.DOMAIN = os.getenv("DOMAIN")
+            
+            # OIDC Configuration
+            cls.OIDC_ENABLED = os.getenv("OIDC_ENABLED", "false").lower() == "true"
+            cls.OIDC_WELL_KNOWN_URL = os.getenv("OIDC_WELL_KNOWN_URL", "")
+            cls.OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID", "")
+            cls.OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
+            cls.OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "")
+            cls.OIDC_SCOPES = os.getenv("OIDC_SCOPES", "openid profile email")
 
 
 Config.load()
