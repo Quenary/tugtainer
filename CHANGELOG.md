@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/Quenary/tugtainer/compare/v1.5.3...v1.6.0) (2025-11-08)
+
+
+### Features
+
+* OIDC authentication ([#33](https://github.com/Quenary/tugtainer/issues/33)) ([af45323](https://github.com/Quenary/tugtainer/commit/af4532302aec8d18945ec5dc7c47a78c142b9a21))
+
 ## [1.5.3](https://github.com/Quenary/tugtainer/compare/v1.5.2...v1.5.3) (2025-11-04)
 
 
