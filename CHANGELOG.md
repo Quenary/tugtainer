@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/Quenary/tugtainer/compare/v1.6.0...v1.7.0) (2025-11-08)
+
+
+### Features
+
+* **ci:** linux/arm/v7 support ([a2ec7ca](https://github.com/Quenary/tugtainer/commit/a2ec7cab97743a6884a2efb9a28db7f8aa929dc9))
+
 # [1.6.0](https://github.com/Quenary/tugtainer/compare/v1.5.3...v1.6.0) (2025-11-08)
 
 
