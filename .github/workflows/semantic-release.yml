@@ -173,7 +173,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.app
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
@@ -195,7 +195,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.agent
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
             ${{ env.AGENT_IMAGE_NAME }}:${{ env.VERSION }}
@@ -210,4 +210,5 @@ jobs:
             org.opencontainers.image.version=${{ env.VERSION }}
             org.opencontainers.image.created=${{ github.run_started_at }}
             org.opencontainers.image.revision=${{ github.sha }}
+
             org.opencontainers.image.licenses=MIT
