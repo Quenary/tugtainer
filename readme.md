@@ -123,6 +123,14 @@ Automatic updates are disabled by default. You can choose only what you need.
   - **Other possible participants** receives an **action based on your selection in the UI**. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked for auto-update** and there is **new image** for it, **it will also be updated**. Otherwise, **participant** will not be updated even if there is a new image for it.
   - _Actual process_
 
+## Auth
+
+The app uses password authorization by default. The password is stored in the file in encrypted form.
+
+Auth cookies are not domain-specific and not https only, but you can change this using env variables.
+
+Starting with v1.6.0, you can use the OpenID Connect provider instead of password. This can also be configured using env variables.
+
 ## Env:
 
 Environment variables are not required, but you can still define some. There is [.env.example](/.env.example) containing list of vars with description.
