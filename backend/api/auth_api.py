@@ -92,6 +92,16 @@ def is_password_set() -> bool:
 
 
 @router.get(
+    path="/oidc_auto_redirect",
+    description="Check if OIDC auto redirect is enabled",
+    response_model=bool,
+)
+async def oidc_auto_redirect() -> bool:
+    from backend.config import Config
+    return Config.OIDC_AUTO_REDIRECT
+
+
+@router.get(
     path="/{provider}/login", description="Login with provider"
 )
 async def provider_login(
