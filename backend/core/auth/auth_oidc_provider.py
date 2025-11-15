@@ -229,7 +229,7 @@ class AuthOidcProvider(AuthProvider):
         try:
             # Manually build the authorization URL
             auth_endpoint = discovery_doc["authorization_endpoint"]
-            scopes = " ".join(config["scopes"])
+            scopes = config["scopes"]
 
             params = {
                 "client_id": config["client_id"],
