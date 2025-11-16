@@ -117,7 +117,9 @@
       "UPDATED_AT": "Last update",
       "UPDATE": "Update",
       "CHECK": "Check",
-      "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process."
+      "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process.",
+      "PROTECTED": "Protected",
+      "PROTECTED_CONTAINER_HINT": "This container labeled with com.quenary.tugtainer.protected and cannot be updated from the app."
     }
   },
   "IMAGES": {

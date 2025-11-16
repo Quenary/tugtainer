@@ -6,12 +6,17 @@ from python_on_whales.components.container.models import (
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-from backend.helpers.self_container import is_self_container
+from backend.core.container.util.is_protected_container import (
+    is_protected_container,
+)
 from backend.db.models import ContainersModel
 import uuid
-
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
+)
+from backend.const import (
+    TUGTAINER_DEPENDS_ON_LABEL,
+    DOCKER_COMPOSE_DEPENDS_ON_LABEL,
 )
 
 
@@ -31,6 +36,10 @@ class ContainerGroupItem:
 
     container: ContainerInspectResult
     action: Literal["update", "check", None]
+    protected: bool  # container marked with com.quenary.tugtainer.protected, so it cannot be stopped and updated
+    service_name: str | None  # docker compose service name
+    compose_deps: list[str]  # docker compose dependencies
+    tugtainer_deps: list[str]  # tugtainer dependencies
     available: bool = False
     image_spec: str | None = None
     config: CreateContainerRequestBodySchema | None = None
@@ -54,12 +63,10 @@ class ContainerGroup:
     where list is in order of dependency,
     first is most dependable and last is most dependant.
     :param name: name of the group
-    :param is_self: is group with self container
     :param containers: list of associated containers
     """
 
     name: str
-    is_self: bool
     containers: list[ContainerGroupItem]
 
 
@@ -67,30 +74,32 @@ def _get_group_name(c: ContainerInspectResult) -> str:
     """
     Get container's group name.
     If container is a part of compose project, it will be extracted from labels.
-    If not, container name is used.
+    If not, uuid will be used.
     """
     labels = c.config.labels if c.config and c.config.labels else {}
     proj = labels.get("com.docker.compose.project", "")
     fil = labels.get("com.docker.compose.project.config_files", "")
     if proj or fil:
         return f"{proj}:{fil}"
-    return c.name if c.name else str(uuid.uuid4())
+    return str(uuid.uuid4())
 
 
-def _get_service_name(container: ContainerInspectResult) -> str:
-    """Extract service name from labels"""
+def _get_service_name(
+    container: ContainerInspectResult,
+) -> str | None:
+    """Extract service name from compose label."""
     labels = (
         container.config.labels
         if container.config and container.config.labels
         else {}
     )
-    return labels.get(
-        "com.docker.compose.service", container.name or ""
-    )
+    return labels.get("com.docker.compose.service", None)
 
 
-def _get_dependencies(container: ContainerInspectResult) -> list[str]:
-    """Get list of dependencies from labels"""
+def _get_dependencies(
+    container: ContainerInspectResult, label: str
+) -> list[str]:
+    """Get list of dependencies from label"""
     labels: dict[str, str] = (
         container.config.labels
         if container.config and container.config.labels
@@ -98,18 +107,18 @@ def _get_dependencies(container: ContainerInspectResult) -> list[str]:
     )
 
     # E.g. "service1:condition:value,service2:condition:value"
-    depends_on_label: str = labels.get(
-        "com.docker.compose.depends_on", ""
-    )
+    depends_on_label: str = labels.get(label, "")
 
     if not depends_on_label:
         return []
 
     dependencies: list[str] = []
     for dep in depends_on_label.split(","):
-        parts = dep.split(":")  # first part is service name
+        parts = dep.strip().split(":")  # first part is service name
         if parts:
-            dependencies.append(parts[0])
+            name = parts[0].strip()
+            if name:
+                dependencies.append(name)
 
     return dependencies
 
@@ -121,45 +130,60 @@ def _sort_containers_by_dependencies(
     Sort containers so that those on which others depend come first.
     Use the com.docker.compose.depends_on label, if present.
     """
-    cont_map: dict[str, ContainerGroupItem] = (
-        {}
-    )  # map service name to container
-    deps_map: dict[str, list[str]] = (
-        {}
-    )  # map service name to dependencies
 
+    def _sort(
+        c_map: dict[str, ContainerGroupItem],
+        d_map: dict[str, list[str]],
+    ) -> list[ContainerGroupItem]:
+        """
+        Sort with maps
+        :param c_map: map key (name or service name) to container
+        :param d_map: map key (name or service name) to dependencies
+        """
+        visited: set[str] = set()
+        result: list[ContainerGroupItem] = []
+
+        def visit(key: str) -> None:
+            if key in visited:
+                return
+            visited.add(key)
+            # Check all dependencies first
+            for dep in d_map[key]:
+                if dep in c_map:
+                    visit(dep)
+            # Then add current service
+            if key in c_map:
+                result.append(c_map[key])
+
+        for k in c_map:
+            visit(k)
+        return result
+
+    # By custom labels, key is container name
+    custom_c_map: dict[str, ContainerGroupItem] = {}
+    custom_d_map: dict[str, list[str]] = {}
     for c in containers:
-        cont = c.container
-        service_name = _get_service_name(cont)
-        cont_map[service_name] = c
-        deps_map[service_name] = _get_dependencies(cont)
+        key = c.name
+        custom_c_map[key] = c
+        custom_d_map[key] = c.tugtainer_deps
+    res1 = _sort(custom_c_map, custom_d_map)
 
-    visited: set[str] = set()
-    result: list[ContainerGroupItem] = []
+    # By compose labels, key is service name
+    compose_c_map: dict[str, ContainerGroupItem] = {}
+    compose_d_map: dict[str, list[str]] = {}
+    for c in res1:
+        key = c.service_name or c.name
+        compose_c_map[key] = c
+        compose_d_map[key] = c.compose_deps
+    res2 = _sort(compose_c_map, compose_d_map)
 
-    def visit(service: str) -> None:
-        if service in visited:
-            return
-        visited.add(service)
-
-        # Check all dependencies first
-        for dep in deps_map[service]:
-            if dep in cont_map:
-                visit(dep)
-
-        # Then add current service
-        if service in cont_map:
-            result.append(cont_map[service])
-
-    for service in cont_map:
-        visit(service)
-
-    return result
+    return res2
 
 
 def _get_action(
     db_item: ContainersModel | None,
 ) -> Literal["update", "check", None]:
+    """Get action from db"""
     if db_item and db_item.check_enabled:
         return "update" if db_item.update_enabled else "check"
     return None
@@ -171,6 +195,23 @@ def _get_db_item(
     return next(
         (item for item in items if item.name == c.name),
         None,
+    )
+
+
+def _get_container_group_item(
+    c: ContainerInspectResult, c_db: ContainersModel
+) -> ContainerGroupItem:
+    return ContainerGroupItem(
+        container=c,
+        action=_get_action(c_db),
+        protected=is_protected_container(c),
+        service_name=_get_service_name(c),
+        compose_deps=_get_dependencies(
+            c, DOCKER_COMPOSE_DEPENDS_ON_LABEL
+        ),
+        tugtainer_deps=_get_dependencies(
+            c, TUGTAINER_DEPENDS_ON_LABEL
+        ),
     )
 
 
@@ -188,38 +229,47 @@ def get_container_group(
     :param update: force update flag (for manual update, ignores selection)
     :returns: group of containers which contains target
     """
-    if is_self_container(target):
-        target_item = ContainerGroupItem(
-            container=target, action="check"
-        )
-        return ContainerGroup(
-            name="self_container",
-            containers=[target_item],
-            is_self=True,
-        )
     target_c_gn = _get_group_name(target)
     target_db_item = _get_db_item(target, containers_db)
     action = _get_action(target_db_item)
     if update:
         action = "update"
-    target_item = ContainerGroupItem(container=target, action=action)
+    t_compose_deps = _get_dependencies(
+        target, DOCKER_COMPOSE_DEPENDS_ON_LABEL
+    )
+    t_tugtainer_deps = _get_dependencies(
+        target, TUGTAINER_DEPENDS_ON_LABEL
+    )
+    target_item = ContainerGroupItem(
+        container=target,
+        action=action,
+        protected=is_protected_container(target),
+        service_name=_get_service_name(target),
+        compose_deps=t_compose_deps,
+        tugtainer_deps=t_tugtainer_deps,
+    )
     group = ContainerGroup(
         name=target_c_gn,
         containers=[target_item],
-        is_self=False,
     )
     others = [
         item
         for item in containers
-        if not is_self_container(item) and item != target
+        if item != target and item.name != target.name
     ]
     for c in others:
+        # For containers from the same compose project the group name will be the same.
         c_gn = _get_group_name(c)
-        if c_gn == target_c_gn:
+        c_tugtainer_deps = _get_dependencies(
+            c, TUGTAINER_DEPENDS_ON_LABEL
+        )
+        if (
+            c_gn == target_c_gn
+            or c.name in t_tugtainer_deps
+            or target.name in c_tugtainer_deps
+        ):
             c_db = _get_db_item(c, containers_db)
-            item = ContainerGroupItem(
-                container=c, action=_get_action(c_db)
-            )
+            item = _get_container_group_item(c, c_db)
             group.containers.append(item)
 
     group.containers = _sort_containers_by_dependencies(
@@ -234,34 +284,69 @@ def get_containers_groups(
 ) -> dict[str, ContainerGroup]:
     """
     Get all container groups for further processing,
-    where list is in order of dependency,
+    where list of containers is in order of dependency,
     first is most dependable and last is most dependant.
     :param containers: list of all host's containers
-    :param containers_db: list of  all host's container's db data
+    :param containers_db: list of all host's container's db data
     """
     groups: dict[str, ContainerGroup] = {}
 
     for c in containers:
-        if is_self_container(c):
-            item = ContainerGroupItem(container=c, action="check")
-            groups["self_container"] = ContainerGroup(
-                name="self_container", containers=[item], is_self=True
-            )
-            continue
-
         db_item = _get_db_item(c, containers_db)
-        action = _get_action(db_item)
-        item = ContainerGroupItem(container=c, action=action)
+        item = _get_container_group_item(c, db_item)
 
+        # For containers from the same compose project the group name will be the same.
         c_gn = _get_group_name(c)
         group = groups.get(c_gn, None)
         if not group:
             group = ContainerGroup(
-                name=c_gn, containers=[], is_self=False
+                name=c_gn,
+                containers=[],
             )
             groups[c_gn] = group
         group.containers.append(item)
 
+    # Add custom dependencies to groups
     for g in groups.values():
+        g_tugtainer_deps: set[str] = {
+            s for item in g.containers for s in item.tugtainer_deps
+        }
+        g_conts: set[str] = {item.name for item in g.containers}
+        dep_conts = [
+            c
+            for c in containers
+            if c.name not in g_conts and c.name in g_tugtainer_deps
+        ]
+        for c in dep_conts:
+            db_item = _get_db_item(c, containers_db)
+            item = _get_container_group_item(c, db_item)
+            g.containers.append(item)
+
+    # Filter only unique groups
+    group_items: list[tuple[frozenset[str], ContainerGroup]] = []
+    for g in groups.values():
+        cont_set = frozenset[str](item.name for item in g.containers)
+        group_items.append((cont_set, g))
+    # Removing same groups
+    unique_by_set: dict[frozenset[str], ContainerGroup] = {}
+    for cont_set, g in group_items:
+        if cont_set not in unique_by_set:
+            unique_by_set[cont_set] = g
+    # Back to list
+    group_items = list(unique_by_set.items())
+    # Removing groups whose containers are a subset of another group
+    unique_groups: list[ContainerGroup] = []
+    for i, (s1, g1) in enumerate(group_items):
+        is_subset = False
+        for j, (s2, g2) in enumerate(group_items):
+            if i != j and s1 < s2:  # Strict subset
+                is_subset = True
+                break
+        if not is_subset:
+            unique_groups.append(g1)
+
+    # Sorting
+    for g in unique_groups:
         g.containers = _sort_containers_by_dependencies(g.containers)
-    return groups
+
+    return {g.name: g for g in unique_groups}

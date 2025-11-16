@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-    # needs: check-tag # This job is not defined in the provided workflow
     if: github.event.inputs.tag != 'latest' && !startsWith(github.event.inputs.tag, 'v')
     runs-on: ubuntu-latest
     env:
@@ -52,6 +51,7 @@ jobs:
             org.opencontainers.image.created=${{ github.run_started_at }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=MIT
+            com.quenary.tugtainer.protected: True
 
       - name: Build and push agent image
         uses: docker/build-push-action@v5
@@ -72,3 +72,4 @@ jobs:
             org.opencontainers.image.created=${{ github.run_started_at }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=MIT
+            com.quenary.tugtainer.protected: True

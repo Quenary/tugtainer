@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel
 from python_on_whales.components.container.models import PortBinding
 
@@ -12,7 +12,7 @@ class ContainerGetResponseBody(BaseModel):
     status: str | None
     exit_code: int | None
     health: str | None
-    is_self: bool
+    protected: bool # Whether container labeled with com.quenary.tugtainer.protected
     host_id: int  # host id is also stored in db, but it must be always defined
     # Those keys stored in db, but might be undefined for new containers
     id: Optional[int] = None  # id of the row
