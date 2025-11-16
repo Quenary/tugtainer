@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/Quenary/tugtainer/compare/v1.7.0...v1.7.1) (2025-11-16)
+
+
+### Bug Fixes
+
+* **backend:** OIDC scope parameter bug ([7b302c7](https://github.com/Quenary/tugtainer/commit/7b302c7c1e468b28c8a3d06e2b299026f8d11fa1))
+
 # [1.7.0](https://github.com/Quenary/tugtainer/compare/v1.6.0...v1.7.0) (2025-11-08)
 
 
