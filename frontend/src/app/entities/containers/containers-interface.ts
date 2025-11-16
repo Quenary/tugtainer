@@ -11,7 +11,7 @@ export interface IContainer {
   };
   status: EContainerStatus;
   health: string;
-  is_self: boolean;
+  protected: boolean;
   check_enabled: boolean;
   update_enabled: boolean;
   update_available: boolean;

@@ -99,29 +99,46 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 - ### Groups
 
-  Every check/update process performed by a group of containers. It's not some fancy term, but just that some containers will be grouped together. For now, this only applies to the valid compose projects. Containers with the same _'com.docker.compose.project'_ and _'com.docker.compose.project.config_files'_ label will be grouped and processed together. Otherwise, there will be a group of one container. In future, i plan to add custom dependency label or an UI setting to link containers together (even if they are not in the same project).
+  Every check/update process performed by a group of containers.
 
-- ### Actual process
+  - Containers from the same **compose project** (same **com.docker.compose.project** and **com.docker.compose.project.config_files** labels) will end up in the same group.
 
-  - **Image pull** performed for containers marked for **check**;
-  - If there are a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
-  - After that, all containers in the group are stopped in **order from most dependent**;
-  - Then, **in reverse order** (from most dependable):
-    - Updatable containers being recreated and started;
-    - Non-updatable containers being started;
+  - Containers labeled with [dev.quenary.tugtainer.depends_on](#custom-labels) will end up in a group with listed containers.
+
+  - Otherwise, there will be a group of one container.
 
 - ### Scheduled:
 
   - For each **host defined in the UI**, the check/update process starts at time specified in the settings;
   - All containers of the host are distributed among **groups**;
   - Each container in the group receives an **action based on your selection in the UI** (check/update/none);
-  - _Actual process_
+  - [_Actual process_](#actual-process)
 
 - ### Click of check/update button:
-  - **The container** (and **possible participants** from compose) added to a group;
+
+  - **The container** (and **possible participants**) added to a group;
   - **The container** receives an action based on the button you've clicked (check or update);
   - **Other possible participants** receives an **action based on your selection in the UI**. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked for auto-update** and there is **new image** for it, **it will also be updated**. Otherwise, **participant** will not be updated even if there is a new image for it.
-  - _Actual process_
+  - [_Actual process_](#actual-process)
+
+- ### Actual process
+
+  - **Image pull** performed for containers marked for **check**;
+  - If there is a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
+  - After that, all containers in the group are stopped in **order from most dependent**;
+  - Then, **in reverse order** (from most dependable):
+    - Updatable containers being recreated and started;
+    - Non-updatable containers being started;
+
+## Custom labels:
+
+- dev.quenary.tugtainer.protected=true
+
+  This label indicates that the container cannot be stopped. This means that even if there is a new image for the container, it cannot be updated from the app. This label is primarily used for **tugtainer** itself and **tugtainer-agent**, as well as for **socket-proxy** in the provided docker-compose files.
+
+- dev.quenary.tugtainer.depends_on="my_postgres,my_redis"
+
+  This label is an alternative to the docker compoes label. It allows you to declare that a container depends on another container, even if they are not in the same compose project. List of container names, separated by commas.
 
 ## Auth
 

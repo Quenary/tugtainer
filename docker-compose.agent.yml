@@ -27,6 +27,8 @@ services:
       - /run
     networks:
       - tugtainer_agent
+    labels:
+      dev.quenary.tugtainer.protected: True
   agent:
     depends_on:
       - socket-proxy
@@ -48,3 +50,5 @@ services:
       - tugtainer_agent
     ports:
       - '9413:8001'
+    labels:
+      dev.quenary.tugtainer.protected: True

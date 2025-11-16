@@ -44,7 +44,7 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
   }
 
   progress<T extends IContainerCheckData>(cache_id: string): Observable<T> {
-    return this.httpClient.get<T>(`${this.basePath}/progress/${cache_id}`);
+    return this.httpClient.get<T>(`${this.basePath}/progress`, { params: { cache_id } });
   }
 
   isUpdateAvailableSelf(): Observable<boolean> {

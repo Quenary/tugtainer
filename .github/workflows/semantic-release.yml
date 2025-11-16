@@ -189,6 +189,7 @@ jobs:
             org.opencontainers.image.created=${{ github.run_started_at }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=MIT
+            dev.quenary.tugtainer.protected=true
 
       - name: Build and push agent image
         uses: docker/build-push-action@v5
@@ -210,5 +211,5 @@ jobs:
             org.opencontainers.image.version=${{ env.VERSION }}
             org.opencontainers.image.created=${{ github.run_started_at }}
             org.opencontainers.image.revision=${{ github.sha }}
-
             org.opencontainers.image.licenses=MIT
+            dev.quenary.tugtainer.protected=true

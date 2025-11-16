@@ -54,6 +54,7 @@ from shared.schemas.image_schemas import (
     PullImageRequestBodySchema,
     TagImageRequestBodySchema,
 )
+from backend.const import TUGTAINER_PROTECTED_LABEL
 
 # Allowed cache statuses for further processing
 _ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
@@ -181,6 +182,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             and gc.old_image
             and gc.new_image
             and gc.action == "update"
+            and not gc.protected
         )
 
     async def on_stop_fail():
@@ -220,7 +222,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         len([item for item in group.containers if will_update(item)])
         > 0
     )
-    if not update or group.is_self or not any_for_update:
+    if not update or not any_for_update:
         result.available = _get_shrinked_containers(
             [
                 item.container
@@ -239,8 +241,19 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     logging.info("Starting to update a group...")
     CACHE.update({"status": ECheckStatus.UPDATING})
 
+    protected_containers = [
+        gc for gc in group.containers if gc.protected
+    ]
+    for gc in protected_containers:
+        logging.info(
+            f"Container {gc.name} labeled with {TUGTAINER_PROTECTED_LABEL} and will be skipped."
+        )
+
     # Starting from most dependent
     for gc in group.containers[::-1]:
+        # Skipping protected containers
+        if gc.protected:
+            continue
         # Getting configs for all containers
         try:
             logging.info(
@@ -277,6 +290,9 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     # If True, the following updates will not be processed.
     any_failed: bool = False
     for gc in group.containers:
+        # Skipping protected containers
+        if gc.protected:
+            continue
         c_name = gc.name
         # Updating container
         if will_update(gc) and not any_failed:

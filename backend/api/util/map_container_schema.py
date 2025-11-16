@@ -1,12 +1,14 @@
-from typing import cast
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from backend.db.models import ContainersModel
 from backend.schemas import ContainerGetResponseBody
-from backend.helpers.self_container import is_self_container
-from python_on_whales import Container
-from backend.core.container.util import get_container_health_status_str
+from backend.core.container.util import (
+    get_container_health_status_str,
+)
+from backend.core.container.util.is_protected_container import (
+    is_protected_container,
+)
 
 
 def map_container_schema(
@@ -34,7 +36,7 @@ def map_container_schema(
         status=d_cont.state.status if d_cont.state else None,
         exit_code=d_cont.state.exit_code if d_cont.state else None,
         health=get_container_health_status_str(d_cont),
-        is_self=is_self_container(d_cont),
+        protected=is_protected_container(d_cont),
         host_id=host_id,
     )
     if db_cont:

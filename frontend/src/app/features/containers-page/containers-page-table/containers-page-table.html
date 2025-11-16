@@ -127,6 +127,22 @@
             [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
           />
           {{ container.name }}
+          @if (container.protected) {
+            <p-tag
+              severity="warn"
+              icon="pi pi-lock"
+              [value]="'CONTAINERS.TABLE.PROTECTED' | translate"
+              [pTooltip]="'CONTAINERS.TABLE.PROTECTED_CONTAINER_HINT' | translate"
+            >
+            </p-tag>
+          }
+          @if (container.update_available) {
+            <p-tag
+              severity="success"
+              icon="pi pi-check-circle"
+              [value]="'CONTAINERS.TABLE.UPDATE_AVAILABLE' | translate"
+            ></p-tag>
+          }
         </span>
       </td>
       <td>
@@ -146,20 +162,18 @@
         ></p-tag>
       </td>
       <td>
-        @if (!container.is_self) {
-          <p-togglebutton
-            severity="success"
-            [ngModel]="container.check_enabled"
-            (ngModelChange)="onCheckEnabledChange($event, container)"
-            [onLabel]="'GENERAL.ON' | translate"
-            [offLabel]="'GENERAL.OFF' | translate"
-            [onIcon]="'pi pi-check-circle'"
-            [offIcon]="'pi pi-circle-off'"
-          />
-        }
+        <p-togglebutton
+          severity="success"
+          [ngModel]="container.check_enabled"
+          (ngModelChange)="onCheckEnabledChange($event, container)"
+          [onLabel]="'GENERAL.ON' | translate"
+          [offLabel]="'GENERAL.OFF' | translate"
+          [onIcon]="'pi pi-check-circle'"
+          [offIcon]="'pi pi-circle-off'"
+        />
       </td>
       <td>
-        @if (!container.is_self) {
+        @if (!container.protected) {
           <p-togglebutton
             [disabled]="!container.check_enabled"
             [ngModel]="container.update_enabled"
@@ -172,30 +186,28 @@
         }
       </td>
       <td>
-        @if (!container.is_self) {
-          @if (container.update_available) {
-            <p-button
-              [loading]="
-                container.checkStatus &&
-                container.checkStatus !== ECheckStatus.DONE &&
-                container.checkStatus !== ECheckStatus.ERROR
-              "
-              [label]="'CONTAINERS.TABLE.UPDATE' | translate"
-              severity="success"
-              (onClick)="checkContainer(container.name, true)"
-            ></p-button>
-          } @else {
-            <p-button
-              [loading]="
-                container.checkStatus &&
-                container.checkStatus !== ECheckStatus.DONE &&
-                container.checkStatus !== ECheckStatus.ERROR
-              "
-              [label]="'CONTAINERS.TABLE.CHECK' | translate"
-              (onClick)="checkContainer(container.name, false)"
-            ></p-button>
-          }
-        }
+        <p-button-group>
+          <p-button
+            [loading]="
+              container.checkStatus &&
+              container.checkStatus !== ECheckStatus.DONE &&
+              container.checkStatus !== ECheckStatus.ERROR
+            "
+            [label]="'CONTAINERS.TABLE.CHECK' | translate"
+            (onClick)="checkContainer(container.name, false)"
+          ></p-button>
+          <p-button
+            [loading]="
+              container.checkStatus &&
+              container.checkStatus !== ECheckStatus.DONE &&
+              container.checkStatus !== ECheckStatus.ERROR
+            "
+            [disabled]="container.protected || !container.update_available"
+            [label]="'CONTAINERS.TABLE.UPDATE' | translate"
+            severity="success"
+            (onClick)="checkContainer(container.name, true)"
+          ></p-button>
+        </p-button-group>
       </td>
     </tr>
 
