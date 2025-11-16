@@ -156,7 +156,7 @@ async def check_container_ep(
 
 
 @router.get(
-    path="/progress/{cache_id}",
+    path="/progress",
     description="Get progress of general check",
     response_model=AllCheckData
     | HostCheckData
