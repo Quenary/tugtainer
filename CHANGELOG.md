@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/Quenary/tugtainer/compare/v1.7.1...v1.8.0) (2025-11-16)
+
+
+### Features
+
+* custom labels (protected, depends_on) ([#59](https://github.com/Quenary/tugtainer/issues/59)) ([c27a5dd](https://github.com/Quenary/tugtainer/commit/c27a5dd530bd6dfe0ffbee09cc02da2ab9b3502e)), closes [#41](https://github.com/Quenary/tugtainer/issues/41) [#5](https://github.com/Quenary/tugtainer/issues/5)
+
 ## [1.7.1](https://github.com/Quenary/tugtainer/compare/v1.7.0...v1.7.1) (2025-11-16)
 
 
