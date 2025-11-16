@@ -5,7 +5,7 @@ from backend.const import TUGTAINER_PROTECTED_LABEL
 
 
 def is_protected_container(container: ContainerInspectResult) -> bool:
-    """Whether container labeled with com.quenary.tugtainer.protected=true"""
+    """Whether container labeled with dev.quenary.tugtainer.protected=true"""
     return bool(
         container.config
         and container.config.labels

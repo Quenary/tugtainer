@@ -103,7 +103,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 
   - Containers from the same **compose project** (same **com.docker.compose.project** and **com.docker.compose.project.config_files** labels) will end up in the same group.
 
-  - Containers labeled with [com.quenary.tugtainer.depends_on](#custom-labels) will end up in a group with listed containers.
+  - Containers labeled with [dev.quenary.tugtainer.depends_on](#custom-labels) will end up in a group with listed containers.
 
   - Otherwise, there will be a group of one container.
 
@@ -132,11 +132,11 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 ## Custom labels:
 
-- com.quenary.tugtainer.protected=true
+- dev.quenary.tugtainer.protected=true
 
   This label indicates that the container cannot be stopped. This means that even if there is a new image for the container, it cannot be updated from the app. This label is primarily used for **tugtainer** itself and **tugtainer-agent**, as well as for **socket-proxy** in the provided docker-compose files.
 
-- com.quenary.tugtainer.depends_on="my_postgres,my_redis"
+- dev.quenary.tugtainer.depends_on="my_postgres,my_redis"
 
   This label is an alternative to the docker compoes label. It allows you to declare that a container depends on another container, even if they are not in the same compose project. List of container names, separated by commas.
 

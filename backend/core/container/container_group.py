@@ -36,7 +36,7 @@ class ContainerGroupItem:
 
     container: ContainerInspectResult
     action: Literal["update", "check", None]
-    protected: bool  # container marked with com.quenary.tugtainer.protected, so it cannot be stopped and updated
+    protected: bool  # Whether container labeled with dev.quenary.tugtainer.protected=true, so it cannot be stopped and updated
     service_name: str | None  # docker compose service name
     compose_deps: list[str]  # docker compose dependencies
     tugtainer_deps: list[str]  # tugtainer dependencies

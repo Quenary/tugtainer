@@ -12,7 +12,7 @@ class ContainerGetResponseBody(BaseModel):
     status: str | None
     exit_code: int | None
     health: str | None
-    protected: bool # Whether container labeled with com.quenary.tugtainer.protected
+    protected: bool # Whether container labeled with dev.quenary.tugtainer.protected=true
     host_id: int  # host id is also stored in db, but it must be always defined
     # Those keys stored in db, but might be undefined for new containers
     id: Optional[int] = None  # id of the row
