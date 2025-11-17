@@ -3,7 +3,17 @@ import { Router, RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthApiService } from './entities/auth/auth-api.service';
-import { catchError, debounceTime, finalize, map, Observable, of, retry, startWith } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  finalize,
+  map,
+  Observable,
+  of,
+  retry,
+  startWith,
+  switchMap,
+} from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
 import { AsyncPipe } from '@angular/common';
@@ -53,37 +63,40 @@ export class App {
     retry({ count: 1, delay: 500 }),
     catchError(() => of(false)),
   );
-  public readonly menuItems$: Observable<MenuItem[]> = this.translateService.get('MENU').pipe(
-    map((translates) => {
-      return <MenuItem[]>[
-        {
-          label: translates.HOSTS,
-          routerLink: '/hosts',
-          icon: 'pi pi-server',
-        },
-        {
-          label: translates.CONTAINERS,
-          routerLink: '/containers',
-          icon: 'pi pi-box',
-        },
-        {
-          label: translates.IMAGES,
-          routerLink: '/images',
-          icon: 'pi pi-file',
-        },
-        {
-          label: translates.SETTINGS,
-          routerLink: '/settings',
-          icon: 'pi pi-cog',
-        },
-        {
-          label: translates.GITHUB,
-          url: 'https://github.com/Quenary/tugtainer',
-          target: '_blank',
-          icon: 'pi pi-github',
-        },
-      ];
-    }),
+  public readonly menuItems$: Observable<MenuItem[]> = this.translateService.onLangChange.pipe(
+    startWith({}),
+    switchMap(() => this.translateService.get('MENU')),
+    map(
+      (t) =>
+        <MenuItem[]>[
+          {
+            label: t.HOSTS,
+            routerLink: '/hosts',
+            icon: 'pi pi-server',
+          },
+          {
+            label: t.CONTAINERS,
+            routerLink: '/containers',
+            icon: 'pi pi-box',
+          },
+          {
+            label: t.IMAGES,
+            routerLink: '/images',
+            icon: 'pi pi-file',
+          },
+          {
+            label: t.SETTINGS,
+            routerLink: '/settings',
+            icon: 'pi pi-cog',
+          },
+          {
+            label: t.GITHUB,
+            url: 'https://github.com/Quenary/tugtainer',
+            target: '_blank',
+            icon: 'pi pi-github',
+          },
+        ],
+    ),
   );
   public readonly menuOpened = signal<boolean>(false);
 

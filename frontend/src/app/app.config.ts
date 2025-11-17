@@ -16,7 +16,7 @@ import Aura from '@primeuix/themes/aura';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
-import { DynamicImportTranslationLoader } from './core/services/dynamic-import-translation-loader.service';
+import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -44,8 +44,9 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
     provideTranslateService({
-      loader: provideTranslateLoader(DynamicImportTranslationLoader),
+      loader: provideTranslateLoader(SlickTranslationLoader),
       fallbackLang: 'en',
+      lang: navigator.language,
     }),
     {
       provide: LOCALE_ID,
