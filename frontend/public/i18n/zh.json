@@ -1,0 +1,165 @@
+{
+  "GENERAL": {
+    "TITLE": "Tugtainer",
+    "SAVE": "保存",
+    "ADD": "添加",
+    "CONFIRM": "确认",
+    "CANCEL": "取消",
+    "CLOSE": "关闭",
+    "DELETE": "删除",
+    "ENABLED": "已启用",
+    "DISABLED": "已禁用",
+    "ON": "开",
+    "OFF": "关",
+    "SUCCESS": "成功",
+    "ERROR": "错误",
+    "IN_PROGRESS": "进行中",
+    "REFRESH": "刷新"
+  },
+  "LOGO": {
+    "0": "Tug",
+    "1": "tainer"
+  },
+  "NAV": {
+    "AUTH": "Tugtainer. 授权",
+    "HOSTS": "Tugtainer. 主机",
+    "CONTAINERS": "Tugtainer. 容器",
+    "IMAGES": "Tugtainer. 镜像",
+    "SETTINGS": "Tugtainer. 设置"
+  },
+  "MENU": {
+    "HOSTS": "主机",
+    "CONTAINERS": "容器",
+    "IMAGES": "镜像",
+    "SETTINGS": "设置",
+    "GITHUB": "GitHub",
+    "UPDATE": "有可用更新",
+    "UPDATE_NOTES": [
+      "由于容器限制，它无法从自身更新。",
+      "您可以手动更新它，例如从 Portainer 更新。",
+      "详细说明请参见 GitHub。"
+    ]
+  },
+  "AUTH": {
+    "PASSWORD": "密码",
+    "CONFIRM_PASSWORD": "确认密码",
+    "SIGNIN": "登录",
+    "PASSWORD_PROMPT": "设置密码",
+    "PASSWORD_STRENGTH": {
+      "WEAK": "太简单",
+      "MEDIUM": "中等复杂度",
+      "STRONG": "复杂密码"
+    },
+    "PASSWORD_HINTS": ["至少一个小写字母", "至少一个大写字母", "至少一个数字"],
+    "OR": "或",
+    "LOGIN_WITH_OIDC": "使用 OIDC 登录"
+  },
+  "HOSTS": {
+    "NO_HOSTS_FOUND": "未找到主机",
+    "TABLE": {
+      "SEARCH_PLACEHOLDER": "ID、名称、URL",
+      "ADD": "添加主机",
+      "NAME": "名称",
+      "URL": "Agent 地址",
+      "STATUS": "状态",
+      "STATUS_OK": "正常",
+      "STATUS_ERROR": "错误"
+    },
+    "CARD": {
+      "DELETE_CONFIRM": "您要删除这个主机吗？",
+      "HELP": {
+        "LABEL": "帮助",
+        "TEXT": [
+          "如果您没有将 docker socket (docker.sock) 直接挂载到容器中，则需要 DOCKER_HOST 环境变量，您可以在 docker-compose 或 docker 命令中设置它。",
+          "对于 Tugtainer 主实例，代理地址默认为 http://127.0.0.1:8001，密钥默认为空 (undefined)，您可以使用 AGENT_SECRET 环境变量来更改它。",
+          "对于远程主机，您必须部署 Tugtainer 代理 (quenary/tugtainer-agent) 并在相应字段中使用其地址和密钥。"
+        ],
+        "HELP_BTN": "部署指南"
+      },
+      "GENERAL": {
+        "LABEL": "常规",
+        "ID": "ID",
+        "NAME": "名称",
+        "ENABLED": "启用",
+        "PRUNE": "清理",
+        "PRUNE_HINT": "在计划任务执行后启用自动清理镜像。",
+        "URL": "Agent 地址",
+        "URL_PLACEHOLDER": "http://127.0.0.1:8001",
+        "SECRET": "Agent 密钥",
+        "TIMEOUT": "Agent 超时",
+        "TIMEOUT_HINT": "通常快速的 agent 请求的超时时间（秒）。它不影响可能较长的请求，如创建容器或拉取镜像。"
+      }
+    }
+  },
+  "CONTAINERS": {
+    "TABLE": {
+      "SEARCH_PLACEHOLDER": "名称或 ID",
+      "CHECK_ALL": "全部检查",
+      "CHECK_ALL_COMPLETED": "检查完成",
+      "HEADER_PROGRESS": {
+        "UPDATED": "已更新",
+        "AVAILABLE": "可更新",
+        "ROLLED_BACK": "已回滚",
+        "FAILED": "失败"
+      },
+      "NAME": "名称",
+      "CONTAINER_ID": "ID",
+      "IMAGE": "镜像",
+      "UPDATE_AVAILABLE": "有可用更新",
+      "STATUS": "状态",
+      "PORTS": "端口",
+      "HEALTH": "健康",
+      "CHECK_ENABLED": "检查",
+      "CHECK_HINT": "定期检查新镜像。",
+      "UPDATE_ENABLED": "更新",
+      "UPDATE_HINT": "检测到新镜像时自动更新容器。",
+      "CHECKED_AT": "上次检查",
+      "UPDATED_AT": "上次更新",
+      "UPDATE": "更新",
+      "CHECK": "检查",
+      "MAIN_BTN_HINT": "如果一个容器是 compose 项目的一部分，则该项目的容器都将参与该过程。",
+      "PROTECTED": "受保护",
+      "PROTECTED_CONTAINER_HINT": "此容器标记为 dev.quenary.tugtainer.protected，无法从此应用更新。"
+    }
+  },
+  "IMAGES": {
+    "TABLE": {
+      "PRUNE": "清理",
+      "PRUNE_CONFIRM": "您要清理镜像吗？",
+      "PRUNE_RESULT": "清理结果",
+      "SEARCH_PLACEHOLDER": "ID、仓库、标签",
+      "REPOSITORY": "仓库",
+      "ID": "ID",
+      "DANGLING": "悬空",
+      "UNUSED": "未使用",
+      "TAGS": "标签",
+      "SIZE": "大小",
+      "SIZE_UNIT": "MB",
+      "CREATED": "创建时间"
+    }
+  },
+  "SETTINGS": {
+    "VALUE": "值",
+    "SECTIONS": {
+      "CHANGE_PASSWORD": "修改密码",
+      "APP_SETTINGS": "应用设置"
+    },
+    "BY_KEY": {
+      "CRONTAB_EXPR": {
+        "LABEL": "Crontab 表达式",
+        "HINT": "用于定期检查的 Crontab 表达式，例如 \n'0 */1 * * *' 表示每小时一次\n\n点击了解更多信息。",
+        "LINK": "https://crontab.guru/"
+      },
+      "NOTIFICATION_URL": {
+        "LABEL": "通知 URL",
+        "HINT": "用于通过 Apprise 发送通知的 URL，例如 tgram://<token>/<chat_id>\n\n点击了解更多信息。",
+        "LINK": "https://pypi.org/project/apprise/",
+        "TEST": "发送测试通知"
+      },
+      "TIMEZONE": {
+        "LABEL": "时区",
+        "HINT": "IANA 格式的时区，例如 Asia/Shanghai"
+      }
+    }
+  }
+}
