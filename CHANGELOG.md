@@ -1,3 +1,15 @@
+# [1.9.0](https://github.com/Quenary/tugtainer/compare/v1.8.0...v1.9.0) (2025-11-17)
+
+
+### Bug Fixes
+
+* **frontend:** translations loading ([#61](https://github.com/Quenary/tugtainer/issues/61)) ([886ac9f](https://github.com/Quenary/tugtainer/commit/886ac9f982789e5309d68cc79c1fbb030f77a9d7)), closes [#57](https://github.com/Quenary/tugtainer/issues/57)
+
+
+### Features
+
+* **frontend:** Add Chinese translation ([#60](https://github.com/Quenary/tugtainer/issues/60)) [skip ci] ([bd09889](https://github.com/Quenary/tugtainer/commit/bd0988917957b8be7d984c9cf3cc3c49c07f88ac)), closes [#57](https://github.com/Quenary/tugtainer/issues/57)
+
 # [1.8.0](https://github.com/Quenary/tugtainer/compare/v1.7.1...v1.8.0) (2025-11-16)
 
 
