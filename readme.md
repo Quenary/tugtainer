@@ -1,19 +1,14 @@
 # Tugtainer is a self-hosted app for automating updates of your docker containers
 
-It's like well-known [watchtower](https://github.com/containrrr/watchtower), but with a web UI where you can change most of the settings or view the current state of the containers.
-
-<p align="center">
-<img src="resources/tugtainer-hosts-v1.2.3.png" width="90%">
-<img src="resources/tugtainer-containers-v1.2.3.png" width="30%">
-<img src="resources/tugtainer-images-v1.2.3.png" width="30%">
-<img src="resources/tugtainer-settings-v1.2.3.png" width="30%">
-</p>
+<img src="resources/social_preview.jpg" width="100%">
 
 Please be aware that the application is distributed as is and is not recommended for use in a production environment.
 
 And don't forget about regular backups of important data.
 
 Automatic updates are disabled by default. You can choose only what you need.
+
+[Screenshots](#screenshots)
 
 ## Main features:
 
@@ -25,7 +20,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 - Per-container config (check only or auto-update)
 - Manual check and update
 - Automatic/manual image pruning
-- Compose support (sort of, read Check/update section)
+- Linked containers support (compose and custom, see [check/update](#checkupdate-process) section)
 
 ## Deploy:
 
@@ -151,6 +146,15 @@ Starting with v1.6.0, you can use the OpenID Connect provider instead of passwor
 ## Env:
 
 Environment variables are not required, but you can still define some. There is [.env.example](/.env.example) containing list of vars with description.
+
+## Screenshots
+
+<p align="center">
+<img src="resources/tugtainer-hosts-v1.2.3.png" width="48%">
+<img src="resources/tugtainer-containers-v1.2.3.png" width="48%">
+<img src="resources/tugtainer-images-v1.2.3.png" width="48%">
+<img src="resources/tugtainer-settings-v1.2.3.png" width="48%">
+</p>
 
 ## Develop:
 
