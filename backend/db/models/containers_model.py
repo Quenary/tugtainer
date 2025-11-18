@@ -22,10 +22,10 @@ class ContainersModel(BaseModel):
     __tablename__ = "containers"
 
     id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, index=True, nullable=False
+        Integer, primary_key=True, nullable=False
     )
     host_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("hosts.id"), index=True, nullable=False
+        Integer, ForeignKey("hosts.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(
         String, index=True, nullable=False

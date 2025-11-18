@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   OnInit,
   signal,
@@ -69,6 +70,7 @@ export class HostsPageCard implements OnInit {
   private readonly translateService = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public readonly id = toSignal(
     this.activatedRoute.params.pipe(map((params) => Number(params.id) || null)),
@@ -86,6 +88,7 @@ export class HostsPageCard implements OnInit {
     return {
       enabled: true,
       prune: false,
+      prune_all: false,
       timeout: 5,
     };
   }
@@ -94,6 +97,7 @@ export class HostsPageCard implements OnInit {
     name: new FormControl<string>(null, [Validators.required]),
     enabled: new FormControl<boolean>(null, [Validators.required]),
     prune: new FormControl<boolean>(null, [Validators.required]),
+    prune_all: new FormControl<boolean>(null, [Validators.required]),
     url: new FormControl<string>(null, [Validators.required]),
     secret: new FormControl<string>(null),
     timeout: new FormControl<number>(null, [Validators.required]),
@@ -102,6 +106,17 @@ export class HostsPageCard implements OnInit {
   ngOnInit(): void {
     const id = this.id();
     this.getInfo(id);
+    this.form.controls.prune.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        const prune_all = this.form.controls.prune_all;
+        if (!value) {
+          prune_all.setValue(false);
+          prune_all.disable();
+        } else {
+          prune_all.enable();
+        }
+      });
   }
 
   private getInfo(id: number): void {

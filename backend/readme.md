@@ -21,4 +21,4 @@ PASSWORD_FILE=password_hash
 
 ### Migrations
 
-Do not forget to create new migrations on models change with `alembic revision --autogenerate -m "some column add to some table"`
+Do not forget to create new migrations on models change with `alembic -c backend/alembic.ini revision --autogenerate -m "..."`

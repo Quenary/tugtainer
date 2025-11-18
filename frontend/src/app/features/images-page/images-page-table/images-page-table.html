@@ -1,4 +1,41 @@
-<p-confirmpopup></p-confirmpopup>
+<p-confirmpopup #pruneConfirmPopup>
+  <ng-template
+    #content
+    let-message
+  >
+    <section
+      [ngStyle]="{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+      }"
+    >
+      <span>{{ message.message }}</span>
+      <span
+        [ngStyle]="{
+          display: 'inline-flex',
+          gap: '0.5rem',
+          alignItems: 'center',
+        }"
+      >
+        <p-toggle-switch
+          [(ngModel)]="pruneAll"
+          inputId="prune-all-confirm-toggle"
+        ></p-toggle-switch>
+        <label for="prune-all-confirm-toggle">
+          {{ 'IMAGES.TABLE.PRUNE_ALL' | translate }}
+          <i
+            class="pi pi-question-circle"
+            style="margin: 0 0.5rem"
+            [pTooltip]="'IMAGES.TABLE.PRUNE_ALL_HINT' | translate"
+            tooltipPosition="left"
+          ></i>
+        </label>
+      </span>
+    </section>
+  </ng-template>
+</p-confirmpopup>
+
 <p-table
   #dt2
   [globalFilterFields]="['id', 'repository', 'tags']"

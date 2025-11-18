@@ -55,10 +55,10 @@ async def get_list(
 
 @router.post(path="/{host_id}/prune", response_model=str)
 async def prune(
-    host_id: int, session: AsyncSession = Depends(get_async_session)
+    host_id: int,
+    body: PruneImagesRequestBodySchema,
+    session: AsyncSession = Depends(get_async_session),
 ) -> str:
     host = await get_host(host_id, session)
     client = HostsManager.get_host_client(host)
-    return await client.image.prune(
-        PruneImagesRequestBodySchema(all=True)
-    )
+    return await client.image.prune(body)
