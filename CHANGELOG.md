@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/Quenary/tugtainer/compare/v1.9.0...v1.10.0) (2025-11-18)
+
+
+### Features
+
+* --all flag for image prune ([#62](https://github.com/Quenary/tugtainer/issues/62)) ([151aca1](https://github.com/Quenary/tugtainer/commit/151aca139eb6496e7ae38b6817ffe54294a4953c)), closes [#22](https://github.com/Quenary/tugtainer/issues/22)
+
 # [1.9.0](https://github.com/Quenary/tugtainer/compare/v1.8.0...v1.9.0) (2025-11-17)
 
 
