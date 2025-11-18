@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "agent",
+      "command": "source .venv/bin/activate && python -m agent.dev",
+      "type": "shell"
+    },
+    {
+      "label": "backend",
+      "command": "source .venv/bin/activate && python -m backend.dev",
+      "type": "shell"
+    },
+    {
+      "label": "frontend",
+      "command": "cd frontend && npm start",
+      "type": "shell"
+    },
+    {
+      "label": "Dev Runner",
+      "dependsOn": ["agent", "backend", "frontend"],
+      "runOptions": { "runOn": "default" }
+    }
+  ]
+}
