@@ -83,6 +83,8 @@
         "ENABLED": "Enabled",
         "PRUNE": "Prune",
         "PRUNE_HINT": "Enable auto-pruning of images after scheduled process.",
+        "PRUNE_ALL": "Prune all",
+        "PRUNE_ALL_HINT": "This toggle stands for --all flag of 'docker image prune' command.",
         "URL": "Agent address",
         "URL_PLACEHOLDER": "http://127.0.0.1:8001",
         "SECRET": "Agent secret",
@@ -126,6 +128,8 @@
     "TABLE": {
       "PRUNE": "Prune",
       "PRUNE_CONFIRM": "Do you want to prune images?",
+      "PRUNE_ALL": "Prune all",
+      "PRUNE_ALL_HINT": "This toggle stands for --all flag of 'docker image prune' command.",
       "PRUNE_RESULT": "Prune result",
       "SEARCH_PLACEHOLDER": "ID, repo, tags",
       "REPOSITORY": "Repository",

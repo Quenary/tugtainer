@@ -16,7 +16,7 @@ class GetImageListBodySchema(BaseModel):
 
 
 class PruneImagesRequestBodySchema(BaseModel):
-    all: Optional[bool] = True
+    all: Optional[bool] = False
     filters: Optional[dict[str, Any]] = {}
 
 

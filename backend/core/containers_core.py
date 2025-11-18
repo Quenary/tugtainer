@@ -473,15 +473,22 @@ async def check_host(
 
         if host.prune:
             CACHE.update({"status": ECheckStatus.PRUNING})
-            output = await client.image.prune(
-                PruneImagesRequestBodySchema(all=True)
-            )
-            lines = [
-                line.strip()
-                for line in output.splitlines()
-                if line.strip()
-            ]
-            result.prune_res = lines[-1] if lines else None
+            logging.info(f"Pruning images on host '{host.name}'")
+            try:
+                output = await client.image.prune(
+                    PruneImagesRequestBodySchema(all=host.prune_all)
+                )
+                lines = [
+                    line.strip()
+                    for line in output.splitlines()
+                    if line.strip()
+                ]
+                result.prune_res = lines[-1] if lines else None
+            except Exception as e:
+                logging.exception(e)
+                logging.error(
+                    f"Failed to prune images on host '{host.name}'"
+                )
 
         CACHE.update({"status": ECheckStatus.DONE})
         return result

@@ -2,6 +2,7 @@ export interface ICreateHost {
   name: string;
   enabled: boolean;
   prune: boolean;
+  prune_all: boolean;
   url: string;
   secret: string;
   timeout: number;

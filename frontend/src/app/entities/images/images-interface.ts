@@ -7,6 +7,10 @@ export interface IImage {
   size: number;
 }
 
+export interface IPruneImageRequestBodySchema {
+  all: boolean;
+}
+
 export interface IImagePruneResult {
   ImagesDeleted: { [K: string]: string }[];
   SpaceReclaimed: number;

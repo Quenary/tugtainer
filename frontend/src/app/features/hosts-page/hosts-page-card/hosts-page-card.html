@@ -56,7 +56,12 @@
             <label for="host-enabled">
               {{ 'HOSTS.CARD.GENERAL.ENABLED' | translate }}
             </label>
+          </span>
 
+          <span
+            class="switch-field"
+            fluid
+          >
             <p-toggle-switch
               [inputId]="'host-prune'"
               formControlName="prune"
@@ -67,6 +72,20 @@
                 class="pi pi-question-circle"
                 style="margin: 0 0.5rem"
                 [pTooltip]="'HOSTS.CARD.GENERAL.PRUNE_HINT' | translate"
+                tooltipPosition="left"
+              ></i>
+            </label>
+
+            <p-toggle-switch
+              [inputId]="'host-prune-all'"
+              formControlName="prune_all"
+            ></p-toggle-switch>
+            <label for="host-prune-all">
+              {{ 'HOSTS.CARD.GENERAL.PRUNE_ALL' | translate }}
+              <i
+                class="pi pi-question-circle"
+                style="margin: 0 0.5rem"
+                [pTooltip]="'HOSTS.CARD.GENERAL.PRUNE_ALL_HINT' | translate"
                 tooltipPosition="left"
               ></i>
             </label>

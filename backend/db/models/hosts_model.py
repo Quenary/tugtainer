@@ -30,6 +30,12 @@ class HostsModel(BaseModel):
         default=False,
         server_default=text("FALSE"),
     )
+    prune_all: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("FALSE"),
+    )
     url: Mapped[str] = mapped_column(
         String,
         nullable=False,
