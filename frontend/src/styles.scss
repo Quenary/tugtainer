@@ -13,4 +13,23 @@ body {
 body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  // Styles of table header cells
+  --p-datatable-header-cell-selected-background: color-mix(
+    in srgb,
+    var(--p-primary-400),
+    var(--p-datatable-header-cell-background) 84%
+  );
+  p-sortIcon {
+    position: relative;
+    p-badge.p-sortable-column-badge {
+      color: var(--p-datatable-header-cell-selected-color);
+      background-color: transparent;
+      position: absolute;
+      top: -6px;
+      right: -15px;
+      width: auto;
+      height: auto;
+    }
+  }
 }

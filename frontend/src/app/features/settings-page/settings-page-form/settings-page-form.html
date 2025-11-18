@@ -71,6 +71,7 @@
     @case (ESettingKey.TIMEZONE) {
       <p-autocomplete
         fluid
+        inputId="value-{{ key }}"
         [suggestions]="displayedTimezones()"
         [dropdown]="true"
         (completeMethod)="timezonesSearch.set($event.query)"
@@ -102,7 +103,7 @@
         @default {
           <p-input-number
             fluid
-            id="value-{{ key }}"
+            inputId="value-{{ key }}"
             [formControl]="control"
           ></p-input-number>
         }

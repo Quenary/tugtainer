@@ -8,7 +8,7 @@
   padding: 0 16px;
 }
 @mixin floating-card-surface {
-  background-color: var(--p-surface-900);
+  background-color: var(--p-content-background);
   color: var(--p-content-color);
   border-radius: var(--p-border-radius-lg);
   width: 100%;
