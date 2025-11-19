@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/Quenary/tugtainer/compare/v1.11.0...v1.12.0) (2025-11-19)
+
+
+### Features
+
+* configurable healthcheck timeout (host setting) ([#67](https://github.com/Quenary/tugtainer/issues/67)) ([2f8f59d](https://github.com/Quenary/tugtainer/commit/2f8f59d677101a3f13faedc8c832307c8040f277)), closes [#24](https://github.com/Quenary/tugtainer/issues/24)
+
 # [1.11.0](https://github.com/Quenary/tugtainer/compare/v1.10.0...v1.11.0) (2025-11-19)
 
 
