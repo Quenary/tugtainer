@@ -12,8 +12,8 @@ jobs:
     if: github.event.inputs.tag != 'latest' && !startsWith(github.event.inputs.tag, 'v')
     runs-on: ubuntu-latest
     env:
-      APP_NAME: tugtainer
-      AGENT_NAME: tugtainer-agent
+      IMAGE_NAME: quenary/tugtainer
+      AGENT_IMAGE_NAME: quenary/tugtainer-agent
       TAG: ${{ github.event.inputs.tag }}
 
     steps:
@@ -47,8 +47,8 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            docker.io/quenary/${{ env.APP_NAME }}:${{ env.TAG }}
-            ghcr.io/${{ github.repository_owner }}/${{ env.APP_NAME }}:${{ env.TAG }}
+            docker.io/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           build-args: |
             VERSION=${{ env.TAG }}
           cache-from: type=gha
@@ -71,8 +71,8 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            docker.io/quenary/${{ env.AGENT_NAME }}:${{ env.TAG }}
-            ghcr.io/${{ github.repository_owner }}/${{ env.AGENT_NAME }}:${{ env.TAG }}
+            docker.io/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
+            ghcr.io/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
           build-args: |
             VERSION=${{ env.TAG }}
           cache-from: type=gha
