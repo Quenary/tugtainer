@@ -12,9 +12,11 @@ jobs:
     if: github.event.inputs.tag != 'latest' && !startsWith(github.event.inputs.tag, 'v')
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: quenary/tugtainer
-      AGENT_IMAGE_NAME: quenary/tugtainer-agent
+      IMAGE_NAME: tugtainer
+      AGENT_IMAGE_NAME: tugtainer-agent
       TAG: ${{ github.event.inputs.tag }}
+    permissions:
+      packages: write
 
     steps:
       - name: Checkout repository
@@ -44,11 +46,12 @@ jobs:
         with:
           context: .
           file: Dockerfile.app
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64
+          # platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            docker.io/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-            ghcr.io/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           build-args: |
             VERSION=${{ env.TAG }}
           cache-from: type=gha
@@ -68,11 +71,12 @@ jobs:
         with:
           context: .
           file: Dockerfile.agent
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64
+          # platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            docker.io/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
-            ghcr.io/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
+            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
           build-args: |
             VERSION=${{ env.TAG }}
           cache-from: type=gha
