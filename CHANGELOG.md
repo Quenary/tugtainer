@@ -1,3 +1,16 @@
+# [1.11.0](https://github.com/Quenary/tugtainer/compare/v1.10.0...v1.11.0) (2025-11-19)
+
+
+### Bug Fixes
+
+* **frontend:** refine Chinese translation ([#63](https://github.com/Quenary/tugtainer/issues/63)) by [@double](https://github.com/double)JazzCat [skip ci] ([68eadab](https://github.com/Quenary/tugtainer/commit/68eadab0a9872393163a545200d1c5d607fea09c)), closes [#62](https://github.com/Quenary/tugtainer/issues/62)
+* **frontend:** sort order badges style [skip ci] ([7d92a6f](https://github.com/Quenary/tugtainer/commit/7d92a6fc6b823bf4672bc0dadd2949c9124297c2)), closes [#58](https://github.com/Quenary/tugtainer/issues/58)
+
+
+### Features
+
+* GHCR images, build optimizations ([#65](https://github.com/Quenary/tugtainer/issues/65)) ([3dd6792](https://github.com/Quenary/tugtainer/commit/3dd67921f698bdad601e6738167296f1f219464b))
+
 # [1.10.0](https://github.com/Quenary/tugtainer/compare/v1.9.0...v1.10.0) (2025-11-18)
 
 
