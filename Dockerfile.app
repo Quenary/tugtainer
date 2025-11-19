@@ -7,8 +7,10 @@ COPY frontend .
 RUN npm run build
 
 # Stage 2 - Backend build
-FROM astral/uv:python3.13-bookworm-slim AS backend-builder
+FROM python:3.13 AS backend-builder
 WORKDIR /app
+# Install uv
+RUN pip install --no-cache-dir uv
 # Install deps
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev
