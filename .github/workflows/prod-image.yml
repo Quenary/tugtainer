@@ -14,9 +14,19 @@ jobs:
     env:
       IMAGE_NAME: tugtainer
       AGENT_IMAGE_NAME: tugtainer-agent
-      TAG: ${{ github.event.client_payload.tag }}
 
     steps:
+      - name: Get Tags
+        id: get-tags
+        run: |
+          VERSION="${{ github.event.client_payload.version }}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          PREFIXED=v$VERSION
+
+          echo "full=$VERSION" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "prefixed=$PREFIXED" >> $GITHUB_OUTPUT
+
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
@@ -36,7 +46,9 @@ jobs:
             docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
             ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ env.TAG }}
+            type=raw,value=${{ steps.get-tags.outputs.full }}
+            type=raw,value=${{ steps.get-tags.outputs.major }}
+            type=raw,value=${{ steps.get-tags.outputs.prefixed }}
             type=raw,value=latest
 
       - name: Docker Metadata Agent
@@ -47,7 +59,9 @@ jobs:
             docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
             ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ env.TAG }}
+            type=raw,value=${{ steps.get-tags.outputs.full }}
+            type=raw,value=${{ steps.get-tags.outputs.major }}
+            type=raw,value=${{ steps.get-tags.outputs.prefixed }}
             type=raw,value=latest
 
       - name: Log in to Docker Hub
@@ -72,7 +86,7 @@ jobs:
           push: true
           tags: ${{ steps.app-meta.outputs.tags }}
           build-args: |
-            VERSION=${{ env.TAG }}
+            VERSION=${{ steps.get-tags.outputs.prefixed }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
@@ -88,7 +102,7 @@ jobs:
           push: true
           tags: ${{ steps.agent-meta.outputs.tags }}
           build-args: |
-            VERSION=${{ env.TAG }}
+            VERSION=${{ steps.get-tags.outputs.prefixed }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |

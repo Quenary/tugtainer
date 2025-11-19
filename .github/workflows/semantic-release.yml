@@ -43,14 +43,14 @@ jobs:
         run: |
           if [ -f next-release-version.env ]; then
             source next-release-version.env
-            echo "tag=$NEXT_RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+            echo "version=$NEXT_RELEASE_VERSION" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=" >> "$GITHUB_OUTPUT"
+            echo "version=" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Trigger Prod Build Workflow
-        if: ${{ steps.read-version.outputs.tag != '' }}
+        if: ${{ steps.read-version.outputs.version != '' }}
         uses: peter-evans/repository-dispatch@v4
         with:
           event-type: release-event
-          client-payload: '{"tag": "${{ steps.read-version.outputs.tag }}"}'
+          client-payload: '{"version": "${{ steps.read-version.outputs.version }}"}'
