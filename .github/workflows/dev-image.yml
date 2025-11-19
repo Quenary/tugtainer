@@ -1,4 +1,4 @@
-name: Build and push docker image with arbitrary tag
+name: Dev Image
 
 on:
   workflow_dispatch:
@@ -7,29 +7,50 @@ on:
         description: 'Tag of the image being built (e.g. dev). Cannot start with "v" or be "latest".'
         required: true
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  build:
+  build-and-push:
     if: github.event.inputs.tag != 'latest' && !startsWith(github.event.inputs.tag, 'v')
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: tugtainer
       AGENT_IMAGE_NAME: tugtainer-agent
       TAG: ${{ github.event.inputs.tag }}
-    permissions:
-      packages: write
 
     steps:
-      - name: Set created datetime
-        run: echo "CREATED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
-
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Docker Metadata App
+        id: app-meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.TAG }}
+
+      - name: Docker Metadata Agent
+        id: agent-meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.TAG }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -44,29 +65,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push full image
+      - name: Build and push app image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.app
           platforms: linux/amd64
-          # platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
-          tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          tags: ${{ steps.app-meta.outputs.tags }}
           build-args: |
             VERSION=${{ env.TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
-            org.opencontainers.image.title=Tugtainer
-            org.opencontainers.image.description=An application for automated Docker container updates with a web UI
-            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}
-            org.opencontainers.image.created=${{ env.CREATED }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.licenses=MIT
+            ${{ steps.app-meta.outputs.labels }}
             dev.quenary.tugtainer.protected=true
 
       - name: Build and push agent image
@@ -75,21 +87,14 @@ jobs:
           context: .
           file: Dockerfile.agent
           platforms: linux/amd64
-          # platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
-          tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
-            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
+          tags: ${{ steps.agent-meta.outputs.tags }}
           build-args: |
             VERSION=${{ env.TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
+            ${{ steps.agent-meta.outputs.labels }}
             org.opencontainers.image.title=Tugtainer Agent
             org.opencontainers.image.description=Agent part of Tugtainer app, providing secure remote access to Docker hosts
-            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}
-            org.opencontainers.image.created=${{ env.CREATED }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.licenses=MIT
             dev.quenary.tugtainer.protected=true
