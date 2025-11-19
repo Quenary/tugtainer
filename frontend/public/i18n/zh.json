@@ -35,8 +35,8 @@
     "GITHUB": "GitHub",
     "UPDATE": "有可用更新",
     "UPDATE_NOTES": [
-      "由于容器限制，它无法从自身更新。",
-      "您可以手动更新它，例如从 Portainer 更新。",
+      "受限于容器机制，无法进行自我更新。",
+      "您可以手动更新（例如通过 Portainer）。",
       "详细说明请参见 GitHub。"
     ]
   },
@@ -66,13 +66,13 @@
       "STATUS_ERROR": "错误"
     },
     "CARD": {
-      "DELETE_CONFIRM": "您要删除这个主机吗？",
+      "DELETE_CONFIRM": "确定删除这个主机吗？",
       "HELP": {
         "LABEL": "帮助",
         "TEXT": [
-          "如果您没有将 docker socket (docker.sock) 直接挂载到容器中，则需要 DOCKER_HOST 环境变量，您可以在 docker-compose 或 docker 命令中设置它。",
-          "对于 Tugtainer 主实例，代理地址默认为 http://127.0.0.1:8001，密钥默认为空 (undefined)，您可以使用 AGENT_SECRET 环境变量来更改它。",
-          "对于远程主机，您必须部署 Tugtainer 代理 (quenary/tugtainer-agent) 并在相应字段中使用其地址和密钥。"
+          "若未将 Docker Socket 直接挂载至容器，则必须配置 DOCKER_HOST 环境变量（可通过 docker-compose 或 docker 命令设置）。",
+          "Tugtainer 主实例的 Agent 地址默认为 http://127.0.0.1:8001，且默认无密钥。如需设置密钥，请修改 AGENT_SECRET 环境变量。",
+          "管理远程主机时，需部署 Tugtainer Agent (quenary/tugtainer-agent)，并在对应字段填入其地址和密钥。"
         ],
         "HELP_BTN": "部署指南"
       },
@@ -82,12 +82,14 @@
         "NAME": "名称",
         "ENABLED": "启用",
         "PRUNE": "清理",
-        "PRUNE_HINT": "在计划任务执行后启用自动清理镜像。",
+        "PRUNE_HINT": "每次计划任务执行后自动清理镜像。",
+        "PRUNE_ALL": "全部清理",
+        "PRUNE_ALL_HINT": "此开关对应 'docker image prune' 命令的 --all 参数。",
         "URL": "Agent 地址",
         "URL_PLACEHOLDER": "http://127.0.0.1:8001",
         "SECRET": "Agent 密钥",
-        "TIMEOUT": "Agent 超时",
-        "TIMEOUT_HINT": "通常快速的 agent 请求的超时时间（秒）。它不影响可能较长的请求，如创建容器或拉取镜像。"
+        "TIMEOUT": "Agent 超时时间",
+        "TIMEOUT_HINT": "设置常规短耗时 Agent 请求的超时时间（秒）。此设置不影响创建容器或拉取镜像等长耗时的请求。"
       }
     }
   },
@@ -117,7 +119,7 @@
       "UPDATED_AT": "上次更新",
       "UPDATE": "更新",
       "CHECK": "检查",
-      "MAIN_BTN_HINT": "如果一个容器是 compose 项目的一部分，则该项目的容器都将参与该过程。",
+      "MAIN_BTN_HINT": "若容器属于 Compose 项目，该项目的所有容器都将参与此过程。",
       "PROTECTED": "受保护",
       "PROTECTED_CONTAINER_HINT": "此容器标记为 dev.quenary.tugtainer.protected，无法从此应用更新。"
     }
@@ -125,7 +127,9 @@
   "IMAGES": {
     "TABLE": {
       "PRUNE": "清理",
-      "PRUNE_CONFIRM": "您要清理镜像吗？",
+      "PRUNE_CONFIRM": "确定清理镜像吗？",
+      "PRUNE_ALL": "全部清理",
+      "PRUNE_ALL_HINT": "此开关对应 'docker image prune' 命令的 --all 参数。",
       "PRUNE_RESULT": "清理结果",
       "SEARCH_PLACEHOLDER": "ID、仓库、标签",
       "REPOSITORY": "仓库",
