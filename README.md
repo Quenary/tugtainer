@@ -160,9 +160,8 @@ Environment variables are not required, but you can still define some. There is 
 
 - angular for frontend
 - python for backend and agent
-- there are a readme files in respective directories
-- run install.sh to prepare environment
-- clear python cache: find . | grep -E "(/**pycache**$|\.pyc$|\.pyo$)" | xargs rm -rf
+
+See [/backend/README.md](/backend/README.md) and [/frontend/README.md](/frontend/README.md) for more details
 
 ### TODO:
 
