@@ -1,9 +1,8 @@
 name: Main Image
 
 on:
-  push:
-    tags:
-      - 'v*'
+  repository_dispatch:
+    types: [release-event]
 
 permissions:
   contents: read
@@ -15,7 +14,7 @@ jobs:
     env:
       IMAGE_NAME: tugtainer
       AGENT_IMAGE_NAME: tugtainer-agent
-      TAG: ${{ github.ref_name }}
+      TAG: ${{ github.event.client_payload.tag }}
 
     steps:
       - name: Checkout repository
@@ -28,12 +27,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      # Tags to be pushed
-      # 1.2.3
-      # 1
-      # v1.2.3
-      # latest (automatically generated)
       
       - name: Docker Metadata App
         id: app-meta
@@ -43,9 +36,8 @@ jobs:
             docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
             ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}
-            type=ref,event=tag
+            type=raw,value=${{ env.TAG }}
+            type=raw,value=latest
 
       - name: Docker Metadata Agent
         id: agent-meta
@@ -55,9 +47,8 @@ jobs:
             docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
             ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}
-            type=ref,event=tag
+            type=raw,value=${{ env.TAG }}
+            type=raw,value=latest
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
