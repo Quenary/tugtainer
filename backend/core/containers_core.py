@@ -314,7 +314,9 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 await client.container.start(c_name)
                 await run_commands(gc.commands)
                 logging.info("Waiting for healthchecks...")
-                if await wait_for_container_healthy(client, new_c):
+                if await wait_for_container_healthy(
+                    client, new_c, host.container_hc_timeout
+                ):
                     logging.info("Container is healthy!")
                     gc.container = new_c
                     gc.available = False
@@ -358,7 +360,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 )
                 logging.warning("Waiting for healthchecks...")
                 if await wait_for_container_healthy(
-                    client, rolled_back
+                    client, rolled_back, host.container_hc_timeout
                 ):
                     logging.warning("Container is healthy!")
                     continue
@@ -381,7 +383,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 await run_commands(gc.commands)
                 logging.info("Waiting for healthchecks...")
                 if await wait_for_container_healthy(
-                    client, gc.container
+                    client, gc.container, host.container_hc_timeout
                 ):
                     logging.info("Container is healthy!")
                     continue

@@ -89,7 +89,9 @@
         "URL_PLACEHOLDER": "http://127.0.0.1:8001",
         "SECRET": "Agent secret",
         "TIMEOUT": "Agent timeout",
-        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. It does not affect potentially long requests such as container create or image pull."
+        "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. It does not affect potentially long requests such as container create or image pull.",
+        "CONTAINER_HC_TIMEOUT": "Container healthcheck timeout",
+        "CONTAINER_HC_TIMEOUT_HINT": "Timeout in seconds for how long the app will wait for a healthcheck during an update before starting a rollback."
       }
     }
   },

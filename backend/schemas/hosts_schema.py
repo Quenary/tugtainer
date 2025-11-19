@@ -10,6 +10,7 @@ class HostBase(BaseModel):
     url: str
     secret: Optional[str] = None
     timeout: int
+    container_hc_timeout: int
 
 
 class HostInfo(HostBase):

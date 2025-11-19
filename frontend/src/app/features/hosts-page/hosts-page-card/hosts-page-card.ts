@@ -90,6 +90,7 @@ export class HostsPageCard implements OnInit {
       prune: false,
       prune_all: false,
       timeout: 5,
+      container_hc_timeout: 60,
     };
   }
 
@@ -101,6 +102,7 @@ export class HostsPageCard implements OnInit {
     url: new FormControl<string>(null, [Validators.required]),
     secret: new FormControl<string>(null),
     timeout: new FormControl<number>(null, [Validators.required]),
+    container_hc_timeout: new FormControl(null, [Validators.required]),
   });
 
   ngOnInit(): void {
