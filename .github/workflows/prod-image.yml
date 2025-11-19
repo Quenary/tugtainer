@@ -30,7 +30,7 @@ jobs:
       
       - name: Docker Metadata App
         id: app-meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v5
         with:
           images: |
             docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
@@ -41,7 +41,7 @@ jobs:
 
       - name: Docker Metadata Agent
         id: agent-meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v5
         with:
           images: |
             docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
@@ -64,7 +64,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push app image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile.app
@@ -80,7 +80,7 @@ jobs:
             dev.quenary.tugtainer.protected=true
 
       - name: Build and push agent image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile.agent
