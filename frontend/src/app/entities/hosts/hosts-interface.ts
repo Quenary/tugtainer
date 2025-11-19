@@ -6,6 +6,7 @@ export interface ICreateHost {
   url: string;
   secret: string;
   timeout: number;
+  container_hc_timeout: number;
 }
 export interface IHostInfo extends ICreateHost {
   id: number;

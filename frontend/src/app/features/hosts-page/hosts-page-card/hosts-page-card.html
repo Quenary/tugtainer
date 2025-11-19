@@ -144,8 +144,26 @@
                 [pTooltip]="'HOSTS.CARD.GENERAL.TIMEOUT_HINT' | translate"
               ></p-inputicon>
             </p-iconfield>
-            <label for="host-secret">
+            <label for="host-timeout">
               {{ 'HOSTS.CARD.GENERAL.TIMEOUT' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel fluid>
+            <p-iconfield>
+              <p-input-number
+                fluid
+                inputId="host-cont-hc-timeout"
+                formControlName="container_hc_timeout"
+              >
+              </p-input-number>
+              <p-inputicon
+                class="pi pi-question-circle"
+                [pTooltip]="'HOSTS.CARD.GENERAL.CONTAINER_HC_TIMEOUT_HINT' | translate"
+              ></p-inputicon>
+            </p-iconfield>
+            <label for="host-cont-hc-timeout">
+              {{ 'HOSTS.CARD.GENERAL.CONTAINER_HC_TIMEOUT' | translate }}
             </label>
           </p-iftaLabel>
         </section>
