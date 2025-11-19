@@ -19,6 +19,9 @@ jobs:
       packages: write
 
     steps:
+      - name: Set created datetime
+        run: echo "CREATED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -58,10 +61,10 @@ jobs:
           cache-to: type=gha,mode=max
           labels: |
             org.opencontainers.image.title=Tugtainer
-            org.opencontainers.image.description="Containerized app for automating updates of docker containers."
+            org.opencontainers.image.description=An application for automated Docker container updates with a web UI
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}
-            org.opencontainers.image.created=${{ github.run_started_at }}
+            org.opencontainers.image.created=${{ env.CREATED }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=MIT
             dev.quenary.tugtainer.protected=true
@@ -82,11 +85,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
-            org.opencontainers.image.title="Tugtainer Agent"
-            org.opencontainers.image.description="Agent part of Tugtainer app, providing secure remote access to Docker hosts."
+            org.opencontainers.image.title=Tugtainer Agent
+            org.opencontainers.image.description=Agent part of Tugtainer app, providing secure remote access to Docker hosts
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}
-            org.opencontainers.image.created=${{ github.run_started_at }}
+            org.opencontainers.image.created=${{ env.CREATED }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=MIT
             dev.quenary.tugtainer.protected=true
