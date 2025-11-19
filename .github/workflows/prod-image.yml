@@ -1,0 +1,107 @@
+name: Main Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: tugtainer
+      AGENT_IMAGE_NAME: tugtainer-agent
+      TAG: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Tags to be pushed
+      # 1.2.3
+      # 1
+      # v1.2.3
+      # latest (automatically generated)
+      
+      - name: Docker Metadata App
+        id: app-meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}
+            type=ref,event=tag
+
+      - name: Docker Metadata Agent
+        id: agent-meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}
+            type=ref,event=tag
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push app image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.app
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ steps.app-meta.outputs.tags }}
+          build-args: |
+            VERSION=${{ env.TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            ${{ steps.app-meta.outputs.labels }}
+            dev.quenary.tugtainer.protected=true
+
+      - name: Build and push agent image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.agent
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ steps.agent-meta.outputs.tags }}
+          build-args: |
+            VERSION=${{ env.TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            ${{ steps.agent-meta.outputs.labels }}
+            org.opencontainers.image.title=Tugtainer Agent
+            org.opencontainers.image.description=Agent part of Tugtainer app, providing secure remote access to Docker hosts
+            dev.quenary.tugtainer.protected=true
