@@ -43,6 +43,8 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ env.TAG }}
           build-args: |
             VERSION=${{ env.TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           labels: |
             org.opencontainers.image.title=Tugtainer
             org.opencontainers.image.description="Containerized app for automating updates of docker containers."
@@ -64,6 +66,8 @@ jobs:
             ${{ env.AGENT_IMAGE_NAME }}:${{ env.TAG }}
           build-args: |
             VERSION=${{ env.TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           labels: |
             org.opencontainers.image.title="Tugtainer Agent"
             org.opencontainers.image.description="Agent part of Tugtainer app, providing secure remote access to Docker hosts."
