@@ -2,8 +2,30 @@ networks:
   tugtainer:
     driver: bridge
 services:
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: dev-socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: Europe/Moscow
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer
   app:
-    container_name: tugtainer
+    container_name: dev-tugtainer
     build:
       context: .
       dockerfile: Dockerfile.app
@@ -12,9 +34,10 @@ services:
     environment:
       AGENT_SECRET: testsecret
       LOG_LEVEL: info
+      DOCKER_HOST: tcp://socket-proxy:2375
     volumes:
       - tugtainer_data_dev:/tugtainer
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - $HOME/.docker/config.json:/root/.docker/config.json:ro
     restart: unless-stopped
     networks:
       - tugtainer

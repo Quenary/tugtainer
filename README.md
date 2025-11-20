@@ -21,6 +21,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 - Manual check and update
 - Automatic/manual image pruning
 - Linked containers support (compose and custom, see [check/update](#checkupdate-process) section)
+- [Private registries](#private-registries)
 
 ## Deploy:
 
@@ -124,6 +125,25 @@ Automatic updates are disabled by default. You can choose only what you need.
   - Then, **in reverse order** (from most dependable):
     - Updatable containers being recreated and started;
     - Non-updatable containers being started;
+
+- ### Private registries
+
+  To use private registries, you have to mount docker config to Tugtainer or Tugtainer Agent, depending on where the container with the private image is located.
+
+  - Create the config using one of the methods on the host machine
+    - Log into the registry `docker login <registry>`
+    - Manually
+    ```json
+      {
+        "auths": {
+          "<registry>": {
+            "auth": "bash64 encoded 'username:password_or_token'"
+          }
+        }
+      }
+    ```
+  - Mount the config to the Tugtainer (Agent) as a readonly volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
+  - That's all you need to do, Docker CLI will take care of the rest.
 
 ## Custom labels:
 
