@@ -137,7 +137,7 @@ class AuthPasswordProvider(AuthProvider):
     ) -> Any:
         raise NotImplementedError()
 
-    def set_password(
+    async def set_password(
         self, request: Request, payload: PasswordSetRequestBody
     ):
         """
@@ -156,8 +156,8 @@ class AuthPasswordProvider(AuthProvider):
         if not self._read_password_hash():
             return write_and_return()
 
-        _ = self.is_authorized(request)
-        write_and_return()
+        _ = await self.is_authorized(request)
+        return write_and_return()
 
     def is_password_set(self) -> bool:
         """Check if a password is set"""

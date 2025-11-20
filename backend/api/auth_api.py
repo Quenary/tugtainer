@@ -66,11 +66,11 @@ async def logout(
     description="Check if session is authorized",
     response_model=bool,
 )
-def is_authorized_req(
+async def is_authorized_req(
     request: Request,
     provider: AuthProvider = Depends(active_auth_provider),
 ):
-    _ = provider.is_authorized(request)
+    _ = await provider.is_authorized(request)
     return PlainTextResponse(status_code=status.HTTP_200_OK)
 
 
@@ -78,8 +78,8 @@ def is_authorized_req(
     path="/set_password",
     description="Set password for web UI. Password can be set only if password is not set yet or if user is authorized.",
 )
-def set_password(request: Request, payload: PasswordSetRequestBody):
-    return AUTH_PASSWORD_PROVIDER.set_password(request, payload)
+async def set_password(request: Request, payload: PasswordSetRequestBody):
+    return await AUTH_PASSWORD_PROVIDER.set_password(request, payload)
 
 
 @router.get(
