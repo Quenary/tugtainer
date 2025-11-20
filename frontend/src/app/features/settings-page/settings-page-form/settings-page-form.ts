@@ -2,12 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
-  input,
   output,
+  resource,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormArray,
@@ -18,7 +18,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, firstValueFrom, of } from 'rxjs';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import {
   ESettingKey,
@@ -62,21 +62,41 @@ export class SettingsPageForm {
   private readonly toastService = inject(ToastService);
 
   public readonly OnSubmit = output<ISettingUpdate[]>();
-  public readonly includeKeys = input<ESettingKey[]>();
-  public readonly excludeKeys = input<ESettingKey[]>();
 
   public readonly ESettingKey = ESettingKey;
   public readonly keyTranslates = this.translateService.instant('SETTINGS.BY_KEY');
   public readonly isLoading = signal<boolean>(false);
   public readonly formArray = new FormArray<FormGroup<TInterfaceToForm<ISetting>>>([]);
 
-  private readonly timezones = toSignal(
-    this.settingsApiService.getAvailableTimezones().pipe(catchError(() => of([]))),
-  );
+  private readonly timezones = resource({
+    loader: () =>
+      firstValueFrom(
+        this.settingsApiService.getAvailableTimezones().pipe(
+          catchError((error) => {
+            this.toastService.error(error);
+            return of([]);
+          }),
+        ),
+      ),
+    defaultValue: [],
+  });
+
+  private readonly settings = resource({
+    loader: () =>
+      firstValueFrom(
+        this.settingsApiService.list().pipe(
+          catchError((error) => {
+            this.toastService.error(error);
+            return of([]);
+          }),
+        ),
+      ),
+    defaultValue: [],
+  });
 
   public readonly timezonesSearch = signal<string>(null);
   public readonly displayedTimezones = computed<string[]>(() => {
-    const timezones = this.timezones();
+    const timezones = this.timezones.value();
     let search = this.timezonesSearch();
     if (!search) {
       return timezones;
@@ -97,63 +117,22 @@ export class SettingsPageForm {
   private timezoneValidator: ValidatorFn = (control: AbstractControl<string>) => {
     const value = control.value;
     if (!!value) {
-      const timezones = this.timezones();
+      const timezones = this.timezones.value();
       const valid = !timezones.length || timezones.includes(value);
       return valid ? null : { timezoneValidator: true };
     }
     return null;
   };
 
-  private urlValidator: ValidatorFn = (control: AbstractControl<string>) => {
-    const value = control.value;
-    if (!!value) {
-      try {
-        new URL(value);
-        return null;
-      } catch {
-        return { urlValidator: true };
-      }
-    }
-    return null;
-  };
-
   constructor() {
-    this.updateSettings();
-  }
-
-  private updateSettings(): void {
-    this.isLoading.set(true);
-    this.settingsApiService
-      .list()
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (list) => {
-          this.formArray.clear();
-          let filteredList = list;
-          
-          // Filter based on includeKeys or excludeKeys
-          const includeKeys = this.includeKeys();
-          const excludeKeys = this.excludeKeys();
-          
-          if (includeKeys && includeKeys.length > 0) {
-            filteredList = list.filter(item => includeKeys.includes(item.key));
-          } else if (excludeKeys && excludeKeys.length > 0) {
-            filteredList = list.filter(item => !excludeKeys.includes(item.key));
-          }
-          
-          for (const item of filteredList) {
-            const form = this.getFormGroup(item);
-            this.formArray.push(form);
-          }
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
+    effect(() => {
+      const list = this.settings.value();
+      this.formArray.clear();
+      for (const item of list) {
+        const form = this.getFormGroup(item);
+        this.formArray.push(form);
+      }
+    });
   }
 
   private getFormGroup(data: ISetting): FormGroup<TInterfaceToForm<ISetting>> {
@@ -163,11 +142,6 @@ export class SettingsPageForm {
       value_type: new FormControl<ESettingValueType>(data.value_type),
       modified_at: new FormControl<string>({ value: data.modified_at, disabled: true }),
     });
-
-    if (data.key === ESettingKey.CRONTAB_EXPR) {
-      form.controls.value.addValidators([this.cronValidator]);
-    }
-
     return form;
   }
 
@@ -188,10 +162,8 @@ export class SettingsPageForm {
     }
   }
 
-  public onTestNotification(): void {
+  public onTestNotification(url: string): void {
     this.isLoading.set(true);
-    const url = this.formArray.value.find((item) => item.key === ESettingKey.NOTIFICATION_URL)
-      .value as string;
     this.settingsApiService
       .test_notification(url)
       .pipe(finalize(() => this.isLoading.set(false)))

@@ -28,7 +28,7 @@
               rounded="true"
               [pTooltip]="'SETTINGS.BY_KEY.NOTIFICATION_URL.TEST' | translate"
               tooltipPosition="left"
-              (onClick)="onTestNotification()"
+              (onClick)="onTestNotification($any(form.controls.value.value))"
             >
             </p-button>
           }
