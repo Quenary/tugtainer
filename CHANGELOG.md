@@ -1,317 +1,406 @@
-# [1.12.0](https://github.com/Quenary/tugtainer/compare/v1.11.0...v1.12.0) (2025-11-19)
+# CHANGELOG
 
+
+## v1.12.2 (2025-11-21)
+
+### Bug Fixes
+
+- **build**: Updated uv lock
+  ([`24f4d74`](https://github.com/Quenary/tugtainer/commit/24f4d74fab583d9a229f3885e98182fcabece7da))
+
+
+## v1.12.1 (2025-11-21)
+
+### Bug Fixes
+
+- **backend**: Is_authorized not awaited [skip ci]
+  ([`196fc0d`](https://github.com/Quenary/tugtainer/commit/196fc0d2226db58d44e1fabba7a42058d25239dd))
+
+### Documentation
+
+- Added note about private registries
+  ([`d272b16`](https://github.com/Quenary/tugtainer/commit/d272b1633d07fbbc8b1735109590d4aaf6520a3a))
+
+
+## v1.12.0 (2025-11-19)
 
 ### Features
 
-* configurable healthcheck timeout (host setting) ([#67](https://github.com/Quenary/tugtainer/issues/67)) ([2f8f59d](https://github.com/Quenary/tugtainer/commit/2f8f59d677101a3f13faedc8c832307c8040f277)), closes [#24](https://github.com/Quenary/tugtainer/issues/24)
+- Configurable healthcheck timeout (host setting)
+  ([#67](https://github.com/Quenary/tugtainer/pull/67),
+  [`2f8f59d`](https://github.com/Quenary/tugtainer/commit/2f8f59d677101a3f13faedc8c832307c8040f277))
 
-# [1.11.0](https://github.com/Quenary/tugtainer/compare/v1.10.0...v1.11.0) (2025-11-19)
 
+## v1.11.0 (2025-11-19)
 
 ### Bug Fixes
 
-* **frontend:** refine Chinese translation ([#63](https://github.com/Quenary/tugtainer/issues/63)) by [@double](https://github.com/double)JazzCat [skip ci] ([68eadab](https://github.com/Quenary/tugtainer/commit/68eadab0a9872393163a545200d1c5d607fea09c)), closes [#62](https://github.com/Quenary/tugtainer/issues/62)
-* **frontend:** sort order badges style [skip ci] ([7d92a6f](https://github.com/Quenary/tugtainer/commit/7d92a6fc6b823bf4672bc0dadd2949c9124297c2)), closes [#58](https://github.com/Quenary/tugtainer/issues/58)
+- **frontend**: Refine Chinese translation (#63) by @doubleJazzCat [skip ci]
+  ([`68eadab`](https://github.com/Quenary/tugtainer/commit/68eadab0a9872393163a545200d1c5d607fea09c))
 
+- **frontend**: Sort order badges style [skip ci]
+  ([`7d92a6f`](https://github.com/Quenary/tugtainer/commit/7d92a6fc6b823bf4672bc0dadd2949c9124297c2))
 
 ### Features
 
-* GHCR images, build optimizations ([#65](https://github.com/Quenary/tugtainer/issues/65)) ([3dd6792](https://github.com/Quenary/tugtainer/commit/3dd67921f698bdad601e6738167296f1f219464b))
+- GHCR images, build optimizations ([#65](https://github.com/Quenary/tugtainer/pull/65),
+  [`3dd6792`](https://github.com/Quenary/tugtainer/commit/3dd67921f698bdad601e6738167296f1f219464b))
 
-# [1.11.0](https://github.com/Quenary/tugtainer/compare/v1.10.0...v1.11.0) (2025-11-19)
 
-
-### Bug Fixes
-
-* **frontend:** refine Chinese translation ([#63](https://github.com/Quenary/tugtainer/issues/63)) by [@double](https://github.com/double)JazzCat [skip ci] ([68eadab](https://github.com/Quenary/tugtainer/commit/68eadab0a9872393163a545200d1c5d607fea09c)), closes [#62](https://github.com/Quenary/tugtainer/issues/62)
-* **frontend:** sort order badges style [skip ci] ([7d92a6f](https://github.com/Quenary/tugtainer/commit/7d92a6fc6b823bf4672bc0dadd2949c9124297c2)), closes [#58](https://github.com/Quenary/tugtainer/issues/58)
-
+## v1.10.0 (2025-11-18)
 
 ### Features
 
-* GHCR images, build optimizations ([#65](https://github.com/Quenary/tugtainer/issues/65)) ([3dd6792](https://github.com/Quenary/tugtainer/commit/3dd67921f698bdad601e6738167296f1f219464b))
+- --all flag for image prune ([#62](https://github.com/Quenary/tugtainer/pull/62),
+  [`151aca1`](https://github.com/Quenary/tugtainer/commit/151aca139eb6496e7ae38b6817ffe54294a4953c))
 
-# [1.11.0](https://github.com/Quenary/tugtainer/compare/v1.10.0...v1.11.0) (2025-11-19)
 
+## v1.9.0 (2025-11-17)
 
 ### Bug Fixes
 
-* **frontend:** refine Chinese translation ([#63](https://github.com/Quenary/tugtainer/issues/63)) by [@double](https://github.com/double)JazzCat [skip ci] ([68eadab](https://github.com/Quenary/tugtainer/commit/68eadab0a9872393163a545200d1c5d607fea09c)), closes [#62](https://github.com/Quenary/tugtainer/issues/62)
-* **frontend:** sort order badges style [skip ci] ([7d92a6f](https://github.com/Quenary/tugtainer/commit/7d92a6fc6b823bf4672bc0dadd2949c9124297c2)), closes [#58](https://github.com/Quenary/tugtainer/issues/58)
+- **frontend**: Translations loading ([#61](https://github.com/Quenary/tugtainer/pull/61),
+  [`886ac9f`](https://github.com/Quenary/tugtainer/commit/886ac9f982789e5309d68cc79c1fbb030f77a9d7))
 
+### Documentation
+
+- Create FUNDING.yml [skip ci]
+  ([`5c7704c`](https://github.com/Quenary/tugtainer/commit/5c7704c18c895270bc7848f4f0dabb9a818c9682))
+
+- Social preview, readme, icon [skip ci]
+  ([`104ffb7`](https://github.com/Quenary/tugtainer/commit/104ffb711c16ba2cd81bfac3c8cc793f85d1f6a5))
 
 ### Features
 
-* GHCR images, build optimizations ([#65](https://github.com/Quenary/tugtainer/issues/65)) ([3dd6792](https://github.com/Quenary/tugtainer/commit/3dd67921f698bdad601e6738167296f1f219464b))
+- **frontend**: Add Chinese translation (#60) [skip ci]
+  ([`bd09889`](https://github.com/Quenary/tugtainer/commit/bd0988917957b8be7d984c9cf3cc3c49c07f88ac))
 
-# [1.11.0](https://github.com/Quenary/tugtainer/compare/v1.10.0...v1.11.0) (2025-11-19)
 
-
-### Bug Fixes
-
-* **frontend:** refine Chinese translation ([#63](https://github.com/Quenary/tugtainer/issues/63)) by [@double](https://github.com/double)JazzCat [skip ci] ([68eadab](https://github.com/Quenary/tugtainer/commit/68eadab0a9872393163a545200d1c5d607fea09c)), closes [#62](https://github.com/Quenary/tugtainer/issues/62)
-* **frontend:** sort order badges style [skip ci] ([7d92a6f](https://github.com/Quenary/tugtainer/commit/7d92a6fc6b823bf4672bc0dadd2949c9124297c2)), closes [#58](https://github.com/Quenary/tugtainer/issues/58)
-
+## v1.8.0 (2025-11-16)
 
 ### Features
 
-* GHCR images, build optimizations ([#65](https://github.com/Quenary/tugtainer/issues/65)) ([3dd6792](https://github.com/Quenary/tugtainer/commit/3dd67921f698bdad601e6738167296f1f219464b))
+- Custom labels (protected, depends_on) ([#59](https://github.com/Quenary/tugtainer/pull/59),
+  [`c27a5dd`](https://github.com/Quenary/tugtainer/commit/c27a5dd530bd6dfe0ffbee09cc02da2ab9b3502e))
 
-# [1.10.0](https://github.com/Quenary/tugtainer/compare/v1.9.0...v1.10.0) (2025-11-18)
 
+## v1.7.1 (2025-11-16)
+
+### Bug Fixes
+
+- **backend**: OIDC scope parameter bug
+  ([`7b302c7`](https://github.com/Quenary/tugtainer/commit/7b302c7c1e468b28c8a3d06e2b299026f8d11fa1))
+
+### Documentation
+
+- Readme note about auth [skip ci]
+  ([`d3e9365`](https://github.com/Quenary/tugtainer/commit/d3e9365933c5fd9c7ec26523fb52bf1b77004582))
+
+
+## v1.7.0 (2025-11-08)
 
 ### Features
 
-* --all flag for image prune ([#62](https://github.com/Quenary/tugtainer/issues/62)) ([151aca1](https://github.com/Quenary/tugtainer/commit/151aca139eb6496e7ae38b6817ffe54294a4953c)), closes [#22](https://github.com/Quenary/tugtainer/issues/22)
-
-# [1.9.0](https://github.com/Quenary/tugtainer/compare/v1.8.0...v1.9.0) (2025-11-17)
-
-
-### Bug Fixes
-
-* **frontend:** translations loading ([#61](https://github.com/Quenary/tugtainer/issues/61)) ([886ac9f](https://github.com/Quenary/tugtainer/commit/886ac9f982789e5309d68cc79c1fbb030f77a9d7)), closes [#57](https://github.com/Quenary/tugtainer/issues/57)
+- **ci**: Linux/arm/v7 support
+  ([`a2ec7ca`](https://github.com/Quenary/tugtainer/commit/a2ec7cab97743a6884a2efb9a28db7f8aa929dc9))
 
 
-### Features
+## v1.6.0 (2025-11-08)
 
-* **frontend:** Add Chinese translation ([#60](https://github.com/Quenary/tugtainer/issues/60)) [skip ci] ([bd09889](https://github.com/Quenary/tugtainer/commit/bd0988917957b8be7d984c9cf3cc3c49c07f88ac)), closes [#57](https://github.com/Quenary/tugtainer/issues/57)
+### Documentation
 
-# [1.8.0](https://github.com/Quenary/tugtainer/compare/v1.7.1...v1.8.0) (2025-11-16)
-
+- Note about updating agent/proxy [skip ci]
+  ([`d781e95`](https://github.com/Quenary/tugtainer/commit/d781e95f148eeadce33cd721e67b70a757cc159a))
 
 ### Features
 
-* custom labels (protected, depends_on) ([#59](https://github.com/Quenary/tugtainer/issues/59)) ([c27a5dd](https://github.com/Quenary/tugtainer/commit/c27a5dd530bd6dfe0ffbee09cc02da2ab9b3502e)), closes [#41](https://github.com/Quenary/tugtainer/issues/41) [#5](https://github.com/Quenary/tugtainer/issues/5)
+- OIDC authentication ([#33](https://github.com/Quenary/tugtainer/pull/33),
+  [`af45323`](https://github.com/Quenary/tugtainer/commit/af4532302aec8d18945ec5dc7c47a78c142b9a21))
 
-## [1.7.1](https://github.com/Quenary/tugtainer/compare/v1.7.0...v1.7.1) (2025-11-16)
 
+## v1.5.3 (2025-11-04)
 
 ### Bug Fixes
 
-* **backend:** OIDC scope parameter bug ([7b302c7](https://github.com/Quenary/tugtainer/commit/7b302c7c1e468b28c8a3d06e2b299026f8d11fa1))
+- 401 (424) error if agent reverse proxied
+  ([`d7dbf96`](https://github.com/Quenary/tugtainer/commit/d7dbf967c442a2241da86e97fabe51d1d7b95945))
 
-# [1.7.0](https://github.com/Quenary/tugtainer/compare/v1.6.0...v1.7.0) (2025-11-08)
 
+## v1.5.2 (2025-11-02)
+
+### Bug Fixes
+
+- **backend**: Notification body missing
+  ([`08833b6`](https://github.com/Quenary/tugtainer/commit/08833b6ac0567e8e874956199d8cebcb1eb9fe43))
+
+
+## v1.5.1 (2025-11-01)
+
+### Bug Fixes
+
+- **backend**: Notification formatting
+  ([`5bddde0`](https://github.com/Quenary/tugtainer/commit/5bddde0d2c39a4e780e577fe7ef42b517186fc29))
+
+
+## v1.5.0 (2025-10-31)
 
 ### Features
 
-* **ci:** linux/arm/v7 support ([a2ec7ca](https://github.com/Quenary/tugtainer/commit/a2ec7cab97743a6884a2efb9a28db7f8aa929dc9))
+- Tugtainer agent ([#34](https://github.com/Quenary/tugtainer/pull/34),
+  [`32ed9bf`](https://github.com/Quenary/tugtainer/commit/32ed9bffee440e24fd631d3c32faf189941c05fe))
 
-# [1.6.0](https://github.com/Quenary/tugtainer/compare/v1.5.3...v1.6.0) (2025-11-08)
 
+## v1.4.2 (2025-10-26)
+
+### Bug Fixes
+
+- Incorrect update available hint
+  ([`8d858e2`](https://github.com/Quenary/tugtainer/commit/8d858e2a5c620edd822a3ee843061dd03df4f29b))
+
+
+## v1.4.1 (2025-10-25)
+
+### Bug Fixes
+
+- Incorrect version of the app
+  ([`98eab34`](https://github.com/Quenary/tugtainer/commit/98eab348f67e62e42325c36fa40f940beff1fb18))
+
+
+## v1.4.0 (2025-10-25)
+
+### Documentation
+
+- Add desc of check/update process
+  ([`013d77b`](https://github.com/Quenary/tugtainer/commit/013d77b51f15adc8608767cc56ee96cd310c01f2))
+
+- Readme edit
+  ([`cfca4f1`](https://github.com/Quenary/tugtainer/commit/cfca4f12944502062c997ae317d11a18f6783b5a))
 
 ### Features
 
-* OIDC authentication ([#33](https://github.com/Quenary/tugtainer/issues/33)) ([af45323](https://github.com/Quenary/tugtainer/commit/af4532302aec8d18945ec5dc7c47a78c142b9a21))
+- Composed containers
+  ([`d6ec893`](https://github.com/Quenary/tugtainer/commit/d6ec893c9e1c6013af8deb2cac990569306f930f))
 
-## [1.5.3](https://github.com/Quenary/tugtainer/compare/v1.5.2...v1.5.3) (2025-11-04)
-
-
-### Bug Fixes
-
-* 401 (424) error if agent reverse proxied ([d7dbf96](https://github.com/Quenary/tugtainer/commit/d7dbf967c442a2241da86e97fabe51d1d7b95945)), closes [#43](https://github.com/Quenary/tugtainer/issues/43)
-
-## [1.5.2](https://github.com/Quenary/tugtainer/compare/v1.5.1...v1.5.2) (2025-11-02)
+- Log filter for frequent api calls
+  ([`46f54cf`](https://github.com/Quenary/tugtainer/commit/46f54cf3e6d825c30801459e59da1c1a20683a56))
 
 
-### Bug Fixes
+## v1.3.0 (2025-10-24)
 
-* **backend:** notification body missing ([08833b6](https://github.com/Quenary/tugtainer/commit/08833b6ac0567e8e874956199d8cebcb1eb9fe43))
+### Documentation
 
-## [1.5.1](https://github.com/Quenary/tugtainer/compare/v1.5.0...v1.5.1) (2025-11-01)
-
-
-### Bug Fixes
-
-* **backend:** notification formatting ([5bddde0](https://github.com/Quenary/tugtainer/commit/5bddde0d2c39a4e780e577fe7ef42b517186fc29)), closes [#26](https://github.com/Quenary/tugtainer/issues/26)
-
-# [1.5.0](https://github.com/Quenary/tugtainer/compare/v1.4.2...v1.5.0) (2025-10-31)
-
+- Readme, screenshots [skip ci]
+  ([`11030a3`](https://github.com/Quenary/tugtainer/commit/11030a3c388f9c931a1e2ad299e86d94e0e2bf17))
 
 ### Features
 
-* tugtainer agent ([#34](https://github.com/Quenary/tugtainer/issues/34)) ([32ed9bf](https://github.com/Quenary/tugtainer/commit/32ed9bffee440e24fd631d3c32faf189941c05fe)), closes [#31](https://github.com/Quenary/tugtainer/issues/31) [#32](https://github.com/Quenary/tugtainer/issues/32)
+- Enable arm64 build for docker image
+  ([`61066d9`](https://github.com/Quenary/tugtainer/commit/61066d991d15867f0791876001c990d26f479674))
 
-## [1.4.2](https://github.com/Quenary/tugtainer/compare/v1.4.1...v1.4.2) (2025-10-26)
 
-
-### Bug Fixes
-
-* incorrect update available hint ([8d858e2](https://github.com/Quenary/tugtainer/commit/8d858e2a5c620edd822a3ee843061dd03df4f29b)), closes [#12](https://github.com/Quenary/tugtainer/issues/12)
-
-## [1.4.1](https://github.com/Quenary/tugtainer/compare/v1.4.0...v1.4.1) (2025-10-25)
-
+## v1.2.3 (2025-10-21)
 
 ### Bug Fixes
 
-* incorrect version of the app ([98eab34](https://github.com/Quenary/tugtainer/commit/98eab348f67e62e42325c36fa40f940beff1fb18)), closes [#23](https://github.com/Quenary/tugtainer/issues/23)
+- **backend**: Apprise interpret escapes, logging
+  ([`19a5d46`](https://github.com/Quenary/tugtainer/commit/19a5d46b06ea8f0b114a44a5439c078314752c7c))
 
-# [1.4.0](https://github.com/Quenary/tugtainer/compare/v1.3.0...v1.4.0) (2025-10-25)
 
+## v1.2.2 (2025-10-20)
+
+### Bug Fixes
+
+- I18n after update
+  ([`60fdfb8`](https://github.com/Quenary/tugtainer/commit/60fdfb83280641181ff88f13f26088bfbcf0fc4d))
+
+
+## v1.2.1 (2025-10-20)
+
+### Bug Fixes
+
+- Conflict in networking settings
+  ([`3c94ed2`](https://github.com/Quenary/tugtainer/commit/3c94ed2de5728f8034cc7e8bfef2e20b425124df))
+
+### Documentation
+
+- Readme edit
+  ([`5c95d03`](https://github.com/Quenary/tugtainer/commit/5c95d0321e55eef926322b00087c0e320cea179a))
+
+- Readme edit
+  ([`7bc4baf`](https://github.com/Quenary/tugtainer/commit/7bc4baf280dca2e76e7d8f10b8b247b97606c987))
+
+
+## v1.2.0 (2025-10-18)
+
+### Bug Fixes
+
+- Preserve gpus
+  ([`0cbe7b8`](https://github.com/Quenary/tugtainer/commit/0cbe7b855b1ddc82e671ddb34637dea7a7eedfe3))
 
 ### Features
 
-* composed containers ([d6ec893](https://github.com/Quenary/tugtainer/commit/d6ec893c9e1c6013af8deb2cac990569306f930f)), closes [#5](https://github.com/Quenary/tugtainer/issues/5)
-* log filter for frequent api calls ([46f54cf](https://github.com/Quenary/tugtainer/commit/46f54cf3e6d825c30801459e59da1c1a20683a56))
+- Container exit code
+  ([`0bca164`](https://github.com/Quenary/tugtainer/commit/0bca1642d5d88830238cdfb70c07348058e76884))
 
-# [1.3.0](https://github.com/Quenary/tugtainer/compare/v1.2.3...v1.3.0) (2025-10-24)
+- Multiple host support
+  ([`c1c9234`](https://github.com/Quenary/tugtainer/commit/c1c923434190a2f2918ad84edd17507a20c64732))
 
+- Multiple host support
+  ([`1279150`](https://github.com/Quenary/tugtainer/commit/12791509d8c6bbf91af3f469a22bfaf94358f6b8))
+
+- Multiple host support
+  ([`092a355`](https://github.com/Quenary/tugtainer/commit/092a35538734ce51c14b02ef437cf40acb25ac25))
+
+- Multiple host support
+  ([`9cd9176`](https://github.com/Quenary/tugtainer/commit/9cd91766eb787551c718fb24fcd89d9a6d0cde14))
+
+- Multiple host support
+  ([`7a86509`](https://github.com/Quenary/tugtainer/commit/7a86509652362bc38345257a6210505d621707f7))
+
+- Multiple host support
+  ([`c774988`](https://github.com/Quenary/tugtainer/commit/c7749881532d2b75db782fec88b452d7eca723cf))
+
+- Multiple host support
+  ([`a9cc38b`](https://github.com/Quenary/tugtainer/commit/a9cc38ba237ef0a4f48901f4914d6cb1cb6c0d6a))
+
+- Multiple host support
+  ([`801886d`](https://github.com/Quenary/tugtainer/commit/801886df3d7d5e8912fbdb56c6ca0b2f7f2afaad))
+
+- Prune res in modal
+  ([`e630ee9`](https://github.com/Quenary/tugtainer/commit/e630ee96180cc759531cd154e780f9442e3b3019))
+
+
+## v1.1.6 (2025-10-10)
+
+### Bug Fixes
+
+- **backend**: Log config options
+  ([`77da3e6`](https://github.com/Quenary/tugtainer/commit/77da3e6c5e77284ac601a9ede68b0a1e633b0102))
+
+
+## v1.1.5 (2025-10-10)
+
+### Bug Fixes
+
+- **backend**: Preserve aliases and multiple networks
+  ([`9489a0c`](https://github.com/Quenary/tugtainer/commit/9489a0c7ff36a67f6061c5b5e04b56dfd916bae0))
+
+
+## v1.1.4 (2025-10-10)
+
+### Bug Fixes
+
+- Install docker cli in image
+  ([`e93d891`](https://github.com/Quenary/tugtainer/commit/e93d89121c3b0d1a24d471da1dbcae11c680250e))
+
+
+## v1.1.3 (2025-10-10)
+
+### Bug Fixes
+
+- **backend**: Local image check error
+  ([`e6a5248`](https://github.com/Quenary/tugtainer/commit/e6a5248de357870ab90f299253f4978cb8d427c0))
+
+- **backend**: Potential error if cmd/entrypoint/workdir changed
+  ([`d7b7441`](https://github.com/Quenary/tugtainer/commit/d7b7441083f34aaa78d2301be00de2469b09bd40))
+
+- **backend**: Potential error with invalid labels keys
+  ([`c03b937`](https://github.com/Quenary/tugtainer/commit/c03b9373880b7f58783f5192fa6a4a7356d8c177))
+
+- **backend**: Python_on_whales migration fixes
+  ([`e8e2353`](https://github.com/Quenary/tugtainer/commit/e8e23532f7bbe4ec780666b015bdbb74d857b301))
+
+### Documentation
+
+- Readme
+  ([`0a408ac`](https://github.com/Quenary/tugtainer/commit/0a408acb8d622d69c21ee77a7a06264d53d312e7))
+
+- Readme
+  ([`64189ec`](https://github.com/Quenary/tugtainer/commit/64189eca198af97a33fa091367f2aed50a250f86))
+
+- Readme
+  ([`2a485cf`](https://github.com/Quenary/tugtainer/commit/2a485cfbb81609046177f23458670f0883e13ab8))
+
+- Readme
+  ([`6355bfe`](https://github.com/Quenary/tugtainer/commit/6355bfe3e677451fbc5e8428f471f955a4a904f4))
+
+
+## v1.1.2 (2025-10-06)
+
+### Bug Fixes
+
+- **frontend**: Cmd in new version dialog
+  ([`3e8e970`](https://github.com/Quenary/tugtainer/commit/3e8e970f9b50641da32591c85a0dbca4b6212bf1))
+
+
+## v1.1.1 (2025-10-06)
+
+### Bug Fixes
+
+- **frontend**: Prune success toast unit
+  ([`c0fe4b5`](https://github.com/Quenary/tugtainer/commit/c0fe4b549c2991da341a628f90b300a3ce0017fb))
+
+
+## v1.1.0 (2025-10-06)
+
+### Bug Fixes
+
+- Dt removed from nitification
+  ([`45d00ac`](https://github.com/Quenary/tugtainer/commit/45d00ace971f8988108b3c966220d0e53c5f1af4))
+
+- Settings enum
+  ([`3842cd7`](https://github.com/Quenary/tugtainer/commit/3842cd714ff998777ddc8913824aec70ec0e10a2))
+
+- **frontend**: App settings presentation
+  ([`4706a3e`](https://github.com/Quenary/tugtainer/commit/4706a3e2e88a9240611aa6af79c74a50b063db72))
+
+- **frontend**: Check progress rendering
+  ([`c031d63`](https://github.com/Quenary/tugtainer/commit/c031d63db62066bb79334413877d92b02229fc1d))
 
 ### Features
 
-* enable arm64 build for docker image ([61066d9](https://github.com/Quenary/tugtainer/commit/61066d991d15867f0791876001c990d26f479674))
+- Images
+  ([`b810c05`](https://github.com/Quenary/tugtainer/commit/b810c052be4539a3accd1f7c5f412bd1736daef8))
 
-## [1.2.3](https://github.com/Quenary/tugtainer/compare/v1.2.2...v1.2.3) (2025-10-21)
+- **backend**: Scheduled prune
+  ([`c3b87ef`](https://github.com/Quenary/tugtainer/commit/c3b87ef4ff48f043a2e496f3728f6795f3279c65))
+
+- **frontend**: Add cont multisort
+  ([`f4df035`](https://github.com/Quenary/tugtainer/commit/f4df035bb52a21056564a274612522b1a3acdf43))
+
+- **frontend**: Check complete dialog
+  ([`97b200f`](https://github.com/Quenary/tugtainer/commit/97b200f719171295d5ee3266e57fa53f10f14a9d))
 
 
-### Bug Fixes
-
-* **backend:** apprise interpret escapes, logging ([19a5d46](https://github.com/Quenary/tugtainer/commit/19a5d46b06ea8f0b114a44a5439c078314752c7c)), closes [#8](https://github.com/Quenary/tugtainer/issues/8) [#16](https://github.com/Quenary/tugtainer/issues/16)
-
-## [1.2.2](https://github.com/Quenary/tugtainer/compare/v1.2.1...v1.2.2) (2025-10-20)
-
-
-### Bug Fixes
-
-* i18n after update ([60fdfb8](https://github.com/Quenary/tugtainer/commit/60fdfb83280641181ff88f13f26088bfbcf0fc4d)), closes [#19](https://github.com/Quenary/tugtainer/issues/19)
-
-## [1.2.1](https://github.com/Quenary/tugtainer/compare/v1.2.0...v1.2.1) (2025-10-20)
-
+## v1.0.3 (2025-10-04)
 
 ### Bug Fixes
 
-* conflict in networking settings ([3c94ed2](https://github.com/Quenary/tugtainer/commit/3c94ed2de5728f8034cc7e8bfef2e20b425124df)), closes [#17](https://github.com/Quenary/tugtainer/issues/17)
-
-# [1.2.0](https://github.com/Quenary/tugtainer/compare/v1.1.6...v1.2.0) (2025-10-18)
-
-
-### Bug Fixes
-
-* preserve gpus ([0cbe7b8](https://github.com/Quenary/tugtainer/commit/0cbe7b855b1ddc82e671ddb34637dea7a7eedfe3))
+- **backend**: Container check
+  ([`8797d28`](https://github.com/Quenary/tugtainer/commit/8797d28f593e3bde2e83febddbf71397653be5e1))
 
 
-### Features
-
-* container exit code ([0bca164](https://github.com/Quenary/tugtainer/commit/0bca1642d5d88830238cdfb70c07348058e76884))
-* multiple host support ([c1c9234](https://github.com/Quenary/tugtainer/commit/c1c923434190a2f2918ad84edd17507a20c64732))
-* multiple host support ([1279150](https://github.com/Quenary/tugtainer/commit/12791509d8c6bbf91af3f469a22bfaf94358f6b8))
-* multiple host support ([092a355](https://github.com/Quenary/tugtainer/commit/092a35538734ce51c14b02ef437cf40acb25ac25))
-* multiple host support ([9cd9176](https://github.com/Quenary/tugtainer/commit/9cd91766eb787551c718fb24fcd89d9a6d0cde14))
-* multiple host support ([7a86509](https://github.com/Quenary/tugtainer/commit/7a86509652362bc38345257a6210505d621707f7))
-* multiple host support ([c774988](https://github.com/Quenary/tugtainer/commit/c7749881532d2b75db782fec88b452d7eca723cf))
-* multiple host support ([a9cc38b](https://github.com/Quenary/tugtainer/commit/a9cc38ba237ef0a4f48901f4914d6cb1cb6c0d6a))
-* multiple host support ([801886d](https://github.com/Quenary/tugtainer/commit/801886df3d7d5e8912fbdb56c6ca0b2f7f2afaad))
-* prune res in modal ([e630ee9](https://github.com/Quenary/tugtainer/commit/e630ee96180cc759531cd154e780f9442e3b3019))
-
-## [1.1.6](https://github.com/Quenary/tugtainer/compare/v1.1.5...v1.1.6) (2025-10-10)
-
+## v1.0.2 (2025-10-02)
 
 ### Bug Fixes
 
-* **backend:** log config options ([77da3e6](https://github.com/Quenary/tugtainer/commit/77da3e6c5e77284ac601a9ede68b0a1e633b0102))
+- **backend**: Self container detection
+  ([`0ec7703`](https://github.com/Quenary/tugtainer/commit/0ec77034238d66c0a12feef00dff7da681e78026))
 
-## [1.1.5](https://github.com/Quenary/tugtainer/compare/v1.1.4...v1.1.5) (2025-10-10)
 
-
-### Bug Fixes
-
-* **backend:** preserve aliases and multiple networks ([9489a0c](https://github.com/Quenary/tugtainer/commit/9489a0c7ff36a67f6061c5b5e04b56dfd916bae0))
-
-## [1.1.4](https://github.com/Quenary/tugtainer/compare/v1.1.3...v1.1.4) (2025-10-10)
-
+## v1.0.1 (2025-10-01)
 
 ### Bug Fixes
 
-* install docker cli in image ([e93d891](https://github.com/Quenary/tugtainer/commit/e93d89121c3b0d1a24d471da1dbcae11c680250e))
+- **backend**: Check image digest, choose registry
+  ([`258efa9`](https://github.com/Quenary/tugtainer/commit/258efa98e20a83204211db0a8c2f494acb8a0c78))
 
-## [1.1.3](https://github.com/Quenary/tugtainer/compare/v1.1.2...v1.1.3) (2025-10-10)
+### Documentation
 
-
-### Bug Fixes
-
-* **backend:** local image check error ([e6a5248](https://github.com/Quenary/tugtainer/commit/e6a5248de357870ab90f299253f4978cb8d427c0)), closes [#2](https://github.com/Quenary/tugtainer/issues/2)
-* **backend:** potential error if cmd/entrypoint/workdir changed ([d7b7441](https://github.com/Quenary/tugtainer/commit/d7b7441083f34aaa78d2301be00de2469b09bd40))
-* **backend:** potential error with invalid labels keys ([c03b937](https://github.com/Quenary/tugtainer/commit/c03b9373880b7f58783f5192fa6a4a7356d8c177))
-* **backend:** python_on_whales migration fixes ([e8e2353](https://github.com/Quenary/tugtainer/commit/e8e23532f7bbe4ec780666b015bdbb74d857b301))
-
-## [1.1.2](https://github.com/Quenary/tugtainer/compare/v1.1.1...v1.1.2) (2025-10-06)
+- Docker.sock in readme
+  ([`2db72ca`](https://github.com/Quenary/tugtainer/commit/2db72ca6cee65348ed2857729528ca2570d48ebe))
 
 
-### Bug Fixes
+## v1.0.0 (2025-10-01)
 
-* **frontend:** cmd in new version dialog ([3e8e970](https://github.com/Quenary/tugtainer/commit/3e8e970f9b50641da32591c85a0dbca4b6212bf1))
-
-## [1.1.1](https://github.com/Quenary/tugtainer/compare/v1.1.0...v1.1.1) (2025-10-06)
-
-
-### Bug Fixes
-
-* **frontend:** prune success toast unit ([c0fe4b5](https://github.com/Quenary/tugtainer/commit/c0fe4b549c2991da341a628f90b300a3ce0017fb))
-
-# [1.1.0](https://github.com/Quenary/tugtainer/compare/v1.0.3...v1.1.0) (2025-10-06)
-
-
-### Bug Fixes
-
-* dt removed from nitification ([45d00ac](https://github.com/Quenary/tugtainer/commit/45d00ace971f8988108b3c966220d0e53c5f1af4))
-* **frontend:** app settings presentation ([4706a3e](https://github.com/Quenary/tugtainer/commit/4706a3e2e88a9240611aa6af79c74a50b063db72))
-* **frontend:** check progress rendering ([c031d63](https://github.com/Quenary/tugtainer/commit/c031d63db62066bb79334413877d92b02229fc1d))
-* settings enum ([3842cd7](https://github.com/Quenary/tugtainer/commit/3842cd714ff998777ddc8913824aec70ec0e10a2))
-
-
-### Features
-
-* **backend:** scheduled prune ([c3b87ef](https://github.com/Quenary/tugtainer/commit/c3b87ef4ff48f043a2e496f3728f6795f3279c65))
-* **frontend:** add cont multisort ([f4df035](https://github.com/Quenary/tugtainer/commit/f4df035bb52a21056564a274612522b1a3acdf43))
-* **frontend:** check complete dialog ([97b200f](https://github.com/Quenary/tugtainer/commit/97b200f719171295d5ee3266e57fa53f10f14a9d))
-* images ([b810c05](https://github.com/Quenary/tugtainer/commit/b810c052be4539a3accd1f7c5f412bd1736daef8))
-
-## [1.0.3](https://github.com/Quenary/tugtainer/compare/v1.0.2...v1.0.3) (2025-10-04)
-
-
-### Bug Fixes
-
-* **backend:** container check ([8797d28](https://github.com/Quenary/tugtainer/commit/8797d28f593e3bde2e83febddbf71397653be5e1))
-
-## [1.0.2](https://github.com/Quenary/tugtainer/compare/v1.0.1...v1.0.2) (2025-10-02)
-
-
-### Bug Fixes
-
-* **backend:** self container detection ([0ec7703](https://github.com/Quenary/tugtainer/commit/0ec77034238d66c0a12feef00dff7da681e78026))
-
-## [1.0.1](https://github.com/Quenary/tugtainer/compare/v1.0.0...v1.0.1) (2025-10-01)
-
-
-### Bug Fixes
-
-* **backend:** check image digest, choose registry ([258efa9](https://github.com/Quenary/tugtainer/commit/258efa98e20a83204211db0a8c2f494acb8a0c78))
-
-# 1.0.0 (2025-10-01)
-
-
-### Bug Fixes
-
-* cont update ([31f1331](https://github.com/Quenary/tugtainer/commit/31f133106b1eeddf3e5d89cf7c6b482f62505150))
-* cookies, pwd file ([3ea7dbe](https://github.com/Quenary/tugtainer/commit/3ea7dbefcc9daf4e286072df14c602b1052599bb))
-* **frontend:** display on smaller screens ([d37a421](https://github.com/Quenary/tugtainer/commit/d37a42173937e3a067b1e07b1edee0d1cdabc648))
-* **frontend:** handle 401 after failed refresh ([b255016](https://github.com/Quenary/tugtainer/commit/b2550165cfa7eef7ed2c8521a0e7e85ec436f1c4))
-
-
-### Features
-
-* add check progress ([c5dba1e](https://github.com/Quenary/tugtainer/commit/c5dba1e4fa119a25ce66664317f522a449faef55))
-* add cid fallback with HOSTNAME ([2494788](https://github.com/Quenary/tugtainer/commit/2494788aaa3dbc65e248e335d6632fb72b733c9c))
-* app version, healthcheck ([1fc27a4](https://github.com/Quenary/tugtainer/commit/1fc27a4a9ca4cea8b671ba2a1f1a0988b4acf95d))
-* apprise async ([1d09b78](https://github.com/Quenary/tugtainer/commit/1d09b78150aeaf82121ff998818f405d7033d52a))
-* authorization ([d293317](https://github.com/Quenary/tugtainer/commit/d293317f7952e66fce2f3b78069085f8de67590d))
-* **frontend:** improve error parser ([b2a5ea1](https://github.com/Quenary/tugtainer/commit/b2a5ea10feec0d7c826e0473ea7e93fe6753301d))
-* **frontend:** list update after check, hints, translations ([9530017](https://github.com/Quenary/tugtainer/commit/953001793ffea7e358353866bd84bd881510360d))
-* image spec on frontend ([96f3a96](https://github.com/Quenary/tugtainer/commit/96f3a9679c455e13ce223ac1b2c09ee183a25adb))
-* keep container state ([c0f89a2](https://github.com/Quenary/tugtainer/commit/c0f89a20084bba0eea116bb8a7965f2bf0c27b6a))
-* main features ([588a1ba](https://github.com/Quenary/tugtainer/commit/588a1bad127327e29dc4351863189188a6bcb8eb))
-* protect self container ([ca5ff7b](https://github.com/Quenary/tugtainer/commit/ca5ff7b6744b377583e78714721f1992d579ae90))
-* reacher cont cfg, self update check, ([2c1a84a](https://github.com/Quenary/tugtainer/commit/2c1a84a040e82fe3d2a0593503f58d2d6dbc498a))
-* table scroll ([84933f8](https://github.com/Quenary/tugtainer/commit/84933f83be5740088f1e58ffaedc8ec40e81e817))
-* tz validation ([d8ffdb0](https://github.com/Quenary/tugtainer/commit/d8ffdb0470f08d2b288bb3ba358da2ab9928e937))
-* tz, cont props, fix settings form, ([64a1975](https://github.com/Quenary/tugtainer/commit/64a19754870fedfe11884d7fd3d68c32412d3420))
+- Initial Release
