@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   computed,
   effect,
@@ -60,6 +61,7 @@ export class SettingsPageForm {
   private readonly settingsApiService = inject(SettingsApiService);
   private readonly translateService = inject(TranslateService);
   private readonly toastService = inject(ToastService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   public readonly OnSubmit = output<ISettingUpdate[]>();
 
@@ -132,6 +134,7 @@ export class SettingsPageForm {
         const form = this.getFormGroup(item);
         this.formArray.push(form);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
