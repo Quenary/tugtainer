@@ -8,49 +8,44 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
 
 jobs:
   semantic-release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-release-${{ github.ref_name }}
+      cancel-in-progress: false
     steps:
-      - name: Checkout repository
+      # Note: We checkout the repository at the branch that triggered the workflow.
+      # Python Semantic Release will automatically convert shallow clones to full clones
+      # if needed to ensure proper history evaluation. However, we forcefully reset the
+      # branch to the workflow sha because it is possible that the branch was updated
+      # while the workflow was running, which prevents accidentally releasing un-evaluated
+      # changes.
+      - name: Setup | Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run semantic-release
-        env:
-          GIT_AUTHOR_NAME: github-actions[bot]
-          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
-
-      - name: Read Next Release Version
-        id: read-version
+      - name: Setup | Force release branch to be at workflow sha
         run: |
-          if [ -f next-release-version.env ]; then
-            source next-release-version.env
-            echo "version=$NEXT_RELEASE_VERSION" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=" >> "$GITHUB_OUTPUT"
-          fi
+          git reset --hard ${{ github.sha }}
 
-      - name: Trigger Prod Build Workflow
-        if: ${{ steps.read-version.outputs.version != '' }}
+      - name: Action | Semantic-release
+        id: semantic-release
+        uses: python-semantic-release/python-semantic-release@v10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git_author_name: github-actions[bot]
+          git_author_email: 41898282+github-actions[bot]@users.noreply.github.com
+          git_committer_name: github-actions[bot]
+          git_committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Action | Trigger Prod Build Workflow
+        if: steps.semantic-release.outputs.released == 'true'
         uses: peter-evans/repository-dispatch@v4
         with:
           event-type: release-event
-          client-payload: '{"version": "${{ steps.read-version.outputs.version }}"}'
+          client-payload: '{"version": "${{ steps.semantic-release.outputs.version }}"}'

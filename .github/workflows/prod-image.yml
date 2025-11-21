@@ -1,4 +1,4 @@
-name: Main Image
+name: Prod Image
 
 on:
   repository_dispatch:
@@ -10,7 +10,11 @@ permissions:
 
 jobs:
   build-and-push:
+    name: Build and push prod images
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-prod-image-${{ github.ref_name }}
+      cancel-in-progress: false
     env:
       IMAGE_NAME: tugtainer
       AGENT_IMAGE_NAME: tugtainer-agent
