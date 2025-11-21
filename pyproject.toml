@@ -25,7 +25,6 @@ dev = [
     "fastapi[standard]>=0.121.2",
     "pytest>=9.0.1",
     "pytest-asyncio>=1.3.0",
-    "python-semantic-release>=10.5.2",
     "uvicorn[standard]>=0.38.0",
     "watchfiles>=1.1.1",
     "websockets>=15.0.1",
@@ -66,3 +65,4 @@ exclude_commit_patterns = [
     '''build\((?!deps\): .+)''',
     '''Initial [Cc]ommit.*''',
 ]
+mode = "init"
