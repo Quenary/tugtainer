@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.13.1 (2025-11-28)
+
+### Bug Fixes
+
+- **build**: Fixed uv lock file error
+  ([`6c2df78`](https://github.com/Quenary/tugtainer/commit/6c2df78908ad67a4bb2936646dbe285fe8c0adc7))
+
+
 ## v1.13.0 (2025-11-28)
 
 ### Features
