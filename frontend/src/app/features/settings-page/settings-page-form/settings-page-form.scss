@@ -14,23 +14,12 @@
     gap: 12px;
     width: 100%;
 
-    &-name {
-      flex: 0.5;
+    p-iftaLabel,
+    textarea {
+      width: 100%;
     }
-    &-field {
-      flex: 1;
+    textarea {
+      resize: none;
     }
-    &-functions {
-      flex: 0.5;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    // .pi-question-circle {
-    //     font-size: 25px;
-    // }
   }
 }

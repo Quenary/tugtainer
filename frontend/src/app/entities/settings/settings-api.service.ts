@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../base/base-api.service';
 import { Observable } from 'rxjs';
-import { ISetting, ISettingUpdate } from './settings-interface';
+import { ISetting, ISettingUpdate, ITestNotificationRequestBody } from './settings-interface';
 
 @Injectable({
   providedIn: 'root',
@@ -17,8 +17,8 @@ export class SettingsApiService extends BaseApiService<'/settings'> {
     return this.httpClient.patch(`${this.basePath}/change`, settings);
   }
 
-  test_notification(url: string): Observable<any> {
-    return this.httpClient.post(`${this.basePath}/test_notification`, { url });
+  test_notification(body: ITestNotificationRequestBody): Observable<any> {
+    return this.httpClient.post(`${this.basePath}/test_notification`, body);
   }
 
   getAvailableTimezones(): Observable<string[]> {

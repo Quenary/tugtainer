@@ -6,6 +6,9 @@ from python_on_whales.components.container.models import (
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
+from backend.core.container.schemas.check_result import (
+    ContainerCheckResultType,
+)
 from backend.core.container.util.is_protected_container import (
     is_protected_container,
 )
@@ -40,7 +43,7 @@ class ContainerGroupItem:
     service_name: str | None  # docker compose service name
     compose_deps: list[str]  # docker compose dependencies
     tugtainer_deps: list[str]  # tugtainer dependencies
-    available: bool = False
+    temp_result: ContainerCheckResultType | None = None
     image_spec: str | None = None
     config: CreateContainerRequestBodySchema | None = None
     commands: list[list[str]] = field(default_factory=list)

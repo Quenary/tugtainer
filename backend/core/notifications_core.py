@@ -1,59 +1,125 @@
 import logging
 from apprise import Apprise, NotifyFormat
 from apprise.exception import AppriseException
-from typing import cast
-from sqlalchemy import select
-from backend.db.session import async_session_maker
-from backend.db.models.settings_model import SettingModel
+from typing import Any, cast
+from backend.config import Config
+from backend.core.container.schemas.check_result import (
+    ContainerCheckResult,
+    HostCheckResult,
+)
 from backend.enums.settings_enum import ESettingKey
 from backend.exception import TugException
+import jinja2
+from backend.helpers.settings_storage import SettingsStorage
 
-_url_sentinel = object()
+
+def any_worthy(items: list[ContainerCheckResult]) -> bool:
+    return any(
+        item.result
+        in [
+            "available",
+            "updated",
+            "rolled_back",
+            "failed",
+        ]
+        for item in items
+    )
+
+
+tt_sentinel = object()
+bt_sentinel = object()
+u_sentinel = object()
+
+
+async def send_check_notification(
+    results: list[HostCheckResult],
+    title_template: str | None = cast(None, tt_sentinel),
+    body_template: str | None = cast(None, bt_sentinel),
+    urls: str | None = cast(None, u_sentinel),
+):
+    """
+    Send check results notification.
+    :param results: results of check/update process
+    :param title_template: override title template
+    :param body_template: override body template
+    :param urls: override urls
+    """
+    try:
+        if title_template == tt_sentinel:
+            title_template = SettingsStorage.get(
+                ESettingKey.NOTIFICATION_TITLE_TEMPLATE
+            )
+        if body_template == bt_sentinel:
+            body_template = SettingsStorage.get(
+                ESettingKey.NOTIFICATION_BODY_TEMPLATE
+            )
+        if urls == u_sentinel:
+            urls = SettingsStorage.get(ESettingKey.NOTIFICATION_URLS)
+
+        if not urls:
+            return
+        _urls = [
+            line.strip() for line in urls.splitlines() if line.strip()
+        ]
+
+        jinja2_env = jinja2.Environment(
+            trim_blocks=True,
+            lstrip_blocks=True,
+            keep_trailing_newline=False,
+        )
+        jinja2_env.filters["any_worthy"] = any_worthy
+        context = {"results": results, "hostname": Config.HOSTNAME}
+
+        title = None
+        if title_template:
+            _title_template = jinja2_env.from_string(title_template)
+            title = _title_template.render(**context)
+        body = None
+        if body_template:
+            _body_template = jinja2_env.from_string(body_template)
+            body = _body_template.render(**context)
+
+        if not body or not body.strip():
+            logging.warning("No notification body after template render, exiting.")
+            return
+
+        return await send_notification(title, body, urls=_urls)
+    except jinja2.exceptions.TemplateError as e:
+        logging.exception(e)
+        logging.error('Failed to send notification')
+        raise e
 
 
 async def send_notification(
     title: str | None = None,
     body: str | None = None,
     body_format: NotifyFormat = NotifyFormat.MARKDOWN,
-    url: str | None = cast(None, _url_sentinel),
+    urls: list[str] = [],
 ):
-    async with async_session_maker() as session:
-        logging.info(f"Sending notification")
-        logging.debug(f"Title: {title}")
-        logging.debug(f"Body: {body}")
+    logging.info(f"Sending notification")
+    logging.debug(f"Title: {title}")
+    logging.debug(f"Body: {body}")
 
-        _url = url
-        if url is _url_sentinel:
-            stmt = (
-                select(SettingModel.value)
-                .where(
-                    SettingModel.key == ESettingKey.NOTIFICATION_URL
-                )
-                .limit(1)
+    if urls:
+        try:
+            _apprise = Apprise()
+            _apprise.add(cast(Any, urls))
+            result = await _apprise.async_notify(
+                title=title,
+                body=body,
+                body_format=body_format,
             )
-            result = await session.execute(stmt)
-            _url = result.scalar_one_or_none()
-
-        if _url:
-            try:
-                _apprise = Apprise()
-                _apprise.add(_url)
-                result = await _apprise.async_notify(
-                    title=title,
-                    body=body,
-                    body_format=body_format,
-                )
-                if result == False:
-                    message = "Failed to send notification, but no exception was raised by Apprise."
-                    logging.error(message)
-                    raise TugException(message)
-            except AppriseException as e:
-                logging.error(
-                    "Failed to send notification. Apprise exception:"
-                )
-                logging.exception(e)
-                raise e
-        else:
-            message = "Failed to send notification. URL is undefined."
-            logging.error(message)
-            raise TugException(message)
+            if result == False:
+                message = "Failed to send notification, but no exception was raised by Apprise."
+                logging.error(message)
+                raise TugException(message)
+        except AppriseException as e:
+            logging.error(
+                "Failed to send notification. Apprise exception:"
+            )
+            logging.exception(e)
+            raise e
+    else:
+        message = "Failed to send notification. URL is undefined."
+        logging.error(message)
+        raise TugException(message)

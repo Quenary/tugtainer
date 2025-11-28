@@ -1,5 +1,9 @@
-from typing import Any, Generic, Mapping, TypedDict, TypeVar
+from typing import Any, Generic, Mapping, Optional, TypedDict, TypeVar
 from cachetools import TTLCache
+from backend.core.container.schemas.check_result import (
+    GroupCheckResult,
+    HostCheckResult,
+)
 from backend.enums import ECheckStatus
 import uuid
 from .container_group import ContainerGroup
@@ -26,21 +30,27 @@ class GroupCheckData(TypedDict, total=False):
     """Data of containers group check/update progress"""
 
     status: ECheckStatus  # Status of progress
+    result: Optional[
+        GroupCheckResult
+    ]  # Data wil be available only in the end
 
 
-class HostCheckData(GroupCheckData, total=False):
+class HostCheckData(TypedDict, total=False):
     """Data of host container's check/update progress"""
 
-    available: int  # Count of not updated containers (check only)
-    updated: int  # count of updated containers
-    rolled_back: int  # count of rolled-back after fail
-    failed: int  # count of failed updates
+    status: ECheckStatus  # Status of progress
+    result: Optional[
+        HostCheckResult
+    ]  # Data will be available only in the end
 
 
-class AllCheckData(HostCheckData, total=False):
+class AllCheckData(TypedDict, total=False):
     """Data of all host's container's check/update progress"""
 
-    pass
+    status: ECheckStatus  # Status of progress
+    result: Optional[
+        dict[int, HostCheckResult]
+    ]  # Data will be available only in the end
 
 
 T = TypeVar("T", bound=Mapping[Any, Any])

@@ -155,6 +155,62 @@ Automatic updates are disabled by default. You can choose only what you need.
 
   This label is an alternative to the docker compoes label. It allows you to declare that a container depends on another container, even if they are not in the same compose project. List of container names, separated by commas.
 
+## Notifications:
+
+The app uses [Apprise](https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications) to send notifications and [Jinja2](https://jinja.palletsprojects.com/en/stable/) to generate their content. You can view the documentation for each of them for more details.
+
+Jinja2 custom filters:
+
+- any_worthy - checks that at least one of the items has result equal to "available", "updated", "rolled_back" or "failed"
+
+Jinja2 context schema:
+
+```json
+{
+  "hostname": "Tugtainer container hostname",
+  "results": [
+    {
+      "host_id": 0,
+      "host_name": "string",
+      "items": [
+        {
+          "container": {
+            "id": "string",
+            "image": "string",
+            "...other keys of 'docker container inspect' in snake_case": {},
+          },
+          "old_image": {
+            "id": "string",
+            "repo_digests": [
+              "digest1",
+              "digest2",
+            ],
+            "...other keys of 'docker image inspect' in snake_case": {},
+          },
+          "new_image": {
+            "...same schema as for old_image": {},
+          },
+          "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
+        }
+      ],
+      "prune_result": "string",
+    }
+  ]
+}
+```
+
+"result" options:
+- "not_available": No new image found.
+- "available": New image available for the container.
+- "available(notified)": New image available for the container, but it was in the previous notification. The app preserves digests of new images, so if another new image has appeared, the result will still be "available".
+- "updated": Container successfully recreaded with the new image.
+- "rolled_back": The app failed to recreate the container, but was able to restore it with the old image.
+- "failed": The app failed to recreate container.
+
+The notification is sent only if the body is not empty. For instance, if there is only containers with "available(notified)" results, the body will be empty (with default template), and notification will not be sent.
+
+If you want to restore default template, it's [here](./backend/const.py)
+
 ## Auth
 
 The app uses password authorization by default. The password is stored in the file in encrypted form.
@@ -186,9 +242,7 @@ See [/backend/README.md](/backend/README.md) and [/frontend/README.md](/frontend
 ### TODO:
 
 - add unit tests
-- filter cont in notification (dont notify already notified)
 - Dozzle integration or something more universal (list of urls for redirects?)
 - Swarm support?
 - Try to add release notes (from labels or something)
-- Remove unused deps
 - Do not update stopped containers

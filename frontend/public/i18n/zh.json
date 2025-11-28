@@ -154,16 +154,17 @@
         "HINT": "用于定期检查的 Crontab 表达式，例如 \n'0 */1 * * *' 表示每小时一次\n\n点击了解更多信息。",
         "LINK": "https://crontab.guru/"
       },
-      "NOTIFICATION_URL": {
-        "LABEL": "通知 URL",
-        "HINT": "用于通过 Apprise 发送通知的 URL，例如 tgram://<token>/<chat_id>\n\n点击了解更多信息。",
-        "LINK": "https://pypi.org/project/apprise/",
+      "NOTIFICATION_URLS": {
+        "LABEL": "通知 URLs",
+        "HINT": "用于通过 Apprise 发送通知的 URLs，例如 tgram://<token>/<chat_id>\n您可以指定多个，每个指定一行。\n\n点击了解更多信息。",
+        "LINK": "https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications",
         "TEST": "发送测试通知"
       },
       "TIMEZONE": {
         "LABEL": "时区",
         "HINT": "IANA 格式的时区，例如 Asia/Shanghai"
-      }
+      },
+      "SEND_TEST_NOTIFICATION": "发送测试通知"
     }
   }
 }
