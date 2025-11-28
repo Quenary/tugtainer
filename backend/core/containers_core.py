@@ -543,11 +543,62 @@ async def check_all(update: bool):
             }
         )
 
-        results = [item for item in results if item]
+        results = await _prepare_results(results)
         await send_check_notification(results)
+
     except Exception as e:
         CACHE.update({"status": ECheckStatus.ERROR})
         logging.exception(e)
         logging.error(
             "Error while checking of all containers for all hosts"
         )
+
+
+async def _prepare_results(
+    results: list[HostCheckResult | None],
+) -> list[HostCheckResult]:
+    # Filter undefined results
+    _results = [item for item in results if item]
+    if not _results:
+        return []
+    # Mark already sent results
+    async with async_session_maker() as session:
+        for r in _results:
+            available_names = [
+                item.container.name
+                for item in r.items
+                if item.result == "available" and item.container.name
+            ]
+            if not available_names:
+                continue
+
+            stmt = select(ContainersModel).where(
+                ContainersModel.host_id == r.host_id,
+                ContainersModel.name.in_(available_names),
+            )
+            result = await session.execute(stmt)
+            db_containers = result.scalars().all()
+            db_map = {c.name: c for c in db_containers}
+
+            for item in r.items:
+                db_item = db_map.get(cast(str, item.container.name))
+                if not db_item:
+                    continue
+
+                new_digests = (
+                    item.new_image.repo_digests
+                    if item.new_image
+                    else None
+                )
+
+                if db_item.notified_available_digests == new_digests:
+                    logging.debug(
+                        f"Container {item.container.name} marked as available(notified)"
+                    )
+                    item.result = "available(notified)"
+                else:
+                    db_item.notified_available_digests = new_digests
+
+        await session.commit()
+
+    return _results

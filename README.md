@@ -190,7 +190,7 @@ Jinja2 context schema:
           "new_image": {
             "...same schema as for old_image": {},
           },
-          "result": "not_available|available|updated|rolled_back|failed|None"
+          "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
         }
       ]
     }
@@ -231,9 +231,7 @@ See [/backend/README.md](/backend/README.md) and [/frontend/README.md](/frontend
 ### TODO:
 
 - add unit tests
-- filter cont in notification (dont notify already notified)
 - Dozzle integration or something more universal (list of urls for redirects?)
 - Swarm support?
 - Try to add release notes (from labels or something)
-- Remove unused deps
 - Do not update stopped containers

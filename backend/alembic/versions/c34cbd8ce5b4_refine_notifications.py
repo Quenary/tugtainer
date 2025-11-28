@@ -1,4 +1,4 @@
-"""notification-template-settings
+"""refine-notifications
 
 Revision ID: c34cbd8ce5b4
 Revises: 2adcf3451f67
@@ -24,6 +24,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    with op.batch_alter_table("containers") as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "notified_available_digests", sa.JSON(), nullable=True
+            )
+        )
+
     conn = op.get_bind()
     stmt = sa.text(
         """
@@ -58,6 +65,8 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
+    with op.batch_alter_table("containers") as batch_op:
+        batch_op.drop_column("notified_available_digests")
     conn = op.get_bind()
     stmt = sa.text(
         f"""

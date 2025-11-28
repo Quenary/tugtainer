@@ -19,6 +19,7 @@ class CheckContainerUpdateAvailableResult:
 ContainerCheckResultType = Literal[
     "not_available",
     "available",
+    "available(notified)",
     "updated",
     "rolled_back",
     "failed",
