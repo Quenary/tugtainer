@@ -45,12 +45,6 @@ async def send_check_notification(
     :param urls: override urls
     """
     try:
-        _any_worthy = any(any_worthy(r.items) for r in results)
-        if not _any_worthy:
-            logging.info(
-                "Nothing to report after check, skipping notification."
-            )
-            return
         if title_template == tt_sentinel:
             title_template = SettingsStorage.get(
                 ESettingKey.NOTIFICATION_TITLE_TEMPLATE

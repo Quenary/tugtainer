@@ -157,7 +157,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 ## Notifications:
 
-The app uses [Apprise](https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications) to send notifications and [Jinja2](https://jinja.palletsprojects.com/en/stable/) to generate messages. You can view the documentation for each of them.
+The app uses [Apprise](https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications) to send notifications and [Jinja2](https://jinja.palletsprojects.com/en/stable/) to generate their content. You can view the documentation for each of them for more details.
 
 Jinja2 custom filters:
 
@@ -199,7 +199,17 @@ Jinja2 context schema:
 }
 ```
 
-If you want to return default template, it's [here](./backend/const.py)
+"result" options:
+- "not_available": No new image found.
+- "available": New image available for the container.
+- "available(notified)": New image available for the container, but it was in the previous notification. The app preserves digests of new images, so if another new image has appeared, the result will still be "available".
+- "updated": Container successfully recreaded with the new image.
+- "rolled_back": The app failed to recreate the container, but was able to restore it with the old image.
+- "failed": The app failed to recreate container.
+
+The notification is sent only if the body is not empty. For instance, if there is only containers with "available(notified)" results, the body will be empty (with default template), and notification will not be sent.
+
+If you want to restore default template, it's [here](./backend/const.py)
 
 ## Auth
 
