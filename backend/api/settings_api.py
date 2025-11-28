@@ -33,6 +33,7 @@ from backend.enums.settings_enum import ESettingKey
 from backend.enums.cron_jobs_enum import ECronJob
 from backend.core.containers_core import check_all
 from backend.exception import TugException
+from jinja2.exceptions import TemplateError
 
 VALID_TIMEZONES = available_timezones()
 
@@ -214,7 +215,7 @@ async def test_notification(data: TestNotificationRequestBody):
                 container=test_container,
                 old_image=test_image,
                 new_image=test_image,
-                result="updated",
+                result="available(notified)",
             ),
             ContainerCheckResult(
                 container=test_container,
@@ -229,12 +230,25 @@ async def test_notification(data: TestNotificationRequestBody):
                 result="failed",
             ),
         ]
+        prune_result = """
+untagged: postgres@sha256:cf2a05fe40887b721e4b3dbac8fd32673c08292dcc8ba6b62b52b7f640433bd0
+deleted: sha256:05c1acb89ae44b0bc936fdad9c7bcf32a2300ef1dbab9407bb6dd12eaee1c8c3
+deleted: sha256:030dbd4c7f006cf2a8a482f9128f1b3238e5c820bb107aef0a47299e51179e4b        
+
+Total reclaimed space: 1.5GB
+"""
         test_results: list[HostCheckResult] = [
             HostCheckResult(
-                host_id=1, host_name="test_host_1", items=items
+                host_id=1,
+                host_name="test_host_1",
+                items=items,
+                prune_result=prune_result,
             ),
             HostCheckResult(
-                host_id=2, host_name="test_host_2", items=items
+                host_id=2,
+                host_name="test_host_2",
+                items=items,
+                prune_result=prune_result,
             ),
         ]
         await send_check_notification(
@@ -244,7 +258,7 @@ async def test_notification(data: TestNotificationRequestBody):
             urls=data.urls,
         )
         return {}
-    except (TugException, AppriseException) as e:
+    except (TugException, AppriseException, TemplateError) as e:
         raise HTTPException(500, str(e))
 
 

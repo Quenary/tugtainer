@@ -192,7 +192,8 @@ Jinja2 context schema:
           },
           "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
         }
-      ]
+      ],
+      "prune_result": "string",
     }
   ]
 }

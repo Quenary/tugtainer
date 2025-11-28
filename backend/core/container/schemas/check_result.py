@@ -44,4 +44,4 @@ class GroupCheckResult:
 
 @dataclass
 class HostCheckResult(GroupCheckResult):
-    prune_res: str | None = None
+    prune_result: str | None = None

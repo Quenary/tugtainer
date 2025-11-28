@@ -85,8 +85,10 @@ async def send_check_notification(
             body = _body_template.render(**context)
 
         return await send_notification(title, body, urls=_urls)
-    except:
-        pass
+    except jinja2.exceptions.TemplateError as e:
+        logging.exception(e)
+        logging.error('Failed to send notification')
+        raise e
 
 
 async def send_notification(

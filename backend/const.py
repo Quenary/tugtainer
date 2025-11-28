@@ -22,8 +22,18 @@ DEFAULT_NOTIFICATION_TEMPLATE = """\
   {% endif %}
 {% endfor %}
 \
-{% if r.prune_res %}
-{{r.prune_res}}
+{% if r.prune_result %}
+{% set lines = [] %}
+{% for line in r.prune_result.split('\n') %}
+    {% set stripped = line.strip() %}
+    {% if stripped %}
+        {% set _ = lines.append(stripped) %}
+    {% endif %}
+{% endfor %}
+{% set res = lines[-1] if lines else None %}
+{% if res %}
+{{res}}
+{% endif %}
 {% endif %}
 
 {% endfor %}
