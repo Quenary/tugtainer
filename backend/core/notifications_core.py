@@ -50,6 +50,7 @@ async def send_check_notification(
             logging.info(
                 "Nothing to report after check, skipping notification."
             )
+            return
         if title_template == tt_sentinel:
             title_template = SettingsStorage.get(
                 ESettingKey.NOTIFICATION_TITLE_TEMPLATE
@@ -83,6 +84,10 @@ async def send_check_notification(
         if body_template:
             _body_template = jinja2_env.from_string(body_template)
             body = _body_template.render(**context)
+
+        if not body or not body.strip():
+            logging.warning("No notification body after template render, exiting.")
+            return
 
         return await send_notification(title, body, urls=_urls)
     except jinja2.exceptions.TemplateError as e:
