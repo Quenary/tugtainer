@@ -1,4 +1,4 @@
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from backend.db.models.containers_model import ContainersModel
 from backend.core.container.schemas.check_result import (
     GroupCheckResult,
@@ -13,37 +13,33 @@ async def update_containers_data_after_check(
     """Update containers in db after check/update process"""
     if not result:
         return
+    valid_items = [item for item in result.items if item.result]
+    if not valid_items:
+        return
     _now = now()
 
     async with async_session_maker() as session:
-
-        async def get_cont(c_name: str) -> ContainersModel | None:
-            res = await session.execute(
-                select(ContainersModel)
-                .where(
-                    and_(
-                        ContainersModel.host_id == result.host_id,
-                        ContainersModel.name == c_name,
-                    )
-                )
-                .limit(1)
+        container_names = [
+            item.container.name for item in valid_items
+        ]
+        containers = await session.scalars(
+            select(ContainersModel).where(
+                ContainersModel.host_id == result.host_id,
+                ContainersModel.name.in_(container_names),
             )
-            return res.scalar_one_or_none()
+        )
 
-        for c in result.not_available:
-            c_db = await get_cont(c.name)
-            if c_db:
-                c_db.update_available = False
-                c_db.checked_at = _now
-        for c in result.available:
-            c_db = await get_cont(c.name)
-            if c_db:
-                c_db.update_available = True
-                c_db.checked_at = _now
-        for c in result.updated:
-            c_db = await get_cont(c.name)
-            if c_db:
-                c_db.update_available = False
-                c_db.checked_at = _now
-                c_db.updated_at = _now
+        containers_map = {c.name: c for c in containers}
+
+        for item in valid_items:
+            if container := containers_map.get(
+                str(item.container.name), None
+            ):
+                container.update_available = (
+                    item.result == "available"
+                )
+                container.checked_at = _now
+                if item.result == "updated":
+                    container.updated_at = _now
+
         await session.commit()

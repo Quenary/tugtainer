@@ -1,19 +1,33 @@
+from datetime import datetime
 from zoneinfo import available_timezones
 from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
+from python_on_whales.components.container.models import (
+    ContainerConfig,
+    ContainerHostConfig,
+    ContainerInspectResult,
+    ContainerState,
+)
+from python_on_whales.components.image.models import (
+    ImageInspectResult,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.config import Config
 from backend.core.auth.auth_provider_chore import is_authorized
+from backend.core.container.schemas.check_result import (
+    ContainerCheckResult,
+    HostCheckResult,
+)
 from backend.db.session import get_async_session
 from backend.db.models import SettingModel
 from backend.db.util import get_setting_typed_value
+from backend.helpers.settings_storage import SettingsStorage
 from backend.schemas.settings_schema import (
     SettingsGetResponseItem,
     SettingsPatchRequestItem,
     TestNotificationRequestBody,
 )
-from backend.core.notifications_core import send_notification
+from backend.core.notifications_core import send_check_notification
 from backend.core.cron_manager import CronManager
 from backend.enums.settings_enum import ESettingKey
 from backend.enums.cron_jobs_enum import ECronJob
@@ -78,37 +92,41 @@ async def change_system_settings(
     await session.commit()
 
     # Only reschedule cron job if CRONTAB_EXPR or TIMEZONE were updated
-    cron_expr_items = [
-        item for item in data if item.key == ESettingKey.CRONTAB_EXPR
-    ]
-    timezone_items = [
-        item for item in data if item.key == ESettingKey.TIMEZONE
-    ]
+    cron_expr_item = next(
+        (
+            item
+            for item in data
+            if item.key == ESettingKey.CRONTAB_EXPR.value
+        ),
+        None,
+    )
+    timezone_item = next(
+        (
+            item
+            for item in data
+            if item.key == ESettingKey.TIMEZONE.value
+        ),
+        None,
+    )
 
-    if cron_expr_items or timezone_items:
-        cron_expr = cron_expr_items[0] if cron_expr_items else None
-        timezone = timezone_items[0] if timezone_items else None
-        
+    if cron_expr_item or timezone_item:
         # Get current values if not provided in the update
-        if not cron_expr:
-            stmt = select(SettingModel).where(SettingModel.key == ESettingKey.CRONTAB_EXPR).limit(1)
-            result = await session.execute(stmt)
-            cron_setting = result.scalar_one_or_none()
-            if cron_setting:
-                cron_expr = type('obj', (object,), {'value': cron_setting.value})()
-        
-        if not timezone:
-            stmt = select(SettingModel).where(SettingModel.key == ESettingKey.TIMEZONE).limit(1)
-            result = await session.execute(stmt)
-            timezone_setting = result.scalar_one_or_none()
-            if timezone_setting:
-                timezone = type('obj', (object,), {'value': timezone_setting.value})()
-        
+        cron_expr = (
+            str(cron_expr_item.value)
+            if cron_expr_item
+            else SettingsStorage.get(ESettingKey.CRONTAB_EXPR)
+        )
+        timezone = (
+            str(timezone_item.value)
+            if timezone_item
+            else SettingsStorage.get(ESettingKey.TIMEZONE)
+        )
+
         if cron_expr and timezone:
             CronManager.schedule_job(
                 ECronJob.CHECK_CONTAINERS,
-                str(cron_expr.value),
-                str(timezone.value),
+                cron_expr,
+                timezone,
                 lambda: check_all(True),
             )
 
@@ -122,13 +140,108 @@ async def change_system_settings(
 )
 async def test_notification(data: TestNotificationRequestBody):
     try:
-        await send_notification(
-            body=f"""
-# Tugtainer ({Config.HOSTNAME})
-
-This is test notification
-            """,
-            url=data.url,
+        test_container = ContainerInspectResult(
+            id="35d6d68589ab16a7b06d26513ecae15a7dee2cdb067be5648074c99a39db9fab",
+            created=datetime.now(),
+            path="/hello",
+            state=ContainerState(
+                status="exited",
+                running=False,
+                paused=False,
+                restarting=False,
+                oom_killed=False,
+                dead=False,
+                pid=0,
+                exit_code=0,
+                error="",
+                started_at=datetime.now(),
+                finished_at=datetime.now(),
+            ),
+            image="sha256:1b44b5a3e06a9aae883e7bf25e45c100be0bb81a0e01b32de604f3ac44711634",
+            name="hello-world",
+            platform="linux",
+            host_config=ContainerHostConfig(
+                network_mode="bridge",
+                port_bindings={},
+            ),
+            config=ContainerConfig(
+                hostname="35d6d68589ab",
+                image="docker.io/hello-world:latest",
+                labels={},
+            ),
+        )
+        test_image = ImageInspectResult(
+            id="sha256:1b44b5a3e06a9aae883e7bf25e45c100be0bb81a0e01b32de604f3ac44711634",
+            repo_tags=["hello-world:latest"],
+            repo_digests=[
+                "hello-world@sha256:f7931603f70e13dbd844253370742c4fc4202d290c80442b2e68706d8f33ce26"
+            ],
+            comment="buildkit.dockerfile.v0",
+            created=datetime.now(),
+            architecture="amd64",
+            os="linux",
+            size=10072,
+            config=ContainerConfig(
+                cmd=["/hello"],
+            ),
+        )
+        items: list[ContainerCheckResult] = [
+            ContainerCheckResult(
+                container=test_container,
+                old_image=None,
+                new_image=None,
+                result=None,
+            ),
+            ContainerCheckResult(
+                container=test_container,
+                old_image=test_image,
+                new_image=None,
+                result="not_available",
+            ),
+            ContainerCheckResult(
+                container=test_container,
+                old_image=test_image,
+                new_image=test_image,
+                result="updated",
+            ),
+            ContainerCheckResult(
+                container=test_container,
+                old_image=test_image,
+                new_image=test_image,
+                result="available",
+            ),
+            ContainerCheckResult(
+                container=test_container,
+                old_image=test_image,
+                new_image=test_image,
+                result="updated",
+            ),
+            ContainerCheckResult(
+                container=test_container,
+                old_image=test_image,
+                new_image=test_image,
+                result="rolled_back",
+            ),
+            ContainerCheckResult(
+                container=test_container,
+                old_image=test_image,
+                new_image=test_image,
+                result="failed",
+            ),
+        ]
+        test_results: list[HostCheckResult] = [
+            HostCheckResult(
+                host_id=1, host_name="test_host_1", items=items
+            ),
+            HostCheckResult(
+                host_id=2, host_name="test_host_2", items=items
+            ),
+        ]
+        await send_check_notification(
+            test_results,
+            title_template=data.title_template,
+            body_template=data.body_template,
+            urls=data.urls,
         )
         return {}
     except (TugException, AppriseException) as e:
@@ -143,44 +256,3 @@ This is test notification
 )
 def get_available_timezones() -> set[str]:
     return VALID_TIMEZONES
-
-
-# @router.post(
-#     "/test_oidc",
-#     status_code=200,
-#     description="Test OIDC well-known URL connectivity",
-# )
-# async def test_oidc_connection(data: dict):
-#     """Test if the OIDC well-known URL is accessible and returns valid configuration"""
-#     well_known_url = data.get("well_known_url")
-#     if not well_known_url:
-#         raise HTTPException(400, "well_known_url is required")
-    
-#     try:
-#         discovery_doc = await fetch_oidc_discovery(well_known_url)
-        
-#         # Check if required endpoints exist
-#         required_endpoints = ["authorization_endpoint", "token_endpoint"]
-#         missing_endpoints = [ep for ep in required_endpoints if ep not in discovery_doc]
-        
-#         if missing_endpoints:
-#             raise HTTPException(
-#                 400, 
-#                 f"OIDC discovery document is missing required endpoints: {missing_endpoints}"
-#             )
-        
-#         return {
-#             "status": "success",
-#             "message": "OIDC configuration is valid",
-#             "endpoints": {
-#                 "authorization_endpoint": discovery_doc.get("authorization_endpoint"),
-#                 "token_endpoint": discovery_doc.get("token_endpoint"),
-#                 "userinfo_endpoint": discovery_doc.get("userinfo_endpoint"),
-#                 "issuer": discovery_doc.get("issuer")
-#             }
-#         }
-        
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(500, f"Error testing OIDC connection: {str(e)}")

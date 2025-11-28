@@ -16,6 +16,20 @@ export interface ISettingUpdate {
 }
 export enum ESettingKey {
   CRONTAB_EXPR = 'CRONTAB_EXPR',
-  NOTIFICATION_URL = 'NOTIFICATION_URL',
   TIMEZONE = 'TIMEZONE',
+  NOTIFICATION_URLS = 'NOTIFICATION_URLS',
+  NOTIFICATION_TITLE_TEMPLATE = 'NOTIFICATION_TITLE_TEMPLATE',
+  NOTIFICATION_BODY_TEMPLATE = 'NOTIFICATION_BODY_TEMPLATE',
 }
+export interface ITestNotificationRequestBody {
+  title_template: string;
+  body_template: string;
+  urls: string;
+}
+export const ESettingSortIndex: { [K in ESettingKey]: number } = {
+  [ESettingKey.CRONTAB_EXPR]: 0,
+  [ESettingKey.TIMEZONE]: 1,
+  [ESettingKey.NOTIFICATION_URLS]: 2,
+  [ESettingKey.NOTIFICATION_TITLE_TEMPLATE]: 3,
+  [ESettingKey.NOTIFICATION_BODY_TEMPLATE]: 4,
+};

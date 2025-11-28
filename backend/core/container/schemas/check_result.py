@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Literal
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -15,35 +16,29 @@ class CheckContainerUpdateAvailableResult:
     new_image: ImageInspectResult | None = None
 
 
+ContainerCheckResultType = Literal[
+    "not_available",
+    "available",
+    "updated",
+    "rolled_back",
+    "failed",
+    None,
+]
+
+
 @dataclass
-class ShrinkedContainer:
-    """This class contains only necessary data of container"""
-
-    name: str
-    image_spec: str
-
-    @classmethod
-    def from_c(cls, c: ContainerInspectResult) -> "ShrinkedContainer":
-        if not c.name or not c.config or not c.config.image:
-            raise Exception(
-                "Cannot create ShrinkedContainer, no data."
-            )
-        return ShrinkedContainer(
-            name=c.name, image_spec=c.config.image
-        )
+class ContainerCheckResult:
+    container: ContainerInspectResult
+    old_image: ImageInspectResult | None
+    new_image: ImageInspectResult | None
+    result: ContainerCheckResultType
 
 
 @dataclass
 class GroupCheckResult:
     host_id: int
     host_name: str
-    not_available: list[ShrinkedContainer] = field(
-        default_factory=list
-    )
-    available: list[ShrinkedContainer] = field(default_factory=list)
-    updated: list[ShrinkedContainer] = field(default_factory=list)
-    rolled_back: list[ShrinkedContainer] = field(default_factory=list)
-    failed: list[ShrinkedContainer] = field(default_factory=list)
+    items: list[ContainerCheckResult] = field(default_factory=list)
 
 
 @dataclass

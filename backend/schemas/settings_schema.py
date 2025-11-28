@@ -1,5 +1,5 @@
-from pydantic import BaseModel, RootModel, model_validator
-from typing import Union, cast
+from pydantic import BaseModel, model_validator
+from typing import Optional, Union
 from datetime import datetime
 from backend.enums.settings_enum import ESettingKey
 from .validators import validate_cron_expr, validate_timezone
@@ -27,4 +27,6 @@ class SettingsGetResponseItem(SettingsPatchRequestItem):
 
 
 class TestNotificationRequestBody(BaseModel):
-    url: str
+    title_template: Optional[str] = None
+    body_template: Optional[str] = None
+    urls: Optional[str] = None

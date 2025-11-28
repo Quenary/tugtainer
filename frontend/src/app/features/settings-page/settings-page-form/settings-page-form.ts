@@ -19,13 +19,15 @@ import {
   Validators,
 } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { catchError, finalize, firstValueFrom, of } from 'rxjs';
+import { catchError, finalize, firstValueFrom, map, of } from 'rxjs';
 import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 import {
   ESettingKey,
+  ESettingSortIndex,
   ESettingValueType,
   ISetting,
   ISettingUpdate,
+  ITestNotificationRequestBody,
 } from 'src/app/entities/settings/settings-interface';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
@@ -38,6 +40,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ToastService } from 'src/app/core/services/toast.service';
+import { IftaLabelModule } from 'primeng/iftalabel';
+import { TextareaModule } from 'primeng/textarea';
 
 @Component({
   selector: 'app-settings-page-form',
@@ -52,6 +56,8 @@ import { ToastService } from 'src/app/core/services/toast.service';
     NgTemplateOutlet,
     AutoCompleteModule,
     ToggleButtonModule,
+    IftaLabelModule,
+    TextareaModule,
   ],
   templateUrl: './settings-page-form.html',
   styleUrl: './settings-page-form.scss',
@@ -87,6 +93,7 @@ export class SettingsPageForm {
     loader: () =>
       firstValueFrom(
         this.settingsApiService.list().pipe(
+          map((res) => res.sort((a, b) => ESettingSortIndex[a.key] - ESettingSortIndex[b.key])),
           catchError((error) => {
             this.toastService.error(error);
             return of([]);
@@ -165,10 +172,22 @@ export class SettingsPageForm {
     }
   }
 
-  public onTestNotification(url: string): void {
+  public onTestNotification(): void {
+    const values = this.getSettingsValues();
+    const title_template = values.find(
+      (item) => item.key == ESettingKey.NOTIFICATION_TITLE_TEMPLATE,
+    ).value as string;
+    const body_template = values.find((item) => item.key == ESettingKey.NOTIFICATION_BODY_TEMPLATE)
+      .value as string;
+    const urls = values.find((item) => item.key == ESettingKey.NOTIFICATION_URLS).value as string;
+    const body: ITestNotificationRequestBody = {
+      title_template,
+      body_template,
+      urls,
+    };
     this.isLoading.set(true);
     this.settingsApiService
-      .test_notification(url)
+      .test_notification(body)
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
@@ -178,6 +197,13 @@ export class SettingsPageForm {
           this.toastService.error(error);
         },
       });
+  }
+
+  protected getSettingsValues(): ISettingUpdate[] {
+    return this.formArray.getRawValue().map((item) => ({
+      key: item.key,
+      value: item.value,
+    }));
   }
 
   public submit(): void {
@@ -192,10 +218,7 @@ export class SettingsPageForm {
       return;
     }
     this.formArray.markAsPristine();
-    const value = this.formArray.getRawValue().map((item) => ({
-      key: item.key,
-      value: item.value,
-    }));
-    this.OnSubmit.emit(value);
+    const values = this.getSettingsValues();
+    this.OnSubmit.emit(values);
   }
 }

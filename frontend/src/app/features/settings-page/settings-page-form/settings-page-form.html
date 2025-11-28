@@ -4,51 +4,40 @@
     [formGroup]="form"
   >
     @if (form.controls.key.value; as key) {
-      <span class="settings-form-group-name">
-        {{ keyTranslates[key]?.LABEL ?? key }}
-      </span>
+      <ng-container
+        [ngTemplateOutlet]="valueInputTemplate"
+        [ngTemplateOutletContext]="{
+          value_type: form.controls.value_type.value,
+          key: key,
+          control: form.controls.value,
+        }"
+      ></ng-container>
 
-      <div class="settings-form-group-field">
-        <ng-container
-          [ngTemplateOutlet]="valueInputTemplate"
-          [ngTemplateOutletContext]="{
-            value_type: form.controls.value_type.value,
-            key: key,
-            control: form.controls.value,
-          }"
-        ></ng-container>
-      </div>
-
-      <section class="settings-form-group-functions">
-        @switch (key) {
-          @case (ESettingKey.NOTIFICATION_URL) {
-            <p-button
-              icon="pi pi-send"
-              severity="contrast"
-              rounded="true"
-              [pTooltip]="'SETTINGS.BY_KEY.NOTIFICATION_URL.TEST' | translate"
-              tooltipPosition="left"
-              (onClick)="onTestNotification($any(form.controls.value.value))"
-            >
-            </p-button>
-          }
-        }
-
-        @if (keyTranslates[key]?.HINT; as hint) {
-          <p-button
-            icon="pi pi-question"
-            severity="contrast"
-            [pTooltip]="hint"
-            tooltipPosition="left"
-            rounded="true"
-            (onClick)="onHintClick(keyTranslates[key]?.LINK)"
-          >
-          </p-button>
-        }
-      </section>
+      @if (keyTranslates[key]?.HINT; as hint) {
+        <p-button
+          icon="pi pi-question"
+          severity="contrast"
+          [pTooltip]="hint"
+          tooltipPosition="left"
+          rounded="true"
+          (onClick)="onHintClick(keyTranslates[key]?.LINK)"
+        >
+        </p-button>
+      }
     }
   </form>
 }
+
+<p-button
+  [loading]="isLoading()"
+  severity="success"
+  (onClick)="onTestNotification()"
+>
+  <i class="pi pi-send"></i>
+  <span pButtonLabel>
+    {{ 'SETTINGS.BY_KEY.SEND_TEST_NOTIFICATION' | translate }}
+  </span>
+</p-button>
 
 <p-button
   [loading]="isLoading()"
@@ -67,47 +56,68 @@
   let-value_type="value_type"
   let-control="control"
 >
-  @switch (key) {
-    @case (ESettingKey.TIMEZONE) {
-      <p-autocomplete
-        fluid
-        inputId="value-{{ key }}"
-        [suggestions]="displayedTimezones()"
-        [dropdown]="true"
-        (completeMethod)="timezonesSearch.set($event.query)"
-        [formControl]="control"
-        appendTo="body"
-      >
-      </p-autocomplete>
-    }
-    @default {
-      @switch (value_type) {
-        @case ('bool') {
-          <p-togglebutton
-            [formControl]="control"
-            [onLabel]="'GENERAL.ENABLED' | translate"
-            [offLabel]="'GENERAL.DISABLED' | translate"
-            [onIcon]="'pi pi-check-circle'"
-            [offIcon]="'pi pi-circle-off'"
-          />
-        }
-        @case ('str') {
-          <input
-            fluid
-            id="value-{{ key }}"
-            type="text"
-            pInputText
-            [formControl]="control"
-          />
-        }
-        @default {
-          <p-input-number
-            fluid
-            inputId="value-{{ key }}"
-            [formControl]="control"
-          ></p-input-number>
+  <p-iftalabel style="width: 100%">
+    @switch (key) {
+      @case (ESettingKey.TIMEZONE) {
+        <p-autocomplete
+          fluid
+          inputId="value-{{ key }}"
+          [suggestions]="displayedTimezones()"
+          [dropdown]="true"
+          (completeMethod)="timezonesSearch.set($event.query)"
+          [formControl]="control"
+          appendTo="body"
+        >
+        </p-autocomplete>
+      }
+      @case (ESettingKey.NOTIFICATION_URLS) {
+        <textarea
+          pTextarea
+          rows="3"
+          id="value-{{ key }}"
+          [formControl]="control"
+        ></textarea>
+      }
+      @case (ESettingKey.NOTIFICATION_BODY_TEMPLATE) {
+        <textarea
+          pTextarea
+          rows="15"
+          id="value-{{ key }}"
+          [formControl]="control"
+        ></textarea>
+      }
+      @default {
+        @switch (value_type) {
+          @case ('bool') {
+            <p-togglebutton
+              [formControl]="control"
+              [onLabel]="'GENERAL.ENABLED' | translate"
+              [offLabel]="'GENERAL.DISABLED' | translate"
+              [onIcon]="'pi pi-check-circle'"
+              [offIcon]="'pi pi-circle-off'"
+            />
+          }
+          @case ('str') {
+            <input
+              fluid
+              id="value-{{ key }}"
+              type="text"
+              pInputText
+              [formControl]="control"
+            />
+          }
+          @default {
+            <p-input-number
+              fluid
+              inputId="value-{{ key }}"
+              [formControl]="control"
+            ></p-input-number>
+          }
         }
       }
     }
-  }
+    <label for="value-{{ key }}">
+      {{ keyTranslates[key]?.LABEL ?? key }}
+    </label>
+  </p-iftalabel>
 </ng-template>

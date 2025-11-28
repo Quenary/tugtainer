@@ -155,6 +155,51 @@ Automatic updates are disabled by default. You can choose only what you need.
 
   This label is an alternative to the docker compoes label. It allows you to declare that a container depends on another container, even if they are not in the same compose project. List of container names, separated by commas.
 
+## Notifications:
+
+The app uses [Apprise](https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications) to send notifications and [Jinja2](https://jinja.palletsprojects.com/en/stable/) to generate messages. You can view the documentation for each of them.
+
+Jinja2 custom filters:
+
+- any_worthy - checks that at least one of the items has result equal to "available", "updated", "rolled_back" or "failed"
+
+Jinja2 context schema:
+
+```json
+{
+  "hostname": "Tugtainer container hostname",
+  "results": [
+    {
+      "host_id": 0,
+      "host_name": "string",
+      "items": [
+        {
+          "container": {
+            "id": "string",
+            "image": "string",
+            "...other keys of 'docker container inspect' in snake_case": {},
+          },
+          "old_image": {
+            "id": "string",
+            "repo_digests": [
+              "digest1",
+              "digest2",
+            ],
+            "...other keys of 'docker image inspect' in snake_case": {},
+          },
+          "new_image": {
+            "...same schema as for old_image": {},
+          },
+          "result": "not_available|available|updated|rolled_back|failed|None"
+        }
+      ]
+    }
+  ]
+}
+```
+
+If you want to return default template, it's [here](./backend/const.py)
+
 ## Auth
 
 The app uses password authorization by default. The password is stored in the file in encrypted form.

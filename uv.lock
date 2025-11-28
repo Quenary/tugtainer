@@ -1319,7 +1319,7 @@ wheels = [
 
 [[package]]
 name = "tugtainer"
-version = "1.12.1"
+version = "1.12.2"
 source = { virtual = "." }
 dependencies = [
     { name = "aiocron" },
@@ -1331,6 +1331,7 @@ dependencies = [
     { name = "cachetools" },
     { name = "dotenv" },
     { name = "fastapi" },
+    { name = "jinja2" },
     { name = "python-jose" },
     { name = "python-on-whales" },
     { name = "uvicorn" },
@@ -1358,6 +1359,7 @@ requires-dist = [
     { name = "cachetools", specifier = ">=6.2.2" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.121.2" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "python-jose", specifier = ">=3.5.0" },
     { name = "python-on-whales", specifier = ">=0.79.0" },
     { name = "uvicorn", specifier = ">=0.38.0" },

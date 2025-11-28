@@ -156,16 +156,27 @@
         "HINT": "Crontab expression for periodic checks e.g. \n'0 */1 * * *' for every hour\n\nClick for more info.",
         "LINK": "https://crontab.guru/"
       },
-      "NOTIFICATION_URL": {
-        "LABEL": "Notification URL",
-        "HINT": "URL for notifications via Apprise e.g. tgram://<token>/<chat_id>\n\nClick for more info.",
-        "LINK": "https://pypi.org/project/apprise/",
+      "NOTIFICATION_URLS": {
+        "LABEL": "Notification URLs",
+        "HINT": "URLs for notifications via Apprise e.g. tgram://<token>/<chat_id>\nYou can specify several, each on a new line.\n\nClick for more info.",
+        "LINK": "https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications",
         "TEST": "Send test notification"
       },
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
-      }
+      },
+      "NOTIFICATION_TITLE_TEMPLATE": {
+        "LABEL": "Notification title template",
+        "HINT": "Jinja2 template of notification title.\n\nClick for more info.",
+        "LINK": "https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications"
+      },
+      "NOTIFICATION_BODY_TEMPLATE": {
+        "LABEL": "Notification body template",
+        "HINT": "Jinja2 template of notification body.\n\nClick for more info.",
+        "LINK": "https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications"
+      },
+      "SEND_TEST_NOTIFICATION": "Send test notification"
     }
   }
 }

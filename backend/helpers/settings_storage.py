@@ -25,11 +25,21 @@ class SettingsStorage:
     @classmethod
     @overload
     def get(
-        cls, key: Literal[ESettingKey.NOTIFICATION_URL]
+        cls, key: Literal[ESettingKey.NOTIFICATION_URLS]
     ) -> str: ...
     @classmethod
     @overload
     def get(cls, key: Literal[ESettingKey.TIMEZONE]) -> str: ...
+    @classmethod
+    @overload
+    def get(
+        cls, key: Literal[ESettingKey.NOTIFICATION_TITLE_TEMPLATE]
+    ) -> str: ...
+    @classmethod
+    @overload
+    def get(
+        cls, key: Literal[ESettingKey.NOTIFICATION_BODY_TEMPLATE]
+    ) -> str: ...
     @classmethod
     def get(cls, key: ESettingKey, default=None):
         """Get value of setting"""
