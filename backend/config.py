@@ -25,6 +25,7 @@ class Config:
     OIDC_CLIENT_SECRET: ClassVar[str]
     OIDC_REDIRECT_URI: ClassVar[str]
     OIDC_SCOPES: ClassVar[str]
+    OIDC_AUTO_REDIRECT: ClassVar[bool]
 
     @classmethod
     def load(cls):
@@ -63,6 +64,7 @@ class Config:
             cls.OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
             cls.OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "")
             cls.OIDC_SCOPES = os.getenv("OIDC_SCOPES", "openid profile email")
+            cls.OIDC_AUTO_REDIRECT = os.getenv("OIDC_AUTO_REDIRECT", "false").lower() == "true"
 
 
 Config.load()
