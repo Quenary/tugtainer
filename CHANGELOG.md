@@ -6,6 +6,9 @@
 ### Bug Fixes
 
 - **build**: Fixed uv lock file error
+  ([`2556293`](https://github.com/Quenary/tugtainer/commit/2556293270472dcc2440a8aa11714bfdecde2552))
+
+- **build**: Fixed uv lock file error
   ([`6c2df78`](https://github.com/Quenary/tugtainer/commit/6c2df78908ad67a4bb2936646dbe285fe8c0adc7))
 
 
