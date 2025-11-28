@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.13.0 (2025-11-28)
+
+### Features
+
+- Refine notifications ([#73](https://github.com/Quenary/tugtainer/pull/73),
+  [`156e576`](https://github.com/Quenary/tugtainer/commit/156e576656d19d788af1ca5de57b6bbffa1e6d8d))
+
+
 ## v1.12.2 (2025-11-21)
 
 ### Bug Fixes
