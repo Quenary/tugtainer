@@ -8,20 +8,31 @@ And don't forget about regular backups of important data.
 
 Automatic updates are disabled by default. You can choose only what you need.
 
-[Screenshots](#screenshots)
+## Table of contents:
+  - [main features](#main-features)
+  - [deploy](#deploy)
+  - [check and update process](#check-and-update-process)
+  - [private registries](#private-registries)
+  - [custom labels](#custom-labels)
+  - [notifications](#notifications)
+  - [auth](#auth)
+  - [env](#env)
+  - [Screenshots](#screenshots)
+  - [develop](#develop)
+  - [todo](#todo)
 
 ## Main features:
 
 - Web UI with authentication
-- Socket proxy support
 - Multiple hosts support
+- Socket proxy support
 - Crontab scheduling
 - Notifications to a wide range of services
 - Per-container config (check only or auto-update)
 - Manual check and update
 - Automatic/manual image pruning
-- Linked containers support (compose and custom, see [check/update](#checkupdate-process) section)
-- [Private registries](#private-registries)
+- Linked containers support (compose and custom)
+- Private registries support
 
 ## Deploy:
 
@@ -45,13 +56,10 @@ Automatic updates are disabled by default. You can choose only what you need.
       quenary/tugtainer:latest
   ```
 
-- ### <span style="color: orange">Important note about next sections:</span>
-
-  Keep in mind that you **cannot update** an **agent** or a **socket-proxy** from within the app because they are used to communicate with the Docker CLI.
-
-  Avoid including these containers in a docker-compose that contains other containers you want to update automatically, as this will result in an error during the update.
-
-  To keep them updated, you can activate the "check" only to receive notifications, and recreate manually or from another tool, such as Portainer.
+> [!IMPORTANT]
+> Keep in mind that you **cannot update** an **agent** or a **socket-proxy** from within the app because they are used to communicate with the Docker CLI.
+> Avoid including these containers in a docker-compose that contains other containers you want to update automatically, as this will result in an error during the update.
+> To keep them updated, you can activate the "check" only to receive notifications, and recreate manually or from another tool, such as Portainer.
 
 - ### Remote hosts
 
@@ -91,7 +99,7 @@ Automatic updates are disabled by default. You can choose only what you need.
   - Enable at least **CONTAINERS, IMAGES, POST, INFO, PING** for the **check** feature, and **NETWORKS** for the **update** feature;
   - Set env var DOCKER_HOST="tcp://my-socket-proxy:port" to the Tugtainer(-agent) container(s);
 
-## Check/update process:
+## Check and update process:
 
 - ### Groups
 
@@ -126,7 +134,7 @@ Automatic updates are disabled by default. You can choose only what you need.
     - Updatable containers being recreated and started;
     - Non-updatable containers being started;
 
-- ### Private registries
+## Private registries
 
   To use private registries, you have to mount docker config to Tugtainer or Tugtainer Agent, depending on where the container with the private image is located.
 
@@ -137,7 +145,7 @@ Automatic updates are disabled by default. You can choose only what you need.
       {
         "auths": {
           "<registry>": {
-            "auth": "bash64 encoded 'username:password_or_token'"
+            "auth": "base64 encoded 'username:password_or_token'"
           }
         }
       }
