@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.14.3 (2025-12-01)
+
+### Bug Fixes
+
+- Detailed agent errors on frontend ([#76](https://github.com/Quenary/tugtainer/pull/76),
+  [`1f2e3e5`](https://github.com/Quenary/tugtainer/commit/1f2e3e5d0031b4e30dfa3b43e182ac1f518e613a))
+
+### Documentation
+
+- Edited readme [skip ci]
+  ([`1dec725`](https://github.com/Quenary/tugtainer/commit/1dec7255e28ac1edeb37102da25ec5e768d2deff))
+
+
 ## v1.14.2 (2025-12-01)
 
 ### Bug Fixes
