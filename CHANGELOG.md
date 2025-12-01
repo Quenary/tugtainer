@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.14.2 (2025-12-01)
+
+### Bug Fixes
+
+- **ci**: Semantic-release build command
+  ([`f438900`](https://github.com/Quenary/tugtainer/commit/f4389005e8346b092de4c6c36a5c8ca5d6be6d63))
+
+
 ## v1.14.1 (2025-12-01)
 
 ### Bug Fixes
