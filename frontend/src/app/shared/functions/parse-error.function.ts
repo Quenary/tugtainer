@@ -5,12 +5,15 @@ export const parseError = (error: HttpErrorResponse | Error | string | unknown):
   if (error instanceof HttpErrorResponse) {
     text = `${error.status} ${error.statusText}`;
     if (typeof error.error?.detail === 'string') {
-      text += `\n - ${error.error.detail}`;
+      text += `\n\n${error.error.detail}`;
     }
     if (Array.isArray(error.error?.detail)) {
+      text += '\n';
       for (const d of error.error.detail) {
         if (typeof d.msg === 'string') {
           text += `\n${d.msg}`;
+        } else if (typeof d === 'string') {
+          text += `\n${d}`;
         }
       }
     }

@@ -7,6 +7,7 @@ from python_on_whales.components.container.models import (
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
+from backend.exception import TugAgentClientError
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
@@ -23,6 +24,7 @@ from shared.schemas.image_schemas import (
 )
 from shared.util.signature import get_signature_headers
 import aiohttp
+import logging
 
 
 class AgentClient:
@@ -71,13 +73,28 @@ class AgentClient:
             async with session.request(
                 method, url, headers=headers, json=_body
             ) as resp:
+                # Parse error manually to get detail
+                if resp.status >= 400:
+                    try:
+                        error_body = await resp.json()
+                    except:
+                        error_body = await resp.text()
+                    logging.error(
+                        f"Agent error:\n{resp.status}\n{error_body}"
+                    )
+                    raise TugAgentClientError(
+                        f"Agent error {resp.status}", error_body
+                    )
+                # Raise other errors
                 resp.raise_for_status()
+                # Json response body
                 if resp.content_length and resp.content_length > 0:
                     return await resp.json()
-                # Для chunked-ответов без content_length
+                # Chunked responses without content_length
                 if resp.headers.get("Transfer-Encoding") == "chunked":
                     text = await resp.text()
                     return await resp.json() if text else None
+                # Empty response body
                 return None
 
 

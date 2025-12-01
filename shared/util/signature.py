@@ -58,16 +58,25 @@ def verify_signature_headers(
     :param path: path of the req e.g. /api/containers/list
     :param body: body of the req
     """
+    current_timestamp = int(time.time())
     timestamp = int(headers.get(X_TIMESTAMP, "0"))
     signature = headers.get(X_SIGNATURE, "")
     logging.debug(
-        f"Verifying signature headers for: \n{method} \n{path} \n{body}"
+        f"Verifying signature headers for:\n{method}\n{path}\n{body}\n{headers}"
     )
-    logging.debug(f"Headers: {headers}")
-    if abs(time.time() - timestamp) > signature_ttl:
+    if abs(current_timestamp - timestamp) > signature_ttl:
         message = (
-            f"Signature expired (age={int(time.time() - timestamp)}s)"
+            f"Signature expired (age={current_timestamp - timestamp}s)"
         )
+        message = f"""\
+Signature expired for:
+method={method}
+path={path}
+body={body}
+age={current_timestamp - timestamp}s
+current_timestamp={current_timestamp}s
+request_timestamp={timestamp}s
+"""
         logging.warning(message)
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
@@ -79,7 +88,13 @@ def verify_signature_headers(
         secret_key, timestamp, method, path, body
     )
     if not hmac.compare_digest(expected, signature):
-        message = f"Invalid signature for: {method} {path} {body}"
+        message = f"""\
+Invalid signature for:
+method={method}
+path={path}
+body={body}
+signature={signature}
+"""
         logging.warning(message)
         raise HTTPException(401, message)
     return True
