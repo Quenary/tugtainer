@@ -31,7 +31,14 @@ export const routes: Routes = [
       {
         path: ':id',
         loadComponent: () =>
-          import('./features/hosts-page/hosts-page-card/hosts-page-card').then((c) => c.HostsPageCard),
+          import('./features/hosts-page/hosts-page-card/hosts-page-card').then(
+            (c) => c.HostsPageCard,
+          ),
+      },
+      {
+        path: ':hostId/:containerNameOrId',
+        loadComponent: () =>
+          import('./features/container-card/container-card').then((c) => c.ContainerCard),
       },
     ],
   },

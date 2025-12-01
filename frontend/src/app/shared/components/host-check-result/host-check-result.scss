@@ -1,0 +1,14 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  h3 {
+    margin: 0;
+  }
+  pre {
+    margin: 0;
+    white-space: pre-line;
+  }
+}

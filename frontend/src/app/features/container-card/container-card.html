@@ -1,0 +1,203 @@
+<p-toolbar>
+  <ng-template #start>
+    <p-button
+      icon="pi pi-arrow-left"
+      text
+      (onClick)="goBack()"
+    ></p-button>
+    <p-button
+      icon="pi pi-refresh"
+      text
+      [loading]="info.isLoading()"
+      (onClick)="info.reload()"
+    ></p-button>
+  </ng-template>
+
+  <ng-template #end>
+    <app-container-actions
+      [item]="info.value()?.item"
+      (onDone)="info.reload()"
+    ></app-container-actions>
+  </ng-template>
+</p-toolbar>
+
+<p-accordion
+  [value]="accordionValue()"
+  (valueChange)="accordionValue.set($event)"
+>
+  <p-accordion-panel value="general">
+    <p-accordion-header>
+      {{ 'CONTAINERS.GENERAL.LABEL' | translate }}
+    </p-accordion-header>
+    <p-accordion-content>
+      @if (item(); as _item) {
+        <section class="general-content">
+          <div class="general-content-switch">
+            <p-toggle-switch
+              inputId="container-check-enabled"
+              [ngModel]="_item.check_enabled"
+              (ngModelChange)="patchContainer({ check_enabled: $event })"
+            ></p-toggle-switch>
+            <label for="container-check-enabled">
+              {{ 'CONTAINERS.CHECK' | translate }}
+            </label>
+          </div>
+          @if (!_item.protected) {
+            <div class="general-content-switch">
+              <p-toggle-switch
+                inputId="container-update-enabled"
+                [ngModel]="_item.update_enabled"
+                (ngModelChange)="patchContainer({ update_enabled: $event })"
+              ></p-toggle-switch>
+              <label for="container-update-enabled">
+                {{ 'CONTAINERS.UPDATE' | translate }}
+              </label>
+            </div>
+          }
+          <section class="general-content-state">
+            @if (_item.protected) {
+              <p-tag
+                class="general-content-state-tag"
+                severity="warn"
+                icon="pi pi-lock"
+                [value]="'CONTAINERS.PROTECTED' | translate"
+                [pTooltip]="'CONTAINERS.PROTECTED_CONTAINER_HINT' | translate"
+              >
+              </p-tag>
+            }
+            @if (_item.update_available) {
+              <p-tag
+                class="general-content-state-tag"
+                severity="success"
+                icon="pi pi-check-circle"
+                [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"
+              ></p-tag>
+            }
+            <p-tag
+              class="general-content-state-tag"
+              [severity]="EContainerStatusSeverity[_item.status]"
+              [value]="
+                _item.status == 'exited' ? _item.status + ' ' + _item.exit_code : _item.status
+              "
+            ></p-tag>
+            <p-tag
+              class="general-content-state-tag"
+              [severity]="EContainerHealthSeverity[_item.health] ?? 'secondary'"
+              [value]="_item.health"
+            ></p-tag>
+          </section>
+
+          <p-ifta-label class="general-content-field">
+            <input
+              id="container-name"
+              pInputText
+              readonly
+              [value]="_item.name"
+            />
+            <label for="container-name">
+              {{ 'CONTAINERS.NAME' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label class="general-content-field">
+            <input
+              id="container-image"
+              pInputText
+              readonly
+              [value]="_item.image"
+            />
+            <label for="container-image">
+              {{ 'CONTAINERS.IMAGE' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label class="general-content-field">
+            <textarea
+              id="container-id"
+              pTextarea
+              readonly
+              rows="2"
+              [value]="_item.container_id"
+            ></textarea>
+            <label for="container-id">
+              {{ 'CONTAINERS.CONTAINER_ID' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label class="general-content-field">
+            <textarea
+              id="container-ports"
+              pTextarea
+              readonly
+              [rows]="itemPortsRows()"
+              [value]="itemPorts()"
+            ></textarea>
+            <label for="container-ports">
+              {{ 'CONTAINERS.PORTS' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label class="general-content-field">
+            <input
+              id="container-checked-at"
+              pInputText
+              readonly
+              [value]="_item.checked_at | naiveDate | date"
+            />
+            <label for="container-checked-at">
+              {{ 'CONTAINERS.CHECKED_AT' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label class="general-content-field">
+            <input
+              id="container-updated-at"
+              pInputText
+              readonly
+              [value]="_item.updated_at | naiveDate | date"
+            />
+            <label for="container-updated-at">
+              {{ 'CONTAINERS.UPDATED_AT' | translate }}
+            </label>
+          </p-ifta-label>
+        </section>
+      }
+    </p-accordion-content>
+  </p-accordion-panel>
+
+  <p-accordion-panel value="inspect">
+    <p-accordion-header>
+      {{ 'CONTAINERS.INSPECT.LABEL' | translate }}
+    </p-accordion-header>
+    <p-accordion-content>
+      <p-tabs
+        lazy
+        value="json"
+      >
+        <p-tablist>
+          <p-tab value="json">
+            {{ 'CONTAINERS.INSPECT.JSON' | translate }}
+          </p-tab>
+          <p-tab value="tree">
+            {{ 'CONTAINERS.INSPECT.TREE' | translate }}
+          </p-tab>
+        </p-tablist>
+        <p-tabpanels>
+          <p-tabpanel value="json">
+            <div style="overflow-x: auto">
+              <code style="white-space: pre">
+                {{ inspectJson() }}
+              </code>
+            </div>
+          </p-tabpanel>
+          <p-tabpanel value="tree">
+            <p-tree
+              style="padding: 0"
+              [value]="inspectTree()"
+            ></p-tree>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
+    </p-accordion-content>
+  </p-accordion-panel>
+</p-accordion>

@@ -2,7 +2,7 @@ from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from backend.db.models import ContainersModel
-from backend.schemas import ContainerGetResponseBody
+from backend.schemas import ContainersListItem
 from backend.core.container.util import (
     get_container_health_status_str,
 )
@@ -15,12 +15,12 @@ def map_container_schema(
     host_id: int,
     d_cont: ContainerInspectResult,
     db_cont: ContainersModel | None,
-) -> ContainerGetResponseBody:
+) -> ContainersListItem:
     """
     Map docker container data and db container data
     to api response schema
     """
-    _item = ContainerGetResponseBody(
+    _item = ContainersListItem(
         name=d_cont.name if d_cont.name else "",
         image=(
             d_cont.config.image

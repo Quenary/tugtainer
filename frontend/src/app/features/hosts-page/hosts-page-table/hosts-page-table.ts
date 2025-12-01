@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
@@ -8,7 +8,8 @@ import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { finalize } from 'rxjs';
+import { ToolbarModule } from 'primeng/toolbar';
+import { catchError, firstValueFrom, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsApiService } from 'src/app/entities/hosts/hosts-api.service';
 import { ICreateHost } from 'src/app/entities/hosts/hosts-interface';
@@ -27,38 +28,26 @@ import { HostStatus } from 'src/app/shared/components/host-status/host-status';
     InputTextModule,
     TagModule,
     HostStatus,
+    ToolbarModule,
   ],
   templateUrl: './hosts-page-table.html',
   styleUrl: './hosts-page-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HostsPageTable implements OnInit {
+export class HostsPageTable {
   private readonly hostsApiService = inject(HostsApiService);
   private readonly toastService = inject(ToastService);
 
-  public readonly isLoading = signal<boolean>(false);
-  public readonly list = signal<ICreateHost[]>([]);
-
-  ngOnInit(): void {
-    this.updateList();
-  }
-
-  public updateList(): void {
-    this.isLoading.set(true);
-    this.hostsApiService
-      .list()
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (list) => {
-          this.list.set(list);
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
-  }
+  public readonly list = resource<ICreateHost[], {}>({
+    loader: () =>
+      firstValueFrom(
+        this.hostsApiService.list().pipe(
+          catchError((error) => {
+            this.toastService.error(error);
+            return of([]);
+          }),
+        ),
+      ),
+    defaultValue: [],
+  });
 }

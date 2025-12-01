@@ -1,6 +1,6 @@
 from .auth_schema import PasswordSetRequestBody
 from .containers_schema import (
-    ContainerGetResponseBody,
+    ContainersListItem,
     ContainerPatchRequestBody,
 )
 from .settings_schema import (

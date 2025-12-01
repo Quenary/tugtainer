@@ -1,9 +1,43 @@
-@if (hosts().length) {
+<p-toolbar>
+  <ng-template #start>
+    <p-button
+      icon="pi pi-refresh"
+      text
+      [loading]="hosts.isLoading()"
+      (onClick)="hosts.reload()"
+    ></p-button>
+    <p-button
+      [icon]="collapseAllIcon()"
+      text
+      (onClick)="toggleCollapseAll()"
+    ></p-button>
+    <p-button
+      icon="pi pi-check-circle"
+      [label]="'CONTAINERS.ONLY_AVAILABLE' | translate"
+      text
+      [severity]="onlyAvailable() ? 'success' : 'secondary'"
+      (onClick)="onlyAvailable.set(!onlyAvailable())"
+    ></p-button>
+  </ng-template>
+  <ng-template #end>
+    <p-button
+      severity="success"
+      icon="pi pi-spinner-dotted"
+      [disabled]="checkAllDisabled()"
+      [loading]="checkAllActive()"
+      [label]="'CONTAINERS.CHECK_ALL_HOSTS' | translate"
+      (onClick)="checkAllHosts()"
+    ></p-button>
+  </ng-template>
+</p-toolbar>
+
+@if (hosts.hasValue()) {
   <p-accordion
     [multiple]="true"
     [value]="accordionValue()"
+    (valueChange)="accordionValue.set($event)"
   >
-    @for (h of hosts(); track h) {
+    @for (h of hosts.value(); track h) {
       <p-accordion-panel
         [value]="h.id"
         [disabled]="!h.enabled"
@@ -17,6 +51,7 @@
               rounded
               text
               [routerLink]="'/hosts/' + h.id"
+              (click)="$event.stopPropagation()"
             >
             </p-button>
             @if (!h.enabled) {
@@ -28,13 +63,30 @@
         </p-accordion-header>
         <p-accordion-content>
           @if (h.enabled) {
-            <app-containers-page-table [host]="h"> </app-containers-page-table>
+            <app-containers-page-table
+              [host]="h"
+              [onlyAvailable]="onlyAvailable()"
+            >
+            </app-containers-page-table>
           }
         </p-accordion-content>
       </p-accordion-panel>
     }
   </p-accordion>
-}
-@else {
+} @else {
   <app-no-hosts></app-no-hosts>
 }
+
+<p-dialog
+  [header]="'CONTAINERS.CHECK_ALL_COMPLETED' | translate"
+  [modal]="true"
+  [draggable]="false"
+  [visible]="checkAllDialogVisible()"
+  (visibleChange)="checkAllDialogVisible.set(false)"
+>
+  @if (checkAllProgressResults(); as res) {
+    @for (r of res; track r) {
+      <app-host-check-result [result]="r"></app-host-check-result>
+    }
+  }
+</p-dialog>

@@ -1,0 +1,40 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-y: auto;
+
+  p-toolbar {
+    margin-bottom: 1rem;
+  }
+
+  .general-content {
+    & > * {
+      margin-bottom: 1rem;
+    }
+
+    &-switch {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    &-state {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    &-field {
+      width: 100%;
+
+      & > * {
+        width: 100%;
+      }
+
+      textarea {
+        resize: none;
+      }
+    }
+  }
+}

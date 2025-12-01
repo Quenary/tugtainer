@@ -3,8 +3,19 @@
   height: auto;
   overflow: hidden;
 
+  p-toolbar {
+    border-color: transparent;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  th:first-child,
+  td:first-child {
+    width: 40%;
+    max-width: 35vw;
+  }
+
   .image-id {
-    max-width: 12rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -3,44 +3,15 @@
   height: auto;
   overflow: hidden;
 
-  .name-cell {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
+  p-toolbar {
+    border-color: transparent;
+    padding-left: 0;
+    padding-right: 0;
   }
 
-  .check-results {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .ports {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-
-    &-host {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
-    }
-  }
-
-  .extra-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    & > * {
-      width: 100%;
-    }
+  th:first-child,
+  td:first-child {
+    width: 40%;
+    max-width: 35vw;
   }
 }

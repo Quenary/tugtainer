@@ -94,35 +94,33 @@
     }
   },
   "CONTAINERS": {
-    "TABLE": {
-      "SEARCH_PLACEHOLDER": "名称或 ID",
-      "CHECK_ALL": "全部检查",
-      "CHECK_ALL_COMPLETED": "检查完成",
-      "HEADER_PROGRESS": {
-        "UPDATED": "已更新",
-        "AVAILABLE": "可更新",
-        "ROLLED_BACK": "已回滚",
-        "FAILED": "失败"
-      },
-      "NAME": "名称",
-      "CONTAINER_ID": "ID",
-      "IMAGE": "镜像",
-      "UPDATE_AVAILABLE": "有可用更新",
-      "STATUS": "状态",
-      "PORTS": "端口",
-      "HEALTH": "健康",
-      "CHECK_ENABLED": "检查",
-      "CHECK_HINT": "定期检查新镜像。",
-      "UPDATE_ENABLED": "更新",
-      "UPDATE_HINT": "检测到新镜像时自动更新容器。",
-      "CHECKED_AT": "上次检查",
-      "UPDATED_AT": "上次更新",
-      "UPDATE": "更新",
-      "CHECK": "检查",
-      "MAIN_BTN_HINT": "若容器属于 Compose 项目，该项目的所有容器都将参与此过程。",
-      "PROTECTED": "受保护",
-      "PROTECTED_CONTAINER_HINT": "此容器标记为 dev.quenary.tugtainer.protected，无法从此应用更新。"
-    }
+    "SEARCH_PLACEHOLDER": "名称或 ID",
+    "CHECK_ALL": "全部检查",
+    "CHECK_ALL_COMPLETED": "检查完成",
+    "HEADER_PROGRESS": {
+      "UPDATED": "已更新",
+      "AVAILABLE": "可更新",
+      "ROLLED_BACK": "已回滚",
+      "FAILED": "失败"
+    },
+    "NAME": "名称",
+    "CONTAINER_ID": "ID",
+    "IMAGE": "镜像",
+    "UPDATE_AVAILABLE": "有可用更新",
+    "STATUS": "状态",
+    "PORTS": "端口",
+    "HEALTH": "健康",
+    "CHECK_ENABLED": "检查",
+    "CHECK_HINT": "定期检查新镜像。",
+    "UPDATE_ENABLED": "更新",
+    "UPDATE_HINT": "检测到新镜像时自动更新容器。",
+    "CHECKED_AT": "上次检查",
+    "UPDATED_AT": "上次更新",
+    "UPDATE": "更新",
+    "CHECK": "检查",
+    "MAIN_BTN_HINT": "若容器属于 Compose 项目，该项目的所有容器都将参与此过程。",
+    "PROTECTED": "受保护",
+    "PROTECTED_CONTAINER_HINT": "此容器标记为 dev.quenary.tugtainer.protected，无法从此应用更新。"
   },
   "IMAGES": {
     "TABLE": {

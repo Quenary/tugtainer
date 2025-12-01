@@ -1,10 +1,13 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 from pydantic import BaseModel
-from python_on_whales.components.container.models import PortBinding
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
+    PortBinding,
+)
 
 
-class ContainerGetResponseBody(BaseModel):
+class ContainersListItem(BaseModel):
     name: str  # name of the container
     container_id: str  # id of the container
     image: str | None  # image of the container
@@ -12,7 +15,7 @@ class ContainerGetResponseBody(BaseModel):
     status: str | None
     exit_code: int | None
     health: str | None
-    protected: bool # Whether container labeled with dev.quenary.tugtainer.protected=true
+    protected: bool  # Whether container labeled with dev.quenary.tugtainer.protected=true
     host_id: int  # host id is also stored in db, but it must be always defined
     # Those keys stored in db, but might be undefined for new containers
     id: Optional[int] = None  # id of the row
@@ -31,6 +34,11 @@ class ContainerGetResponseBody(BaseModel):
     modified_at: Optional[datetime] = (
         None  # Date ofmodification db entry
     )
+
+
+class ContainerGetResponseBody(BaseModel):
+    item: Optional[ContainersListItem] = None
+    inspect: ContainerInspectResult
 
 
 class ContainerPatchRequestBody(BaseModel):
