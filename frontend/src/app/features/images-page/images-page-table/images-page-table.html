@@ -36,6 +36,40 @@
   </ng-template>
 </p-confirmpopup>
 
+<p-toolbar>
+  <ng-template #start>
+    <p-iconfield iconPosition="left">
+      <p-inputicon>
+        <i class="pi pi-search"></i>
+      </p-inputicon>
+      <input
+        #searchInput
+        id="images-search"
+        pInputText
+        type="text"
+        (input)="dt2.filterGlobal($event.target.value, 'contains')"
+        [placeholder]="'IMAGES.TABLE.SEARCH_PLACEHOLDER' | translate"
+      />
+      <p-button
+        icon="pi pi-refresh"
+        [loading]="list.isLoading()"
+        text
+        (onClick)="list.reload()"
+      ></p-button>
+    </p-iconfield>
+  </ng-template>
+  <ng-template #end>
+    <p-button
+      [loading]="pruneInProgress()"
+      severity="warn"
+      [label]="'IMAGES.TABLE.PRUNE' | translate"
+      icon="pi pi-eraser"
+      (onClick)="confirmPrune($event)"
+    >
+    </p-button>
+  </ng-template>
+</p-toolbar>
+
 <p-table
   #dt2
   [globalFilterFields]="['id', 'repository', 'tags']"
@@ -44,46 +78,9 @@
   [sortOrder]="-1"
   [scrollable]="true"
   scrollHeight="flex"
-  [value]="list()"
+  [value]="list.value()"
 >
   <ng-template #header>
-    <tr>
-      <th>
-        <p-iconfield iconPosition="left">
-          <p-inputicon>
-            <i class="pi pi-search"></i>
-          </p-inputicon>
-          <input
-            #searchInput
-            id="images-search"
-            pInputText
-            type="text"
-            (input)="dt2.filterGlobal($event.target.value, 'contains')"
-            [placeholder]="'IMAGES.TABLE.SEARCH_PLACEHOLDER' | translate"
-          />
-        </p-iconfield>
-      </th>
-      <th colspan="3"></th>
-      <th style="text-wrap: nowrap">
-        <p-buttongroup>
-          <p-button
-            [loading]="isLoading()"
-            [label]="'GENERAL.REFRESH' | translate"
-            icon="pi pi-refresh"
-            (onClick)="updateList()"
-          ></p-button>
-          <p-button
-            [loading]="isLoading()"
-            severity="warn"
-            [label]="'IMAGES.TABLE.PRUNE' | translate"
-            icon="pi pi-eraser"
-            (onClick)="confirmPrune($event)"
-          >
-          </p-button>
-        </p-buttongroup>
-      </th>
-    </tr>
-
     <tr>
       <th pSortableColumn="id">
         {{ 'IMAGES.TABLE.ID' | translate }}

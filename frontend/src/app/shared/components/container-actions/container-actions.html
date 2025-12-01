@@ -1,0 +1,17 @@
+<p-button-group>
+  <p-button
+    [loading]="loading() == 'check'"
+    [disabled]="loading() == 'update'"
+    [label]="'CONTAINERS.CHECK' | translate"
+    (onClick)="check(false)"
+  ></p-button>
+  @if (!item()?.protected) {
+    <p-button
+      [loading]="loading() == 'update'"
+      [disabled]="!item()?.update_available || loading() == 'check'"
+      [label]="'CONTAINERS.UPDATE' | translate"
+      severity="success"
+      (onClick)="check(true)"
+    ></p-button>
+  }
+</p-button-group>

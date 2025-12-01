@@ -1,0 +1,13 @@
+@if (result(); as res) {
+  <h3>
+    {{ res.host_name }}
+  </h3>
+  <pre>
+    @for (item of res.items; track item) {
+        {{ item.container.Name }} {{ item.result }}
+    }
+    @if (res.prune_result) {
+        {{ res.prune_result }}
+    }
+   </pre>
+}

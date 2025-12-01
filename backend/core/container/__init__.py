@@ -1,7 +1,7 @@
 from .process_cache import (
-    GroupCheckData,
-    HostCheckData,
-    AllCheckData,
+    GroupCheckProgressCache,
+    HostCheckProgressCache,
+    AllCheckProgressCache,
     ProcessCache,
     ALL_CONTAINERS_STATUS_KEY,
     get_host_cache_key,

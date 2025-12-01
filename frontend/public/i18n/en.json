@@ -6,6 +6,7 @@
     "CONFIRM": "Confirm",
     "CANCEL": "Cancel",
     "CLOSE": "Close",
+    "GO_BACK": "Go back",
     "DELETE": "Delete",
     "ENABLED": "Enabled",
     "DISABLED": "Disabled",
@@ -58,7 +59,7 @@
     "NO_HOSTS_FOUND": "No hosts found",
     "TABLE": {
       "SEARCH_PLACEHOLDER": "ID, name, url",
-      "ADD": "Add host",
+      "ADD": "Add new",
       "NAME": "Name",
       "URL": "Agent address",
       "STATUS": "Status",
@@ -96,34 +97,42 @@
     }
   },
   "CONTAINERS": {
-    "TABLE": {
-      "SEARCH_PLACEHOLDER": "Name or ID",
-      "CHECK_ALL": "Check all",
-      "CHECK_ALL_COMPLETED": "Check completed",
-      "HEADER_PROGRESS": {
-        "UPDATED": "Updated",
-        "AVAILABLE": "Available",
-        "ROLLED_BACK": "Rolled back",
-        "FAILED": "Failed"
-      },
-      "NAME": "Name",
-      "CONTAINER_ID": "ID",
-      "IMAGE": "Image",
-      "UPDATE_AVAILABLE": "Update available",
-      "STATUS": "Status",
-      "PORTS": "Ports",
-      "HEALTH": "Health",
-      "CHECK_ENABLED": "Check",
-      "CHECK_HINT": "Periodically check for a new image.",
-      "UPDATE_ENABLED": "Update",
-      "UPDATE_HINT": "Automatically update container when a new image is detected.",
-      "CHECKED_AT": "Last check",
-      "UPDATED_AT": "Last update",
-      "UPDATE": "Update",
-      "CHECK": "Check",
-      "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process.",
-      "PROTECTED": "Protected",
-      "PROTECTED_CONTAINER_HINT": "This container labeled with dev.quenary.tugtainer.protected and cannot be updated from the app."
+    "SEARCH_PLACEHOLDER": "Name or ID",
+    "ONLY_AVAILABLE": "Only available",
+    "CHECK_ALL": "Check all",
+    "CHECK_ALL_HOSTS": "Check all hosts",
+    "CHECK_ALL_COMPLETED": "Check completed",
+    "HEADER_PROGRESS": {
+      "UPDATED": "Updated",
+      "AVAILABLE": "Available",
+      "ROLLED_BACK": "Rolled back",
+      "FAILED": "Failed"
+    },
+    "NAME": "Name",
+    "CONTAINER_ID": "ID",
+    "IMAGE": "Image",
+    "UPDATE_AVAILABLE": "Update available",
+    "STATUS": "Status",
+    "PORTS": "Ports",
+    "HEALTH": "Health",
+    "CHECK_ENABLED": "Check",
+    "CHECK_HINT": "Periodically check for a new image.",
+    "UPDATE_ENABLED": "Update",
+    "UPDATE_HINT": "Automatically update container when a new image is detected.",
+    "CHECKED_AT": "Last check",
+    "UPDATED_AT": "Last update",
+    "UPDATE": "Update",
+    "CHECK": "Check",
+    "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process.",
+    "PROTECTED": "Protected",
+    "PROTECTED_CONTAINER_HINT": "This container labeled with dev.quenary.tugtainer.protected and cannot be updated from the app.",
+    "GENERAL": {
+      "LABEL": "General"
+    },
+    "INSPECT": {
+      "LABEL": "Inspect",
+      "JSON": "JSON",
+      "TREE": "Tree"
     }
   },
   "IMAGES": {

@@ -28,9 +28,9 @@ from backend.core.container.util import (
     update_containers_data_after_check,
 )
 from backend.core.container import (
-    GroupCheckData,
-    HostCheckData,
-    AllCheckData,
+    GroupCheckProgressCache,
+    HostCheckProgressCache,
+    AllCheckProgressCache,
     ProcessCache,
     ALL_CONTAINERS_STATUS_KEY,
     get_host_cache_key,
@@ -135,7 +135,7 @@ async def check_group(
 Starting check of group: '{group.name}', containers count: {len(group.containers)}"""
     )
     STATUS_KEY = get_group_cache_key(host, group)
-    CACHE = ProcessCache[GroupCheckData](STATUS_KEY)
+    CACHE = ProcessCache[GroupCheckProgressCache](STATUS_KEY)
     STATUS = CACHE.get()
     if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
         logging.warning(
@@ -409,7 +409,7 @@ async def check_host(
     """
     result = HostCheckResult(host_id=host.id, host_name=host.name)
     STATUS_KEY = get_host_cache_key(host)
-    CACHE = ProcessCache[HostCheckData](STATUS_KEY)
+    CACHE = ProcessCache[HostCheckProgressCache](STATUS_KEY)
     try:
         STATUS = CACHE.get()
         if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:
@@ -475,7 +475,7 @@ async def check_all(update: bool):
     Function performs checks in separate threads for each host.
     Should not raises errors, only logging.
     """
-    CACHE = ProcessCache[AllCheckData](ALL_CONTAINERS_STATUS_KEY)
+    CACHE = ProcessCache[AllCheckProgressCache](ALL_CONTAINERS_STATUS_KEY)
     try:
         STATUS = CACHE.get()
         if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:

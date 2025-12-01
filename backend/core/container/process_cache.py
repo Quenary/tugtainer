@@ -26,7 +26,7 @@ def get_group_cache_key(
 _CACHE = TTLCache(maxsize=10, ttl=600)
 
 
-class GroupCheckData(TypedDict, total=False):
+class GroupCheckProgressCache(TypedDict, total=False):
     """Data of containers group check/update progress"""
 
     status: ECheckStatus  # Status of progress
@@ -35,7 +35,7 @@ class GroupCheckData(TypedDict, total=False):
     ]  # Data wil be available only in the end
 
 
-class HostCheckData(TypedDict, total=False):
+class HostCheckProgressCache(TypedDict, total=False):
     """Data of host container's check/update progress"""
 
     status: ECheckStatus  # Status of progress
@@ -44,7 +44,7 @@ class HostCheckData(TypedDict, total=False):
     ]  # Data will be available only in the end
 
 
-class AllCheckData(TypedDict, total=False):
+class AllCheckProgressCache(TypedDict, total=False):
     """Data of all host's container's check/update progress"""
 
     status: ECheckStatus  # Status of progress

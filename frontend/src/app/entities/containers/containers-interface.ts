@@ -1,14 +1,15 @@
+import { TIncomplete } from '../incomplete.type';
+
 /**
  * Container data
  */
-export interface IContainer {
+export interface IContainerListItem {
+  host_id: number;
   id: number;
   name: string;
   image: string;
   container_id: string;
-  ports: {
-    [K: string]: IContainerPort[];
-  };
+  ports: Record<string, IContainerPort[]>;
   status: EContainerStatus;
   health: string;
   protected: boolean;
@@ -19,17 +20,60 @@ export interface IContainer {
   updated_at: string;
   created_at: string;
   modified_at: string;
+  exit_code: number;
 }
 export interface IContainerPort {
-  host_ip: string;
-  host_port: string;
+  HostIp: string;
+  HostPort: string;
 }
-
+/**
+ * Container inspect result
+ */
+export interface IContainerInspectResult {
+  Id: string;
+  Created: string;
+  Path: string;
+  Args: string[];
+  State: TIncomplete;
+  Image: string;
+  Pod: string;
+  ResolvConfPath: string;
+  HostnamePath: string;
+  HostsPath: string;
+  LogPath: string;
+  Node: string;
+  Name: string;
+  RestartCount: number;
+  Driver: string;
+  Platform: string;
+  MountLabel: string;
+  ProcessLabel: string;
+  AppArmorProfile: string;
+  ExecIDs: string[];
+  HostConfig: TIncomplete;
+  GraphDriver: TIncomplete;
+  SizeRw: number;
+  SizeRootFs: number;
+  Mounts: TIncomplete[];
+  Config: TIncomplete;
+  NetworkSettings: TIncomplete;
+  Namespace: string;
+  IsInfra: boolean;
+}
+/**
+ * Container full info
+ */
+export interface IContainerInfo {
+  item: IContainerListItem | null;
+  inspect: IContainerInspectResult;
+}
+/**
+ * Container patch request body
+ */
 export interface IContainerPatchBody {
   check_enabled?: boolean;
   update_enabled?: boolean;
 }
-
 /**
  * Possible docker container statuses
  */
@@ -42,22 +86,22 @@ export enum EContainerStatus {
   exited = 'exited',
   dead = 'dead',
 }
-
-export enum ECheckStatus {
-  PREPARING = 'PREPARING',
-  CHECKING = 'CHECKING',
-  UPDATING = 'UPDATING',
-  DONE = 'DONE',
-  ERROR = 'ERROR',
-}
-
-export interface IContainerCheckData {
-  status: ECheckStatus;
-}
-export interface IHostCheckData extends IContainerCheckData {
-  available: number;
-  updated: number;
-  rolled_back: number;
-  failed: number;
-}
-export interface IAllCheckData extends IHostCheckData {}
+/**
+ * Mapping of container status to primeng severity color
+ */
+export const EContainerStatusSeverity: Record<EContainerStatus, string> = {
+  [EContainerStatus.created]: 'primary',
+  [EContainerStatus.paused]: 'contrast',
+  [EContainerStatus.running]: 'success',
+  [EContainerStatus.restarting]: 'info',
+  [EContainerStatus.removing]: 'warn',
+  [EContainerStatus.exited]: 'danger',
+  [EContainerStatus.dead]: 'danger',
+};
+/**
+ * Mapping of container health status to primeng severity color
+ */
+export const EContainerHealthSeverity: Record<string, string> = {
+  healthy: 'success',
+  unhealthy: 'danger',
+};

@@ -125,7 +125,7 @@ async def get_status(
     response.headers["Expires"] = "0"
     host = await get_host(id, session)
     if not host.enabled:
-        HostStatusResponseBody(id=id)
+        return HostStatusResponseBody(id=id)
     client = HostsManager.get_host_client(host)
     try:
         _ = await client.public.health()

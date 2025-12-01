@@ -1,4 +1,3 @@
-import { NgTemplateOutlet, KeyValuePipe, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,7 +5,7 @@ import {
   DestroyRef,
   inject,
   input,
-  OnInit,
+  resource,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -18,36 +17,39 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { finalize, Observable, repeat, takeWhile } from 'rxjs';
+import { catchError, firstValueFrom, map, of } from 'rxjs';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
 import {
-  ECheckStatus,
-  EContainerStatus,
-  IContainer,
-  IContainerCheckData,
+  IContainerListItem,
   IContainerPatchBody,
-  IHostCheckData,
+  EContainerStatusSeverity,
+  EContainerHealthSeverity,
 } from 'src/app/entities/containers/containers-interface';
-import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
 import { Tooltip } from 'primeng/tooltip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FieldsetModule } from 'primeng/fieldset';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { ButtonGroup } from 'primeng/buttongroup';
 import { DialogModule } from 'primeng/dialog';
 import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
+import { RouterLink } from '@angular/router';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ContainerActions } from 'src/app/shared/components/container-actions/container-actions';
+import {
+  ECheckStatus,
+  IHostCheckProgressCache,
+} from 'src/app/entities/progress-cache/progress-cache.interface';
+import { HostCheckResult } from 'src/app/shared/components/host-check-result/host-check-result';
 
-type TContainer = IContainer & {
-  checkStatus?: ECheckStatus;
-};
+interface IListParams {
+  host: IHostInfo;
+  onlyAvailable: boolean;
+}
 
 @Component({
   selector: 'app-containers-page-table',
   imports: [
     TableModule,
     TranslatePipe,
-    NgTemplateOutlet,
-    KeyValuePipe,
     ToggleButtonModule,
     FormsModule,
     TagModule,
@@ -55,198 +57,139 @@ type TContainer = IContainer & {
     IconFieldModule,
     InputTextModule,
     InputIconModule,
-    NaiveDatePipe,
-    DatePipe,
     Tooltip,
     FieldsetModule,
-    ButtonGroup,
     DialogModule,
+    RouterLink,
+    ToolbarModule,
+    ContainerActions,
+    HostCheckResult,
   ],
   templateUrl: './containers-page-table.html',
   styleUrl: './containers-page-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ContainersPageTable implements OnInit {
+export class ContainersPageTable {
   private readonly containersApiService = inject(ContainersApiService);
   private readonly toastService = inject(ToastService);
   private readonly translateService = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
 
+  /**
+   * Host info
+   */
   public readonly host = input.required<IHostInfo>();
+  /**
+   * Show only available filter
+   */
+  public readonly onlyAvailable = input<boolean>(false);
 
-  public readonly EContainerStatusSeverity: { [K in keyof typeof EContainerStatus]: string } = {
-    [EContainerStatus.created]: 'primary',
-    [EContainerStatus.paused]: 'contrast',
-    [EContainerStatus.running]: 'success',
-    [EContainerStatus.restarting]: 'info',
-    [EContainerStatus.removing]: 'warn',
-    [EContainerStatus.exited]: 'danger',
-    [EContainerStatus.dead]: 'danger',
-  };
-  public readonly ECheckStatus = ECheckStatus;
-  public readonly EContainerHealthSevirity = {
-    healthy: 'success',
-    unhealthy: 'danger',
-  };
+  protected readonly EContainerStatusSeverity = EContainerStatusSeverity;
+  protected readonly EContainerHealthSeverity = EContainerHealthSeverity;
 
-  public readonly isLoading = signal<boolean>(false);
-  public readonly list = signal<Array<TContainer>>([]);
-
-  public readonly checkHostProgress = signal<IHostCheckData>(null);
-  public readonly checkAllActive = computed(() => {
-    const checkAllProgress = this.checkHostProgress();
+  /**
+   * List of containers
+   */
+  protected readonly list = resource<IContainerListItem[], IListParams>({
+    params: () => ({
+      host: this.host(),
+      onlyAvailable: this.onlyAvailable(),
+    }),
+    loader: (params) => {
+      const host = params.params.host;
+      const onlyAvailable = params.params.onlyAvailable;
+      if (!host || !host.enabled) {
+        return Promise.resolve([]);
+      }
+      return firstValueFrom(
+        this.containersApiService.list(host.id).pipe(
+          map((list) => {
+            if (onlyAvailable) {
+              return list.filter((item) => item.update_available);
+            }
+            return list;
+          }),
+          catchError((error) => {
+            this.toastService.error(error);
+            return of([]);
+          }),
+        ),
+      );
+    },
+    defaultValue: [],
+  });
+  /**
+   * Check host state
+   */
+  protected readonly checkHostProgress = signal<IHostCheckProgressCache>(null);
+  /**
+   * Check host in progress flag
+   */
+  protected readonly checkHostActive = computed<boolean>(() => {
+    const checkHostProgress = this.checkHostProgress();
     return (
-      checkAllProgress && ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkAllProgress.status)
+      !!checkHostProgress &&
+      ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkHostProgress.status)
     );
   });
-  public readonly checkAllDialogVisible = signal<boolean>(false);
+  /**
+   * Check host dialog visible flag
+   */
+  protected readonly checkHostDialogVisible = signal<boolean>(false);
 
-  ngOnInit(): void {
-    this.updateList();
-  }
-
-  public updateList(): void {
+  protected checkHost(update: boolean = false): void {
     const host = this.host();
-    if (!host || !host.enabled) {
-      return;
-    }
-    this.isLoading.set(true);
-    this.containersApiService
-      .list(host.id)
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (list) => {
-          this.list.set(list);
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
+    this.containersApiService.checkHost(host.id, update).subscribe({
+      next: (cache_id: string) => {
+        this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
+        this.containersApiService
+          .watchProgress<IHostCheckProgressCache>(cache_id)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (res) => {
+              this.checkHostProgress.set(res);
+            },
+            complete: () => {
+              this.list.reload();
+              this.checkHostDialogVisible.set(true);
+            },
+          });
+      },
+      error: (error) => {
+        this.toastService.error(error);
+      },
+    });
   }
 
-  public onCheckEnabledChange(check_enabled: boolean, container: IContainer): void {
+  protected onCheckEnabledChange(check_enabled: boolean, container: IContainerListItem): void {
     this.patchContainer(container.name, { check_enabled });
   }
 
-  public onUpdateEnabledChange(update_enabled: boolean, container: IContainer): void {
+  protected onUpdateEnabledChange(update_enabled: boolean, container: IContainerListItem): void {
     this.patchContainer(container.name, { update_enabled });
   }
 
   private patchContainer(name: string, body: IContainerPatchBody): void {
     const host = this.host();
-    if (!host || !host.enabled) {
-      return;
-    }
-    this.isLoading.set(true);
-    this.containersApiService
-      .patch(host.id, name, body)
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (container) => {
-          this.toastService.success();
-          const list = this.list();
+    this.containersApiService.patch(host.id, name, body).subscribe({
+      next: (container) => {
+        this.list.update((list) => {
           const index = list.findIndex((item) => item.name == container.name);
           list[index] = {
             ...list[index],
             ...container,
           };
-          this.list.set([...list]);
-        },
-        error: (error) => {
-          this.toastService.error(error);
-          this.updateList();
-        },
-      });
+          return [...list];
+        });
+      },
+      error: (error) => {
+        this.toastService.error(error);
+        this.list.reload();
+      },
+    });
   }
 
-  public checkContainer(name: string, update: boolean = false): void {
-    const host = this.host();
-    if (!host || !host.enabled) {
-      return;
-    }
-    this.isLoading.set(true);
-    this.containersApiService
-      .checkContainer(host.id, name, update)
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (cache_id) => {
-          this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
-          this.watchCheckProgress(cache_id).subscribe({
-            next: (res) => {
-              const status = res.status;
-              const list = this.list();
-              const index = list.findIndex((item) => item.name == name);
-              if (index > -1) {
-                const _list = [...list];
-                _list[index].checkStatus = status;
-                this.list.set(_list);
-              }
-            },
-            complete: () => {
-              this.updateList();
-            },
-          });
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
-  }
-
-  public checkHost(update: boolean = false): void {
-    const host = this.host();
-    if (!host || !host.enabled) {
-      return;
-    }
-    this.isLoading.set(true);
-    this.containersApiService
-      .checkHost(host.id, update)
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (cache_id: string) => {
-          this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
-          this.watchCheckProgress<IHostCheckData>(cache_id).subscribe({
-            next: (res) => {
-              this.checkHostProgress.set(res);
-            },
-            complete: () => {
-              this.updateList();
-              this.checkAllDialogVisible.set(true);
-            },
-          });
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
-  }
-
-  /**
-   * Watch check progress
-   * @param id id of progress cache
-   * @returns
-   */
-  private watchCheckProgress<T extends IContainerCheckData>(id: string): Observable<T> {
-    return this.containersApiService.progress<T>(id).pipe(
-      repeat({ delay: 500 }),
-      takeWhile((res) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(res?.status), true),
-      takeUntilDestroyed(this.destroyRef),
-    );
+  protected onContainerProgressDone(): void {
+    this.list.reload();
   }
 }

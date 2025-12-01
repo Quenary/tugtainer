@@ -1,3 +1,36 @@
+<p-toolbar>
+  <ng-template #start>
+    <p-iconfield iconPosition="left">
+      <p-inputicon>
+        <i class="pi pi-search"></i>
+      </p-inputicon>
+      <input
+        #searchInput
+        id="{{ host()?.id }}-containers-search"
+        pInputText
+        type="text"
+        (input)="dt2.filterGlobal($event.target.value, 'contains')"
+        [placeholder]="'CONTAINERS.SEARCH_PLACEHOLDER' | translate"
+      />
+    </p-iconfield>
+    <p-button
+      icon="pi pi-refresh"
+      [loading]="list.isLoading()"
+      text
+      (onClick)="list.reload()"
+    ></p-button>
+  </ng-template>
+  <ng-template #end>
+    <p-button
+      severity="success"
+      icon="pi pi-spinner-dotted"
+      [loading]="checkHostActive()"
+      [label]="'CONTAINERS.CHECK_ALL' | translate"
+      (onClick)="checkHost()"
+    ></p-button>
+  </ng-template>
+</p-toolbar>
+
 <p-table
   #dt2
   [globalFilterFields]="['name', 'container_id']"
@@ -9,74 +42,38 @@
   ]"
   [scrollable]="true"
   scrollHeight="flex"
-  [value]="list()"
+  [value]="list.value()"
+  selectionMode="single"
 >
   <ng-template #header>
     <tr>
-      <th pFrozenColumn>
-        <p-iconfield iconPosition="left">
-          <p-inputicon>
-            <i class="pi pi-search"></i>
-          </p-inputicon>
-          <input
-            #searchInput
-            id="{{ host()?.id }}-containers-search"
-            pInputText
-            type="text"
-            (input)="dt2.filterGlobal($event.target.value, 'contains')"
-            [placeholder]="'CONTAINERS.TABLE.SEARCH_PLACEHOLDER' | translate"
-          />
-        </p-iconfield>
-      </th>
-      <th colspan="4"></th>
-      <th style="text-wrap: nowrap">
-        <p-button-group>
-          <p-button
-            [loading]="isLoading()"
-            [label]="'GENERAL.REFRESH' | translate"
-            (onClick)="updateList()"
-          ></p-button>
-          <p-button
-            severity="success"
-            [loading]="checkAllActive()"
-            [label]="'CONTAINERS.TABLE.CHECK_ALL' | translate"
-            (onClick)="checkHost()"
-          ></p-button>
-        </p-button-group>
-      </th>
-    </tr>
-
-    <tr>
-      <th
-        pFrozenColumn
-        pSortableColumn="name"
-      >
-        {{ 'CONTAINERS.TABLE.NAME' | translate }}
+      <th pSortableColumn="name">
+        {{ 'CONTAINERS.NAME' | translate }}
         <p-sortIcon field="name"></p-sortIcon>
       </th>
       <th
         pSortableColumn="status"
         style="width: 10%"
       >
-        {{ 'CONTAINERS.TABLE.STATUS' | translate }}
+        {{ 'CONTAINERS.STATUS' | translate }}
         <p-sortIcon field="status"></p-sortIcon>
       </th>
       <th
         pSortableColumn="health"
         style="width: 10%"
       >
-        {{ 'CONTAINERS.TABLE.HEALTH' | translate }}
+        {{ 'CONTAINERS.HEALTH' | translate }}
         <p-sortIcon field="health"></p-sortIcon>
       </th>
       <th
         pSortableColumn="check_enabled"
         style="width: 10%"
       >
-        {{ 'CONTAINERS.TABLE.CHECK_ENABLED' | translate }}
+        {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
         <i
           class="pi pi-question-circle"
           style="margin: 0 0.5rem"
-          [pTooltip]="'CONTAINERS.TABLE.CHECK_HINT' | translate"
+          [pTooltip]="'CONTAINERS.CHECK_HINT' | translate"
           tooltipPosition="left"
         ></i>
         <p-sortIcon field="check_enabled"></p-sortIcon>
@@ -85,23 +82,23 @@
         pSortableColumn="update_enabled"
         style="width: 10%"
       >
-        {{ 'CONTAINERS.TABLE.UPDATE_ENABLED' | translate }}
+        {{ 'CONTAINERS.UPDATE_ENABLED' | translate }}
         <i
           class="pi pi-question-circle"
           style="margin: 0 0.5rem"
-          [pTooltip]="'CONTAINERS.TABLE.UPDATE_HINT' | translate"
+          [pTooltip]="'CONTAINERS.UPDATE_HINT' | translate"
           tooltipPosition="left"
         ></i>
         <p-sortIcon field="update_enabled"></p-sortIcon>
       </th>
       <th
         pSortableColumn="update_available"
-        style="width: 20%"
+        style="width: 10%"
       >
         <i
           class="pi pi-question-circle"
           style="margin: 0 0.5rem"
-          [pTooltip]="'CONTAINERS.TABLE.MAIN_BTN_HINT' | translate"
+          [pTooltip]="'CONTAINERS.MAIN_BTN_HINT' | translate"
           tooltipPosition="left"
         ></i>
         <p-sortIcon field="update_available"></p-sortIcon>
@@ -112,37 +109,26 @@
   <ng-template
     #body
     let-container
-    let-expanded="expanded"
   >
-    <tr>
-      <td pFrozenColumn>
-        <span class="name-cell">
-          <p-button
-            type="button"
-            pRipple
-            [pRowToggler]="container"
-            severity="contrast"
-            [rounded]="true"
-            [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-          />
-          {{ container.name }}
-          @if (container.protected) {
-            <p-tag
-              severity="warn"
-              icon="pi pi-lock"
-              [value]="'CONTAINERS.TABLE.PROTECTED' | translate"
-              [pTooltip]="'CONTAINERS.TABLE.PROTECTED_CONTAINER_HINT' | translate"
-            >
-            </p-tag>
-          }
-          @if (container.update_available) {
-            <p-tag
-              severity="success"
-              icon="pi pi-check-circle"
-              [value]="'CONTAINERS.TABLE.UPDATE_AVAILABLE' | translate"
-            ></p-tag>
-          }
-        </span>
+    <tr routerLink="/hosts/{{ container.host_id }}/{{ container.name || container.container_id }}">
+      <td>
+        {{ container.name }}
+        @if (container.protected) {
+          <p-tag
+            severity="warn"
+            icon="pi pi-lock"
+            [value]="'CONTAINERS.PROTECTED' | translate"
+            [pTooltip]="'CONTAINERS.PROTECTED_CONTAINER_HINT' | translate"
+          >
+          </p-tag>
+        }
+        @if (container.update_available) {
+          <p-tag
+            severity="success"
+            icon="pi pi-check-circle"
+            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"
+          ></p-tag>
+        }
       </td>
       <td>
         <p-tag
@@ -156,7 +142,7 @@
       </td>
       <td>
         <p-tag
-          [severity]="EContainerHealthSevirity[container.health] ?? 'secondary'"
+          [severity]="EContainerHealthSeverity[container.health] ?? 'secondary'"
           [value]="container.health"
         ></p-tag>
       </td>
@@ -169,6 +155,7 @@
           [offLabel]="'GENERAL.OFF' | translate"
           [onIcon]="'pi pi-check-circle'"
           [offIcon]="'pi pi-circle-off'"
+          (click)="$event.stopPropagation()"
         />
       </td>
       <td>
@@ -181,102 +168,29 @@
             [offLabel]="'GENERAL.OFF' | translate"
             [onIcon]="'pi pi-check-circle'"
             [offIcon]="'pi pi-circle-off'"
+            (click)="$event.stopPropagation()"
           />
         }
       </td>
-      <td>
-        <p-button-group>
-          <p-button
-            [loading]="
-              container.checkStatus &&
-              container.checkStatus !== ECheckStatus.DONE &&
-              container.checkStatus !== ECheckStatus.ERROR
-            "
-            [label]="'CONTAINERS.TABLE.CHECK' | translate"
-            (onClick)="checkContainer(container.name, false)"
-          ></p-button>
-          <p-button
-            [loading]="
-              container.checkStatus &&
-              container.checkStatus !== ECheckStatus.DONE &&
-              container.checkStatus !== ECheckStatus.ERROR
-            "
-            [disabled]="container.protected || !container.update_available"
-            [label]="'CONTAINERS.TABLE.UPDATE' | translate"
-            severity="success"
-            (onClick)="checkContainer(container.name, true)"
-          ></p-button>
-        </p-button-group>
+      <td style="padding-right: 0;">
+        <app-container-actions
+          [item]="container"
+          (onDone)="onContainerProgressDone()"
+          (click)="$event.stopPropagation()"
+        ></app-container-actions>
       </td>
     </tr>
-
-    <ng-template
-      #expandedrow
-      let-container
-    >
-      <tr>
-        <td colspan="6">
-          <div class="extra-info">
-            <p-fieldset [legend]="'CONTAINERS.TABLE.IMAGE' | translate">
-              {{ container.image }}
-            </p-fieldset>
-            <p-fieldset [legend]="'CONTAINERS.TABLE.CONTAINER_ID' | translate">
-              {{ container.container_id }}
-            </p-fieldset>
-            <p-fieldset [legend]="'CONTAINERS.TABLE.PORTS' | translate">
-              <ng-container
-                [ngTemplateOutlet]="portsTemplate"
-                [ngTemplateOutletContext]="{ ports: container.ports }"
-              ></ng-container>
-            </p-fieldset>
-            <p-fieldset [legend]="'CONTAINERS.TABLE.CHECKED_AT' | translate">
-              {{ container.checked_at | naiveDate | date: 'medium' }}
-            </p-fieldset>
-            <p-fieldset [legend]="'CONTAINERS.TABLE.UPDATED_AT' | translate">
-              {{ container.updated_at | naiveDate | date: 'medium' }}
-            </p-fieldset>
-          </div>
-        </td>
-      </tr>
-    </ng-template>
   </ng-template>
 </p-table>
 
-<ng-template
-  #portsTemplate
-  let-ports="ports"
->
-  <section class="ports">
-    @if (ports) {
-      @for (item of ports | keyvalue; track item) {
-        @for (hp of $any(item.value); track hp) {
-          {{ hp.host_ip }}:{{ hp.host_port }}<br />
-        }
-        <span>:{{ item.key }}</span>
-      }
-    }
-  </section>
-</ng-template>
-
 <p-dialog
-  [header]="'CONTAINERS.TABLE.CHECK_ALL_COMPLETED' | translate"
+  [header]="'CONTAINERS.CHECK_ALL_COMPLETED' | translate"
   [modal]="true"
   [draggable]="false"
-  [visible]="checkAllDialogVisible()"
-  (visibleChange)="checkAllDialogVisible.set(false)"
+  [visible]="checkHostDialogVisible()"
+  (visibleChange)="checkHostDialogVisible.set(false)"
 >
-  @if (checkHostProgress(); as prog) {
-    <section class="check-results">
-      <span>
-        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.UPDATED' | translate }}: {{ prog.updated }}
-      </span>
-      <span>
-        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.AVAILABLE' | translate }}: {{ prog.available }}
-      </span>
-      <span>
-        {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.ROLLED_BACK' | translate }}: {{ prog.rolled_back }}
-      </span>
-      <span> {{ 'CONTAINERS.TABLE.HEADER_PROGRESS.FAILED' | translate }}: {{ prog.failed }} </span>
-    </section>
+  @if (checkHostProgress()?.result; as res) {
+    <app-host-check-result [result]="res"></app-host-check-result>
   }
 </p-dialog>

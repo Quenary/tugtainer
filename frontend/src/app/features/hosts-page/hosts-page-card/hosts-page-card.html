@@ -19,22 +19,12 @@
           @for (t of 'HOSTS.CARD.HELP.TEXT' | translate; track t) {
             <div>{{ t }}</div>
           }
-          <section class="help-buttons">
-            <p-button
-              icon="pi pi-link"
-              severity="success"
-              [label]="'HOSTS.CARD.HELP.HELP_BTN' | translate"
-              (onClick)="openHelp()"
-            ></p-button>
-            @if (id()) {
-              <p-button
-                icon="pi pi-delete"
-                severity="danger"
-                [label]="'GENERAL.DELETE' | translate"
-                (onClick)="confirmDelete($event)"
-              ></p-button>
-            }
-          </section>
+          <p-button
+            icon="pi pi-link"
+            severity="success"
+            [label]="'HOSTS.CARD.HELP.HELP_BTN' | translate"
+            (onClick)="openHelp()"
+          ></p-button>
         </section>
       </p-accordion-content>
     </p-accordion-panel>
@@ -171,18 +161,31 @@
     </p-accordion-panel>
   </p-accordion>
 
-  <p-button-group style="padding-top: 1rem">
-    <p-button
-      [label]="'GENERAL.CLOSE' | translate"
-      routerLink="/hosts"
-      severity="secondary"
-    ></p-button>
-    <p-button
-      type="submit"
-      [label]="saveTitle()"
-      [loading]="isLoading()"
-      severity="success"
-      [disabled]="!form.dirty"
-    ></p-button>
-  </p-button-group>
+  <section class="buttons">
+    <p-button-group>
+      <p-button
+        [label]="'GENERAL.GO_BACK' | translate"
+        routerLink="/hosts"
+        severity="secondary"
+        icon="pi pi-arrow-left"
+      ></p-button>
+      <p-button
+        type="submit"
+        [label]="saveTitle()"
+        [loading]="isLoading()"
+        severity="success"
+        [disabled]="!form.dirty"
+        icon="pi pi-save"
+      ></p-button>
+    </p-button-group>
+
+    @if (id()) {
+      <p-button
+        icon="pi pi-trash"
+        severity="danger"
+        [label]="'GENERAL.DELETE' | translate"
+        (onClick)="confirmDelete($event)"
+      ></p-button>
+    }
+  </section>
 </form>
