@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.14.0 (2025-12-01)
+
+### Features
+
+- Container card, ui imp, minor fixes ([#75](https://github.com/Quenary/tugtainer/pull/75),
+  [`dca5d8f`](https://github.com/Quenary/tugtainer/commit/dca5d8f7361ef9b303310a068cd46ac96d1427a9))
+
+
 ## v1.13.1 (2025-11-28)
 
 ### Bug Fixes
