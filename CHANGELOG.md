@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.14.1 (2025-12-01)
+
+### Bug Fixes
+
+- **ci**: Update version in uv.lock on semantic-release
+  ([`c5260ba`](https://github.com/Quenary/tugtainer/commit/c5260ba1bc4b579478092c87c403ab0ae41dfbeb))
+
+
 ## v1.14.0 (2025-12-01)
 
 ### Features
