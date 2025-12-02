@@ -57,4 +57,12 @@ export class AuthApiService extends BaseApiService<'/auth'> {
   isPasswordSet(): Observable<boolean> {
     return this.httpClient.get<boolean>(`${this.basePath}/is_password_set`);
   }
+
+  /**
+   * Check if OIDC auto redirect is enabled
+   * @returns
+   */
+  isOidcAutoRedirectEnabled(): Observable<boolean> {
+    return this.httpClient.get<boolean>(`${this.basePath}/oidc_auto_redirect`);
+  }
 }
