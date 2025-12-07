@@ -40,6 +40,9 @@ def get_container_net_kwargs(
         MAIN_NETWORK = NETWORK_SETTINGS.networks[NETWORKS_KEYS[0]]
         NETWORKS = [NETWORKS_KEYS[0]]
         NETWORK_ALIASES = MAIN_NETWORK.aliases or []
+        if MAIN_NETWORK.ipam_config:
+            IP = MAIN_NETWORK.ipam_config.ipv4_address
+            IP6 = MAIN_NETWORK.ipam_config.ipv6_address
         for net in NETWORKS_KEYS[1:]:
             # Additional networks returned as commands
             # as docker cli doesn't support multiple aliases for multiple networks inline (in create/run)
@@ -47,6 +50,12 @@ def get_container_net_kwargs(
             aliases = NETWORK_SETTINGS.networks[net].aliases or []
             for a in aliases:
                 _cmd += ["--alias", a]
+            ipam = NETWORK_SETTINGS.networks[net].ipam_config
+            if ipam:
+                if ipam.ipv4_address:
+                    _cmd += ["--ip", ipam.ipv4_address]
+                if ipam.ipv6_address:
+                    _cmd += ["--ip6", ipam.ipv6_address]
             _cmd += [net, container.name]
             COMMANDS.append(_cmd)
     elif NETWORK_MODE:
