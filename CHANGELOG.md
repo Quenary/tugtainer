@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.14.4 (2025-12-07)
+
+### Bug Fixes
+
+- **backend**: Update only 'running' containers
+  ([#80](https://github.com/Quenary/tugtainer/pull/80),
+  [`6590610`](https://github.com/Quenary/tugtainer/commit/65906105a0cfc0e5422ee68447fd09e735b32dd4))
+
+
 ## v1.14.3 (2025-12-01)
 
 ### Bug Fixes
