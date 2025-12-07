@@ -1,17 +1,29 @@
+@let _loading = loading();
+
 <p-button-group>
   <p-button
-    [loading]="loading() == 'check'"
-    [disabled]="loading() == 'update'"
+    [loading]="_loading == 'check'"
+    [disabled]="_loading == 'update'"
     [label]="'CONTAINERS.CHECK' | translate"
     (onClick)="check(false)"
   ></p-button>
-  @if (!item()?.protected) {
-    <p-button
-      [loading]="loading() == 'update'"
-      [disabled]="!item()?.update_available || loading() == 'check'"
-      [label]="'CONTAINERS.UPDATE' | translate"
-      severity="success"
-      (onClick)="check(true)"
-    ></p-button>
-  }
+  <p-button
+    [loading]="_loading == 'update'"
+    [disabled]="_loading == 'check' || cantUpdate()"
+    [pTooltip]="updateButtonTooltip"
+    [tooltipDisabled]="!showUpdateTooltip()"
+    [label]="'CONTAINERS.UPDATE' | translate"
+    severity="success"
+    (onClick)="check(true)"
+  ></p-button>
 </p-button-group>
+
+<ng-template #updateButtonTooltip>
+  @let _item = item();
+  @if (_item.status != 'running') {
+    {{ 'CONTAINERS.UPDATE_DISABLED_HINTS.NOT_RUNNING' | translate }}
+  }
+  @if (_item.protected) {
+    {{ 'CONTAINERS.UPDATE_DISABLED_HINTS.PROTECTED' | translate }}
+  }
+</ng-template>

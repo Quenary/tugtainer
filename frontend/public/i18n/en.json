@@ -122,6 +122,10 @@
     "CHECKED_AT": "Last check",
     "UPDATED_AT": "Last update",
     "UPDATE": "Update",
+    "UPDATE_DISABLED_HINTS": {
+      "PROTECTED": "The protected container cannot be updated from the app.\n",
+      "NOT_RUNNING": "The container must be in running state.\n"
+    },
     "CHECK": "Check",
     "MAIN_BTN_HINT": "If a container is a part of a compose project, all project's containers will be involved in the process.",
     "PROTECTED": "Protected",

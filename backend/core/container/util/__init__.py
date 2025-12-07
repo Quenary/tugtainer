@@ -28,3 +28,4 @@ from .update_containers_data_after_check import (
 )
 from .get_container_entrypoint_str import get_container_entrypoint_str
 from .is_protected_container import is_protected_container
+from .is_running_container import is_running_container
