@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.15.0 (2025-12-15)
+
+### Features
+
+- Ability to disable internal tugtainer-agent ([#83](https://github.com/Quenary/tugtainer/pull/83),
+  [`0845c10`](https://github.com/Quenary/tugtainer/commit/0845c1014ac80a8935fe89f20fa158d0faf15466))
+
+
 ## v1.14.4 (2025-12-07)
 
 ### Bug Fixes
