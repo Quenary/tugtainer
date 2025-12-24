@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.15.1 (2025-12-24)
+
+### Bug Fixes
+
+- **agent**: RCE vulnerability in api/command/run
+  ([#88](https://github.com/Quenary/tugtainer/pull/88),
+  [`dbb17d8`](https://github.com/Quenary/tugtainer/commit/dbb17d843e30fd7509acf0328c913dcb42f40831))
+
+
 ## v1.15.0 (2025-12-15)
 
 ### Features
