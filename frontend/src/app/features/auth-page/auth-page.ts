@@ -23,6 +23,11 @@ export class AuthPage {
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
 
+  constructor() {
+    // Check for OIDC auto-redirect when component initializes
+    this.checkOidcAutoRedirect();
+  }
+
   public readonly isLoading = signal<boolean>(false);
   public readonly isPasswordSet = resource({
     defaultValue: false,
@@ -65,6 +70,20 @@ export class AuthPage {
       ),
   });
 
+  public readonly isOidcAutoRedirectEnabled = resource({
+    defaultValue: false,
+    loader: () =>
+      firstValueFrom(
+        this.authApiService.isOidcAutoRedirectEnabled().pipe(
+          retry(1),
+          catchError((error) => {
+            this.toastService.error(error);
+            return throwError(() => error);
+          }),
+        ),
+      ),
+  });
+
   onSubmitNewPassword($event: ISetPasswordBody): void {
     this.isLoading.set(true);
     this.authApiService
@@ -98,5 +117,19 @@ export class AuthPage {
 
   onOidcLogin(): void {
     this.authApiService.initiateLogin('oidc');
+  }
+
+  private checkOidcAutoRedirect(): void {
+    // Wait for resources to load, then check if auto-redirect should happen
+    setTimeout(() => {
+      const oidcEnabled = this.isOidcEnabled.value();
+      const passwordEnabled = this.isPasswordEnabled.value();
+      const autoRedirectEnabled = this.isOidcAutoRedirectEnabled.value();
+
+      // Auto-redirect if OIDC auto-redirect is enabled, OIDC is enabled, and password auth is disabled
+      if (autoRedirectEnabled && oidcEnabled && !passwordEnabled) {
+        this.authApiService.initiateLogin('oidc');
+      }
+    }, 100);
   }
 }
