@@ -16,7 +16,7 @@ dependencies = [
     "fastapi>=0.121.2",
     "jinja2>=3.1.6",
     "python-jose>=3.5.0",
-    "python-on-whales>=0.79.0",
+    "python-on-whales>=0.80.0",
     "uvicorn>=0.38.0",
 ]
 
