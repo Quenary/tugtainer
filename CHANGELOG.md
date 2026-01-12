@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.15.2 (2026-01-12)
+
+### Bug Fixes
+
+- **backend**: Preserve static ips ([#79](https://github.com/Quenary/tugtainer/pull/79),
+  [`caf7d77`](https://github.com/Quenary/tugtainer/commit/caf7d77534f0f82eb34c83041578f4dcdf9ca613))
+
+
 ## v1.15.1 (2025-12-24)
 
 ### Bug Fixes
