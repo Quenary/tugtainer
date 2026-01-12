@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   inject,
   input,
@@ -11,6 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
+import { TooltipModule } from 'primeng/tooltip';
 import { finalize } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
@@ -22,7 +24,7 @@ import { IGroupCheckProgressCache } from 'src/app/entities/progress-cache/progre
  */
 @Component({
   selector: 'app-container-actions',
-  imports: [ButtonGroupModule, ButtonModule, TranslatePipe],
+  imports: [ButtonGroupModule, ButtonModule, TranslatePipe, TooltipModule],
   templateUrl: './container-actions.html',
   styleUrl: './container-actions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +51,20 @@ export class ContainerActions {
    * Loading flag
    */
   protected readonly loading = signal<'check' | 'update'>(null);
+  /**
+   * Container cannot be updated
+   */
+  protected readonly cantUpdate = computed<boolean>(() => {
+    const item = this.item();
+    return !item.update_available || item.status != 'running' || item.protected;
+  });
+  /**
+   * Whether to show update button tooltip
+   */
+  protected readonly showUpdateTooltip = computed<boolean>(() => {
+    const item = this.item();
+    return item.update_available && (item.status != 'running' || item.protected);
+  });
 
   /**
    * Run check/update process

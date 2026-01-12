@@ -129,6 +129,8 @@ Automatic updates are disabled by default. You can choose only what you need.
 
   - **Image pull** performed for containers marked for **check**;
   - If there is a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
+    * [protected](#custom-labels) containers will be skipped
+    * not `running` containers will be skipped
   - After that, all containers in the group are stopped in **order from most dependent**;
   - Then, **in reverse order** (from most dependable):
     - Updatable containers being recreated and started;
@@ -253,4 +255,3 @@ See [/backend/README.md](/backend/README.md) and [/frontend/README.md](/frontend
 - Dozzle integration or something more universal (list of urls for redirects?)
 - Swarm support?
 - Try to add release notes (from labels or something)
-- Do not update stopped containers

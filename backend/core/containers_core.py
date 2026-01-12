@@ -26,6 +26,7 @@ from backend.core.container.util import (
     get_container_config,
     merge_container_config_with_image,
     update_containers_data_after_check,
+    is_running_container,
 )
 from backend.core.container import (
     GroupCheckProgressCache,
@@ -170,7 +171,22 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             and gc.new_image
             and gc.action == "update"
             and not gc.protected
+            and is_running_container(gc.container)
         )
+
+    def _will_skip(gc: ContainerGroupItem) -> bool:
+        """Whether to skip container"""
+        if gc.protected:
+            logging.info(
+                f"Container {gc.name} labeled with {TUGTAINER_PROTECTED_LABEL}, skipping."
+            )
+            return True
+        elif not is_running_container(gc.container):
+            logging.info(
+                f"Container {gc.name} is not running, skipping."
+            )
+            return True
+        return False
 
     def _group_state_to_result(
         group: ContainerGroup,
@@ -223,7 +239,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         result = _group_state_to_result(group)
         await update_containers_data_after_check(result)
         logging.info(
-            f"""Group check completed.
+            f"""Group check completed. 
 ================================================================="""
         )
         CACHE.update({"status": ECheckStatus.DONE, "result": result})
@@ -232,20 +248,11 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     logging.info("Starting to update a group...")
     CACHE.update({"status": ECheckStatus.UPDATING})
 
-    protected_containers = [
-        gc for gc in group.containers if gc.protected
-    ]
-    for gc in protected_containers:
-        logging.info(
-            f"Container {gc.name} labeled with {TUGTAINER_PROTECTED_LABEL} and will be skipped."
-        )
-
-    # Starting from most dependent
+    # Getting containers configs and stopping them,
+    # from most dependent to most dependable.
     for gc in group.containers[::-1]:
-        # Skipping protected containers
-        if gc.protected:
+        if _will_skip(gc):
             continue
-        # Getting configs for all containers
         try:
             logging.info(
                 f"Getting config for container {gc.container.name}..."
@@ -261,7 +268,6 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
 ================================================================="""
                 )
                 return await _on_stop_fail()
-        # Stopping all containers
         try:
             logging.info(f"Stopping container {gc.container.name}...")
             await client.container.stop(gc.name)
@@ -273,17 +279,15 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             )
             return await _on_stop_fail()
 
-    # Starting from most dependable.
-    # At that moment all containers should be stopped.
-    # Will update/start them in dependency order
+    # Updating and/or starting containers,
+    # from most dependable to most dependent.
 
     # Indicates was there an exception during the update
     # If True, the following updates will not be processed.
     any_failed: bool = False
 
     for gc in group.containers:
-        # Skipping protected containers
-        if gc.protected:
+        if _will_skip(gc):
             continue
         c_name = gc.name
         # Updating container
@@ -354,9 +358,13 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 if await wait_for_container_healthy(
                     client, rolled_back, host.container_hc_timeout
                 ):
-                    logging.warning("Container is healthy!")
+                    logging.warning(
+                        "Container is healthy after rolling back!"
+                    )
                     continue
-                logging.warning("Container is unhealthy!")
+                logging.warning(
+                    "Container is unhealthy after rolling back!"
+                )
             # Failed to roll back
             except Exception as e:
                 logging.exception(e)
@@ -475,7 +483,9 @@ async def check_all(update: bool):
     Function performs checks in separate threads for each host.
     Should not raises errors, only logging.
     """
-    CACHE = ProcessCache[AllCheckProgressCache](ALL_CONTAINERS_STATUS_KEY)
+    CACHE = ProcessCache[AllCheckProgressCache](
+        ALL_CONTAINERS_STATUS_KEY
+    )
     try:
         STATUS = CACHE.get()
         if STATUS and STATUS.get("status") not in _ALLOW_STATUSES:

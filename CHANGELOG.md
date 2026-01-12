@@ -1,6 +1,32 @@
 # CHANGELOG
 
 
+## v1.15.1 (2025-12-24)
+
+### Bug Fixes
+
+- **agent**: RCE vulnerability in api/command/run
+  ([#88](https://github.com/Quenary/tugtainer/pull/88),
+  [`dbb17d8`](https://github.com/Quenary/tugtainer/commit/dbb17d843e30fd7509acf0328c913dcb42f40831))
+
+
+## v1.15.0 (2025-12-15)
+
+### Features
+
+- Ability to disable internal tugtainer-agent ([#83](https://github.com/Quenary/tugtainer/pull/83),
+  [`0845c10`](https://github.com/Quenary/tugtainer/commit/0845c1014ac80a8935fe89f20fa158d0faf15466))
+
+
+## v1.14.4 (2025-12-07)
+
+### Bug Fixes
+
+- **backend**: Update only 'running' containers
+  ([#80](https://github.com/Quenary/tugtainer/pull/80),
+  [`6590610`](https://github.com/Quenary/tugtainer/commit/65906105a0cfc0e5422ee68447fd09e735b32dd4))
+
+
 ## v1.14.3 (2025-12-01)
 
 ### Bug Fixes
