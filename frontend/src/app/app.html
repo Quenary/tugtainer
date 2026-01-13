@@ -40,12 +40,14 @@
             {{ 'MENU.UPDATE' | translate }}
           </p-tag>
         }
-        <p-button
-          severity="contrast"
-          icon="pi pi-sign-out"
-          text
-          (onClick)="logout()"
-        ></p-button>
+        @if (!isAuthDisabled.value()) {
+          <p-button
+            severity="contrast"
+            icon="pi pi-sign-out"
+            text
+            (onClick)="logout()"
+          ></p-button>
+        }
       </section>
     </ng-template>
   </p-toolbar>

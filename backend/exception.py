@@ -9,11 +9,11 @@ class TugException(Exception):
 
 
 class TugNoAuthProviderException(TugException):
-    """Exception for cases when no auth provider is enabled"""
+    """Exception for cases when no auth provider is enabled or found"""
 
     def __init__(
         self,
-        message: str = "No active authentication providers found.",
+        message: str = "Authentication providers not found.",
     ):
         super().__init__(message)
 

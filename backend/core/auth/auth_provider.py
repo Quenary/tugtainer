@@ -61,7 +61,7 @@ class AuthProvider(ABC):
             algorithm=Config.JWT_ALGORITHM,
         )
 
-    def _verify_token(self, token: str) -> dict:
+    def _verify_token(self, token: str) -> dict[str, Any]:
         """
         Verify token validity and return its payload.
         Raise 401 error if not valid.

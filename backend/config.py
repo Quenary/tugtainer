@@ -9,15 +9,17 @@ class Config:
 
     HOSTNAME: ClassVar[str]
     LOG_LEVEL: ClassVar[str]
+    DISABLE_AUTH: ClassVar[bool]
     JWT_SECRET_KEY: ClassVar[str | bytes]
     JWT_ALGORITHM: ClassVar[str]
     ACCESS_TOKEN_LIFETIME_MIN: ClassVar[int]
     REFRESH_TOKEN_LIFETIME_MIN: ClassVar[int]
     DB_URL: ClassVar[str]
+    DISABLE_PASSWORD: ClassVar[bool]
     PASSWORD_FILE: ClassVar[str]
     HTTPS: ClassVar[bool]
     DOMAIN: ClassVar[str | None]
-    
+
     # OIDC Configuration
     OIDC_ENABLED: ClassVar[bool]
     OIDC_WELL_KNOWN_URL: ClassVar[str]
@@ -34,6 +36,9 @@ class Config:
             cls.LOG_LEVEL = (
                 os.getenv("LOG_LEVEL") or "warning"
             ).upper()
+            cls.DISABLE_AUTH = (
+                os.getenv("DISABLE_AUTH", "false").lower() == "true"
+            )
             cls.JWT_SECRET_KEY = os.getenv(
                 "JWT_SECRET_KEY"
             ) or secrets.token_urlsafe(32)
@@ -49,20 +54,32 @@ class Config:
                 os.getenv("DB_URL")
                 or "sqlite+aiosqlite:////tugtainer/tugtainer.db"
             )
+            cls.DISABLE_PASSWORD = (
+                os.getenv("DISABLE_PASSWORD", "false").lower()
+                == "true"
+            )
             cls.PASSWORD_FILE = (
                 os.getenv("PASSWORD_FILE")
                 or "/tugtainer/password_hash"
             )
             cls.HTTPS = os.getenv("HTTPS", "false").lower() == "true"
             cls.DOMAIN = os.getenv("DOMAIN")
-            
+
             # OIDC Configuration
-            cls.OIDC_ENABLED = os.getenv("OIDC_ENABLED", "false").lower() == "true"
-            cls.OIDC_WELL_KNOWN_URL = os.getenv("OIDC_WELL_KNOWN_URL", "")
+            cls.OIDC_ENABLED = (
+                os.getenv("OIDC_ENABLED", "false").lower() == "true"
+            )
+            cls.OIDC_WELL_KNOWN_URL = os.getenv(
+                "OIDC_WELL_KNOWN_URL", ""
+            )
             cls.OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID", "")
-            cls.OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
+            cls.OIDC_CLIENT_SECRET = os.getenv(
+                "OIDC_CLIENT_SECRET", ""
+            )
             cls.OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "")
-            cls.OIDC_SCOPES = os.getenv("OIDC_SCOPES", "openid profile email")
+            cls.OIDC_SCOPES = os.getenv(
+                "OIDC_SCOPES", "openid profile email"
+            )
 
 
 Config.load()

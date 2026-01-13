@@ -1,17 +1,19 @@
 from fastapi import (
     APIRouter,
     Depends,
+    HTTPException,
     Response,
     Request,
     status,
 )
 from fastapi.responses import PlainTextResponse, RedirectResponse
+from backend.config import Config
 from backend.core.auth.auth_provider import AuthProvider
 from backend.core.auth.auth_provider_chore import (
-    AUTH_OIDC_PROVIDER,
     AUTH_PASSWORD_PROVIDER,
-    AUTH_PROVIDERS,
+    auth_provider_by_name,
     active_auth_provider,
+    is_authorized,
 )
 from backend.exception import TugNoAuthProviderException
 from backend.helpers.delay_to_minimum import delay_to_minimum
@@ -22,24 +24,36 @@ router: APIRouter = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get(
+    path="/is_disabled",
+    description="Check if auth disabled (DISABLE_AUTH env var)",
+    response_model=bool,
+)
+async def is_disabled() -> bool:
+    return Config.DISABLE_AUTH
+
+
+@router.get(
     path="/{provider}/enabled",
     description="Check if auth provider is enabled",
     response_model=bool,
 )
-async def is_provider_enabled(provider: str) -> bool:
-    _provider = AUTH_PROVIDERS.get(provider, None)
-    if not _provider:
+async def is_provider_enabled(
+    provider: AuthProvider | None = Depends(auth_provider_by_name),
+) -> bool:
+    if not provider:
         raise TugNoAuthProviderException()
-    return await _provider.is_enabled()
+    return await provider.is_enabled()
 
 
-@router.post(path="/login")
+@router.post(path="/{provider}/login")
 @delay_to_minimum(1)
 async def login(
     request: Request,
     response: Response,
-    provider: AuthProvider = Depends(active_auth_provider),
+    provider: AuthProvider | None = Depends(auth_provider_by_name),
 ):
+    if not provider:
+        raise TugNoAuthProviderException()
     return await provider.login(request, response)
 
 
@@ -47,8 +61,12 @@ async def login(
 async def refresh(
     request: Request,
     response: Response,
-    provider: AuthProvider = Depends(active_auth_provider),
+    provider: AuthProvider | None = Depends(active_auth_provider),
 ):
+    if not provider:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Unauthorized"
+        )
     return await provider.refresh(request, response)
 
 
@@ -56,9 +74,11 @@ async def refresh(
 async def logout(
     request: Request,
     response: Response,
-    provider: AuthProvider = Depends(active_auth_provider),
+    provider: AuthProvider | None = Depends(active_auth_provider),
 ):
-    return await provider.logout(request, response)
+    if provider:
+        return await provider.logout(request, response)
+    return PlainTextResponse(status_code=status.HTTP_200_OK)
 
 
 @router.get(
@@ -67,10 +87,8 @@ async def logout(
     response_model=bool,
 )
 async def is_authorized_req(
-    request: Request,
-    provider: AuthProvider = Depends(active_auth_provider),
+    _=Depends(is_authorized),
 ):
-    _ = await provider.is_authorized(request)
     return PlainTextResponse(status_code=status.HTTP_200_OK)
 
 
@@ -78,7 +96,9 @@ async def is_authorized_req(
     path="/set_password",
     description="Set password for web UI. Password can be set only if password is not set yet or if user is authorized.",
 )
-async def set_password(request: Request, payload: PasswordSetRequestBody):
+async def set_password(
+    request: Request, payload: PasswordSetRequestBody
+):
     return await AUTH_PASSWORD_PROVIDER.set_password(request, payload)
 
 
@@ -97,8 +117,10 @@ def is_password_set() -> bool:
 async def provider_login(
     request: Request,
     response: Response,
-    provider: AuthProvider = Depends(active_auth_provider),
+    provider: AuthProvider | None = Depends(auth_provider_by_name),
 ) -> RedirectResponse:
+    if not provider:
+        raise TugNoAuthProviderException()
     return await provider.login(request, response)
 
 
@@ -109,6 +131,8 @@ async def provider_login(
 async def provider_callback(
     request: Request,
     response: Response,
-    provider: AuthProvider = Depends(active_auth_provider),
+    provider: AuthProvider | None = Depends(auth_provider_by_name),
 ):
+    if not provider:
+        raise TugNoAuthProviderException()
     return await provider.callback(request, response)
