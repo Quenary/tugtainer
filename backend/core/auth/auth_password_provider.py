@@ -11,10 +11,7 @@ import os
 
 class AuthPasswordProvider(AuthProvider):
     async def is_enabled(self):
-        # For now OIDC replaces password auth
-        # But maybe it worth have an option to enable both
-        # (or several if another provider is added)
-        return not Config.OIDC_ENABLED
+        return not Config.DISABLE_AUTH and not Config.DISABLE_PASSWORD
 
     async def login(self, request: Request, response: Response):
         password = request.query_params.get("password", "")
@@ -34,13 +31,19 @@ class AuthPasswordProvider(AuthProvider):
             )
 
         access_token: str = self._create_token(
-            data={"type": "access"},
+            data={
+                "type": "access",
+                "auth_provider": "password",
+            },
             expires_delta=timedelta(
                 minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
             ),
         )
         refresh_token: str = self._create_token(
-            data={"type": "refresh"},
+            data={
+                "type": "refresh",
+                "auth_provider": "password",
+            },
             expires_delta=timedelta(
                 minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
             ),
@@ -90,13 +93,19 @@ class AuthPasswordProvider(AuthProvider):
             )
 
         new_access_token: str = self._create_token(
-            data={"type": "access"},
+            data={
+                "type": "access",
+                "auth_provider": "password",
+            },
             expires_delta=timedelta(
                 minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
             ),
         )
         new_refresh_token: str = self._create_token(
-            data={"type": "refresh"},
+            data={
+                "type": "refresh",
+                "auth_provider": "password",
+            },
             expires_delta=timedelta(
                 minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
             ),

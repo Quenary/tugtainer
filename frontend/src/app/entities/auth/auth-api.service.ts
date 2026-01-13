@@ -9,6 +9,10 @@ import { ISetPasswordBody, TAuthProvider } from './auth-interface';
 export class AuthApiService extends BaseApiService<'/auth'> {
   protected override readonly prefix = '/auth';
 
+  isDisabled(): Observable<boolean> {
+    return this.httpClient.get<boolean>(`${this.basePath}/is_disabled`);
+  }
+
   /**
    * Check if auth provider enabled
    * @param provider provider code
@@ -20,12 +24,20 @@ export class AuthApiService extends BaseApiService<'/auth'> {
 
   /**
    * Auth with active auth provider
+   * @param provider
    * @param body
    * @param params
    * @returns
    */
-  login(body: { [K: string]: any } = {}, params: { [K: string]: any } = {}): Observable<any> {
-    return this.httpClient.post(`${this.basePath}/login`, body, { params, withCredentials: true });
+  login(
+    provider: TAuthProvider,
+    body: { [K: string]: any } = {},
+    params: { [K: string]: any } = {},
+  ): Observable<any> {
+    return this.httpClient.post(`${this.basePath}/${provider}/login`, body, {
+      params,
+      withCredentials: true,
+    });
   }
 
   /**

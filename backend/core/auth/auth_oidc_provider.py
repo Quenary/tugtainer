@@ -14,7 +14,7 @@ from backend.core.auth.auth_provider import AuthProvider
 
 class AuthOidcProvider(AuthProvider):
     async def is_enabled(self) -> bool:
-        return Config.OIDC_ENABLED
+        return not Config.DISABLE_AUTH and Config.OIDC_ENABLED
 
     async def login(
         self, request: Request, response: Response
@@ -345,6 +345,7 @@ class AuthOidcProvider(AuthProvider):
         access_token = self._create_token(
             data={
                 "type": "access",
+                "auth_provider": "oidc",
                 "oidc": True,
                 "user_id": user_id,
                 "user_info": user_claims,
@@ -357,6 +358,7 @@ class AuthOidcProvider(AuthProvider):
         refresh_token = self._create_token(
             data={
                 "type": "refresh",
+                "auth_provider": "oidc",
                 "oidc": True,
                 "user_id": user_id,
             },

@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, resource, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  resource,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, finalize, firstValueFrom, retry, throwError } from 'rxjs';
 import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
@@ -23,8 +30,27 @@ export class AuthPage {
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
 
-  public readonly isLoading = signal<boolean>(false);
-  public readonly isPasswordSet = resource({
+  protected readonly isLoading = signal<boolean>(false);
+  /**
+   * Is auth disabled
+   */
+  protected readonly isAuthDisabled = resource({
+    defaultValue: false,
+    loader: () =>
+      firstValueFrom(
+        this.authApiService.isDisabled().pipe(
+          retry(1),
+          catchError((error) => {
+            this.toastService.error(error);
+            return throwError(() => error);
+          }),
+        ),
+      ),
+  });
+  /**
+   * Is password set
+   */
+  protected readonly isPasswordSet = resource({
     defaultValue: false,
     loader: () =>
       firstValueFrom(
@@ -37,7 +63,10 @@ export class AuthPage {
         ),
       ),
   });
-  public readonly isOidcEnabled = resource({
+  /**
+   * Is OIDC auth enabled
+   */
+  protected readonly isOidcEnabled = resource({
     defaultValue: false,
     loader: () =>
       firstValueFrom(
@@ -50,8 +79,10 @@ export class AuthPage {
         ),
       ),
   });
-
-  public readonly isPasswordEnabled = resource({
+  /**
+   * Is password auth enabled
+   */
+  protected readonly isPasswordEnabled = resource({
     defaultValue: false,
     loader: () =>
       firstValueFrom(
@@ -64,6 +95,15 @@ export class AuthPage {
         ),
       ),
   });
+
+  constructor() {
+    effect(() => {
+      const isDisabled = this.isAuthDisabled.value();
+      if (isDisabled) {
+        this.router.navigate(['/containers']);
+      }
+    });
+  }
 
   onSubmitNewPassword($event: ISetPasswordBody): void {
     this.isLoading.set(true);
@@ -84,7 +124,7 @@ export class AuthPage {
   onSubmitLogin(password: string): void {
     this.isLoading.set(true);
     this.authApiService
-      .login({}, { password })
+      .login('password', {}, { password })
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {

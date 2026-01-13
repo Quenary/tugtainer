@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, resource, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -7,12 +7,14 @@ import {
   catchError,
   debounceTime,
   finalize,
+  firstValueFrom,
   map,
   Observable,
   of,
   retry,
   startWith,
   switchMap,
+  throwError,
 } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
@@ -27,6 +29,7 @@ import { DrawerModule } from 'primeng/drawer';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToolbarModule } from 'primeng/toolbar';
 import { DeployGuidelineUrl } from './app.consts';
+import { ToastService } from './core/services/toast.service';
 
 @Component({
   selector: 'app-root',
@@ -52,18 +55,34 @@ export class App {
   private readonly router = inject(Router);
   private readonly publicApiService = inject(PublicApiService);
   private readonly containersApiService = inject(ContainersApiService);
+  private readonly toastService = inject(ToastService);
 
-  public readonly showNewVersionDialog = signal<boolean>(false);
-
-  public readonly version$ = this.publicApiService.getVersion().pipe(
+  protected readonly showNewVersionDialog = signal<boolean>(false);
+  /**
+   * Is auth disabled
+   */
+  protected readonly isAuthDisabled = resource({
+    defaultValue: false,
+    loader: () =>
+      firstValueFrom(
+        this.authApiService.isDisabled().pipe(
+          retry(1),
+          catchError((error) => {
+            this.toastService.error(error);
+            return throwError(() => error);
+          }),
+        ),
+      ),
+  });
+  protected readonly version$ = this.publicApiService.getVersion().pipe(
     retry({ count: 1, delay: 500 }),
     catchError(() => of({ image_version: 'unknown' })),
   );
-  public readonly isUpdateAvailable$ = this.containersApiService.isUpdateAvailableSelf().pipe(
+  protected readonly isUpdateAvailable$ = this.containersApiService.isUpdateAvailableSelf().pipe(
     retry({ count: 1, delay: 500 }),
     catchError(() => of(false)),
   );
-  public readonly menuItems$: Observable<MenuItem[]> = this.translateService.onLangChange.pipe(
+  protected readonly menuItems$: Observable<MenuItem[]> = this.translateService.onLangChange.pipe(
     startWith({}),
     switchMap(() => this.translateService.get('MENU')),
     map(
@@ -98,9 +117,9 @@ export class App {
         ],
     ),
   );
-  public readonly menuOpened = signal<boolean>(false);
+  protected readonly menuOpened = signal<boolean>(false);
 
-  public readonly isToolbarVisible = toSignal<boolean>(
+  protected readonly isToolbarVisible = toSignal<boolean>(
     this.router.events.pipe(
       debounceTime(100),
       map(() => {
@@ -111,7 +130,7 @@ export class App {
     ),
   );
 
-  public logout(): void {
+  protected logout(): void {
     this.authApiService
       .logout()
       .pipe(
@@ -122,7 +141,7 @@ export class App {
       .subscribe();
   }
 
-  public openDeployGuideline(): void {
+  protected openDeployGuideline(): void {
     window.open(DeployGuidelineUrl, '_blank');
   }
 }
