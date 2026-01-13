@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.16.0 (2026-01-13)
+
+### Features
+
+- Ability to disable authentication ([#94](https://github.com/Quenary/tugtainer/pull/94),
+  [`19ef5e5`](https://github.com/Quenary/tugtainer/commit/19ef5e5b41ca682fb457e764a9f2ac31d336863e))
+
+
 ## v1.15.2 (2026-01-12)
 
 ### Bug Fixes
