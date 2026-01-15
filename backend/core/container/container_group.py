@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Literal
+from python_on_whales.components.buildx.imagetools.models import Manifest
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -33,8 +34,10 @@ class ContainerGroupItem:
     :param image_spec: image spec e.g. quenary/tugtainer:latest
     :param config: kwargs for create/run
     :param commands: list of commands to be executed after container starts
-    :param old_image: current image of the container
-    :param new_image: possible new image for the container
+    :param local_image: local image of the container (or old if updated)
+    :param remote_image: remote image for the container (or current if updated)
+    :param local_manifest: local image manifest (or old if updated)
+    :param remote_manifest: remote image manifest (or current if updated)
     """
 
     container: ContainerInspectResult
@@ -47,8 +50,10 @@ class ContainerGroupItem:
     image_spec: str | None = None
     config: CreateContainerRequestBodySchema | None = None
     commands: list[list[str]] = field(default_factory=list)
-    old_image: ImageInspectResult | None = None
-    new_image: ImageInspectResult | None = None
+    local_image: ImageInspectResult | None = None
+    remote_image: ImageInspectResult | None = None
+    local_manifest: Manifest | None = None
+    remote_manifest: Manifest | None = None
 
     @property
     def name(self) -> str:

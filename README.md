@@ -127,11 +127,12 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 - ### Actual process
 
-  - **Image pull** performed for containers marked for **check**;
+  - The manifests of the local and remote images are being compared, for containers marked for **check**;
   - If there is a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
     * [protected](#custom-labels) containers will be skipped
     * not `running` containers will be skipped
-  - After that, all containers in the group are stopped in **order from most dependent**;
+  - **Image pull** performed for updatable containers;
+  - All containers in the group are stopped in **order from most dependent**;
   - Then, **in reverse order** (from most dependable):
     - Updatable containers being recreated and started;
     - Non-updatable containers being started;
@@ -189,7 +190,7 @@ Jinja2 context schema:
             "image": "string",
             "...other keys of 'docker container inspect' in snake_case": {},
           },
-          "old_image": {
+          "local_image": {
             "id": "string",
             "repo_digests": [
               "digest1",
@@ -197,8 +198,21 @@ Jinja2 context schema:
             ],
             "...other keys of 'docker image inspect' in snake_case": {},
           },
-          "new_image": {
-            "...same schema as for old_image": {},
+          "remote_image": {
+            "...same schema as for local_image": {},
+          },
+          "local_manifest": {
+            "manifests": [
+              {
+                "size": 0,
+                "digest": "digest",
+                "...other keys": {},
+              }
+            ],
+            "...other keys of 'docker buildx imagetools inspect' in snake_case": {},
+          },
+          "remote_manifest": {
+            "...same schema as for local_manifest": {},
           },
           "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
         }

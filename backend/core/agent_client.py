@@ -1,6 +1,9 @@
 from inspect import signature
 from typing import Any, Literal
 from pydantic import BaseModel, TypeAdapter
+from python_on_whales.components.buildx.imagetools.models import (
+    Manifest,
+)
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -46,6 +49,7 @@ class AgentClient:
         self.container = AgentClientContainer(self)
         self.image = AgentClientImage(self)
         self.command = AgentClientCommand(self)
+        self.buildx = AgentClientBuildx(self)
 
     async def _request(
         self,
@@ -83,7 +87,9 @@ class AgentClient:
                         f"Agent error:\n{resp.status}\n{error_body}"
                     )
                     raise TugAgentClientError(
-                        f"Agent error {resp.status}", error_body
+                        f"Agent error {resp.status}",
+                        resp.status,
+                        error_body,
                     )
                 # Raise other errors
                 resp.raise_for_status()
@@ -111,6 +117,19 @@ class AgentClientPublic:
         return await self._agent_client._request(
             "GET", "/api/public/access"
         )
+
+
+class AgentClientBuildx:
+    def __init__(self, agent_client: AgentClient):
+        self._agent_client = agent_client
+
+    async def imagetools_inspect(
+        self, body: InspectImageRequestBodySchema
+    ) -> Manifest:
+        data = await self._agent_client._request(
+            "GET", f"/api/buildx/imagetools/inspect", body
+        )
+        return Manifest.model_validate(data)
 
 
 class AgentClientContainer:

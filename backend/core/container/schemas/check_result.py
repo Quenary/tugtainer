@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Literal
+from python_on_whales.components.buildx.imagetools.models import Manifest
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -12,8 +13,9 @@ from python_on_whales.components.image.models import (
 class CheckContainerUpdateAvailableResult:
     available: bool = False
     image_spec: str | None = None
-    old_image: ImageInspectResult | None = None
-    new_image: ImageInspectResult | None = None
+    local_image: ImageInspectResult | None = None
+    local_manifest: Manifest | None = None
+    remote_manifest: Manifest | None = None
 
 
 ContainerCheckResultType = Literal[
@@ -30,8 +32,10 @@ ContainerCheckResultType = Literal[
 @dataclass
 class ContainerCheckResult:
     container: ContainerInspectResult
-    old_image: ImageInspectResult | None
-    new_image: ImageInspectResult | None
+    local_image: ImageInspectResult | None
+    remote_image: ImageInspectResult | None
+    local_manifest: Manifest | None
+    remote_manifest: Manifest | None
     result: ContainerCheckResultType
 
 
