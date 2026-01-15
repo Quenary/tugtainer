@@ -1,4 +1,3 @@
-from python_on_whales.components.buildx.imagetools.models import Manifest
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -57,6 +56,7 @@ from shared.schemas.image_schemas import (
     TagImageRequestBodySchema,
 )
 from backend.const import TUGTAINER_PROTECTED_LABEL
+from shared.schemas.manifest_schema import ManifestInspectSchema
 
 # Allowed cache statuses for further processing
 _ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
@@ -97,20 +97,20 @@ async def check_container_update_available(
             )
             return result
 
-        local_manifest = await client.buildx.imagetools_inspect(
-            InspectImageRequestBodySchema(
-                spec_or_id=local_image.repo_digests[0]
-            )
+        local_manifest = await client.manifest.inspect(
+            local_image.repo_digests[0]
         )
         result.local_manifest = local_manifest
-        remote_manifest = (
-            await client.buildx.imagetools_inspect(
-                InspectImageRequestBodySchema(spec_or_id=image_spec)
-            )
-        )
+        remote_manifest = await client.manifest.inspect(image_spec)
         result.remote_manifest = remote_manifest
+        
+        logging.debug(f"Local manifest:\n{local_manifest}")
+        logging.debug(f"Remote manifest:\n{remote_manifest}")
 
-        def _is_available(local: Manifest, remote: Manifest) -> bool:
+        def _is_available(
+            local: ManifestInspectSchema,
+            remote: ManifestInspectSchema,
+        ) -> bool:
             if not local.manifests or not remote.manifests:
                 return local.manifests != remote.manifests
             return local.manifests != remote.manifests
@@ -124,7 +124,9 @@ async def check_container_update_available(
         return result
     except TugAgentClientError as e:
         if e.status == 404:
-            logging.error("Make sure the Tugtainer Agent is up to date")
+            logging.error(
+                "Make sure the Tugtainer Agent is up to date"
+            )
     except Exception as e:
         logging.exception(e)
     return result

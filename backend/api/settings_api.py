@@ -4,7 +4,6 @@ from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
 from python_on_whales.components.buildx.imagetools.models import (
     ImageVariantManifest,
-    Manifest,
     ManifestPlatform,
 )
 from python_on_whales.components.container.models import (
@@ -39,6 +38,7 @@ from backend.enums.cron_jobs_enum import ECronJob
 from backend.core.containers_core import check_all
 from backend.exception import TugException
 from jinja2.exceptions import TemplateError
+from shared.schemas.manifest_schema import ManifestInspectSchema
 
 VALID_TIMEZONES = available_timezones()
 
@@ -191,37 +191,36 @@ async def test_notification(data: TestNotificationRequestBody):
                 cmd=["/hello"],
             ),
         )
-        test_manifest = Manifest.model_validate({
-            "mediaType":"application/vnd.docker.distribution.manifest.list.v2+json",
-            "schemaVersion":2,
-            "layers":None,
-            "manifests":[
-                ImageVariantManifest(
-                    media_type="application/vnd.docker.distribution.manifest.v2+json",
-                    size=3239,
-                    digest="sha256:f751174c3d8ae54b12575af320a4aa01bb3b6e61ab82aa1e4f8ecac8a079ce61",
-                    platform=ManifestPlatform(
-                        architecture="amd64",
-                        os="linux",
-                        os_version=None,
-                        variant=None,
+        test_manifest = ManifestInspectSchema.model_validate(
+            {
+                "media_type": "application/vnd.docker.distribution.manifest.list.v2+json",
+                "schema_version": 2,
+                "manifests": [
+                    ImageVariantManifest(
+                        media_type="application/vnd.docker.distribution.manifest.v2+json",
+                        size=3239,
+                        digest="sha256:f751174c3d8ae54b12575af320a4aa01bb3b6e61ab82aa1e4f8ecac8a079ce61",
+                        platform=ManifestPlatform(
+                            architecture="amd64",
+                            os="linux",
+                            os_version=None,
+                            variant=None,
+                        ),
                     ),
-                ),
-                ImageVariantManifest(
-                    media_type="application/vnd.docker.distribution.manifest.v2+json",
-                    size=3239,
-                    digest="sha256:46624c374eac1310ab2762e84aa784dbf334945b0969bf399a5df926a70d4d69",
-                    platform=ManifestPlatform(
-                        architecture="arm64",
-                        os="linux",
-                        os_version=None,
-                        variant=None,
+                    ImageVariantManifest(
+                        media_type="application/vnd.docker.distribution.manifest.v2+json",
+                        size=3239,
+                        digest="sha256:46624c374eac1310ab2762e84aa784dbf334945b0969bf399a5df926a70d4d69",
+                        platform=ManifestPlatform(
+                            architecture="arm64",
+                            os="linux",
+                            os_version=None,
+                            variant=None,
+                        ),
                     ),
-                ),
-            ],
-            "config":None,
-            "annotations":None,
-        })
+                ],
+            }
+        )
         items: list[ContainerCheckResult] = [
             ContainerCheckResult(
                 container=test_container,

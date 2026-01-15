@@ -202,14 +202,15 @@ Jinja2 context schema:
             "...same schema as for local_image": {},
           },
           "local_manifest": {
+            "schema_version": 2,
+            "media_type": "media type",
             "manifests": [
               {
                 "size": 0,
                 "digest": "digest",
-                "...other keys": {},
+                "...other keys of 'docker manifest inspect' manifest obj in snake_case": {},
               }
             ],
-            "...other keys of 'docker buildx imagetools inspect' in snake_case": {},
           },
           "remote_manifest": {
             "...same schema as for local_manifest": {},

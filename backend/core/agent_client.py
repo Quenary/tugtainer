@@ -1,14 +1,15 @@
 from inspect import signature
 from typing import Any, Literal
+from aiohttp.typedefs import Query
 from pydantic import BaseModel, TypeAdapter
-from python_on_whales.components.buildx.imagetools.models import (
-    Manifest,
-)
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from python_on_whales.components.image.models import (
     ImageInspectResult,
+)
+from python_on_whales.components.manifest.cli_wrapper import (
+    ManifestList,
 )
 from backend.exception import TugAgentClientError
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
@@ -25,6 +26,7 @@ from shared.schemas.image_schemas import (
     PullImageRequestBodySchema,
     TagImageRequestBodySchema,
 )
+from shared.schemas.manifest_schema import ManifestInspectSchema
 from shared.util.signature import get_signature_headers
 import aiohttp
 import logging
@@ -49,13 +51,14 @@ class AgentClient:
         self.container = AgentClientContainer(self)
         self.image = AgentClientImage(self)
         self.command = AgentClientCommand(self)
-        self.buildx = AgentClientBuildx(self)
+        self.manifest = AgentClientManifest(self)
 
     async def _request(
         self,
         method: Literal["GET", "POST", "PUT", "DELETE"],
         path: str,
         body: dict | BaseModel | None = None,
+        params: Query | None = None,
         timeout: int | None = None,
     ) -> Any | None:
         if not timeout:
@@ -70,12 +73,17 @@ class AgentClient:
             method=method,
             path=path,
             body=_body,
+            params=params,
         )
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=timeout)
         ) as session:
             async with session.request(
-                method, url, headers=headers, json=_body
+                method,
+                url,
+                headers=headers,
+                json=_body,
+                params=params,
             ) as resp:
                 # Parse error manually to get detail
                 if resp.status >= 400:
@@ -119,17 +127,20 @@ class AgentClientPublic:
         )
 
 
-class AgentClientBuildx:
+class AgentClientManifest:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    async def imagetools_inspect(
-        self, body: InspectImageRequestBodySchema
-    ) -> Manifest:
+    async def inspect(
+        self, spec_or_digest: str
+    ) -> ManifestInspectSchema:
         data = await self._agent_client._request(
-            "GET", f"/api/buildx/imagetools/inspect", body
+            "GET",
+            f"/api/manifest/inspect",
+            params={"spec_or_digest": spec_or_digest},
+            timeout=self._agent_client._long_timeout,
         )
-        return Manifest.model_validate(data)
+        return ManifestInspectSchema.model_validate(data)
 
 
 class AgentClientContainer:
