@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.16.1 (2026-01-18)
+
+### Bug Fixes
+
+- **backend**: Send password in request body instead of URL query parameter
+  ([`9d23bf4`](https://github.com/Quenary/tugtainer/commit/9d23bf40ac1d39005582abfcf0a84753a4e29d52))
+
+- **frontend**: Send password in request body instead of URL query parameter
+  ([`9d23bf4`](https://github.com/Quenary/tugtainer/commit/9d23bf40ac1d39005582abfcf0a84753a4e29d52))
+
+
 ## v1.16.0 (2026-01-13)
 
 ### Features
