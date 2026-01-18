@@ -124,7 +124,7 @@ export class AuthPage {
   onSubmitLogin(password: string): void {
     this.isLoading.set(true);
     this.authApiService
-      .login('password', {}, { password })
+      .login('password', { password }, {})
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {

@@ -14,7 +14,11 @@ class AuthPasswordProvider(AuthProvider):
         return not Config.DISABLE_AUTH and not Config.DISABLE_PASSWORD
 
     async def login(self, request: Request, response: Response):
-        password = request.query_params.get("password", "")
+        try:
+            body = await request.json()
+            password = body.get("password", "")
+        except Exception:
+            password = ""
 
         STORED_PASSWORD_HASH: str | None = self._read_password_hash()
 
