@@ -1,3 +1,6 @@
+from python_on_whales.components.buildx.imagetools.models import (
+    ImageVariantManifest,
+)
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -77,7 +80,9 @@ async def check_container_update_available(
     try:
         image_spec = get_container_image_spec(container)
         if not image_spec:
-            logging.warning(f"Cannot proceed, no image spec.")
+            logging.warning(
+                f"{container.name} - Cannot proceed, no image spec."
+            )
             return result
         result.image_spec = image_spec
         image_id = get_container_image_id(container)
@@ -93,7 +98,20 @@ async def check_container_update_available(
         result.local_image = local_image
         if not local_image.repo_digests:
             logging.warning(
-                f"Image missing repo digests. Presumably a local image."
+                f"{container.name} - Image missing repo digests. Presumably a local image."
+            )
+            return result
+
+        architecture = local_image.architecture
+        os = local_image.os
+        if not architecture:
+            logging.warning(
+                f"{container.name} - Image missing 'architecture', exiting."
+            )
+            return result
+        if not os:
+            logging.warning(
+                f"{container.name} - Image missing 'os', exiting."
             )
             return result
 
@@ -101,21 +119,44 @@ async def check_container_update_available(
             local_image.repo_digests[0]
         )
         result.local_manifest = local_manifest
+        logging.debug(f"Local manifest:\n{local_manifest}")
+
         remote_manifest = await client.manifest.inspect(image_spec)
         result.remote_manifest = remote_manifest
-        
-        logging.debug(f"Local manifest:\n{local_manifest}")
         logging.debug(f"Remote manifest:\n{remote_manifest}")
 
+        def _manifests_for_platform(
+            architecture: str,
+            os: str,
+            manifest: ManifestInspectSchema,
+        ) -> list[ImageVariantManifest]:
+            res: list[ImageVariantManifest] = []
+            if not manifest.manifests:
+                return res
+            for item in manifest.manifests:
+                if (
+                    item.platform
+                    and item.platform.architecture == architecture
+                    and item.platform.os == os
+                ):
+                    res.append(item)
+            return res
+
         def _is_available(
+            architecture: str,
+            os: str,
             local: ManifestInspectSchema,
             remote: ManifestInspectSchema,
         ) -> bool:
-            if not local.manifests or not remote.manifests:
-                return local.manifests != remote.manifests
-            return local.manifests != remote.manifests
+            _local = _manifests_for_platform(architecture, os, local)
+            _remote = _manifests_for_platform(
+                architecture, os, remote
+            )
+            return _local != _remote
 
-        available = _is_available(local_manifest, remote_manifest)
+        available = _is_available(
+            architecture, os, local_manifest, remote_manifest
+        )
         result.available = available
         if available:
             logging.info(f"New image found!")
