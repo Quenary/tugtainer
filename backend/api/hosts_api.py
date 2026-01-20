@@ -8,10 +8,12 @@ from backend.schemas import (
     HostInfo,
     HostBase,
     HostStatusResponseBody,
+    HostSummary,
 )
 from backend.db.session import get_async_session
-from backend.db.models import HostsModel
-from backend.api.util import get_host
+from backend.db.models import HostsModel, ContainersModel
+from backend.api.util import get_host, map_container_schema
+from shared.schemas.container_schemas import GetContainerListBodySchema
 
 router = APIRouter(
     prefix="/hosts",
@@ -31,6 +33,100 @@ async def get_list(
     stmt = select(HostsModel)
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+@router.get(
+    path="/summary",
+    description="Get summary statistics for all hosts",
+    response_model=list[HostSummary],
+)
+async def get_summary(
+    session: AsyncSession = Depends(get_async_session),
+) -> list[HostSummary]:
+    stmt = select(HostsModel)
+    result = await session.execute(stmt)
+    hosts = result.scalars().all()
+
+    summaries = []
+    for host in hosts:
+        if not host.enabled:
+            summaries.append(HostSummary(
+                host_id=host.id,
+                host_name=host.name,
+                total_containers=0,
+                by_status={},
+                by_health={},
+                by_protected={"true": 0, "false": 0},
+                by_check_enabled={"true": 0, "false": 0},
+                by_update_enabled={"true": 0, "false": 0},
+                by_update_available={"true": 0, "false": 0},
+            ))
+            continue
+
+        client = HostsManager.get_host_client(host)
+        containers = await client.container.list(
+            GetContainerListBodySchema(all=True)
+        )
+
+        db_result = await session.execute(
+            select(ContainersModel).where(
+                ContainersModel.host_id == host.id
+            )
+        )
+        containers_db = db_result.scalars().all()
+
+        mapped_containers = []
+        for c in containers:
+            db_item = next(
+                (item for item in containers_db if item.name == c.name),
+                None,
+            )
+            mapped_containers.append(
+                map_container_schema(host.id, c, db_item)
+            )
+
+        by_status = {}
+        by_health = {}
+        by_protected = {"true": 0, "false": 0}
+        by_check_enabled = {"true": 0, "false": 0}
+        by_update_enabled = {"true": 0, "false": 0}
+        by_update_available = {"true": 0, "false": 0}
+
+        for container in mapped_containers:
+            if container.status:
+                by_status[container.status] = by_status.get(container.status, 0) + 1
+
+            health_key = container.health or "none"
+            by_health[health_key] = by_health.get(health_key, 0) + 1
+
+            protected_key = "true" if container.protected else "false"
+            by_protected[protected_key] += 1
+
+            if container.check_enabled is not None:
+                check_key = "true" if container.check_enabled else "false"
+                by_check_enabled[check_key] += 1
+
+            if container.update_enabled is not None:
+                update_key = "true" if container.update_enabled else "false"
+                by_update_enabled[update_key] += 1
+
+            if container.update_available is not None:
+                avail_key = "true" if container.update_available else "false"
+                by_update_available[avail_key] += 1
+
+        summaries.append(HostSummary(
+            host_id=host.id,
+            host_name=host.name,
+            total_containers=len(mapped_containers),
+            by_status=by_status,
+            by_health=by_health,
+            by_protected=by_protected,
+            by_check_enabled=by_check_enabled,
+            by_update_enabled=by_update_enabled,
+            by_update_available=by_update_available,
+        ))
+
+    return summaries
 
 
 @router.post(

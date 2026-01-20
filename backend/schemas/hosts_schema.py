@@ -22,3 +22,15 @@ class HostStatusResponseBody(BaseModel):
     id: int
     ok: bool | None = None
     err: str | None = None
+
+
+class HostSummary(BaseModel):
+    host_id: int
+    host_name: str
+    total_containers: int
+    by_status: dict[str, int]
+    by_health: dict[str, int]
+    by_protected: dict[str, int]
+    by_check_enabled: dict[str, int]
+    by_update_enabled: dict[str, int]
+    by_update_available: dict[str, int]
