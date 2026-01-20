@@ -85,8 +85,21 @@ async def get_summary(
                 map_container_schema(host.id, c, db_item)
             )
 
-        by_status = {}
-        by_health = {}
+        by_status = {
+            "created": 0,
+            "running": 0,
+            "paused": 0,
+            "restarting": 0,
+            "removing": 0,
+            "exited": 0,
+            "dead": 0,
+        }
+        by_health = {
+            "unknown": 0,
+            "healthy": 0,
+            "unhealthy": 0,
+            "starting": 0,
+        }
         by_protected = {"true": 0, "false": 0}
         by_check_enabled = {"true": 0, "false": 0}
         by_update_enabled = {"true": 0, "false": 0}
