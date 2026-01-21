@@ -9,17 +9,18 @@ And don't forget about regular backups of important data.
 Automatic updates are disabled by default. You can choose only what you need.
 
 ## Table of contents:
-  - [main features](#main-features)
-  - [deploy](#deploy)
-  - [check and update process](#check-and-update-process)
-  - [private registries](#private-registries)
-  - [custom labels](#custom-labels)
-  - [notifications](#notifications)
-  - [auth](#auth)
-  - [env](#env)
-  - [Screenshots](#screenshots)
-  - [develop](#develop)
-  - [todo](#todo)
+
+- [main features](#main-features)
+- [deploy](#deploy)
+- [check and update process](#check-and-update-process)
+- [private registries](#private-registries)
+- [custom labels](#custom-labels)
+- [notifications](#notifications)
+- [auth](#auth)
+- [env](#env)
+- [Screenshots](#screenshots)
+- [develop](#develop)
+- [todo](#todo)
 
 ## Main features:
 
@@ -129,8 +130,8 @@ Automatic updates are disabled by default. You can choose only what you need.
 
   - The manifests of the local and remote images are being compared, for containers marked for **check**;
   - If there is a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
-    * [protected](#custom-labels) containers will be skipped
-    * not `running` containers will be skipped
+    - [protected](#custom-labels) containers will be skipped
+    - not `running` containers will be skipped
   - **Image pull** performed for updatable containers;
   - All containers in the group are stopped in **order from most dependent**;
   - Then, **in reverse order** (from most dependable):
@@ -139,22 +140,22 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 ## Private registries
 
-  To use private registries, you have to mount docker config to Tugtainer or Tugtainer Agent, depending on where the container with the private image is located.
+To use private registries, you have to mount docker config to Tugtainer or Tugtainer Agent, depending on where the container with the private image is located.
 
-  - Create the config using one of the methods on the host machine
-    - Log into the registry `docker login <registry>`
-    - Manually
-    ```json
-      {
-        "auths": {
-          "<registry>": {
-            "auth": "base64 encoded 'username:password_or_token'"
-          }
+- Create the config using one of the methods on the host machine
+  - Log into the registry `docker login <registry>`
+  - Manually
+  ```json
+    {
+      "auths": {
+        "<registry>": {
+          "auth": "base64 encoded 'username:password_or_token'"
         }
       }
-    ```
-  - Mount the config to the Tugtainer (Agent) as a readonly volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
-  - That's all you need to do, Docker CLI will take care of the rest.
+    }
+  ```
+- Mount the config to the Tugtainer (Agent) as a readonly volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
+- That's all you need to do, Docker CLI will take care of the rest.
 
 ## Custom labels:
 
@@ -201,20 +202,12 @@ Jinja2 context schema:
           "remote_image": {
             "...same schema as for local_image": {},
           },
-          "local_manifest": {
-            "schema_version": 2,
-            "media_type": "media type",
-            "manifests": [
-              {
-                "size": 0,
-                "digest": "digest",
-                "...other keys of 'docker manifest inspect' manifest obj in snake_case": {},
-              }
-            ],
-          },
-          "remote_manifest": {
-            "...same schema as for local_manifest": {},
-          },
+          "local_digests": [
+            "list of platform specific image digests",
+          ],
+          "remote_digests": [
+            "list of platform specific image digests",
+          ],
           "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
         }
       ],
@@ -225,6 +218,7 @@ Jinja2 context schema:
 ```
 
 "result" options:
+
 - "not_available": No new image found.
 - "available": New image available for the container.
 - "available(notified)": New image available for the container, but it was in the previous notification. The app preserves digests of new images, so if another new image has appeared, the result will still be "available".

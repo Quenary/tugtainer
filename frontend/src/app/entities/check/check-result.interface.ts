@@ -18,8 +18,8 @@ export interface IContainerCheckResult {
   container: IContainerInspectResult;
   local_image: IImageInspectResult | null;
   remote_image: IImageInspectResult | null;
-  local_manifest: TIncomplete<Record<string, any>>;
-  remote_manifest: TIncomplete<Record<string, any>>;
+  local_digests: string[];
+  remote_digests: string[];
   result: TContainerCheckResult;
 }
 

@@ -1,5 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Literal
+from python_on_whales.components.buildx.imagetools.models import (
+    ImageVariantManifest,
+)
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -21,7 +24,6 @@ from backend.const import (
     TUGTAINER_DEPENDS_ON_LABEL,
     DOCKER_COMPOSE_DEPENDS_ON_LABEL,
 )
-from shared.schemas.manifest_schema import ManifestInspectSchema
 
 
 @dataclass
@@ -36,8 +38,8 @@ class ContainerGroupItem:
     :param commands: list of commands to be executed after container starts
     :param local_image: local image of the container (or old if updated)
     :param remote_image: remote image for the container (or current if updated)
-    :param local_manifest: local image manifest (or old if updated)
-    :param remote_manifest: remote image manifest (or current if updated)
+    :param local_digests: local image digests (or old if updated)
+    :param remote_digests: remote image digests (or current if updated)
     """
 
     container: ContainerInspectResult
@@ -52,8 +54,12 @@ class ContainerGroupItem:
     commands: list[list[str]] = field(default_factory=list)
     local_image: ImageInspectResult | None = None
     remote_image: ImageInspectResult | None = None
-    local_manifest: ManifestInspectSchema | None = None
-    remote_manifest: ManifestInspectSchema | None = None
+    local_digests: list[str] = field(
+        default_factory=list
+    )
+    remote_digests: list[str] = field(
+        default_factory=list
+    )
 
     @property
     def name(self) -> str:

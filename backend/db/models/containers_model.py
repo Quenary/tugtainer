@@ -69,7 +69,17 @@ class ContainersModel(BaseModel):
         default=now,
         nullable=False,
     )
-    notified_available_digests: Mapped[list[str] | None] = mapped_column(
+    # Digests of local image,
+    # used to prevent duplicate requests and save pull rate limits.
+    # This digests should be platform specific.
+    local_digests: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    # Last fetched remote digests,
+    # used to prevent duplicate notifications.
+    # This digests should be platform specific.
+    remote_digests: Mapped[list[str] | None] = mapped_column(
         JSON,
         nullable=True,
     )

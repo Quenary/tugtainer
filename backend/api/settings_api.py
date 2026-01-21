@@ -191,91 +191,64 @@ async def test_notification(data: TestNotificationRequestBody):
                 cmd=["/hello"],
             ),
         )
-        test_manifest = ManifestInspectSchema.model_validate(
-            {
-                "media_type": "application/vnd.docker.distribution.manifest.list.v2+json",
-                "schema_version": 2,
-                "manifests": [
-                    ImageVariantManifest(
-                        media_type="application/vnd.docker.distribution.manifest.v2+json",
-                        size=3239,
-                        digest="sha256:f751174c3d8ae54b12575af320a4aa01bb3b6e61ab82aa1e4f8ecac8a079ce61",
-                        platform=ManifestPlatform(
-                            architecture="amd64",
-                            os="linux",
-                            os_version=None,
-                            variant=None,
-                        ),
-                    ),
-                    ImageVariantManifest(
-                        media_type="application/vnd.docker.distribution.manifest.v2+json",
-                        size=3239,
-                        digest="sha256:46624c374eac1310ab2762e84aa784dbf334945b0969bf399a5df926a70d4d69",
-                        platform=ManifestPlatform(
-                            architecture="arm64",
-                            os="linux",
-                            os_version=None,
-                            variant=None,
-                        ),
-                    ),
-                ],
-            }
-        )
+        test_digests: list[str] = [
+            "sha256:f751174c3d8ae54b12575af320a4aa01bb3b6e61ab82aa1e4f8ecac8a079ce61",
+        ]
         items: list[ContainerCheckResult] = [
             ContainerCheckResult(
                 container=test_container,
                 local_image=None,
                 remote_image=None,
-                local_manifest=None,
-                remote_manifest=None,
+                local_digests=[],
+                remote_digests=[],
                 result=None,
             ),
             ContainerCheckResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=None,
-                local_manifest=test_manifest,
-                remote_manifest=None,
+                local_digests=test_digests,
+                remote_digests=[],
                 result="not_available",
             ),
             ContainerCheckResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
-                local_manifest=test_manifest,
-                remote_manifest=test_manifest,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="updated",
             ),
             ContainerCheckResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
-                local_manifest=test_manifest,
-                remote_manifest=test_manifest,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="available",
             ),
             ContainerCheckResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
-                local_manifest=test_manifest,
-                remote_manifest=test_manifest,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="available(notified)",
             ),
             ContainerCheckResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
-                local_manifest=test_manifest,
-                remote_manifest=test_manifest,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="rolled_back",
             ),
             ContainerCheckResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
-                local_manifest=test_manifest,
-                remote_manifest=test_manifest,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="failed",
             ),
         ]
