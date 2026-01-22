@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.17.1 (2026-01-22)
+
+### Bug Fixes
+
+- **frontend**: Host's agent address validation
+  ([#99](https://github.com/Quenary/tugtainer/pull/99),
+  [`f3b8bdf`](https://github.com/Quenary/tugtainer/commit/f3b8bdfc6e2d38260c99c6e83d8ffe7e4a656282))
+
+
 ## v1.17.0 (2026-01-22)
 
 ### Features
