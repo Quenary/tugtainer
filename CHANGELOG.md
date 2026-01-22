@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.17.0 (2026-01-22)
+
+### Features
+
+- Check by manifests, don't pull images before updating
+  ([#98](https://github.com/Quenary/tugtainer/pull/98),
+  [`ffc053f`](https://github.com/Quenary/tugtainer/commit/ffc053f861b5201dfddb9bf48bc91a5b6ab3e8e3))
+
+
 ## v1.16.1 (2026-01-18)
 
 ### Bug Fixes
