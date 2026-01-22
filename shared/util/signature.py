@@ -4,6 +4,7 @@ import base64
 import json
 from typing import Any, Literal
 import time
+from aiohttp.typedefs import Query
 from fastapi import HTTPException, status
 import logging
 
@@ -16,7 +17,8 @@ def get_signature_headers(
     secret_key: str | None,
     method: str,
     path: str,
-    body: Any,
+    body: Any = None,
+    params: Query | None = None,
 ) -> dict[str, str]:
     """
     Get signature headers
@@ -26,7 +28,7 @@ def get_signature_headers(
     :param body: body of the req
     """
     logging.debug(
-        f"Getting signature headers for: \n{method} \n{path} \n{body}"
+        f"Getting signature headers for: \n{method} \n{path} \n{body} \n{params}"
     )
     timestamp = int(time.time())
     headers = {X_TIMESTAMP: str(timestamp)}
@@ -34,7 +36,7 @@ def get_signature_headers(
         return headers
 
     signature = _get_req_signature(
-        secret_key, timestamp, method, path, body
+        secret_key, timestamp, method, path, body, params
     )
     headers[X_SIGNATURE] = signature
     logging.debug(f"Signature headers: {headers}")
@@ -47,7 +49,8 @@ def verify_signature_headers(
     headers: dict[str, str],
     method: str,
     path: str,
-    body: Any,
+    body: Any = None,
+    params: Query | None = None,
 ) -> Literal[True]:
     """
     Verify signature headers
@@ -57,22 +60,22 @@ def verify_signature_headers(
     :param method: method of the req
     :param path: path of the req e.g. /api/containers/list
     :param body: body of the req
+    :param params: query parameters of the req
     """
     current_timestamp = int(time.time())
     timestamp = int(headers.get(X_TIMESTAMP, "0"))
     signature = headers.get(X_SIGNATURE, "")
     logging.debug(
-        f"Verifying signature headers for:\n{method}\n{path}\n{body}\n{headers}"
+        f"Verifying signature headers for:\n{method}\n{path}\n{body}\n{params}\n{headers}"
     )
     if abs(current_timestamp - timestamp) > signature_ttl:
-        message = (
-            f"Signature expired (age={current_timestamp - timestamp}s)"
-        )
+        message = f"Signature expired (age={current_timestamp - timestamp}s)"
         message = f"""\
 Signature expired for:
 method={method}
 path={path}
 body={body}
+params={params}
 age={current_timestamp - timestamp}s
 current_timestamp={current_timestamp}s
 request_timestamp={timestamp}s
@@ -85,7 +88,7 @@ request_timestamp={timestamp}s
     if not secret_key:
         return True
     expected = _get_req_signature(
-        secret_key, timestamp, method, path, body
+        secret_key, timestamp, method, path, body, params
     )
     if not hmac.compare_digest(expected, signature):
         message = f"""\
@@ -93,6 +96,7 @@ Invalid signature for:
 method={method}
 path={path}
 body={body}
+params={params}
 signature={signature}
 """
         logging.warning(message)
@@ -105,14 +109,16 @@ def _get_req_signature(
     timestamp: int,
     method: str,
     path: str,
-    body: Any,
+    body: Any = None,
+    params: Query | None = None,
 ) -> str:
     if not secret_key:
         return ""
     sig_bytes = (
         method.upper().encode()
         + path.encode()
-        + _get_body_bytes(body)
+        + _get_obj_bytes(body)
+        + _get_obj_bytes(params)
         + str(timestamp).encode()
     )
     return _get_sig_encoded(secret_key, sig_bytes)
@@ -126,7 +132,7 @@ def _get_sig_encoded(secret_key: str, sig_bytes: bytes) -> str:
     ).decode()
 
 
-def _get_body_bytes(body: Any) -> bytes:
+def _get_obj_bytes(body: Any) -> bytes:
     return (
         b""
         if not body

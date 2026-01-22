@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from backend.db.models.containers_model import ContainersModel
 from backend.core.container.schemas.check_result import (
+    ContainerCheckResultType,
     GroupCheckResult,
 )
 from backend.helpers.now import now
@@ -17,6 +18,10 @@ async def update_containers_data_after_check(
     if not valid_items:
         return
     _now = now()
+    in_available: list[ContainerCheckResultType] = [
+        "available",
+        "available(notified)",
+    ]
 
     async with async_session_maker() as session:
         container_names = [
@@ -36,10 +41,10 @@ async def update_containers_data_after_check(
                 str(item.container.name), None
             ):
                 container.update_available = (
-                    item.result == "available"
+                    item.result in in_available
                 )
-                container.checked_at = _now
                 if item.result == "updated":
                     container.updated_at = _now
+                    container.local_digests = item.remote_digests
 
         await session.commit()

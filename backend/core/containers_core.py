@@ -1,3 +1,6 @@
+from python_on_whales.components.buildx.imagetools.models import (
+    ImageVariantManifest,
+)
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -13,20 +16,25 @@ from backend.db.models import ContainersModel, HostsModel
 from backend.core.container.schemas.check_result import (
     CheckContainerUpdateAvailableResult,
     ContainerCheckResult,
+    ContainerCheckResultType,
     GroupCheckResult,
     HostCheckResult,
 )
 from backend.core import HostsManager
 from backend.core.notifications_core import send_check_notification
+from backend.db.util import insert_or_update_container
+from backend.db.util.insert_or_update_container import (
+    ContainerInsertOrUpdateData,
+)
 from backend.enums.check_status_enum import ECheckStatus
 from backend.core.container.util import (
     get_container_image_spec,
-    get_container_image_id,
     wait_for_container_healthy,
     get_container_config,
     merge_container_config_with_image,
     update_containers_data_after_check,
     is_running_container,
+    get_digests_for_platform,
 )
 from backend.core.container import (
     GroupCheckProgressCache,
@@ -43,6 +51,8 @@ from backend.core.container.container_group import (
     ContainerGroup,
 )
 from backend.core.agent_client import AgentClient
+from backend.exception import TugAgentClientError
+from backend.helpers.now import now
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -61,6 +71,7 @@ _ALLOW_STATUSES = [ECheckStatus.DONE, ECheckStatus.ERROR]
 
 
 async def check_container_update_available(
+    host_id: int,
     client: AgentClient,
     container: ContainerInspectResult,
 ) -> CheckContainerUpdateAvailableResult:
@@ -69,52 +80,146 @@ async def check_container_update_available(
     This func should not raise exceptions.
     """
     logging.info(
-        f"Checking container '{container.name}' update availability."
+        f"{container.name} - Checking container update availability."
     )
     result = CheckContainerUpdateAvailableResult()
-    try:
-        image_spec = get_container_image_spec(container)
-        if not image_spec:
-            logging.warning(f"Cannot proceed, no image spec.")
-            return result
-        result.image_spec = image_spec
-        image_id = get_container_image_id(container)
-        old_image: ImageInspectResult
-        if image_id:
-            old_image = await client.image.inspect(
-                InspectImageRequestBodySchema(spec_or_id=image_id)
+    async with async_session_maker() as session:
+        try:
+            image_spec = get_container_image_spec(container)
+            if not image_spec:
+                logging.warning(
+                    f"{container.name} - Cannot proceed, no image spec."
+                )
+                return result
+            result.image_spec = image_spec
+            image_id = container.image
+            local_image: ImageInspectResult
+            if image_id:
+                local_image = await client.image.inspect(
+                    InspectImageRequestBodySchema(spec_or_id=image_id)
+                )
+            else:
+                local_image = await client.image.inspect(
+                    InspectImageRequestBodySchema(
+                        spec_or_id=image_spec
+                    )
+                )
+            result.local_image = local_image
+            if not local_image.repo_digests:
+                logging.warning(
+                    f"{container.name} - Image missing repo digests. Presumably a local image."
+                )
+                return result
+
+            architecture = local_image.architecture
+            os = local_image.os
+            if not architecture:
+                logging.warning(
+                    f"{container.name} - Image missing 'architecture', exiting."
+                )
+                return result
+            if not os:
+                logging.warning(
+                    f"{container.name} - Image missing 'os', exiting."
+                )
+                return result
+
+            stmt = (
+                select(ContainersModel)
+                .where(
+                    ContainersModel.host_id == host_id,
+                    ContainersModel.name == container.name,
+                )
+                .limit(1)
             )
-        else:
-            old_image = await client.image.inspect(
-                InspectImageRequestBodySchema(spec_or_id=image_spec)
+            stmt_res = await session.execute(stmt)
+            c_db = stmt_res.scalar_one_or_none()
+
+            local_digests: list[str] = (
+                c_db.local_digests
+                if c_db and c_db.local_digests
+                else []
             )
-        result.old_image = old_image
-        if not old_image.repo_digests:
-            logging.warning(
-                f"Image missing repo digests. Presumably a local image."
+
+            # get local digests if missing
+            if not local_digests:
+                for digest in local_image.repo_digests:
+                    local_manifest = await client.manifest.inspect(
+                        digest
+                    )
+                    logging.debug(
+                        f"Local manifest:\n{local_manifest}"
+                    )
+
+                    local_digests = get_digests_for_platform(
+                        local_manifest,
+                        architecture,
+                        os,
+                        str(local_image.id),
+                    )
+                    if local_digests:
+                        break
+
+            result.local_digests = local_digests
+            logging.info(
+                f"Local digests for platform:\n{local_digests}"
+            )
+
+            # get remote digests
+            remote_manifest = await client.manifest.inspect(
+                image_spec
+            )
+            logging.debug(f"Remote manifest:\n{remote_manifest}")
+            remote_digests = get_digests_for_platform(
+                remote_manifest,
+                architecture,
+                os,
+                str(local_image.id),
+            )
+            result.remote_digests = remote_digests
+            logging.info(
+                f"Remote digests for platform:\n{remote_digests}"
+            )
+
+            is_available: ContainerCheckResultType = (
+                "available"
+                if remote_digests and remote_digests != local_digests
+                else "not_available"
+            )
+
+            result_db: ContainerInsertOrUpdateData = {
+                "checked_at": now(),
+                "local_digests": local_digests,
+            }
+
+            if is_available == "available":
+                if c_db and c_db.remote_digests == remote_digests:
+                    logging.debug(
+                        f"{container.name} - Marked as available(notified)"
+                    )
+                    is_available = "available(notified)"
+                else:
+                    result_db["remote_digests"] = remote_digests
+
+            logging.info(
+                f"{container.name} - Check result is {is_available}"
+            )
+            result.result = is_available
+            c_db = await insert_or_update_container(
+                session, host_id, str(container.name), result_db
             )
             return result
-        new_image = await client.image.pull(
-            PullImageRequestBodySchema(image=image_spec)
-        )
-        if not isinstance(new_image, ImageInspectResult):
-            logging.warning(f"Failed to pull new image.'")
+        except TugAgentClientError as e:
+            if e.status == 404:
+                logging.error(
+                    "Make sure the Tugtainer Agent is up to date"
+                )
+            await session.commit()
             return result
-        result.new_image = new_image
-        available: bool = bool(
-            old_image
-            and new_image
-            and old_image.repo_digests != new_image.repo_digests
-        )
-        result.available = available
-        if available:
-            logging.info(f"New image found!")
-        else:
-            logging.info(f"No new image found.")
-        return result
-    except Exception as e:
-        logging.exception(e)
-    return result
+        except Exception as e:
+            logging.exception(e)
+            await session.commit()
+            return result
 
 
 async def check_group(
@@ -152,23 +257,19 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     CACHE.update({"status": ECheckStatus.CHECKING})
     for gc in for_check:
         res = await check_container_update_available(
-            client, gc.container
+            host.id, client, gc.container
         )
-        gc.temp_result = (
-            "available" if res.available else "not_available"
-        )
+        gc.temp_result = res.result
         gc.image_spec = res.image_spec
-        gc.old_image = res.old_image
-        gc.new_image = res.new_image
+        gc.local_image = res.local_image
+        gc.local_digests = res.local_digests
+        gc.local_digests = res.remote_digests
 
     # region Helper functions
     def _will_update(gc: ContainerGroupItem) -> bool:
         """Whether to update container"""
         return bool(
             gc.temp_result == "available"
-            and gc.image_spec
-            and gc.old_image
-            and gc.new_image
             and gc.action == "update"
             and not gc.protected
             and is_running_container(gc.container)
@@ -197,8 +298,10 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             items=[
                 ContainerCheckResult(
                     container=item.container,
-                    old_image=item.old_image,
-                    new_image=item.new_image,
+                    local_image=item.local_image,
+                    remote_image=item.remote_image,
+                    local_digests=item.local_digests,
+                    remote_digests=item.remote_digests,
                     result=item.temp_result,
                 )
                 for item in group.containers
@@ -248,6 +351,32 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     logging.info("Starting to update a group...")
     CACHE.update({"status": ECheckStatus.UPDATING})
 
+    # Pulling images for updatable containers
+    for gc in group.containers:
+        if _will_update(gc):
+            try:
+                logging.info(
+                    f"Pulling image for container {gc.container.name}, spec {gc.image_spec}..."
+                )
+                remote_image = await client.image.pull(
+                    PullImageRequestBodySchema(
+                        image=cast(str, gc.image_spec)
+                    )
+                )
+                gc.remote_image = remote_image
+            except Exception as e:
+                logging.exception(e)
+                logging.error(
+                    f"""Failed to pull the image for container {gc.container.name} with spec {gc.image_spec}
+================================================================="""
+                )
+                result = _group_state_to_result(group)
+                await update_containers_data_after_check(result)
+                CACHE.update(
+                    {"status": ECheckStatus.ERROR, "result": result}
+                )
+                return result
+
     # Getting containers configs and stopping them,
     # from most dependent to most dependable.
     for gc in group.containers[::-1]:
@@ -293,8 +422,8 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         # Updating container
         if _will_update(gc) and not any_failed:
             image_spec = cast(str, gc.image_spec)
-            old_image = cast(ImageInspectResult, gc.old_image)
-            new_image = cast(ImageInspectResult, gc.new_image)
+            local_image = cast(ImageInspectResult, gc.local_image)
+            remote_image = cast(ImageInspectResult, gc.remote_image)
             config = cast(CreateContainerRequestBodySchema, gc.config)
             logging.info(f"Starting update of container {c_name}...")
             try:
@@ -302,7 +431,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 await client.container.remove(c_name)
                 logging.info("Merging configs...")
                 merged_config = merge_container_config_with_image(
-                    config, new_image
+                    config, remote_image
                 )
                 logging.info("Recreating container...")
                 new_c = await client.container.create(merged_config)
@@ -341,7 +470,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 logging.warning("Tagging previous image...")
                 await client.image.tag(
                     TagImageRequestBodySchema(
-                        spec_or_id=str(old_image.id),
+                        spec_or_id=str(local_image.id),
                         tag=image_spec,
                     )
                 )
@@ -547,7 +676,8 @@ async def check_all(update: bool):
             }
         )
 
-        results = await _prepare_results(results)
+        # filter undefined results
+        results = [item for item in results if item]
         await send_check_notification(results)
 
     except Exception as e:
@@ -556,53 +686,3 @@ async def check_all(update: bool):
         logging.error(
             "Error while checking of all containers for all hosts"
         )
-
-
-async def _prepare_results(
-    results: list[HostCheckResult | None],
-) -> list[HostCheckResult]:
-    # Filter undefined results
-    _results = [item for item in results if item]
-    if not _results:
-        return []
-    # Mark already sent results
-    async with async_session_maker() as session:
-        for r in _results:
-            available_names = [
-                item.container.name
-                for item in r.items
-                if item.result == "available" and item.container.name
-            ]
-            if not available_names:
-                continue
-
-            stmt = select(ContainersModel).where(
-                ContainersModel.host_id == r.host_id,
-                ContainersModel.name.in_(available_names),
-            )
-            result = await session.execute(stmt)
-            db_containers = result.scalars().all()
-            db_map = {c.name: c for c in db_containers}
-
-            for item in r.items:
-                db_item = db_map.get(cast(str, item.container.name))
-                if not db_item:
-                    continue
-
-                new_digests = (
-                    item.new_image.repo_digests
-                    if item.new_image
-                    else None
-                )
-
-                if db_item.notified_available_digests == new_digests:
-                    logging.debug(
-                        f"Container {item.container.name} marked as available(notified)"
-                    )
-                    item.result = "available(notified)"
-                else:
-                    db_item.notified_available_digests = new_digests
-
-        await session.commit()
-
-    return _results

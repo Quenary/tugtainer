@@ -7,6 +7,7 @@ from agent.api import (
     container_router,
     image_router,
     command_router,
+    manifest_router,
 )
 from agent.config import Config
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter
@@ -26,6 +27,7 @@ app.include_router(public_router)
 app.include_router(container_router)
 app.include_router(image_router)
 app.include_router(command_router)
+app.include_router(manifest_router)
 
 
 @app.exception_handler(asyncio.TimeoutError)

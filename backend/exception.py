@@ -22,12 +22,14 @@ class TugAgentClientError(TugException):
     """
     Exception for agent client errors
     :param message: message
+    :param status: status code
     :param body: body of the request error (json or text)
     """
 
-    def __init__(self, message: str, body: Any):
+    def __init__(self, message: str, status: int, body: Any):
         super().__init__(message)
         self.message = message
+        self.status = status
         self.body = body
 
     def __str__(self) -> str:
