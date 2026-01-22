@@ -8,7 +8,6 @@ from .get_container_health_status_str import (
     get_container_health_status_str,
 )
 from .get_container_image_spec import get_container_image_spec
-from .get_container_image_id import get_container_image_id
 from .get_container_restart_policy_str import (
     get_container_restart_policy_str,
 )

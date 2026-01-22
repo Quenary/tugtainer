@@ -29,7 +29,6 @@ from backend.db.util.insert_or_update_container import (
 from backend.enums.check_status_enum import ECheckStatus
 from backend.core.container.util import (
     get_container_image_spec,
-    get_container_image_id,
     wait_for_container_healthy,
     get_container_config,
     merge_container_config_with_image,
@@ -93,7 +92,7 @@ async def check_container_update_available(
                 )
                 return result
             result.image_spec = image_spec
-            image_id = get_container_image_id(container)
+            image_id = container.image
             local_image: ImageInspectResult
             if image_id:
                 local_image = await client.image.inspect(
