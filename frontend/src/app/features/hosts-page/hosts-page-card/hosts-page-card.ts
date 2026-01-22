@@ -8,7 +8,14 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AccordionModule } from 'primeng/accordion';
@@ -94,12 +101,28 @@ export class HostsPageCard implements OnInit {
     };
   }
 
+  private readonly urlValidator: ValidatorFn = (control: AbstractControl) => {
+    if (!control.value) {
+      return null;
+    }
+    try {
+      new URL(control.value);
+      return null;
+    } catch (error) {
+      return { urlValidator: true };
+    }
+  };
+
   public readonly form = new FormGroup<TInterfaceToForm<ICreateHost>>({
     name: new FormControl<string>(null, [Validators.required]),
     enabled: new FormControl<boolean>(null, [Validators.required]),
     prune: new FormControl<boolean>(null, [Validators.required]),
     prune_all: new FormControl<boolean>(null, [Validators.required]),
-    url: new FormControl<string>(null, [Validators.required]),
+    url: new FormControl<string>(null, [
+      Validators.required,
+      this.urlValidator,
+      Validators.pattern(/^(http|https):\/\//),
+    ]),
     secret: new FormControl<string>(null),
     timeout: new FormControl<number>(null, [Validators.required]),
     container_hc_timeout: new FormControl(null, [Validators.required]),
