@@ -16,6 +16,7 @@ class ContainerInsertOrUpdateData(TypedDict, total=False):
     updated_at: datetime
     local_digests: list[str]
     remote_digests: list[str]
+    image_id: str
 
 
 async def insert_or_update_container(

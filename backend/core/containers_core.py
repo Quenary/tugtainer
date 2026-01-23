@@ -140,15 +140,24 @@ async def check_container_update_available(
                 if c_db and c_db.local_digests
                 else []
             )
+            stored_image_id = c_db.image_id if c_db else None
+
+            logging.debug(f'{container.name} - actual image id: {image_id}')
+            logging.debug(f'{container.name} - stored image id: {stored_image_id}')
 
             # get local digests if missing
-            if not local_digests:
+            # or if stored image_id does not match current
+            if (
+                not local_digests
+                or stored_image_id
+                and stored_image_id != image_id
+            ):
                 for digest in local_image.repo_digests:
                     local_manifest = await client.manifest.inspect(
                         digest
                     )
                     logging.debug(
-                        f"Local manifest:\n{local_manifest}"
+                        f"{container.name} - local manifest:\n{local_manifest}"
                     )
 
                     local_digests = get_digests_for_platform(
@@ -162,14 +171,14 @@ async def check_container_update_available(
 
             result.local_digests = local_digests
             logging.info(
-                f"Local digests for platform:\n{local_digests}"
+                f"{container.name} - local digests for platform: {local_digests}"
             )
 
             # get remote digests
             remote_manifest = await client.manifest.inspect(
                 image_spec
             )
-            logging.debug(f"Remote manifest:\n{remote_manifest}")
+            logging.debug(f"{container.name} - remote manifest:\n{remote_manifest}")
             remote_digests = get_digests_for_platform(
                 remote_manifest,
                 architecture,
@@ -178,7 +187,7 @@ async def check_container_update_available(
             )
             result.remote_digests = remote_digests
             logging.info(
-                f"Remote digests for platform:\n{remote_digests}"
+                f"{container.name} - remote digests for platform: {remote_digests}"
             )
 
             is_available: ContainerCheckResultType = (
@@ -190,6 +199,7 @@ async def check_container_update_available(
             result_db: ContainerInsertOrUpdateData = {
                 "checked_at": now(),
                 "local_digests": local_digests,
+                "image_id": str(image_id),
             }
 
             if is_available == "available":
