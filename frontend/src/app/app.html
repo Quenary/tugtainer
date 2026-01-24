@@ -27,12 +27,12 @@
     <ng-template #end>
       <section class="app-menu-end">
         <span class="app-menu-end-version"> </span>
-        @if (version$ | async; as version) {
+        @if (version.value(); as data) {
           <p-tag severity="contrast">
-            {{ version.image_version }}
+            {{ data.image_version }}
           </p-tag>
         }
-        @if (isUpdateAvailable$ | async) {
+        @if (isUpdateAvailable.value()?.is_available) {
           <p-tag
             severity="success"
             (click)="showNewVersionDialog.set(true)"
@@ -75,8 +75,14 @@
       <p-button
         icon="pi pi-link"
         severity="success"
-        label="GitHub"
+        [label]="'UPDATE_DIALOGUE.DEPLOY_GUIDELINE' | translate"
         (onClick)="openDeployGuideline()"
+      ></p-button>
+      <p-button
+        icon="pi pi-link"
+        severity="success"
+        [label]="'UPDATE_DIALOGUE.RELEASE_NOTES' | translate"
+        (onClick)="openReleaseNotes()"
       ></p-button>
     </ng-template>
   </p-dialog>
