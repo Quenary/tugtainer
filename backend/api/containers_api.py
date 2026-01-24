@@ -33,7 +33,6 @@ from backend.core.containers_core import (
 from backend.core.container.container_group import (
     get_container_group,
 )
-from backend.helpers.self_container import get_self_container
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
@@ -212,20 +211,3 @@ def progress(
 ) -> AllCheckProgressCache | HostCheckProgressCache | GroupCheckProgressCache | None:
     CACHE = ProcessCache(cache_id)
     return CACHE.get()
-
-
-@router.get(
-    path="/update_available/self",
-    description="Get new version availability for self container",
-    response_model=bool,
-)
-async def is_update_available_self(
-    session: AsyncSession = Depends(get_async_session),
-):
-    res = await get_self_container(session)
-    if not res:
-        return False
-    _, c_db = res
-    if not c_db:
-        return False
-    return c_db.update_available

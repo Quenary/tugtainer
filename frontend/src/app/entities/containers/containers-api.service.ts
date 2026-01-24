@@ -62,8 +62,4 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
       takeWhile((res) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(res?.status), true),
     );
   }
-
-  isUpdateAvailableSelf(): Observable<boolean> {
-    return this.httpClient.get<boolean>(`${this.basePath}/update_available/self`);
-  }
 }
