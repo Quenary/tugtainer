@@ -46,7 +46,7 @@ Automatic updates are disabled by default. You can choose only what you need.
   docker volume create tugtainer_data
 
   # pull image
-  docker pull quenary/tugtainer:latest
+  docker pull ghcr.io/quenary/tugtainer:1
 
   # run container
   docker run -d -p 9412:80 \
@@ -54,7 +54,7 @@ Automatic updates are disabled by default. You can choose only what you need.
       --restart=unless-stopped \
       -v tugtainer_data:/tugtainer \
       -v /var/run/docker.sock:/var/run/docker.sock:ro \
-      quenary/tugtainer:latest
+      ghcr.io/quenary/tugtainer:1
   ```
 
 > [!IMPORTANT]
@@ -77,7 +77,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 
   ```bash
   # pull image
-  docker pull quenary/tugtainer-agent:latest
+  docker pull ghcr.io/quenary/tugtainer-agent:1
 
   # run container
   docker run -d -p 9413:8001 \
@@ -85,7 +85,7 @@ Automatic updates are disabled by default. You can choose only what you need.
       --restart=unless-stopped \
       -e AGENT_SECRET="CHANGE_ME!" \
       -v /var/run/docker.sock:/var/run/docker.sock:ro \
-      quenary/tugtainer-agent:latest
+      ghcr.io/quenary/tugtainer-agent:1
   ```
 
 - ### Socket proxy

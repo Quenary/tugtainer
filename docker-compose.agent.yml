@@ -33,7 +33,7 @@ services:
     depends_on:
       - socket-proxy
     container_name: tugtainer-agent
-    image: quenary/tugtainer-agent:latest
+    image: ghcr.io/quenary/tugtainer-agent:1
     # volumes:
       # You can uncomment this to mount socket directly,
       # and remove socket-proxy service and DOCKER_HOST variable
