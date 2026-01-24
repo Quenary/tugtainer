@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.17.3 (2026-01-24)
+
+### Bug Fixes
+
+- **backend**: Add packaging module dep
+  ([`89fa839`](https://github.com/Quenary/tugtainer/commit/89fa8397ed6861e547e865cf3a8d0fcce40b0d54))
+
+### Documentation
+
+- Ghcr reg in readme and docker-compose
+  ([`67c8966`](https://github.com/Quenary/tugtainer/commit/67c896620d6c7bc059623f268e12acf5759459f7))
+
+
 ## v1.17.2 (2026-01-24)
 
 ### Bug Fixes
