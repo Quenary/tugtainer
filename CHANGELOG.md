@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.17.2 (2026-01-24)
+
+### Bug Fixes
+
+- Tugtainer update check by github releases
+  ([`20b4ef3`](https://github.com/Quenary/tugtainer/commit/20b4ef36c89ed8b782e33c8379946a5759b263b7))
+
+- **backend**: Request local image digests if image changed
+  ([`0520f55`](https://github.com/Quenary/tugtainer/commit/0520f55746b70cf7f2a1421d2c73ad4d0a0f8821))
+
+
 ## v1.17.1 (2026-01-22)
 
 ### Bug Fixes
