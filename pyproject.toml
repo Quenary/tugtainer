@@ -15,6 +15,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.128.0",
     "jinja2>=3.1.6",
+    "packaging>=25.0",
     "python-jose>=3.5.0",
     "python-on-whales>=0.80.0",
     "uvicorn>=0.40.0",
