@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.17.4 (2026-01-25)
+
+### Bug Fixes
+
+- **backend**: Re-request digests of local image if missing image_id in db
+  ([`b1ab824`](https://github.com/Quenary/tugtainer/commit/b1ab8245b8f6b69cdd4c9d18c93607f433e7d8f5))
+
+
 ## v1.17.3 (2026-01-24)
 
 ### Bug Fixes
