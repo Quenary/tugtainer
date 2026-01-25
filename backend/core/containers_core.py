@@ -142,15 +142,19 @@ async def check_container_update_available(
             )
             stored_image_id = c_db.image_id if c_db else None
 
-            logging.debug(f'{container.name} - actual image id: {image_id}')
-            logging.debug(f'{container.name} - stored image id: {stored_image_id}')
+            logging.debug(
+                f"{container.name} - actual image id: {image_id}"
+            )
+            logging.debug(
+                f"{container.name} - stored image id: {stored_image_id}"
+            )
 
             # get local digests if missing
             # or if stored image_id does not match current
             if (
                 not local_digests
-                or stored_image_id
-                and stored_image_id != image_id
+                or not stored_image_id
+                or stored_image_id != image_id
             ):
                 for digest in local_image.repo_digests:
                     local_manifest = await client.manifest.inspect(
@@ -178,7 +182,9 @@ async def check_container_update_available(
             remote_manifest = await client.manifest.inspect(
                 image_spec
             )
-            logging.debug(f"{container.name} - remote manifest:\n{remote_manifest}")
+            logging.debug(
+                f"{container.name} - remote manifest:\n{remote_manifest}"
+            )
             remote_digests = get_digests_for_platform(
                 remote_manifest,
                 architecture,
