@@ -1,6 +1,6 @@
 [project]
 name = "tugtainer"
-version = "1.17.4"
+version = "1.17.5"
 description = "An application for automating docker containers updates with a web ui"
 readme = "README.md"
 requires-python = ">=3.13"

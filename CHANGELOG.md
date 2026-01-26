@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.17.5 (2026-01-26)
+
+### Bug Fixes
+
+- Duplicate supervisord logs [skip ci]
+  ([`3477d08`](https://github.com/Quenary/tugtainer/commit/3477d08e21e61da08d55d837998ccb870031069b))
+
+- **backend**: Add local agent entry on initial run when using socket-proxy
+  ([`aae46a8`](https://github.com/Quenary/tugtainer/commit/aae46a8292b35072e03ac629f51c82ae8370c2af))
+
+
 ## v1.17.4 (2026-01-25)
 
 ### Bug Fixes
