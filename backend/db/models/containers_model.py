@@ -7,7 +7,7 @@ from sqlalchemy import (
     Integer,
     String,
     text,
-    JSON
+    JSON,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base_model import BaseModel
@@ -69,7 +69,21 @@ class ContainersModel(BaseModel):
         default=now,
         nullable=False,
     )
-    notified_available_digests: Mapped[list[str] | None] = mapped_column(
+    # Local image id,
+    # Used to invalidate old local_digests in case
+    # such as container's updated from outside the app.
+    image_id: Mapped[str] = mapped_column(String, nullable=True)
+    # Digests of local image,
+    # used to prevent duplicate requests and save pull rate limits.
+    # This digests should be platform specific.
+    local_digests: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    # Last fetched remote digests,
+    # used to prevent duplicate notifications.
+    # This digests should be platform specific.
+    remote_digests: Mapped[list[str] | None] = mapped_column(
         JSON,
         nullable=True,
     )

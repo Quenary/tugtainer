@@ -20,7 +20,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
 import { AsyncPipe } from '@angular/common';
 import { PublicApiService } from './entities/public/public-api.service';
-import { ContainersApiService } from './entities/containers/containers-api.service';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -30,6 +29,7 @@ import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToolbarModule } from 'primeng/toolbar';
 import { DeployGuidelineUrl } from './app.consts';
 import { ToastService } from './core/services/toast.service';
+import { IsUpdateAvailableResponseBody } from './entities/public/public-interface';
 
 @Component({
   selector: 'app-root',
@@ -54,7 +54,6 @@ export class App {
   private readonly translateService = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly publicApiService = inject(PublicApiService);
-  private readonly containersApiService = inject(ContainersApiService);
   private readonly toastService = inject(ToastService);
 
   protected readonly showNewVersionDialog = signal<boolean>(false);
@@ -74,14 +73,29 @@ export class App {
         ),
       ),
   });
-  protected readonly version$ = this.publicApiService.getVersion().pipe(
-    retry({ count: 1, delay: 500 }),
-    catchError(() => of({ image_version: 'unknown' })),
-  );
-  protected readonly isUpdateAvailable$ = this.containersApiService.isUpdateAvailableSelf().pipe(
-    retry({ count: 1, delay: 500 }),
-    catchError(() => of(false)),
-  );
+  protected readonly version = resource({
+    loader: () =>
+      firstValueFrom(
+        this.publicApiService.getVersion().pipe(
+          retry({ count: 1, delay: 500 }),
+          catchError(() => of({ image_version: 'unknown' })),
+        ),
+      ),
+  });
+  protected readonly isUpdateAvailable = resource({
+    loader: () =>
+      firstValueFrom(
+        this.publicApiService.isUpdateAvailable().pipe(
+          retry({ count: 1, delay: 500 }),
+          catchError(() =>
+            of(<IsUpdateAvailableResponseBody>{
+              is_available: false,
+              release_url: null,
+            }),
+          ),
+        ),
+      ),
+  });
   protected readonly menuItems$: Observable<MenuItem[]> = this.translateService.onLangChange.pipe(
     startWith({}),
     switchMap(() => this.translateService.get('MENU')),
@@ -143,5 +157,9 @@ export class App {
 
   protected openDeployGuideline(): void {
     window.open(DeployGuidelineUrl, '_blank');
+  }
+
+  protected openReleaseNotes(): void {
+    window.open(this.isUpdateAvailable.value().release_url, '_blank');
   }
 }

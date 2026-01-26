@@ -1,5 +1,4 @@
-import hmac, hashlib, base64, time, json
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import Request
 from agent.config import Config
 from shared.util.signature import verify_signature_headers
 
@@ -12,6 +11,7 @@ async def verify_signature(req: Request):
         body = await req.json()
     except:
         body = None
+    params = dict(req.query_params) if req.query_params else None
     verify_signature_headers(
         secret_key=Config.AGENT_SECRET,
         signature_ttl=Config.AGENT_SIGNATURE_TTL,
@@ -19,4 +19,5 @@ async def verify_signature(req: Request):
         method=req.method,
         path=req.url.path,
         body=body,
+        params=params,
     )

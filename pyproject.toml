@@ -1,32 +1,33 @@
 [project]
 name = "tugtainer"
-version = "1.16.1"
+version = "1.17.5"
 description = "An application for automating docker containers updates with a web ui"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "aiocron>=2.1",
-    "aiohttp>=3.13.2",
-    "aiosqlite>=0.21.0",
-    "alembic>=1.17.2",
+    "aiohttp>=3.13.3",
+    "aiosqlite>=0.22.1",
+    "alembic>=1.18.1",
     "apprise>=1.9.5",
     "bcrypt>=5.0.0",
-    "cachetools>=6.2.2",
+    "cachetools>=6.2.4",
     "dotenv>=0.9.9",
-    "fastapi>=0.121.2",
+    "fastapi>=0.128.0",
     "jinja2>=3.1.6",
+    "packaging>=25.0",
     "python-jose>=3.5.0",
     "python-on-whales>=0.80.0",
-    "uvicorn>=0.38.0",
+    "uvicorn>=0.40.0",
 ]
 
 [dependency-groups]
 dev = [
-    "fastapi-cli>=0.0.16",
-    "fastapi[standard]>=0.121.2",
-    "pytest>=9.0.1",
+    "fastapi-cli>=0.0.20",
+    "fastapi[standard]>=0.128.0",
+    "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
-    "uvicorn[standard]>=0.38.0",
+    "uvicorn[standard]>=0.40.0",
     "watchfiles>=1.1.1",
     "websockets>=15.0.1",
 ]

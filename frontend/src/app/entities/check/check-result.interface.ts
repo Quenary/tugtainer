@@ -1,5 +1,6 @@
 import { IContainerInspectResult } from '../containers/containers-interface';
 import { IImageInspectResult } from '../images/images-interface';
+import { TIncomplete } from '../incomplete.type';
 
 /**
  * Result of container check
@@ -15,8 +16,10 @@ export type TContainerCheckResult =
 
 export interface IContainerCheckResult {
   container: IContainerInspectResult;
-  old_image: IImageInspectResult | null;
-  new_image: IImageInspectResult | null;
+  local_image: IImageInspectResult | null;
+  remote_image: IImageInspectResult | null;
+  local_digests: string[];
+  remote_digests: string[];
   result: TContainerCheckResult;
 }
 

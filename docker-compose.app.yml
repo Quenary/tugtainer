@@ -35,7 +35,7 @@ services:
     depends_on:
       - socket-proxy
     container_name: tugtainer
-    image: quenary/tugtainer:latest
+    image: ghcr.io/quenary/tugtainer:1
     volumes:
       - tugtainer_data:/tugtainer
       # You can uncomment this to mount socket directly,

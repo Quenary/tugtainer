@@ -41,6 +41,10 @@
       "Detailed instructions are available on GitHub."
     ]
   },
+  "UPDATE_DIALOGUE": {
+    "DEPLOY_GUIDELINE": "Deploy Guideline",
+    "RELEASE_NOTES": "Release Notes"
+  },
   "AUTH": {
     "PASSWORD": "Password",
     "CONFIRM_PASSWORD": "Confirm password",

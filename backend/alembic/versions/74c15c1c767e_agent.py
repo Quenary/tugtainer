@@ -7,10 +7,10 @@ Create Date: 2025-10-27 22:00:41.764622
 """
 
 from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import sqlite
+from dotenv import load_dotenv
+import os
 
 # revision identifiers, used by Alembic.
 revision: str = "74c15c1c767e"
@@ -69,7 +69,38 @@ def upgrade() -> None:
     op.execute(
         sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'")
     )
-
+    # add local agent if it doesn't exist
+    # this is possible when using socket-proxy
+    # so host entry was not added in the previous migration.
+    load_dotenv()
+    local_agent_enabled = (
+        os.getenv("AGENT_ENABLED", "true").lower() == "true"
+    )
+    if local_agent_enabled:
+        op.execute(
+            sa.text(
+                """
+                INSERT INTO hosts (name, url)
+                SELECT 'local', 'http://127.0.0.1:8001'
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM hosts
+                )
+                """
+            )
+        )
+    # update secret of local agent
+    # the agent could have been added earlier,
+    # or in the previous migration if docker.sock mounted
+    agent_secret = os.getenv("AGENT_SECRET")
+    if agent_secret:
+        op.execute(
+            sa.text(
+                """
+                UPDATE hosts SET secret = :secret
+                WHERE url == 'http://127.0.0.1:8001'
+                """
+            ).bindparams(secret=agent_secret)
+        )
 
 def downgrade() -> None:
     with op.batch_alter_table("hosts") as batch_op:

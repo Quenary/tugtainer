@@ -1,6 +1,67 @@
 # CHANGELOG
 
 
+## v1.17.5 (2026-01-26)
+
+### Bug Fixes
+
+- Duplicate supervisord logs [skip ci]
+  ([`3477d08`](https://github.com/Quenary/tugtainer/commit/3477d08e21e61da08d55d837998ccb870031069b))
+
+- **backend**: Add local agent entry on initial run when using socket-proxy
+  ([`aae46a8`](https://github.com/Quenary/tugtainer/commit/aae46a8292b35072e03ac629f51c82ae8370c2af))
+
+
+## v1.17.4 (2026-01-25)
+
+### Bug Fixes
+
+- **backend**: Re-request digests of local image if missing image_id in db
+  ([`b1ab824`](https://github.com/Quenary/tugtainer/commit/b1ab8245b8f6b69cdd4c9d18c93607f433e7d8f5))
+
+
+## v1.17.3 (2026-01-24)
+
+### Bug Fixes
+
+- **backend**: Add packaging module dep
+  ([`89fa839`](https://github.com/Quenary/tugtainer/commit/89fa8397ed6861e547e865cf3a8d0fcce40b0d54))
+
+### Documentation
+
+- Ghcr reg in readme and docker-compose
+  ([`67c8966`](https://github.com/Quenary/tugtainer/commit/67c896620d6c7bc059623f268e12acf5759459f7))
+
+
+## v1.17.2 (2026-01-24)
+
+### Bug Fixes
+
+- Tugtainer update check by github releases
+  ([`20b4ef3`](https://github.com/Quenary/tugtainer/commit/20b4ef36c89ed8b782e33c8379946a5759b263b7))
+
+- **backend**: Request local image digests if image changed
+  ([`0520f55`](https://github.com/Quenary/tugtainer/commit/0520f55746b70cf7f2a1421d2c73ad4d0a0f8821))
+
+
+## v1.17.1 (2026-01-22)
+
+### Bug Fixes
+
+- **frontend**: Host's agent address validation
+  ([#99](https://github.com/Quenary/tugtainer/pull/99),
+  [`f3b8bdf`](https://github.com/Quenary/tugtainer/commit/f3b8bdfc6e2d38260c99c6e83d8ffe7e4a656282))
+
+
+## v1.17.0 (2026-01-22)
+
+### Features
+
+- Check by manifests, don't pull images before updating
+  ([#98](https://github.com/Quenary/tugtainer/pull/98),
+  [`ffc053f`](https://github.com/Quenary/tugtainer/commit/ffc053f861b5201dfddb9bf48bc91a5b6ab3e8e3))
+
+
 ## v1.16.1 (2026-01-18)
 
 ### Bug Fixes

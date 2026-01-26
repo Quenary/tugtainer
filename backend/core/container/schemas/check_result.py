@@ -1,19 +1,14 @@
 from dataclasses import dataclass, field
 from typing import Literal
+from python_on_whales.components.buildx.imagetools.models import (
+    ImageVariantManifest,
+)
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-
-
-@dataclass
-class CheckContainerUpdateAvailableResult:
-    available: bool = False
-    image_spec: str | None = None
-    old_image: ImageInspectResult | None = None
-    new_image: ImageInspectResult | None = None
 
 
 ContainerCheckResultType = Literal[
@@ -28,10 +23,25 @@ ContainerCheckResultType = Literal[
 
 
 @dataclass
+class CheckContainerUpdateAvailableResult:
+    result: ContainerCheckResultType = None
+    image_spec: str | None = None
+    local_image: ImageInspectResult | None = None
+    local_digests: list[str] = field(
+        default_factory=list
+    )
+    remote_digests: list[str] = field(
+        default_factory=list
+    )
+
+
+@dataclass
 class ContainerCheckResult:
     container: ContainerInspectResult
-    old_image: ImageInspectResult | None
-    new_image: ImageInspectResult | None
+    local_image: ImageInspectResult | None
+    remote_image: ImageInspectResult | None
+    local_digests: list[str]
+    remote_digests: list[str]
     result: ContainerCheckResultType
 
 

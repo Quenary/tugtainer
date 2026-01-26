@@ -17,9 +17,6 @@ import logging
 from backend.exception import TugAgentClientError
 from aiohttp.client_exceptions import ClientError
 from backend.helpers.settings_storage import SettingsStorage
-from backend.helpers.self_container import (
-    clear_self_container_update_available,
-)
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter
 
 logging.basicConfig(
@@ -44,7 +41,6 @@ uvicorn_logger.addFilter(
 async def lifespan(app: FastAPI):
     # Code to run on startup
     await load_hosts_on_init()
-    await clear_self_container_update_available()
     await SettingsStorage.load_all()
     await schedule_check_on_init()
     yield  # App

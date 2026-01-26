@@ -2,6 +2,10 @@ from datetime import datetime
 from zoneinfo import available_timezones
 from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
+from python_on_whales.components.buildx.imagetools.models import (
+    ImageVariantManifest,
+    ManifestPlatform,
+)
 from python_on_whales.components.container.models import (
     ContainerConfig,
     ContainerHostConfig,
@@ -34,6 +38,7 @@ from backend.enums.cron_jobs_enum import ECronJob
 from backend.core.containers_core import check_all
 from backend.exception import TugException
 from jinja2.exceptions import TemplateError
+from shared.schemas.manifest_schema import ManifestInspectSchema
 
 VALID_TIMEZONES = available_timezones()
 
@@ -186,47 +191,64 @@ async def test_notification(data: TestNotificationRequestBody):
                 cmd=["/hello"],
             ),
         )
+        test_digests: list[str] = [
+            "sha256:f751174c3d8ae54b12575af320a4aa01bb3b6e61ab82aa1e4f8ecac8a079ce61",
+        ]
         items: list[ContainerCheckResult] = [
             ContainerCheckResult(
                 container=test_container,
-                old_image=None,
-                new_image=None,
+                local_image=None,
+                remote_image=None,
+                local_digests=[],
+                remote_digests=[],
                 result=None,
             ),
             ContainerCheckResult(
                 container=test_container,
-                old_image=test_image,
-                new_image=None,
+                local_image=test_image,
+                remote_image=None,
+                local_digests=test_digests,
+                remote_digests=[],
                 result="not_available",
             ),
             ContainerCheckResult(
                 container=test_container,
-                old_image=test_image,
-                new_image=test_image,
+                local_image=test_image,
+                remote_image=test_image,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="updated",
             ),
             ContainerCheckResult(
                 container=test_container,
-                old_image=test_image,
-                new_image=test_image,
+                local_image=test_image,
+                remote_image=test_image,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="available",
             ),
             ContainerCheckResult(
                 container=test_container,
-                old_image=test_image,
-                new_image=test_image,
+                local_image=test_image,
+                remote_image=test_image,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="available(notified)",
             ),
             ContainerCheckResult(
                 container=test_container,
-                old_image=test_image,
-                new_image=test_image,
+                local_image=test_image,
+                remote_image=test_image,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="rolled_back",
             ),
             ContainerCheckResult(
                 container=test_container,
-                old_image=test_image,
-                new_image=test_image,
+                local_image=test_image,
+                remote_image=test_image,
+                local_digests=test_digests,
+                remote_digests=test_digests,
                 result="failed",
             ),
         ]
