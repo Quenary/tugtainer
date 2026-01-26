@@ -13,4 +13,4 @@ from .images_schema import (
     ImageGetResponseBody,
     ImagePruneResponseBody,
 )
-from .hosts_schema import HostBase, HostInfo, HostStatusResponseBody
+from .hosts_schema import HostBase, HostInfo, HostStatusResponseBody, HostSummary
