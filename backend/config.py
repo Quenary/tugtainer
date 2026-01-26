@@ -19,6 +19,7 @@ class Config:
     PASSWORD_FILE: ClassVar[str]
     HTTPS: ClassVar[bool]
     DOMAIN: ClassVar[str | None]
+    ENABLE_PUBLIC_API: ClassVar[bool]
 
     # OIDC Configuration
     OIDC_ENABLED: ClassVar[bool]
@@ -64,6 +65,9 @@ class Config:
             )
             cls.HTTPS = os.getenv("HTTPS", "false").lower() == "true"
             cls.DOMAIN = os.getenv("DOMAIN")
+            cls.ENABLE_PUBLIC_API = (
+                os.getenv("ENABLE_PUBLIC_API", "false").lower() == "true"
+            )
 
             # OIDC Configuration
             cls.OIDC_ENABLED = (
