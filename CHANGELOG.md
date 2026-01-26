@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.18.0 (2026-01-26)
+
+### Features
+
+- **backend**: Hosts summary endpoint ([#97](https://github.com/Quenary/tugtainer/pull/97),
+  [`f0235b3`](https://github.com/Quenary/tugtainer/commit/f0235b337b164b2092b91faf716858b6f80b00e7))
+
+
 ## v1.17.5 (2026-01-26)
 
 ### Bug Fixes
