@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.19.0 (2026-01-27)
+
+### Features
+
+- Toggle host ssl verification ([#103](https://github.com/Quenary/tugtainer/pull/103),
+  [`7f47bab`](https://github.com/Quenary/tugtainer/commit/7f47babb4d25162ab2834cedc8b4eaeb4cbcab06))
+
+
 ## v1.18.0 (2026-01-26)
 
 ### Features
