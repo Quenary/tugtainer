@@ -93,6 +93,8 @@
         "URL": "Agent address",
         "URL_PLACEHOLDER": "http://127.0.0.1:8001",
         "SECRET": "Agent secret",
+        "SSL": "SSL",
+        "SSL_HINT": "Whether to use SSL verification for backend > agent requests.",
         "TIMEOUT": "Agent timeout",
         "TIMEOUT_HINT": "Timeout in seconds for typically fast agent requests. It does not affect potentially long requests such as container create or image pull.",
         "CONTAINER_HC_TIMEOUT": "Container healthcheck timeout",

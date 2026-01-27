@@ -9,6 +9,7 @@ class HostBase(BaseModel):
     prune_all: bool
     url: str
     secret: Optional[str] = None
+    ssl: bool
     timeout: int
     container_hc_timeout: int
 

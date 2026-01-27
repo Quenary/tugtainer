@@ -43,6 +43,12 @@ class HostsModel(BaseModel):
     secret: Mapped[Optional[str]] = mapped_column(
         String, nullable=True
     )
+    ssl: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("TRUE"),
+    )
     timeout: Mapped[int] = mapped_column(
         Integer, nullable=False, default=5, server_default=text("5")
     )

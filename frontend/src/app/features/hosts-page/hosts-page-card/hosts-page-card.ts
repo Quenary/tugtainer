@@ -124,6 +124,7 @@ export class HostsPageCard implements OnInit {
       Validators.pattern(/^(http|https):\/\//),
     ]),
     secret: new FormControl<string>(null),
+    ssl: new FormControl<boolean>(true),
     timeout: new FormControl<number>(null, [Validators.required]),
     container_hc_timeout: new FormControl(null, [Validators.required]),
   });
