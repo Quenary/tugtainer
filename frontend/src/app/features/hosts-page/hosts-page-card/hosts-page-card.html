@@ -121,6 +121,25 @@
             </label>
           </p-iftaLabel>
 
+          <span
+            class="switch-field"
+            fluid
+          >
+            <p-toggle-switch
+              [inputId]="'host-ssl'"
+              formControlName="ssl"
+            ></p-toggle-switch>
+            <label for="host-ssl">
+              {{ 'HOSTS.CARD.GENERAL.SSL' | translate }}
+              <i
+                class="pi pi-question-circle"
+                style="margin: 0 0.5rem"
+                [pTooltip]="'HOSTS.CARD.GENERAL.SSL_HINT' | translate"
+                tooltipPosition="left"
+              ></i>
+            </label>
+          </span>
+
           <p-iftaLabel fluid>
             <p-iconfield>
               <p-input-number

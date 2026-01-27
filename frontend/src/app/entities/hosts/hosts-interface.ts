@@ -5,6 +5,7 @@ export interface ICreateHost {
   prune_all: boolean;
   url: string;
   secret: string;
+  ssl: boolean;
   timeout: number;
   container_hc_timeout: number;
 }

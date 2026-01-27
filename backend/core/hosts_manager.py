@@ -53,7 +53,7 @@ class HostsManager:
         filtered = {
             k: v
             for k, v in info.model_dump(exclude_unset=True).items()
-            if k in allowed_keys and v
+            if k in allowed_keys and v != None
         }
         return AgentClient(**filtered)
 

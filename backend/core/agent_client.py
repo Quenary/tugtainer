@@ -8,9 +8,6 @@ from python_on_whales.components.container.models import (
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-from python_on_whales.components.manifest.cli_wrapper import (
-    ManifestList,
-)
 from backend.exception import TugAgentClientError
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
@@ -39,6 +36,7 @@ class AgentClient:
         url: str,
         secret: str | None = None,
         timeout: int = 5,
+        ssl: bool = True,
     ):
         self._id = id
         self._url = url
@@ -47,6 +45,7 @@ class AgentClient:
         self._long_timeout = (
             600  # timeout for potentially long requests
         )
+        self._ssl = ssl
         self.public = AgentClientPublic(self)
         self.container = AgentClientContainer(self)
         self.image = AgentClientImage(self)
@@ -84,6 +83,7 @@ class AgentClient:
                 headers=headers,
                 json=_body,
                 params=params,
+                ssl=self._ssl,
             ) as resp:
                 # Parse error manually to get detail
                 if resp.status >= 400:
