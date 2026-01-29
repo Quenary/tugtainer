@@ -144,6 +144,14 @@
       "JSON": "JSON",
       "TREE": "Tree"
     },
+    "LOGS": {
+      "LABEL": "Logs",
+      "SINCE": "Since",
+      "UNTIL": "Until",
+      "TAIL": "Tail",
+      "DETAILS": "Show details",
+      "TIMESTAMPS": "Show timestamps"
+    },
     "COMMANDS": {
       "START": "Start",
       "STOP": "Stop",

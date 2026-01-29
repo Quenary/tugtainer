@@ -8,6 +8,7 @@ from agent.docker_client import DOCKER
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
     CreateContainerRequestBodySchema,
+    GetContainerLogsRequestBody,
 )
 from agent.unil.asyncall import asyncall
 
@@ -96,6 +97,7 @@ async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
     )
     return name_or_id
 
+
 @router.post(
     "/restart/{name_or_id}",
     description="Restart container",
@@ -120,6 +122,7 @@ async def kill(name_or_id: str, _=Depends(is_exists)) -> str:
         asyncall_timeout=600,
     )
     return name_or_id
+
 
 @router.post(
     "/pause/{name_or_id}",
@@ -158,3 +161,20 @@ async def remove(name_or_id: str, _=Depends(is_exists)) -> str:
         asyncall_timeout=600,
     )
     return name_or_id
+
+
+@router.post(
+    path="/logs/{name_or_id}",
+    description="Get log of container",
+    response_model=str,
+)
+async def logs(
+    name_or_id: str,
+    body: GetContainerLogsRequestBody,
+    _=Depends(is_exists),
+):
+    return await asyncall(
+        lambda: DOCKER.container.logs(
+            name_or_id, **body.model_dump(exclude_unset=True)
+        )
+    )

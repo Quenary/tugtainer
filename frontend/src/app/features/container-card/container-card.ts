@@ -36,6 +36,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ContainerActions } from 'src/app/shared/components/container-actions/container-actions';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { FormsModule } from '@angular/forms';
+import { ContainerCardLogs } from './container-card-logs/container-card-logs';
 
 @Component({
   selector: 'app-container-card',
@@ -57,6 +58,7 @@ import { FormsModule } from '@angular/forms';
     ContainerActions,
     ToggleSwitchModule,
     FormsModule,
+    ContainerCardLogs,
   ],
   templateUrl: './container-card.html',
   styleUrl: './container-card.scss',
@@ -68,10 +70,10 @@ export class ContainerCard {
   private readonly containersApiService = inject(ContainersApiService);
   private readonly location = inject(Location);
 
-  private readonly hostId = toSignal(
+  protected readonly hostId = toSignal(
     this.activatedRoute.params.pipe(map((params) => Number(params.hostId) || null)),
   );
-  private readonly containerNameOrId = toSignal(
+  protected readonly containerNameOrId = toSignal(
     this.activatedRoute.params.pipe(map((params) => params.containerNameOrId)),
   );
 
@@ -92,6 +94,9 @@ export class ContainerCard {
 
   protected readonly EContainerStatusSeverity = EContainerStatusSeverity;
   protected readonly EContainerHealthSeverity = EContainerHealthSeverity;
+  /**
+   * Value of opened accordion items
+   */
   protected readonly accordionValue = signal<string | number | string[] | number[]>('general');
   /**
    * General info

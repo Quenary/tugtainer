@@ -13,6 +13,7 @@ from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
     CreateContainerRequestBodySchema,
+    GetContainerLogsRequestBody,
 )
 from backend.db.models import HostsModel
 from backend.schemas.hosts_schema import HostInfo
@@ -24,6 +25,7 @@ from shared.schemas.image_schemas import (
     TagImageRequestBodySchema,
 )
 from shared.schemas.manifest_schema import ManifestInspectSchema
+from shared.util.custom_json_dumps import custom_json_dumps
 from shared.util.signature import get_signature_headers
 import aiohttp
 import logging
@@ -75,7 +77,8 @@ class AgentClient:
             params=params,
         )
         async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=timeout)
+            timeout=aiohttp.ClientTimeout(total=timeout),
+            json_serialize=custom_json_dumps,
         ) as session:
             async with session.request(
                 method,
@@ -234,6 +237,19 @@ class AgentClientContainer:
         data = await self._agent_client._request(
             "DELETE",
             f"/api/container/remove/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data)
+
+    async def logs(
+        self,
+        name_or_id: str,
+        body: GetContainerLogsRequestBody,
+    ) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            f"/api/container/logs/{name_or_id}",
+            body=body,
             timeout=self._agent_client._long_timeout,
         )
         return str(data)
