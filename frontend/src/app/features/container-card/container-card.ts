@@ -37,6 +37,7 @@ import { ContainerActions } from 'src/app/shared/components/container-actions/co
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { FormsModule } from '@angular/forms';
 import { ContainerCardLogs } from './container-card-logs/container-card-logs';
+import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-field';
 
 @Component({
   selector: 'app-container-card',
@@ -59,6 +60,7 @@ import { ContainerCardLogs } from './container-card-logs/container-card-logs';
     ToggleSwitchModule,
     FormsModule,
     ContainerCardLogs,
+    BooleanField,
   ],
   templateUrl: './container-card.html',
   styleUrl: './container-card.scss',

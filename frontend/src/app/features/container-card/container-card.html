@@ -34,7 +34,7 @@
     <p-accordion-content>
       @if (item(); as _item) {
         <section class="general-content">
-          <div class="general-content-switch">
+          <app-boolean-field>
             <p-toggle-switch
               inputId="container-check-enabled"
               [ngModel]="_item.check_enabled"
@@ -43,9 +43,9 @@
             <label for="container-check-enabled">
               {{ 'CONTAINERS.CHECK' | translate }}
             </label>
-          </div>
+          </app-boolean-field>
           @if (!_item.protected) {
-            <div class="general-content-switch">
+            <app-boolean-field>
               <p-toggle-switch
                 inputId="container-update-enabled"
                 [ngModel]="_item.update_enabled"
@@ -54,7 +54,7 @@
               <label for="container-update-enabled">
                 {{ 'CONTAINERS.UPDATE' | translate }}
               </label>
-            </div>
+            </app-boolean-field>
           }
           <section class="general-content-state">
             @if (_item.protected) {
@@ -89,7 +89,7 @@
             ></p-tag>
           </section>
 
-          <p-ifta-label class="general-content-field">
+          <p-ifta-label>
             <input
               id="container-name"
               pInputText
@@ -101,7 +101,7 @@
             </label>
           </p-ifta-label>
 
-          <p-ifta-label class="general-content-field">
+          <p-ifta-label>
             <input
               id="container-image"
               pInputText
@@ -113,8 +113,10 @@
             </label>
           </p-ifta-label>
 
-          <p-ifta-label class="general-content-field">
+          <p-ifta-label style="width: 100%">
             <textarea
+              fluid
+              style="resize: none"
               id="container-id"
               pTextarea
               readonly
@@ -126,8 +128,10 @@
             </label>
           </p-ifta-label>
 
-          <p-ifta-label class="general-content-field">
+          <p-ifta-label style="width: 100%">
             <textarea
+              fluid
+              style="resize: none"
               id="container-ports"
               pTextarea
               readonly
@@ -139,7 +143,7 @@
             </label>
           </p-ifta-label>
 
-          <p-ifta-label class="general-content-field">
+          <p-ifta-label>
             <input
               id="container-checked-at"
               pInputText
@@ -151,7 +155,7 @@
             </label>
           </p-ifta-label>
 
-          <p-ifta-label class="general-content-field">
+          <p-ifta-label>
             <input
               id="container-updated-at"
               pInputText

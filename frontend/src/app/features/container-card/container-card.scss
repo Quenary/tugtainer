@@ -9,32 +9,18 @@
   }
 
   .general-content {
-    & > * {
-      margin-bottom: 1rem;
-    }
-
-    &-switch {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
 
     &-state {
-      display: flex;
+      flex-basis: 100%;
+      display: inline-flex;
+      align-items: center;
       gap: 1rem;
       flex-wrap: wrap;
-    }
-
-    &-field {
-      width: 100%;
-
-      & > * {
-        width: 100%;
-      }
-
-      textarea {
-        resize: none;
-      }
     }
   }
 }

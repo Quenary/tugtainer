@@ -27,6 +27,7 @@ import { ToastService } from 'src/app/core/services/toast.service';
 import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
 import { ImagesApiService } from 'src/app/entities/images/images-api.service';
 import { IImage, IPruneImageRequestBodySchema } from 'src/app/entities/images/images-interface';
+import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-field';
 
 @Component({
   selector: 'app-images-page-table',
@@ -47,6 +48,7 @@ import { IImage, IPruneImageRequestBodySchema } from 'src/app/entities/images/im
     FormsModule,
     NgStyle,
     ToolbarModule,
+    BooleanField,
   ],
   providers: [ConfirmationService],
   templateUrl: './images-page-table.html',

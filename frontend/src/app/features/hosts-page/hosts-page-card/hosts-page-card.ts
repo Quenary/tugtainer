@@ -41,6 +41,7 @@ import { DeployGuidelineUrl } from 'src/app/app.consts';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-field';
 
 @Component({
   selector: 'app-host-page-card',
@@ -64,6 +65,7 @@ import { InputIconModule } from 'primeng/inputicon';
     InputNumberModule,
     IconFieldModule,
     InputIconModule,
+    BooleanField,
   ],
   providers: [ConfirmationService],
   templateUrl: './hosts-page-card.html',

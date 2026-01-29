@@ -35,10 +35,7 @@
       </p-accordion-header>
       <p-accordion-content>
         <section class="accordion-content">
-          <span
-            class="switch-field"
-            fluid
-          >
+          <app-boolean-field style="width: 100%">
             <p-toggle-switch
               [inputId]="'host-enabled'"
               formControlName="enabled"
@@ -46,12 +43,9 @@
             <label for="host-enabled">
               {{ 'HOSTS.CARD.GENERAL.ENABLED' | translate }}
             </label>
-          </span>
+          </app-boolean-field>
 
-          <span
-            class="switch-field"
-            fluid
-          >
+          <app-boolean-field>
             <p-toggle-switch
               [inputId]="'host-prune'"
               formControlName="prune"
@@ -65,7 +59,9 @@
                 tooltipPosition="left"
               ></i>
             </label>
+          </app-boolean-field>
 
+          <app-boolean-field>
             <p-toggle-switch
               [inputId]="'host-prune-all'"
               formControlName="prune_all"
@@ -79,9 +75,25 @@
                 tooltipPosition="left"
               ></i>
             </label>
-          </span>
+          </app-boolean-field>
 
-          <p-iftaLabel fluid>
+          <app-boolean-field>
+            <p-toggle-switch
+              [inputId]="'host-ssl'"
+              formControlName="ssl"
+            ></p-toggle-switch>
+            <label for="host-ssl">
+              {{ 'HOSTS.CARD.GENERAL.SSL' | translate }}
+              <i
+                class="pi pi-question-circle"
+                style="margin: 0 0.5rem"
+                [pTooltip]="'HOSTS.CARD.GENERAL.SSL_HINT' | translate"
+                tooltipPosition="left"
+              ></i>
+            </label>
+          </app-boolean-field>
+
+          <p-iftaLabel style="width: 100%">
             <input
               fluid
               pInputText
@@ -93,7 +105,7 @@
             </label>
           </p-iftaLabel>
 
-          <p-iftaLabel fluid>
+          <p-iftaLabel style="width: 100%">
             <input
               fluid
               pInputText
@@ -106,7 +118,7 @@
             </label>
           </p-iftaLabel>
 
-          <p-iftaLabel fluid>
+          <p-iftaLabel style="width: 100%">
             <p-password
               fluid
               [inputId]="'host-secret'"
@@ -121,26 +133,7 @@
             </label>
           </p-iftaLabel>
 
-          <span
-            class="switch-field"
-            fluid
-          >
-            <p-toggle-switch
-              [inputId]="'host-ssl'"
-              formControlName="ssl"
-            ></p-toggle-switch>
-            <label for="host-ssl">
-              {{ 'HOSTS.CARD.GENERAL.SSL' | translate }}
-              <i
-                class="pi pi-question-circle"
-                style="margin: 0 0.5rem"
-                [pTooltip]="'HOSTS.CARD.GENERAL.SSL_HINT' | translate"
-                tooltipPosition="left"
-              ></i>
-            </label>
-          </span>
-
-          <p-iftaLabel fluid>
+          <p-iftaLabel style="width: 100%">
             <p-iconfield>
               <p-input-number
                 fluid
@@ -158,7 +151,7 @@
             </label>
           </p-iftaLabel>
 
-          <p-iftaLabel fluid>
+          <p-iftaLabel style="width: 100%">
             <p-iconfield>
               <p-input-number
                 fluid

@@ -11,13 +11,7 @@
       }"
     >
       <span>{{ message.message }}</span>
-      <span
-        [ngStyle]="{
-          display: 'inline-flex',
-          gap: '0.5rem',
-          alignItems: 'center',
-        }"
-      >
+      <app-boolean-field>
         <p-toggle-switch
           [(ngModel)]="pruneAll"
           inputId="prune-all-confirm-toggle"
@@ -31,7 +25,7 @@
             tooltipPosition="left"
           ></i>
         </label>
-      </span>
+      </app-boolean-field>
     </section>
   </ng-template>
 </p-confirmpopup>

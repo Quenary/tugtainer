@@ -3,14 +3,16 @@
   gap: 0.5rem;
   font-size: 1rem;
   align-items: center;
-  color: var(--p-iftalabel-color);
+
+  ::ng-deep label {
+    display: inline-flex;
+    align-items: center;
+  }
 
   &:not(:has(input:disabled)),
   &:not(:has(input:read-only)) {
-    ::ng-deep {
-      label {
-        cursor: pointer;
-      }
+    ::ng-deep label {
+      cursor: pointer;
     }
   }
 }
