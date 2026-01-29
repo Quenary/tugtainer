@@ -1,7 +1,12 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../base/base-api.service';
 import { Observable, repeat, takeWhile } from 'rxjs';
-import { IContainerListItem, IContainerPatchBody, IContainerInfo } from './containers-interface';
+import {
+  IContainerListItem,
+  IContainerPatchBody,
+  IContainerInfo,
+  TControlContainerCommand,
+} from './containers-interface';
 import { ECheckStatus, IBaseCheckProgressCache } from '../progress-cache/progress-cache.interface';
 
 @Injectable({
@@ -60,6 +65,24 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
     return this.progress<T>(cache_id).pipe(
       repeat({ delay: 500 }),
       takeWhile((res) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(res?.status), true),
+    );
+  }
+
+  /**
+   * Control container state with basic commands
+   * @param hostId
+   * @param command
+   * @param containerNameOrId
+   * @returns
+   */
+  controlContainer(
+    hostId: number,
+    command: TControlContainerCommand,
+    containerNameOrId: string,
+  ): Observable<IContainerInfo> {
+    return this.httpClient.post<IContainerInfo>(
+      `${this.basePath}/${hostId}/${command}/${containerNameOrId}`,
+      {},
     );
   }
 }

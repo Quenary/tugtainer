@@ -105,3 +105,5 @@ export const EContainerHealthSeverity: Record<string, string> = {
   healthy: 'success',
   unhealthy: 'danger',
 };
+
+export type TControlContainerCommand = 'start' | 'stop' | 'restart' | 'kill' | 'pause' | 'unpause';

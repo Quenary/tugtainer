@@ -198,6 +198,38 @@ class AgentClientContainer:
         )
         return str(data)
 
+    async def restart(self, name_or_id: str) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            f"/api/container/restart/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data)
+
+    async def kill(self, name_or_id: str) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            f"/api/container/kill/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data)
+
+    async def pause(self, name_or_id: str) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            f"/api/container/pause/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data)
+
+    async def unpause(self, name_or_id: str) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            f"/api/container/unpause/{name_or_id}",
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data)
+
     async def remove(self, name_or_id: str) -> str:
         data = await self._agent_client._request(
             "DELETE",

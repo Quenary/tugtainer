@@ -96,6 +96,56 @@ async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
     )
     return name_or_id
 
+@router.post(
+    "/restart/{name_or_id}",
+    description="Restart container",
+    response_model=str,
+)
+async def restart(name_or_id: str, _=Depends(is_exists)) -> str:
+    __ = await asyncall(
+        lambda: DOCKER.container.restart(name_or_id),
+        asyncall_timeout=600,
+    )
+    return name_or_id
+
+
+@router.post(
+    "/kill/{name_or_id}",
+    description="Kill container",
+    response_model=str,
+)
+async def kill(name_or_id: str, _=Depends(is_exists)) -> str:
+    __ = await asyncall(
+        lambda: DOCKER.container.kill(name_or_id),
+        asyncall_timeout=600,
+    )
+    return name_or_id
+
+@router.post(
+    "/pause/{name_or_id}",
+    description="Pause container",
+    response_model=str,
+)
+async def pause(name_or_id: str, _=Depends(is_exists)) -> str:
+    __ = await asyncall(
+        lambda: DOCKER.container.pause(name_or_id),
+        asyncall_timeout=600,
+    )
+    return name_or_id
+
+
+@router.post(
+    "/unpause/{name_or_id}",
+    description="Unpause container",
+    response_model=str,
+)
+async def unpause(name_or_id: str, _=Depends(is_exists)) -> str:
+    __ = await asyncall(
+        lambda: DOCKER.container.unpause(name_or_id),
+        asyncall_timeout=600,
+    )
+    return name_or_id
+
 
 @router.delete(
     "/remove/{name_or_id}",

@@ -14,6 +14,7 @@ import { ContainersApiService } from 'src/app/entities/containers/containers-api
 import {
   EContainerHealthSeverity,
   EContainerStatusSeverity,
+  IContainerInfo,
   IContainerPatchBody,
 } from 'src/app/entities/containers/containers-interface';
 import { TreeModule } from 'primeng/tree';
@@ -202,5 +203,12 @@ export class ContainerCard {
         this.info.reload();
       },
     });
+  }
+
+  protected onControlDone(info: IContainerInfo): void {
+    this.info.set(info);
+    setTimeout(() => {
+      this.info.reload();
+    }, 5000);
   }
 }
