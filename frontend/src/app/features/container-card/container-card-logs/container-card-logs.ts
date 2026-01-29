@@ -34,8 +34,8 @@ export class ContainerCardLogs {
   private readonly containersApiService = inject(ContainersApiService);
   private readonly toastService = inject(ToastService);
 
-  public readonly hostId = input<number>();
-  public readonly containerNameOrId = input<string>();
+  public readonly hostId = input.required<number>();
+  public readonly containerNameOrId = input.required<string>();
 
   protected readonly form = new FormGroup<TInterfaceToForm<IGetContainerLogsRequestBody>>({
     tail: new FormControl<number>(100),

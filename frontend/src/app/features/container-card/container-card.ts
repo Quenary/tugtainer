@@ -17,9 +17,6 @@ import {
   IContainerInfo,
   IContainerPatchBody,
 } from 'src/app/entities/containers/containers-interface';
-import { TreeModule } from 'primeng/tree';
-import { TreeNode } from 'primeng/api';
-import { isPremitive } from 'src/app/shared/functions/is-premitive.function';
 import { AccordionModule } from 'primeng/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DatePipe, Location } from '@angular/common';
@@ -27,7 +24,6 @@ import { IftaLabelModule } from 'primeng/iftalabel';
 import { InputTextModule } from 'primeng/inputtext';
 import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
 import { TextareaModule } from 'primeng/textarea';
-import { TabsModule } from 'primeng/tabs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
 import { ToggleButtonModule } from 'primeng/togglebutton';
@@ -38,11 +34,11 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { FormsModule } from '@angular/forms';
 import { ContainerCardLogs } from './container-card-logs/container-card-logs';
 import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-field';
+import { ContainerCardInspect } from './container-card-inspect/container-card-inspect';
 
 @Component({
   selector: 'app-container-card',
   imports: [
-    TreeModule,
     AccordionModule,
     TranslatePipe,
     IftaLabelModule,
@@ -50,7 +46,6 @@ import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-fi
     DatePipe,
     NaiveDatePipe,
     TextareaModule,
-    TabsModule,
     ToolbarModule,
     ButtonModule,
     ToggleButtonModule,
@@ -61,6 +56,7 @@ import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-fi
     FormsModule,
     ContainerCardLogs,
     BooleanField,
+    ContainerCardInspect
   ],
   templateUrl: './container-card.html',
   styleUrl: './container-card.scss',
@@ -136,58 +132,6 @@ export class ContainerCard {
     const itemPorts = this.itemPorts();
     return itemPorts.split('\n').length;
   });
-  /**
-   * Inspect json value
-   */
-  protected readonly inspectJson = computed(() => {
-    const info = this.info.value();
-    if (info?.inspect) {
-      return JSON.stringify(info.inspect, null, 2).trim();
-    }
-    return null;
-  });
-  /**
-   * Inspect tree value
-   */
-  protected readonly inspectTree = computed<TreeNode[]>(() => {
-    const info = this.info.value();
-    if (info?.inspect) {
-      const root = this.getTree(info.inspect, 'root');
-      return root.children;
-    }
-    return [];
-  });
-
-  private getTree(value: unknown, key: string): TreeNode {
-    if (isPremitive(value)) {
-      return {
-        label: key != null ? `${key}: ${String(value)}` : String(value),
-        data: value,
-        leaf: true,
-      };
-    }
-
-    if (Array.isArray(value)) {
-      return {
-        label: key != null ? key : 'Array',
-        data: value,
-        children: value.map((item, index) => {
-          const child = this.getTree(item, index.toString());
-          return child;
-        }),
-        leaf: value.length === 0,
-      };
-    }
-
-    const children: TreeNode[] = Object.entries(value).map(([k, v]) => this.getTree(v, k));
-
-    return {
-      label: key,
-      data: value,
-      children,
-      leaf: children.length === 0,
-    };
-  }
 
   /**
    * Navigate back

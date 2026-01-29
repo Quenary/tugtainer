@@ -1,0 +1,28 @@
+<p-tabs
+  lazy
+  value="json"
+>
+  <p-tablist>
+    <p-tab value="json">
+      {{ 'CONTAINERS.INSPECT.JSON' | translate }}
+    </p-tab>
+    <p-tab value="tree">
+      {{ 'CONTAINERS.INSPECT.TREE' | translate }}
+    </p-tab>
+  </p-tablist>
+  <p-tabpanels>
+    <p-tabpanel value="json">
+      <div style="overflow-x: auto">
+        <code style="white-space: pre">
+          {{ inspectJson() }}
+        </code>
+      </div>
+    </p-tabpanel>
+    <p-tabpanel value="tree">
+      <p-tree
+        style="padding: 0"
+        [value]="inspectTree()"
+      ></p-tree>
+    </p-tabpanel>
+  </p-tabpanels>
+</p-tabs>

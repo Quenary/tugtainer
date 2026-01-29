@@ -3,6 +3,17 @@
   class="logs-form"
 >
   <p-ifta-label>
+    <p-input-number
+      [inputId]="'container-logs-tail'"
+      formControlName="tail"
+    >
+    </p-input-number>
+    <label for="container-logs-tail">
+      {{ 'CONTAINERS.LOGS.TAIL' | translate }}
+    </label>
+  </p-ifta-label>
+
+  <p-ifta-label>
     <p-date-picker
       [inputId]="'container-logs-since'"
       formControlName="since"
@@ -27,17 +38,6 @@
     ></p-date-picker>
     <label for="container-logs-until">
       {{ 'CONTAINERS.LOGS.UNTIL' | translate }}
-    </label>
-  </p-ifta-label>
-
-  <p-ifta-label>
-    <p-input-number
-      [inputId]="'container-logs-tail'"
-      formControlName="tail"
-    >
-    </p-input-number>
-    <label for="container-logs-tail">
-      {{ 'CONTAINERS.LOGS.TAIL' | translate }}
     </label>
   </p-ifta-label>
 
