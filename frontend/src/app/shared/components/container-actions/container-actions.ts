@@ -1,4 +1,5 @@
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -16,7 +17,11 @@ import { TooltipModule } from 'primeng/tooltip';
 import { finalize } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
-import { IContainerListItem } from 'src/app/entities/containers/containers-interface';
+import {
+  IContainerInfo,
+  IContainerListItem,
+  TControlContainerCommand,
+} from 'src/app/entities/containers/containers-interface';
 import { IGroupCheckProgressCache } from 'src/app/entities/progress-cache/progress-cache.interface';
 
 /**
@@ -40,6 +45,11 @@ export class ContainerActions {
    */
   public readonly item = input.required<IContainerListItem>();
   /**
+   * Whether to show container control buttons
+   * @default false
+   */
+  public readonly withControl = input(false, { transform: booleanAttribute });
+  /**
    * Continuos progress events
    */
   public readonly onProgress = output<IGroupCheckProgressCache>();
@@ -48,9 +58,22 @@ export class ContainerActions {
    */
   public readonly onDone = output<void>();
   /**
+   * Container control result event
+   */
+  public readonly onControlDone = output<IContainerInfo>();
+
+  /**
    * Loading flag
    */
-  protected readonly loading = signal<'check' | 'update'>(null);
+  protected readonly loading = signal<'check' | 'update' | 'command'>(null);
+  /**
+   * Whether to show container control buttons (internal)
+   */
+  protected readonly showControlButtons = computed<boolean>(() => {
+    const item = this.item();
+    const withCommands = this.withControl();
+    return withCommands && !!item && !item.protected;
+  });
   /**
    * Container cannot be updated
    */
@@ -98,5 +121,21 @@ export class ContainerActions {
           });
       },
     });
+  }
+
+  protected controlContainer(command: TControlContainerCommand): void {
+    const item = this.item();
+    this.loading.set('command');
+    this.containersApiService
+      .controlContainer(item.host_id, command, item.container_id)
+      .pipe(finalize(() => this.loading.set(null)))
+      .subscribe({
+        next: (result) => {
+          this.onControlDone.emit(result);
+        },
+        error: (error) => {
+          this.toastService.error(error, this.translateService.instant('GENERAL.ERROR'));
+        },
+      });
   }
 }

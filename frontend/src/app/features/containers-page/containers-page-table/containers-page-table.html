@@ -17,6 +17,7 @@
       icon="pi pi-refresh"
       [loading]="list.isLoading()"
       text
+      rounded
       (onClick)="list.reload()"
     ></p-button>
   </ng-template>
@@ -110,8 +111,14 @@
     #body
     let-container
   >
-    <tr routerLink="/hosts/{{ container.host_id }}/{{ container.name || container.container_id }}">
+    <tr>
       <td>
+        <p-button
+          text
+          icon="pi pi-external-link"
+          rounded
+          routerLink="/hosts/{{ container.host_id }}/{{ container.name || container.container_id }}"
+        ></p-button>
         {{ container.name }}
         @if (container.protected) {
           <p-tag
@@ -155,7 +162,6 @@
           [offLabel]="'GENERAL.OFF' | translate"
           [onIcon]="'pi pi-check-circle'"
           [offIcon]="'pi pi-circle-off'"
-          (click)="$event.stopPropagation()"
         />
       </td>
       <td>
@@ -168,15 +174,13 @@
             [offLabel]="'GENERAL.OFF' | translate"
             [onIcon]="'pi pi-check-circle'"
             [offIcon]="'pi pi-circle-off'"
-            (click)="$event.stopPropagation()"
           />
         }
       </td>
-      <td style="padding-right: 0;">
+      <td style="padding-right: 0">
         <app-container-actions
           [item]="container"
           (onDone)="onContainerProgressDone()"
-          (click)="$event.stopPropagation()"
         ></app-container-actions>
       </td>
     </tr>

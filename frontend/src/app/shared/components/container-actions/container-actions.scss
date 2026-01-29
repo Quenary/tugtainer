@@ -2,4 +2,14 @@
   display: flex;
   justify-content: flex-end;
   width: 100%;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .control-buttons {
+    display: inline-flex;
+    overflow: hidden;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
 }

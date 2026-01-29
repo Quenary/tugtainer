@@ -143,6 +143,14 @@
       "LABEL": "Inspect",
       "JSON": "JSON",
       "TREE": "Tree"
+    },
+    "COMMANDS": {
+      "START": "Start",
+      "STOP": "Stop",
+      "RESTART": "Restart",
+      "KILL": "Kill",
+      "PAUSE": "Pause",
+      "UNPAUSE": "Unpause"
     }
   },
   "IMAGES": {

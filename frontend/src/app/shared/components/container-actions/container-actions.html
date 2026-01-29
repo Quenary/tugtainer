@@ -1,4 +1,64 @@
 @let _loading = loading();
+@let _item = item();
+
+@if (showControlButtons()) {
+  <section class="control-buttons">
+    <p-button
+      [loading]="!!_loading"
+      [label]="'CONTAINERS.COMMANDS.START' | translate"
+      icon="pi pi-play"
+      severity="contrast"
+      [disabled]="!['created', 'exited'].includes(_item.status)"
+      (onClick)="controlContainer('start')"
+    >
+    </p-button>
+    <p-button
+      [loading]="!!_loading"
+      [label]="'CONTAINERS.COMMANDS.STOP' | translate"
+      icon="pi pi-stop"
+      severity="contrast"
+      [disabled]="['created', 'exited', 'dead', 'removing'].includes(_item.status)"
+      (onClick)="controlContainer('stop')"
+    >
+    </p-button>
+    <p-button
+      [loading]="!!_loading"
+      [label]="'CONTAINERS.COMMANDS.RESTART' | translate"
+      icon="pi pi-sync"
+      severity="contrast"
+      [disabled]="['created', 'removing'].includes(_item.status)"
+      (onClick)="controlContainer('restart')"
+    >
+    </p-button>
+    <p-button
+      [loading]="!!_loading"
+      [label]="'CONTAINERS.COMMANDS.KILL' | translate"
+      icon="pi pi-ban"
+      severity="contrast"
+      [disabled]="['created', 'exited', 'dead', 'removing'].includes(_item.status)"
+      (onClick)="controlContainer('kill')"
+    >
+    </p-button>
+    <p-button
+      [loading]="!!_loading"
+      [label]="'CONTAINERS.COMMANDS.PAUSE' | translate"
+      icon="pi pi-pause"
+      severity="contrast"
+      [disabled]="_item.status != 'running'"
+      (onClick)="controlContainer('pause')"
+    >
+    </p-button>
+    <p-button
+      [loading]="!!_loading"
+      [label]="'CONTAINERS.COMMANDS.UNPAUSE' | translate"
+      icon="pi pi-forward"
+      severity="contrast"
+      [disabled]="_item.status != 'paused'"
+      (onClick)="controlContainer('unpause')"
+    >
+    </p-button>
+  </section>
+}
 
 <p-button-group>
   <p-button
@@ -19,7 +79,6 @@
 </p-button-group>
 
 <ng-template #updateButtonTooltip>
-  @let _item = item();
   @if (_item.status != 'running') {
     {{ 'CONTAINERS.UPDATE_DISABLED_HINTS.NOT_RUNNING' | translate }}
   }

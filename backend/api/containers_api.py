@@ -1,8 +1,13 @@
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Any, Awaitable, Callable, Literal
+from fastapi import APIRouter, Depends, HTTPException, status
+from python_on_whales.components.container.models import (
+    ContainerInspectResult,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core.auth.auth_provider_chore import is_authorized
+from backend.core.container.util import is_protected_container
 from backend.db.models.hosts_model import HostsModel
 from backend.schemas.containers_schema import (
     ContainerGetResponseBody,
@@ -49,6 +54,15 @@ def _raise_for_host_status(host: HostsModel):
     """Raise an error if host disabled"""
     if not host.enabled:
         raise HTTPException(409, "Host disabled")
+
+
+def _raise_for_protected_container(container: ContainerInspectResult):
+    """Raise an error if container is protected"""
+    if is_protected_container(container):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Protected container not allowed",
+        )
 
 
 @router.get(
@@ -208,6 +222,64 @@ async def check_container_ep(
 )
 def progress(
     cache_id: str,
-) -> AllCheckProgressCache | HostCheckProgressCache | GroupCheckProgressCache | None:
+) -> (
+    AllCheckProgressCache
+    | HostCheckProgressCache
+    | GroupCheckProgressCache
+    | None
+):
     CACHE = ProcessCache(cache_id)
     return CACHE.get()
+
+
+ControlContainerCommand = Literal[
+    "start", "stop", "restart", "kill", "pause", "unpause"
+]
+
+
+@router.post(
+    path="/{host_id}/{command}/{container_name_or_id}",
+    description="Control container state with basic commands",
+    response_model=ContainerGetResponseBody,
+)
+async def control_container(
+    host_id: int,
+    command: ControlContainerCommand,
+    container_name_or_id: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    host = await get_host(host_id, session)
+    _raise_for_host_status(host)
+
+    client = HostsManager.get_host_client(host)
+    inspect = await client.container.inspect(container_name_or_id)
+    _raise_for_protected_container(inspect)
+
+    _command: Callable[[str], Awaitable[Any]] = getattr(
+        client.container, command
+    )
+    if not asyncio.iscoroutinefunction(_command):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Command not allowed"
+        )
+    await _command(container_name_or_id)
+
+    inspect = await client.container.inspect(container_name_or_id)
+    stmt = (
+        select(ContainersModel)
+        .where(
+            ContainersModel.host_id == host_id,
+            ContainersModel.name == inspect.name,
+        )
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    db_item = result.scalar_one_or_none()
+    return ContainerGetResponseBody(
+        item=map_container_schema(
+            host_id,
+            inspect,
+            db_item,
+        ),
+        inspect=inspect,
+    )

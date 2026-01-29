@@ -15,8 +15,10 @@
 
   <ng-template #end>
     <app-container-actions
+      withControl
       [item]="info.value()?.item"
       (onDone)="info.reload()"
+      (onControlDone)="onControlDone($event)"
     ></app-container-actions>
   </ng-template>
 </p-toolbar>
