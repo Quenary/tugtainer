@@ -40,6 +40,7 @@ from backend.core.container.container_group import (
 )
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
+    GetContainerLogsRequestBody,
 )
 from .util import map_container_schema, get_host, get_host_containers
 
@@ -230,6 +231,27 @@ def progress(
 ):
     CACHE = ProcessCache(cache_id)
     return CACHE.get()
+
+
+@router.post(
+    path="/{host_id}/logs/{container_name_or_id}",
+    description="Get log of container",
+    response_model=str,
+)
+async def logs(
+    host_id: int,
+    container_name_or_id: str,
+    body: GetContainerLogsRequestBody,
+    session: AsyncSession = Depends(get_async_session),
+) -> str:
+    host = await get_host(host_id, session)
+    _raise_for_host_status(host)
+
+    client = HostsManager.get_host_client(host)
+    return await client.container.logs(
+        container_name_or_id,
+        body,
+    )
 
 
 ControlContainerCommand = Literal[

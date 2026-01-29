@@ -107,3 +107,11 @@ export const EContainerHealthSeverity: Record<string, string> = {
 };
 
 export type TControlContainerCommand = 'start' | 'stop' | 'restart' | 'kill' | 'pause' | 'unpause';
+
+export interface IGetContainerLogsRequestBody {
+  details?: boolean;
+  since?: Date;
+  tail?: number;
+  timestamps: boolean;
+  until: Date;
+}

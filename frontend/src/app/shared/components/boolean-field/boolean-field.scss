@@ -1,0 +1,16 @@
+:host {
+  display: inline-flex;
+  gap: 0.5rem;
+  font-size: 1rem;
+  align-items: center;
+  color: var(--p-iftalabel-color);
+
+  &:not(:has(input:disabled)),
+  &:not(:has(input:read-only)) {
+    ::ng-deep {
+      label {
+        cursor: pointer;
+      }
+    }
+  }
+}

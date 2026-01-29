@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import (
     Literal,
     Optional,
@@ -123,3 +124,11 @@ class CreateContainerRequestBodySchema(BaseModel):
     volume_driver: Optional[str] = None
     volumes_from: Optional[list[str]] = None
     workdir: Optional[ValidPath] = None
+
+
+class GetContainerLogsRequestBody(BaseModel):
+    since: datetime | timedelta | None = None
+    until: datetime | timedelta | None = None
+    tail: int | None = None
+    details: bool = False
+    timestamps: bool = False

@@ -7,6 +7,7 @@ import time
 from aiohttp.typedefs import Query
 from fastapi import HTTPException, status
 import logging
+from shared.util.custom_json_dumps import custom_json_dumps
 
 
 X_TIMESTAMP = "x-tugtainer-timestamp"
@@ -69,7 +70,6 @@ def verify_signature_headers(
         f"Verifying signature headers for:\n{method}\n{path}\n{body}\n{params}\n{headers}"
     )
     if abs(current_timestamp - timestamp) > signature_ttl:
-        message = f"Signature expired (age={current_timestamp - timestamp}s)"
         message = f"""\
 Signature expired for:
 method={method}
@@ -132,9 +132,5 @@ def _get_sig_encoded(secret_key: str, sig_bytes: bytes) -> str:
     ).decode()
 
 
-def _get_obj_bytes(body: Any) -> bytes:
-    return (
-        b""
-        if not body
-        else json.dumps(body, separators=(",", ":")).encode()
-    )
+def _get_obj_bytes(obj: Any) -> bytes:
+    return b"" if not obj else custom_json_dumps(obj).encode()

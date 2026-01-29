@@ -6,6 +6,7 @@ import {
   IContainerPatchBody,
   IContainerInfo,
   TControlContainerCommand,
+  IGetContainerLogsRequestBody,
 } from './containers-interface';
 import { ECheckStatus, IBaseCheckProgressCache } from '../progress-cache/progress-cache.interface';
 
@@ -83,6 +84,17 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
     return this.httpClient.post<IContainerInfo>(
       `${this.basePath}/${hostId}/${command}/${containerNameOrId}`,
       {},
+    );
+  }
+
+  logs(
+    hostId: number,
+    containerNameOrId: string,
+    body: IGetContainerLogsRequestBody,
+  ): Observable<string> {
+    return this.httpClient.post<string>(
+      `${this.basePath}/${hostId}/logs/${containerNameOrId}`,
+      body,
     );
   }
 }
