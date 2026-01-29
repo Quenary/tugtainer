@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.20.0 (2026-01-29)
+
+### Features
+
+- Basic container state control ([#104](https://github.com/Quenary/tugtainer/pull/104),
+  [`52a4f90`](https://github.com/Quenary/tugtainer/commit/52a4f901395ac7a88dc166bf146c4cdc6360252d))
+
+
 ## v1.19.0 (2026-01-27)
 
 ### Features
