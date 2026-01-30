@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.21.0 (2026-01-30)
+
+### Features
+
+- View container logs
+  ([`e86f75a`](https://github.com/Quenary/tugtainer/commit/e86f75abd5e558886030e217bf4c4217397a0dfa))
+
+
 ## v1.20.0 (2026-01-29)
 
 ### Features
