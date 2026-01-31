@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.21.1 (2026-01-31)
+
+### Bug Fixes
+
+- **backend**: Apply all env vars from old to new container
+  ([`8519367`](https://github.com/Quenary/tugtainer/commit/8519367e8ebd6fc0fe2eb7a4422e804ef89ddfcc))
+
+- **backend**: Updating containers with available(notified) status (if intended)
+  ([`64717c5`](https://github.com/Quenary/tugtainer/commit/64717c55a5679b2160bd3a77f02dcf2382675b26))
+
+
 ## v1.21.0 (2026-01-30)
 
 ### Features

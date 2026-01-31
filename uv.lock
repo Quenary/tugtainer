@@ -1397,7 +1397,7 @@ wheels = [
 
 [[package]]
 name = "tugtainer"
-version = "1.21.0"
+version = "1.21.1"
 source = { virtual = "." }
 dependencies = [
     { name = "aiocron" },
