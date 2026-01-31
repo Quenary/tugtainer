@@ -38,10 +38,11 @@ import { TooltipModule } from 'primeng/tooltip';
 import { FluidModule } from 'primeng/fluid';
 import { NgTemplateOutlet } from '@angular/common';
 import { AutoCompleteModule } from 'primeng/autocomplete';
-import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { TextareaModule } from 'primeng/textarea';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-field';
 
 @Component({
   selector: 'app-settings-page-form',
@@ -55,9 +56,10 @@ import { TextareaModule } from 'primeng/textarea';
     FluidModule,
     NgTemplateOutlet,
     AutoCompleteModule,
-    ToggleButtonModule,
+    ToggleSwitchModule,
     IftaLabelModule,
     TextareaModule,
+    BooleanField,
   ],
   templateUrl: './settings-page-form.html',
   styleUrl: './settings-page-form.scss',

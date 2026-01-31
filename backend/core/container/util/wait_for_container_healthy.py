@@ -7,6 +7,7 @@ from .get_container_health_status_str import (
     get_container_health_status_str,
 )
 import asyncio
+from .is_running_container import is_running_container
 
 
 async def wait_for_container_healthy(
@@ -30,13 +31,15 @@ async def wait_for_container_healthy(
             health = get_container_health_status_str(container)
             if health == "healthy":
                 return True
-        elif container.state and container.state.status == "running":
+        elif is_running_container(container):
             return True
         await asyncio.sleep(5)
     container = await client.container.inspect(id)
     health = get_container_health_status_str(container)
-    status = container.state.status if container.state else ""
     # On last attempt assume unknown is also healthy
-    if status == "running" and health in ["healthy", "unknown"]:
+    if is_running_container(container) and health in [
+        "healthy",
+        "unknown",
+    ]:
         return True
     return False

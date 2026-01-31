@@ -23,6 +23,8 @@ import {
   TControlContainerCommand,
 } from 'src/app/entities/containers/containers-interface';
 import { IGroupCheckProgressCache } from 'src/app/entities/progress-cache/progress-cache.interface';
+import { ESettingKey } from 'src/app/entities/settings/settings-interface';
+import { SettingsService } from 'src/app/entities/settings/settings.service';
 
 /**
  * Container action buttons and common logic
@@ -39,6 +41,7 @@ export class ContainerActions {
   private readonly toastService = inject(ToastService);
   private readonly translateService = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly settingsService = inject(SettingsService);
 
   /**
    * Container item
@@ -75,18 +78,34 @@ export class ContainerActions {
     return withCommands && !!item && !item.protected;
   });
   /**
+   * Whether to update only running containers
+   */
+  protected readonly updateOnlyRunning = computed<boolean>(() => {
+    const settings = this.settingsService.settings();
+    return (
+      (settings?.find((item) => item.key == ESettingKey.UPDATE_ONLY_RUNNING)?.value as boolean) ??
+      true
+    );
+  });
+  /**
    * Container cannot be updated
    */
   protected readonly cantUpdate = computed<boolean>(() => {
     const item = this.item();
-    return !item.update_available || item.status != 'running' || item.protected;
+    const updateOnlyRunning = this.updateOnlyRunning();
+    return (
+      !item.update_available || item.protected || (item.status != 'running' && updateOnlyRunning)
+    );
   });
   /**
    * Whether to show update button tooltip
    */
   protected readonly showUpdateTooltip = computed<boolean>(() => {
     const item = this.item();
-    return item.update_available && (item.status != 'running' || item.protected);
+    const updateOnlyRunning = this.updateOnlyRunning();
+    return (
+      item.update_available && ((item.status != 'running' && updateOnlyRunning) || item.protected)
+    );
   });
 
   /**

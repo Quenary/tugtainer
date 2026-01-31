@@ -201,6 +201,10 @@
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
       },
+      "UPDATE_ONLY_RUNNING": {
+        "LABEL": "Update only running containers",
+        "HINT": "Be careful, when updating non-running containers, some parts of the configuration may be lost."
+      },
       "NOTIFICATION_TITLE_TEMPLATE": {
         "LABEL": "Notification title template",
         "HINT": "Jinja2 template of notification title.\n\nClick for more info.",

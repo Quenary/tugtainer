@@ -24,6 +24,7 @@ import { ContainersApiService } from 'src/app/entities/containers/containers-api
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
 import { HostCheckResult } from 'src/app/shared/components/host-check-result/host-check-result';
+import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
 
 const onlyAvailableStorageKey = 'tugtainer-containers-only-available';
 
@@ -49,6 +50,7 @@ export class ContainersPage extends WithHostsList {
   private readonly containersApiService = inject(ContainersApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly translateService = inject(TranslateService);
+  private readonly settingsApiService = inject(SettingsApiService);
 
   protected readonly checkAllProgress = signal<IAllCheckProgressCache>(null);
   protected readonly checkAllProgressResults = computed(() => {
@@ -81,6 +83,7 @@ export class ContainersPage extends WithHostsList {
       const onlyAvailable = this.onlyAvailable();
       localStorage.setItemJson(onlyAvailableStorageKey, onlyAvailable);
     });
+    this.settingsApiService.list().subscribe();
   }
 
   protected checkAllHosts(): void {

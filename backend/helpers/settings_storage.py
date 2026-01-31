@@ -41,6 +41,11 @@ class SettingsStorage:
         cls, key: Literal[ESettingKey.NOTIFICATION_BODY_TEMPLATE]
     ) -> str: ...
     @classmethod
+    @overload
+    def get(
+        cls, key: Literal[ESettingKey.UPDATE_ONLY_RUNNING],
+    )-> bool: ...
+    @classmethod
     def get(cls, key: ESettingKey, default=None):
         """Get value of setting"""
         return cls._VALUES.get(key, default)
