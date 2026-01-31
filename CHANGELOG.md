@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.22.0 (2026-01-31)
+
+### Features
+
+- Update only running containers switch ([#108](https://github.com/Quenary/tugtainer/pull/108),
+  [`2edba3b`](https://github.com/Quenary/tugtainer/commit/2edba3b09ca092ec0ae32ef8274c695d488f87af))
+
+
 ## v1.21.1 (2026-01-31)
 
 ### Bug Fixes
