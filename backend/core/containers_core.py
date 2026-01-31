@@ -285,7 +285,7 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     def _will_update(gc: ContainerGroupItem) -> bool:
         """Whether to update container"""
         return bool(
-            gc.temp_result == "available"
+            gc.temp_result in ["available", "available(notified)"]
             and gc.action == "update"
             and not gc.protected
             and is_running_container(gc.container)
