@@ -51,8 +51,10 @@ from backend.core.container.container_group import (
     ContainerGroup,
 )
 from backend.core.agent_client import AgentClient
+from backend.enums.settings_enum import ESettingKey
 from backend.exception import TugAgentClientError
 from backend.helpers.now import now
+from backend.helpers.settings_storage import SettingsStorage
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -288,7 +290,12 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
             gc.temp_result in ["available", "available(notified)"]
             and gc.action == "update"
             and not gc.protected
-            and is_running_container(gc.container)
+            and (
+                is_running_container(gc.container)
+                or not SettingsStorage.get(
+                    ESettingKey.UPDATE_ONLY_RUNNING
+                )
+            )
         )
 
     def _will_skip(gc: ContainerGroupItem) -> bool:
@@ -298,7 +305,9 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 f"Container {gc.name} labeled with {TUGTAINER_PROTECTED_LABEL}, skipping."
             )
             return True
-        elif not is_running_container(gc.container):
+        elif not is_running_container(
+            gc.container
+        ) and SettingsStorage.get(ESettingKey.UPDATE_ONLY_RUNNING):
             logging.info(
                 f"Container {gc.name} is not running, skipping."
             )
@@ -434,25 +443,30 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
     for gc in group.containers:
         if _will_skip(gc):
             continue
-        c_name = gc.name
+        was_running = is_running_container(gc.container)
         # Updating container
         if _will_update(gc) and not any_failed:
             image_spec = cast(str, gc.image_spec)
             local_image = cast(ImageInspectResult, gc.local_image)
             remote_image = cast(ImageInspectResult, gc.remote_image)
             config = cast(CreateContainerRequestBodySchema, gc.config)
-            logging.info(f"Starting update of container {c_name}...")
+            logging.info(f"Starting update of container {gc.name}...")
             try:
                 logging.info("Removing container...")
-                await client.container.remove(c_name)
+                await client.container.remove(gc.name)
                 logging.info("Merging configs...")
                 merged_config = merge_container_config_with_image(
                     config, remote_image
                 )
                 logging.info("Recreating container...")
                 new_c = await client.container.create(merged_config)
+                if not was_running:
+                    logging.info(
+                        "Container recreated. It wasn't running before update, consider as success and continue..."
+                    )
+                    continue
                 logging.info("Starting container...")
-                await client.container.start(c_name)
+                await client.container.start(gc.name)
                 await _run_commands(gc.commands)
                 logging.info("Waiting for healthchecks...")
                 if await wait_for_container_healthy(
@@ -466,19 +480,19 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
                 logging.warning(
                     "Container is unhealthy, rolling back..."
                 )
-                await client.container.stop(c_name)
-                await client.container.remove(c_name)
+                await client.container.stop(gc.name)
+                await client.container.remove(gc.name)
             except Exception as e:
                 logging.exception(e)
                 logging.error("Update failed, rolling back...")
                 # Try to remove possibly existing container
                 try:
-                    if await client.container.exists(c_name):
+                    if await client.container.exists(gc.name):
                         logging.warning(
                             "Removing failed container..."
                         )
-                        await client.container.stop(c_name)
-                        await client.container.remove(c_name)
+                        await client.container.stop(gc.name)
+                        await client.container.remove(gc.name)
                 except:
                     pass
             # Rolling back
@@ -519,8 +533,13 @@ Starting check of group: '{group.name}', containers count: {len(group.containers
         # Start not updatable container
         else:
             try:
+                if not was_running:
+                    logging.info(
+                        f"Container {gc.name} wasn't running before update, continue..."
+                    )
+                    continue
                 logging.info(
-                    f"Starting non-updatable container {gc.container.name}"
+                    f"Starting non-updatable container {gc.name}"
                 )
                 await client.container.start(gc.name)
                 await _run_commands(gc.commands)

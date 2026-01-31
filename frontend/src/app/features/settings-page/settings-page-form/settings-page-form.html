@@ -56,9 +56,9 @@
   let-value_type="value_type"
   let-control="control"
 >
-  <p-iftalabel style="width: 100%">
-    @switch (key) {
-      @case (ESettingKey.TIMEZONE) {
+  @switch (key) {
+    @case (ESettingKey.TIMEZONE) {
+      <p-iftalabel style="width: 100%">
         <p-autocomplete
           fluid
           inputId="value-{{ key }}"
@@ -69,35 +69,52 @@
           appendTo="body"
         >
         </p-autocomplete>
-      }
-      @case (ESettingKey.NOTIFICATION_URLS) {
+        <label for="value-{{ key }}">
+          {{ keyTranslates[key]?.LABEL ?? key }}
+        </label>
+      </p-iftalabel>
+    }
+    @case (ESettingKey.NOTIFICATION_URLS) {
+      <p-iftalabel style="width: 100%">
         <textarea
           pTextarea
           rows="3"
           id="value-{{ key }}"
           [formControl]="control"
         ></textarea>
-      }
-      @case (ESettingKey.NOTIFICATION_BODY_TEMPLATE) {
+        <label for="value-{{ key }}">
+          {{ keyTranslates[key]?.LABEL ?? key }}
+        </label>
+      </p-iftalabel>
+    }
+    @case (ESettingKey.NOTIFICATION_BODY_TEMPLATE) {
+      <p-iftalabel style="width: 100%">
         <textarea
           pTextarea
           rows="15"
           id="value-{{ key }}"
           [formControl]="control"
         ></textarea>
-      }
-      @default {
-        @switch (value_type) {
-          @case ('bool') {
-            <p-togglebutton
+        <label for="value-{{ key }}">
+          {{ keyTranslates[key]?.LABEL ?? key }}
+        </label>
+      </p-iftalabel>
+    }
+    @default {
+      @switch (value_type) {
+        @case ('bool') {
+          <app-boolean-field style="flex: 1">
+            <p-toggle-switch
+              inputId="value-{{ key }}"
               [formControl]="control"
-              [onLabel]="'GENERAL.ENABLED' | translate"
-              [offLabel]="'GENERAL.DISABLED' | translate"
-              [onIcon]="'pi pi-check-circle'"
-              [offIcon]="'pi pi-circle-off'"
-            />
-          }
-          @case ('str') {
+            ></p-toggle-switch>
+            <label for="value-{{ key }}">
+              {{ keyTranslates[key]?.LABEL ?? key }}
+            </label>
+          </app-boolean-field>
+        }
+        @case ('str') {
+          <p-iftalabel style="width: 100%">
             <input
               fluid
               id="value-{{ key }}"
@@ -105,19 +122,24 @@
               pInputText
               [formControl]="control"
             />
-          }
-          @default {
+            <label for="value-{{ key }}">
+              {{ keyTranslates[key]?.LABEL ?? key }}
+            </label>
+          </p-iftalabel>
+        }
+        @default {
+          <p-iftalabel style="width: 100%">
             <p-input-number
               fluid
               inputId="value-{{ key }}"
               [formControl]="control"
             ></p-input-number>
-          }
+            <label for="value-{{ key }}">
+              {{ keyTranslates[key]?.LABEL ?? key }}
+            </label>
+          </p-iftalabel>
         }
       }
     }
-    <label for="value-{{ key }}">
-      {{ keyTranslates[key]?.LABEL ?? key }}
-    </label>
-  </p-iftalabel>
+  }
 </ng-template>
