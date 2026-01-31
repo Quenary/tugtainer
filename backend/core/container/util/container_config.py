@@ -62,9 +62,6 @@ def merge_container_config_with_image(
     if not image.config:
         return _cfg
     cfg = _cfg.model_dump()
-    cfg_envs: dict = cfg.get("envs", {})
-    image_envs: dict = map_env_to_dict(image.config.env)
-    merged_envs: dict = subtract_dict(cfg_envs, image_envs) or {}
     cfg_labels: dict = cfg.get("labels", {})
     image_labels: dict = image.config.labels or {}
     merged_labels: dict = (
@@ -89,7 +86,6 @@ def merge_container_config_with_image(
         cfg.pop("workdir", None)
     merged_config = {
         **cfg,
-        "envs": merged_envs,
         "labels": merged_labels,
     }
     merged_config = _drop_empty_keys(merged_config)
