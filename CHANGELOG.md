@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.23.0 (2026-02-03)
+
+### Features
+
+- GH_TOKEN env var ([#112](https://github.com/Quenary/tugtainer/pull/112),
+  [`86ceb33`](https://github.com/Quenary/tugtainer/commit/86ceb3340402713abe78f48fc70918ae0bd39f33))
+
+
 ## v1.22.0 (2026-01-31)
 
 ### Features
