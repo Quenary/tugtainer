@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.23.1 (2026-02-03)
+
+### Bug Fixes
+
+- **frontend**: Ssl flag default value (host creation 422 error)
+  ([#113](https://github.com/Quenary/tugtainer/pull/113),
+  [`927283f`](https://github.com/Quenary/tugtainer/commit/927283fb52d8974a64f2eaab375ded9a82bdbd56))
+
+
 ## v1.23.0 (2026-02-03)
 
 ### Features
