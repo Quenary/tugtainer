@@ -15,7 +15,9 @@ from backend.schemas import HostSummary
 from backend.db.models import HostsModel, ContainersModel
 from backend.core import HostsManager
 from backend.api.util import map_container_schema
-from shared.schemas.container_schemas import GetContainerListBodySchema
+from shared.schemas.container_schemas import (
+    GetContainerListBodySchema,
+)
 from backend.config import Config
 
 
@@ -61,17 +63,19 @@ async def get_summary(
     summaries = []
     for host in hosts:
         if not host.enabled:
-            summaries.append(HostSummary(
-                host_id=host.id,
-                host_name=host.name,
-                total_containers=0,
-                by_status={},
-                by_health={},
-                by_protected={"true": 0, "false": 0},
-                by_check_enabled={"true": 0, "false": 0},
-                by_update_enabled={"true": 0, "false": 0},
-                by_update_available={"true": 0, "false": 0},
-            ))
+            summaries.append(
+                HostSummary(
+                    host_id=host.id,
+                    host_name=host.name,
+                    total_containers=0,
+                    by_status={},
+                    by_health={},
+                    by_protected={"true": 0, "false": 0},
+                    by_check_enabled={"true": 0, "false": 0},
+                    by_update_enabled={"true": 0, "false": 0},
+                    by_update_available={"true": 0, "false": 0},
+                )
+            )
             continue
 
         client = HostsManager.get_host_client(host)
@@ -89,7 +93,11 @@ async def get_summary(
         mapped_containers = []
         for c in containers:
             db_item = next(
-                (item for item in containers_db if item.name == c.name),
+                (
+                    item
+                    for item in containers_db
+                    if item.name == c.name
+                ),
                 None,
             )
             mapped_containers.append(
@@ -118,7 +126,9 @@ async def get_summary(
 
         for container in mapped_containers:
             if container.status:
-                by_status[container.status] = by_status.get(container.status, 0) + 1
+                by_status[container.status] = (
+                    by_status.get(container.status, 0) + 1
+                )
 
             health_key = container.health or "none"
             by_health[health_key] = by_health.get(health_key, 0) + 1
@@ -127,28 +137,36 @@ async def get_summary(
             by_protected[protected_key] += 1
 
             if container.check_enabled is not None:
-                check_key = "true" if container.check_enabled else "false"
+                check_key = (
+                    "true" if container.check_enabled else "false"
+                )
                 by_check_enabled[check_key] += 1
 
             if container.update_enabled is not None:
-                update_key = "true" if container.update_enabled else "false"
+                update_key = (
+                    "true" if container.update_enabled else "false"
+                )
                 by_update_enabled[update_key] += 1
 
             if container.update_available is not None:
-                avail_key = "true" if container.update_available else "false"
+                avail_key = (
+                    "true" if container.update_available else "false"
+                )
                 by_update_available[avail_key] += 1
 
-        summaries.append(HostSummary(
-            host_id=host.id,
-            host_name=host.name,
-            total_containers=len(mapped_containers),
-            by_status=by_status,
-            by_health=by_health,
-            by_protected=by_protected,
-            by_check_enabled=by_check_enabled,
-            by_update_enabled=by_update_enabled,
-            by_update_available=by_update_available,
-        ))
+        summaries.append(
+            HostSummary(
+                host_id=host.id,
+                host_name=host.name,
+                total_containers=len(mapped_containers),
+                by_status=by_status,
+                by_health=by_health,
+                by_protected=by_protected,
+                by_check_enabled=by_check_enabled,
+                by_update_enabled=by_update_enabled,
+                by_update_available=by_update_available,
+            )
+        )
 
     return summaries
 
@@ -159,9 +177,17 @@ async def get_summary(
     response_model=IsUpdateAvailableResponseBodySchema,
 )
 async def is_update_available():
+    try:
+        with open("/app/version", "r") as file:
+            local_version = file.readline()
+    except FileNotFoundError:
+        raise HTTPException(404, "Version file not found")
     url = "https://api.github.com/repos/quenary/tugtainer/releases/latest"
+    headers: dict[str, str] = {}
+    if Config.GH_TOKEN:
+        headers["Authorization"] = f"Bearer {Config.GH_TOKEN}"
     async with aiohttp.ClientSession(
-        timeout=aiohttp.ClientTimeout(15)
+        headers=headers, timeout=aiohttp.ClientTimeout(15)
     ) as session:
         async with session.request(
             "GET",
@@ -171,8 +197,6 @@ async def is_update_available():
             data: dict[str, Any] = await res.json()
             remote_version = data.get("tag_name", "")
             release_url = data.get("html_url", "")
-    with open("/app/version", "r") as file:
-        local_version = file.readline()
     is_available = version.parse(remote_version) > version.parse(
         local_version
     )
