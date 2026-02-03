@@ -20,6 +20,7 @@ class Config:
     HTTPS: ClassVar[bool]
     DOMAIN: ClassVar[str | None]
     ENABLE_PUBLIC_API: ClassVar[bool]
+    GH_TOKEN: ClassVar[str]
 
     # OIDC Configuration
     OIDC_ENABLED: ClassVar[bool]
@@ -66,8 +67,10 @@ class Config:
             cls.HTTPS = os.getenv("HTTPS", "false").lower() == "true"
             cls.DOMAIN = os.getenv("DOMAIN")
             cls.ENABLE_PUBLIC_API = (
-                os.getenv("ENABLE_PUBLIC_API", "false").lower() == "true"
+                os.getenv("ENABLE_PUBLIC_API", "false").lower()
+                == "true"
             )
+            cls.GH_TOKEN = os.getenv("GH_TOKEN", "")
 
             # OIDC Configuration
             cls.OIDC_ENABLED = (
