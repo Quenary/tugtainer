@@ -100,6 +100,7 @@ export class HostsPageCard implements OnInit {
       prune_all: false,
       timeout: 5,
       container_hc_timeout: 60,
+      ssl: true,
     };
   }
 
