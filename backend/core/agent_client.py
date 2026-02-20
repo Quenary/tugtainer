@@ -79,6 +79,7 @@ class AgentClient:
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=timeout),
             json_serialize=custom_json_dumps,
+            trust_env=True,
         ) as session:
             async with session.request(
                 method,
