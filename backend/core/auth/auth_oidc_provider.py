@@ -204,7 +204,7 @@ class AuthOidcProvider(AuthProvider):
     ) -> dict[str, Any]:
         """Fetch OIDC discovery document from well-known URL"""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=True) as session:
                 async with session.get(well_known_url) as response:
                     if response.status == 200:
                         return await response.json()
@@ -271,7 +271,7 @@ class AuthOidcProvider(AuthProvider):
             }
 
             # Exchange code for token
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=True) as session:
                 async with session.post(
                     token_endpoint, data=data
                 ) as response:

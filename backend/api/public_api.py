@@ -187,7 +187,7 @@ async def is_update_available():
     if Config.GH_TOKEN:
         headers["Authorization"] = f"Bearer {Config.GH_TOKEN}"
     async with aiohttp.ClientSession(
-        headers=headers, timeout=aiohttp.ClientTimeout(15)
+        headers=headers, timeout=aiohttp.ClientTimeout(15), trust_env=True
     ) as session:
         async with session.request(
             "GET",
