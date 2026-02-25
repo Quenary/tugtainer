@@ -23,7 +23,21 @@ def map_port_bindings_to_list(
         for entry in entries:
             host_port = entry.host_port
             if host_port:
-                result.append((host_port, container_port, proto))
+                host_ip = entry.host_ip
+                if host_ip:
+                    # Preserve specific IP binding so the recreated
+                    # container binds to the same address.
+                    # IPv6 addresses must be wrapped in brackets
+                    # (e.g. [::1]:443) per Docker -p syntax.
+                    if ":" in host_ip:
+                        host_str = f"[{host_ip}]:{host_port}"
+                    else:
+                        host_str = f"{host_ip}:{host_port}"
+                    result.append(
+                        (host_str, container_port, proto)
+                    )
+                else:
+                    result.append((host_port, container_port, proto))
             else:
                 continue
 
