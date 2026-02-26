@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe, NgStyle } from '@angular/common';
+import { DecimalPipe, NgStyle } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,6 +28,7 @@ import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
 import { ImagesApiService } from 'src/app/entities/images/images-api.service';
 import { IImage, IPruneImageRequestBodySchema } from 'src/app/entities/images/images-interface';
 import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-field';
+import { DayjsPipe } from 'src/app/shared/pipes/dayjs.pipe';
 
 @Component({
   selector: 'app-images-page-table',
@@ -40,7 +41,7 @@ import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-fi
     InputTextModule,
     InputIconModule,
     ConfirmPopup,
-    DatePipe,
+    DayjsPipe,
     TooltipModule,
     DecimalPipe,
     DialogModule,

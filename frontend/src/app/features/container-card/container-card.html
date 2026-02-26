@@ -148,7 +148,7 @@
               id="container-checked-at"
               pInputText
               readonly
-              [value]="_item.checked_at | naiveDate | date"
+              [value]="_item.checked_at | dayjs"
             />
             <label for="container-checked-at">
               {{ 'CONTAINERS.CHECKED_AT' | translate }}
@@ -160,7 +160,7 @@
               id="container-updated-at"
               pInputText
               readonly
-              [value]="_item.updated_at | naiveDate | date"
+              [value]="_item.updated_at | dayjs"
             />
             <label for="container-updated-at">
               {{ 'CONTAINERS.UPDATED_AT' | translate }}

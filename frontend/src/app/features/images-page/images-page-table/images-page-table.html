@@ -146,7 +146,7 @@
         {{ 'IMAGES.TABLE.SIZE_UNIT' | translate }}
       </td>
       <td>
-        {{ image.created | date: 'medium' }}
+        {{ image.created | dayjs }}
       </td>
     </tr>
   </ng-template>

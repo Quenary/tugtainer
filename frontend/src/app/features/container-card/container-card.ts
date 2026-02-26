@@ -19,10 +19,9 @@ import {
 } from 'src/app/entities/containers/containers-interface';
 import { AccordionModule } from 'primeng/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DatePipe, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { InputTextModule } from 'primeng/inputtext';
-import { NaiveDatePipe } from 'src/app/shared/pipes/naive-date.pipe';
 import { TextareaModule } from 'primeng/textarea';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
@@ -35,6 +34,7 @@ import { FormsModule } from '@angular/forms';
 import { ContainerCardLogs } from './container-card-logs/container-card-logs';
 import { BooleanField } from 'src/app/shared/components/boolean-field/boolean-field';
 import { ContainerCardInspect } from './container-card-inspect/container-card-inspect';
+import { DayjsPipe } from 'src/app/shared/pipes/dayjs.pipe';
 
 @Component({
   selector: 'app-container-card',
@@ -43,8 +43,6 @@ import { ContainerCardInspect } from './container-card-inspect/container-card-in
     TranslatePipe,
     IftaLabelModule,
     InputTextModule,
-    DatePipe,
-    NaiveDatePipe,
     TextareaModule,
     ToolbarModule,
     ButtonModule,
@@ -56,7 +54,8 @@ import { ContainerCardInspect } from './container-card-inspect/container-card-in
     FormsModule,
     ContainerCardLogs,
     BooleanField,
-    ContainerCardInspect
+    ContainerCardInspect,
+    DayjsPipe,
   ],
   templateUrl: './container-card.html',
   styleUrl: './container-card.scss',

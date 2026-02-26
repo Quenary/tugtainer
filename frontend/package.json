@@ -35,6 +35,7 @@
     "@ngx-translate/http-loader": "^17.0.0",
     "@primeuix/themes": "^1.2.3",
     "cron-validate": "^1.5.2",
+    "dayjs": "^1.11.19",
     "primeicons": "^7.0.0",
     "primeng": "^20.1.2",
     "rxjs": "~7.8.0",
