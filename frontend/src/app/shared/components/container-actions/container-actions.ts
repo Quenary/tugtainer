@@ -93,6 +93,7 @@ export class ContainerActions {
   protected readonly cantUpdate = computed<boolean>(() => {
     const item = this.item();
     const updateOnlyRunning = this.updateOnlyRunning();
+    if (!item) return true;
     return (
       !item.update_available || item.protected || (item.status != 'running' && updateOnlyRunning)
     );
@@ -103,6 +104,7 @@ export class ContainerActions {
   protected readonly showUpdateTooltip = computed<boolean>(() => {
     const item = this.item();
     const updateOnlyRunning = this.updateOnlyRunning();
+    if (!item) return false;
     return (
       item.update_available && ((item.status != 'running' && updateOnlyRunning) || item.protected)
     );
