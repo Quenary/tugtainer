@@ -1,49 +1,56 @@
 import { LOCATION_INITIALIZED, registerLocaleData } from '@angular/common';
 import { inject, EnvironmentInjector } from '@angular/core';
-import { from, switchMap, first, catchError, of, tap } from 'rxjs';
+import { supportedLocales } from 'src/app/app.consts';
 
-const importLocale = (locale: string) => {
-  let _import: Promise<any> = import('@angular/common/locales/en');
-  locale = locale.split('-')[0];
+const importDayjsLocale = async (locale: string) => {
   switch (locale) {
     case 'ru':
-      _import = import('@angular/common/locales/ru');
-      break;
+      return import('dayjs/locale/ru');
     case 'de':
-      _import = import('@angular/common/locales/de');
-      break;
+      return import('dayjs/locale/de');
     case 'fr':
-      _import = import('@angular/common/locales/fr');
-      break;
+      return import('dayjs/locale/fr');
     case 'ja':
-      _import = import('@angular/common/locales/ja');
-      break;
+      return import('dayjs/locale/ja');
     case 'it':
-      _import = import('@angular/common/locales/it');
-      break;
+      return import('dayjs/locale/it');
     case 'es':
-      _import = import('@angular/common/locales/es');
-      break;
+      return import('dayjs/locale/es');
     case 'zh':
-      _import = import('@angular/common/locales/zh');
-      break;
+      return import('dayjs/locale/zh');
+    default:
+      return import('dayjs/locale/en');
   }
-  return from(_import.then((c) => c.default));
 };
 
-export const localeInitializer = () => {
+const importAngularLocale = async (locale: string) => {
+  switch (locale) {
+    case 'ru':
+      return import('@angular/common/locales/ru');
+    case 'de':
+      return import('@angular/common/locales/de');
+    case 'fr':
+      return import('@angular/common/locales/fr');
+    case 'ja':
+      return import('@angular/common/locales/ja');
+    case 'it':
+      return import('@angular/common/locales/it');
+    case 'es':
+      return import('@angular/common/locales/es');
+    case 'zh':
+      return import('@angular/common/locales/zh');
+    default:
+      return import('@angular/common/locales/en');
+  }
+};
+
+export const localeInitializer = async () => {
   const environmentInjector = inject(EnvironmentInjector);
   const locationInitialized = environmentInjector.get(LOCATION_INITIALIZED, Promise.resolve(null));
-  return from(locationInitialized).pipe(
-    switchMap(() => {
-      let lang = navigator.language || 'en';
-      return importLocale(lang).pipe(
-        tap((data) => {
-          registerLocaleData(data);
-        }),
-        first(),
-        catchError(() => of(null))
-      );
-    })
-  );
+  await locationInitialized;
+  let locale = navigator.language ? navigator.language.split('-')[0] : 'en';
+  locale = supportedLocales.find((l) => l === locale) || 'en';
+  await importDayjsLocale(locale);
+  const al = await importAngularLocale(locale);
+  registerLocaleData(al.default);
 };
