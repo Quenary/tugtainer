@@ -13,10 +13,11 @@ import { provideTranslateLoader, provideTranslateService } from '@ngx-translate/
 import { localeInitializer } from './core/initializers/locale-initializer';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
-import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
+import { supportedLocales } from './app.consts';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -42,7 +43,7 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
-    provideAnimations(),
+    provideAnimationsAsync(),
     provideTranslateService({
       loader: provideTranslateLoader(SlickTranslationLoader),
       fallbackLang: 'en',
@@ -51,8 +52,8 @@ export const appConfig: ApplicationConfig = {
     {
       provide: LOCALE_ID,
       useFactory: () => {
-        const locale = navigator.language || 'en-US';
-        return locale;
+        const locale = navigator.language ? navigator.language.split('-')[0] : 'en';
+        return supportedLocales.find((l) => l === locale) || 'en';
       },
     },
     providePrimeNG({
