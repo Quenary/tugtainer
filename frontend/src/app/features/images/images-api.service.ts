@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable } from 'rxjs';
-import { IImage, IPruneImageRequestBodySchema } from './images-interface';
+import { IImage, IPruneImageRequestBodySchema } from './images.interface';
 
 @Injectable({
   providedIn: 'root',

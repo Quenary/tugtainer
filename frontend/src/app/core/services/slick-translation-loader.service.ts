@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { TranslateLoader } from '@ngx-translate/core';
 import { catchError, map, Observable, of, shareReplay, switchMap, tap } from 'rxjs';
-import { PublicApiService } from 'src/app/entities/public/public-api.service';
+import { PublicApiService } from 'src/app/features/public/public-api.service';
 
 @Injectable()
 export class SlickTranslationLoader implements TranslateLoader {

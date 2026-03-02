@@ -11,8 +11,8 @@ import { TagModule } from 'primeng/tag';
 import { ToolbarModule } from 'primeng/toolbar';
 import { catchError, firstValueFrom, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { HostsApiService } from 'src/app/entities/hosts/hosts-api.service';
-import { ICreateHost } from 'src/app/entities/hosts/hosts-interface';
+import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
+import { ICreateHost } from 'src/app/features/hosts/hosts.interface';
 import { HostStatusComponent } from 'src/app/shared/components/host-status/host-status.component';
 
 @Component({

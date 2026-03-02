@@ -18,26 +18,26 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { catchError, firstValueFrom, map, of } from 'rxjs';
-import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
+import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import {
   IContainerListItem,
   IContainerPatchBody,
   EContainerStatusSeverity,
   EContainerHealthSeverity,
-} from 'src/app/entities/containers/containers-interface';
+} from 'src/app/features/containers/containers.interface';
 import { Tooltip } from 'primeng/tooltip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FieldsetModule } from 'primeng/fieldset';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { DialogModule } from 'primeng/dialog';
-import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
+import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
 import { RouterLink } from '@angular/router';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ContainerActionsComponent } from 'src/app/shared/components/container-actions/container-actions.component';
 import {
   ECheckStatus,
   IHostCheckProgressCache,
-} from 'src/app/entities/progress-cache/progress-cache.interface';
+} from 'src/app/shared/interfaces/progress-cache.interface';
 import { HostCheckResultComponent } from 'src/app/shared/components/host-check-result/host-check-result.component';
 
 interface IListParams {

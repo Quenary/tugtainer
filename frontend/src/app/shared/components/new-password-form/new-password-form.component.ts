@@ -10,7 +10,7 @@ import {
 } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
-import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
+import { ISetPasswordBody } from 'src/app/features/auth/auth.interface';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';

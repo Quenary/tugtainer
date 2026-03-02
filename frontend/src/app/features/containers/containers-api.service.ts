@@ -7,8 +7,11 @@ import {
   IContainerInfo,
   TControlContainerCommand,
   IGetContainerLogsRequestBody,
-} from './containers-interface';
-import { ECheckStatus, IBaseCheckProgressCache } from '../progress-cache/progress-cache.interface';
+} from './containers.interface';
+import {
+  ECheckStatus,
+  IBaseCheckProgressCache,
+} from '../../shared/interfaces/progress-cache.interface';
 
 @Injectable({
   providedIn: 'root',

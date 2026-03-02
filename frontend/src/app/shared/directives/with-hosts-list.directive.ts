@@ -1,8 +1,8 @@
 import { computed, Directive, effect, inject, model, resource, signal } from '@angular/core';
 import { firstValueFrom, catchError, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { HostsApiService } from 'src/app/entities/hosts/hosts-api.service';
-import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
+import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
+import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
 
 /**
  * Common directive for containers/images components
