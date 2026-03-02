@@ -3,10 +3,11 @@ from zoneinfo import ZoneInfo, available_timezones
 import aiocron
 from typing import Callable, Dict, cast
 from sqlalchemy import select
-from backend.enums import ESettingKey, ECronJob
+from backend.modules.settings.settings_enum import ESettingKey
+from backend.enums.cron_jobs_enum import ECronJob
 from backend.core.containers_core import check_all
 from backend.db.session import async_session_maker
-from backend.db.models import SettingModel
+from backend.modules.settings.settings_model import SettingModel
 
 
 VALID_TIMEZONES = available_timezones()

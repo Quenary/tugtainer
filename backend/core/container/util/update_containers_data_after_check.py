@@ -1,10 +1,10 @@
 from sqlalchemy import select
-from backend.db.models.containers_model import ContainersModel
+from backend.modules.containers.containers_model import ContainersModel
 from backend.core.container.schemas.check_result import (
     ContainerCheckResultType,
     GroupCheckResult,
 )
-from backend.helpers.now import now
+from backend.util.now import now
 from backend.db.session import async_session_maker
 
 

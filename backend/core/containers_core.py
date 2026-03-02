@@ -1,6 +1,3 @@
-from python_on_whales.components.buildx.imagetools.models import (
-    ImageVariantManifest,
-)
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -12,7 +9,10 @@ from typing import cast
 from sqlalchemy import select
 import asyncio
 from backend.db.session import async_session_maker
-from backend.db.models import ContainersModel, HostsModel
+from backend.modules.containers.containers_model import (
+    ContainersModel,
+)
+from backend.modules.hosts.hosts_model import HostsModel
 from backend.core.container.schemas.check_result import (
     CheckContainerUpdateAvailableResult,
     ContainerCheckResult,
@@ -20,10 +20,10 @@ from backend.core.container.schemas.check_result import (
     GroupCheckResult,
     HostCheckResult,
 )
-from backend.core import HostsManager
+from backend.core.agent_client import AgentClientManager
 from backend.core.notifications_core import send_check_notification
-from backend.db.util import insert_or_update_container
-from backend.db.util.insert_or_update_container import (
+from backend.modules.containers.containers_util import (
+    insert_or_update_container,
     ContainerInsertOrUpdateData,
 )
 from backend.enums.check_status_enum import ECheckStatus
@@ -36,25 +36,29 @@ from backend.core.container.util import (
     is_running_container,
     get_digests_for_platform,
 )
-from backend.core.container import (
+from backend.core.progress_cache.progress_cache_schemas import (
     GroupCheckProgressCache,
     HostCheckProgressCache,
     AllCheckProgressCache,
-    ProcessCache,
+)
+from backend.core.progress_cache.progress_cache_util import (
     ALL_CONTAINERS_STATUS_KEY,
     get_host_cache_key,
     get_group_cache_key,
 )
-from backend.core.container.container_group import (
+from backend.core.progress_cache.progress_cache import ProcessCache
+from backend.core.container_group.container_group_schemas import (
     ContainerGroupItem,
-    get_containers_groups,
     ContainerGroup,
 )
+from backend.core.container_group.container_group import (
+    get_containers_groups,
+)
 from backend.core.agent_client import AgentClient
-from backend.enums.settings_enum import ESettingKey
+from backend.modules.settings.settings_enum import ESettingKey
 from backend.exception import TugAgentClientError
-from backend.helpers.now import now
-from backend.helpers.settings_storage import SettingsStorage
+from backend.util.now import now
+from backend.modules.settings.settings_storage import SettingsStorage
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -681,7 +685,7 @@ async def check_all(update: bool):
 
         tasks: list[asyncio.Future[HostCheckResult | None]] = []
         for h in hosts:
-            cli = HostsManager.get_host_client(h)
+            cli = AgentClientManager.get_host_client(h)
             cor = check_host(
                 h,
                 cli,

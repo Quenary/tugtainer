@@ -7,7 +7,10 @@ Create Date: 2026-01-31 04:20:05.445601
 """
 
 from typing import Sequence, Union
-from backend.enums.settings_enum import ESettingKey, ESettingType
+from backend.modules.settings.settings_enum import (
+    ESettingKey,
+    ESettingType,
+)
 from alembic import op
 import sqlalchemy as sa
 
