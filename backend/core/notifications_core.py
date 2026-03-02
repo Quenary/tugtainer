@@ -7,10 +7,10 @@ from backend.core.container.schemas.check_result import (
     ContainerCheckResult,
     HostCheckResult,
 )
-from backend.enums.settings_enum import ESettingKey
+from backend.modules.settings.settings_enum import ESettingKey
 from backend.exception import TugException
 import jinja2
-from backend.helpers.settings_storage import SettingsStorage
+from backend.modules.settings.settings_storage import SettingsStorage
 
 
 def any_worthy(items: list[ContainerCheckResult]) -> bool:

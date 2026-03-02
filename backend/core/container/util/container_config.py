@@ -1,5 +1,3 @@
-from typing import Any
-
 from python_on_whales.components.container.models import (
     ContainerConfig,
     ContainerHostConfig,
@@ -8,7 +6,7 @@ from python_on_whales.components.container.models import (
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-from backend.helpers.subtract_dict import subtract_dict
+from backend.util.subtract_dict import subtract_dict
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
@@ -30,26 +28,7 @@ from .map_env_to_dict import map_env_to_dict
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_entrypoint_str import get_container_entrypoint_str
 import logging
-
-
-def _drop_empty_keys(cfg: dict) -> dict:
-    """
-    Drops 'empty' values from dict:
-    - None
-    - Empty containers (list, dict, tuple, set)
-    - Empty strings or strings with only spaces
-    """
-
-    def is_empty(v):
-        if v is None:
-            return True
-        if isinstance(v, (list, dict, tuple, set)) and len(v) == 0:
-            return True
-        if isinstance(v, str) and not v.strip():
-            return True
-        return False
-
-    return {k: v for k, v in cfg.items() if not is_empty(v)}
+from backend.util.drop_empty_keys import drop_empty_keys
 
 
 def merge_container_config_with_image(
@@ -88,7 +67,7 @@ def merge_container_config_with_image(
         **cfg,
         "labels": merged_labels,
     }
-    merged_config = _drop_empty_keys(merged_config)
+    merged_config = drop_empty_keys(merged_config)
 
     return CreateContainerRequestBodySchema.model_validate(
         merged_config
@@ -191,7 +170,7 @@ def get_container_config(
         "volumes_from": HOST_CONFIG.volumes_from,
         "workdir": normalize_path(CONFIG.working_dir),
     }
-    CONFIG = _drop_empty_keys(CONFIG)
+    CONFIG = drop_empty_keys(CONFIG)
 
     return (
         CreateContainerRequestBodySchema.model_validate(CONFIG),

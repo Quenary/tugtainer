@@ -8,6 +8,8 @@ from python_on_whales.components.container.models import (
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
+from sqlalchemy import select
+from backend.db.session import async_session_maker
 from backend.exception import TugAgentClientError
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
@@ -15,8 +17,8 @@ from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
     GetContainerLogsRequestBody,
 )
-from backend.db.models import HostsModel
-from backend.schemas.hosts_schema import HostInfo
+from backend.modules.hosts.hosts_model import HostsModel
+from backend.modules.hosts.hosts_schemas import HostInfo
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
     InspectImageRequestBodySchema,
@@ -320,8 +322,23 @@ class AgentClientCommand:
         return TypeAdapter(tuple[str, str]).validate_python(data)
 
 
+async def load_agents_on_init():
+    """Get hosts from db and init clients"""
+    async with async_session_maker() as session:
+        stmt = select(HostsModel).where(HostsModel.enabled == True)
+        result = await session.execute(stmt)
+        hosts = result.scalars().all()
+        for h in hosts:
+            try:
+                AgentClientManager.set_client(h)
+                logging.info(f"Docker host '{h.name}' loaded.")
+            except Exception as e:
+                logging.error(f"Error loading docker host '{h.name}'")
+                logging.exception(e)
+
+
 class AgentClientManager:
-    """Class for managing multiple agents"""
+    """Manager of multiple agents"""
 
     _INSTANCE = None
     _HOST_CLIENTS: dict[int, AgentClient] = {}
@@ -351,7 +368,7 @@ class AgentClientManager:
         filtered = {
             k: v
             for k, v in info.model_dump(exclude_unset=True).items()
-            if k in allowed_keys and v
+            if k in allowed_keys and v != None
         }
         return AgentClient(**filtered)
 

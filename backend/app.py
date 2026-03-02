@@ -1,22 +1,26 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, status
-from backend.core import (
-    schedule_check_on_init,
-    load_hosts_on_init,
+from backend.core.cron_manager import schedule_check_on_init
+from backend.core.agent_client import load_agents_on_init
+from backend.modules.auth.auth_router import auth_router as auth_router
+from backend.modules.containers.containers_router import (
+    containers_router as containers_router,
 )
-from backend.api import (
-    auth_router,
-    containers_router,
-    public_router,
-    settings_router,
-    images_router,
-    hosts_router,
+from backend.modules.images.images_router import (
+    images_router as images_router,
+)
+from backend.modules.hosts.hosts_router import hosts_router as hosts_router
+from backend.modules.public.public_router import (
+    public_router as public_router,
+)
+from backend.modules.settings.settings_router import (
+    settings_router as settings_router,
 )
 from backend.config import Config
 import logging
 from backend.exception import TugAgentClientError
 from aiohttp.client_exceptions import ClientError
-from backend.helpers.settings_storage import SettingsStorage
+from backend.modules.settings.settings_storage import SettingsStorage
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter
 
 logging.basicConfig(
@@ -40,7 +44,7 @@ uvicorn_logger.addFilter(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Code to run on startup
-    await load_hosts_on_init()
+    await load_agents_on_init()
     await SettingsStorage.load_all()
     await schedule_check_on_init()
     yield  # App
