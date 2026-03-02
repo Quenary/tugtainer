@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v1.24.0 (2026-02-25)
+
+### Bug Fixes
+
+- Preserve host IP in port bindings during container recreation
+  ([#125](https://github.com/Quenary/tugtainer/pull/125),
+  [`1328374`](https://github.com/Quenary/tugtainer/commit/13283749311cd0dbc59197bad0e5e0f426c8fc2c))
+
+### Features
+
+- Add trust_env=True to aiohttp ([#120](https://github.com/Quenary/tugtainer/pull/120),
+  [`3dfc433`](https://github.com/Quenary/tugtainer/commit/3dfc4336fbf07f68e16ed62e4b2f75e058410ea0))
+
+
 ## v1.23.1 (2026-02-03)
 
 ### Bug Fixes

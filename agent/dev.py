@@ -1,16 +1,24 @@
-import subprocess
+import uvicorn
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+log_level = os.getenv("LOG_LEVEL", "WARNING").lower()
 
 if __name__ == "__main__":
     try:
-        subprocess.run(
-            [
-                "fastapi",
-                "dev",
-                os.path.join(os.path.dirname(__file__), "app.py"),
-                "--host=0.0.0.0",
-                "--port=8001",
-            ]
+        uvicorn.run(
+            "agent.app:app",
+            host="0.0.0.0",
+            port=8001,
+            reload=True,
+            reload_dirs=[
+                os.path.dirname(__file__),
+                os.path.join(
+                    os.path.dirname(__file__), "..", "shared"
+                ),
+            ],
+            log_level=log_level,
         )
     except KeyboardInterrupt as e:
         print("Dev server shutdown by user.")
