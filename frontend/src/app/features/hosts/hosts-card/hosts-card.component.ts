@@ -30,7 +30,7 @@ import { finalize, map } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
 import { ICreateHost, IHostInfo } from 'src/app/features/hosts/hosts.interface';
-import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
+import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import { RouterLink } from '@angular/router';
 import { ButtonGroup } from 'primeng/buttongroup';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
@@ -41,7 +41,7 @@ import { DeployGuidelineUrl } from 'src/app/app.consts';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { BooleanFieldComponent } from 'src/app/shared/components/boolean-field/boolean-field.component';
+import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 
 @Component({
   selector: 'app-host-card',

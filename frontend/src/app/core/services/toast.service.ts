@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { MessageService } from 'primeng/api';
-import { parseError } from 'src/app/shared/functions/parse-error.function';
+import { parseError } from '@shared/functions/parse-error.function';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +15,7 @@ export class ToastService {
       severity: 'error',
       summary,
       detail: parseError(error),
-      life: 10000
+      life: 10000,
     });
   }
 

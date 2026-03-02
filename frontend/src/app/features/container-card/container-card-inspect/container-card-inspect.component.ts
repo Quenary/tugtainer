@@ -4,7 +4,7 @@ import { TreeNode } from 'primeng/api';
 import { TabsModule } from 'primeng/tabs';
 import { TreeModule } from 'primeng/tree';
 import { IContainerInspectResult } from 'src/app/features/containers/containers.interface';
-import { isPremitive } from 'src/app/shared/functions/is-premitive.function';
+import { isPremitive } from '@shared/functions/is-premitive.function';
 
 @Component({
   selector: 'app-container-card-inspect',
