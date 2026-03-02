@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.24.1 (2026-03-02)
+
+### Bug Fixes
+
+- **backend**: Mqtt notification
+  ([`f9949c8`](https://github.com/Quenary/tugtainer/commit/f9949c89a327bc351ac3080e6ec39df85b1b42b2))
+
+- **frontend**: Actions error (read properties of null)
+  ([`ef0b69e`](https://github.com/Quenary/tugtainer/commit/ef0b69ecd8c91cdfcdeeea2d264b28b07181001f))
+
+- **frontend**: Images page loading
+  ([`63d9ceb`](https://github.com/Quenary/tugtainer/commit/63d9cebdd91c4915b4fe46468f0c6208a2b16d1a))
+
+- **frontend**: Removed circular icon from containers page
+  ([`064a06f`](https://github.com/Quenary/tugtainer/commit/064a06f008b3def7171046e3ab63ae92e9b79d00))
+
+
 ## v1.24.0 (2026-02-25)
 
 ### Bug Fixes
