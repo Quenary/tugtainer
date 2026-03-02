@@ -15,7 +15,7 @@ from .containers_schemas import (
     ContainersListItem,
 )
 from backend.db.session import get_async_session
-from containers_model import ContainersModel
+from .containers_model import ContainersModel
 from backend.core.agent_client import AgentClientManager
 from backend.core.progress_cache.progress_cache_schemas import (
     GroupCheckProgressCache,
