@@ -1,4 +1,4 @@
-import { TIncomplete } from '../incomplete.type';
+import { TIncomplete } from '../../shared/types/incomplete.type';
 
 /**
  * Container data

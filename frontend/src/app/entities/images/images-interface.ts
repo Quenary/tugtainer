@@ -1,4 +1,4 @@
-import { TIncomplete } from '../incomplete.type';
+import { TIncomplete } from '../../shared/types/incomplete.type';
 
 export interface IImage {
   repository: string;

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BaseApiService } from '../base/base-api.service';
+import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable } from 'rxjs';
 import { ICreateHost, IHostInfo, IHostStatus } from './hosts-interface';
 

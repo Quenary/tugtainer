@@ -23,7 +23,7 @@ import { PublicApiService } from './entities/public/public-api.service';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
-import { Logo } from './shared/components/logo/logo';
+import { LogoComponent } from './shared/components/logo/logo.component';
 import { DrawerModule } from 'primeng/drawer';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToolbarModule } from 'primeng/toolbar';
@@ -41,7 +41,7 @@ import { IsUpdateAvailableResponseBody } from './entities/public/public-interfac
     TranslatePipe,
     TagModule,
     DialogModule,
-    Logo,
+    LogoComponent,
     DrawerModule,
     PanelMenuModule,
     ToolbarModule,
