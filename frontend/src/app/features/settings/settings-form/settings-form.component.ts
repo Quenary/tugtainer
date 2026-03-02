@@ -20,7 +20,7 @@ import {
 } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, finalize, firstValueFrom, map, of } from 'rxjs';
-import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
+import { SettingsApiService } from '../settings-api.service';
 import {
   ESettingKey,
   ESettingSortIndex,
@@ -28,7 +28,7 @@ import {
   ISetting,
   ISettingUpdate,
   ITestNotificationRequestBody,
-} from 'src/app/entities/settings/settings-interface';
+} from '../settings.interface';
 import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
 import { ButtonModule } from 'primeng/button';

@@ -1,4 +1,4 @@
-import { IGroupCheckResult, IHostCheckResult } from '../check/check-result.interface';
+import { IGroupCheckResult, IHostCheckResult } from './check-result.interface';
 
 /**
  * Possible check progress statuses

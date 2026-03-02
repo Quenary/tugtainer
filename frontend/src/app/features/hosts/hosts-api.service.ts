@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable } from 'rxjs';
-import { ICreateHost, IHostInfo, IHostStatus } from './hosts-interface';
+import { ICreateHost, IHostInfo, IHostStatus } from './hosts.interface';
 
 @Injectable({
   providedIn: 'root',

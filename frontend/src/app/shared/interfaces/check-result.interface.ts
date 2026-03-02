@@ -1,6 +1,5 @@
-import { IContainerInspectResult } from '../containers/containers-interface';
-import { IImageInspectResult } from '../images/images-interface';
-import { TIncomplete } from '../../shared/types/incomplete.type';
+import { IContainerInspectResult } from '../../features/containers/containers.interface';
+import { IImageInspectResult } from '../../features/images/images.interface';
 
 /**
  * Result of container check

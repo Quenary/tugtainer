@@ -2,7 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/comm
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, first, of, switchMap, tap, throwError, timeout } from 'rxjs';
-import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
+import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 
 const ignoreList = ['/login', '/refresh'];
 

@@ -8,8 +8,8 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, finalize, firstValueFrom, retry, throwError } from 'rxjs';
-import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
-import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
+import { AuthApiService } from 'src/app/features/auth/auth-api.service';
+import { ISetPasswordBody } from 'src/app/features/auth/auth.interface';
 import { NewPasswordFormComponent } from 'src/app/shared/components/new-password-form/new-password-form.component';
 import { AuthFormComponent } from './auth-form/auth-form.component';
 import { LogoComponent } from 'src/app/shared/components/logo/logo.component';
