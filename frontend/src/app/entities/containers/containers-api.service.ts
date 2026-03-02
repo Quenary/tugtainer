@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BaseApiService } from '../base/base-api.service';
+import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable, repeat, takeWhile } from 'rxjs';
 import {
   IContainerListItem,

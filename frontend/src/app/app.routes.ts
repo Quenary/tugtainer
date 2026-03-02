@@ -19,26 +19,28 @@ export const routes: Routes = [
   {
     path: 'auth',
     title: titleTranslate('NAV.AUTH'),
-    loadComponent: () => import('./features/auth-page/auth-page').then((c) => c.AuthPage),
+    loadComponent: () => import('./features/auth/auth.component').then((c) => c.AuthComponent),
   },
   // AUTHORIZED
   {
     path: 'hosts',
     title: titleTranslate('NAV.HOSTS'),
     canActivate: [authGuard],
-    loadComponent: () => import('./features/hosts-page/hosts-page').then((c) => c.HostsPage),
+    loadComponent: () => import('./features/hosts/hosts.component').then((c) => c.HostsComponent),
     children: [
       {
         path: ':id',
         loadComponent: () =>
-          import('./features/hosts-page/hosts-page-card/hosts-page-card').then(
-            (c) => c.HostsPageCard,
+          import('./features/hosts/hosts-card/hosts-card.component').then(
+            (c) => c.HostsCardComponent,
           ),
       },
       {
         path: ':hostId/:containerNameOrId',
         loadComponent: () =>
-          import('./features/container-card/container-card').then((c) => c.ContainerCard),
+          import('./features/container-card/container-card.component').then(
+            (c) => c.ContainerCardComponent,
+          ),
       },
     ],
   },
@@ -47,19 +49,20 @@ export const routes: Routes = [
     title: titleTranslate('NAV.CONTAINERS'),
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/containers-page/containers-page').then((c) => c.ContainersPage),
+      import('./features/containers/containers.component').then((c) => c.ContainersComponent),
   },
   {
     path: 'images',
     title: titleTranslate('NAV.IMAGES'),
     canActivate: [authGuard],
-    loadComponent: () => import('./features/images-page/images-page').then((c) => c.ImagesPage),
+    loadComponent: () =>
+      import('./features/images/images.component').then((c) => c.ImagesComponent),
   },
   {
     path: 'settings',
     title: titleTranslate('NAV.SETTINGS'),
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/settings-page/settings-page').then((c) => c.SettingsPage),
+      import('./features/settings/settings.component').then((c) => c.SettingsComponent),
   },
 ];

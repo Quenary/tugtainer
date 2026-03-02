@@ -7,12 +7,16 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "style": "scss"
+          "style": "scss",
+          "standalone": true,
+          "changeDetection": "OnPush",
+          "type": "component"
         },
-        "@schematics/angular": {
-          "component": {
-            "changeDetection": "OnPush"
-          }
+        "@schematics/angular:directive": {
+          "standalone": true
+        },
+        "@schematics/angular:pipe": {
+          "standalone": true
         }
       },
       "root": "",

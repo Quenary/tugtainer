@@ -1,0 +1,7 @@
+@if (showTable()) {
+  <app-hosts-table></app-hosts-table>
+}
+<router-outlet
+  (activate)="showTable.set(false)"
+  (deactivate)="showTable.set(true)"
+></router-outlet>
