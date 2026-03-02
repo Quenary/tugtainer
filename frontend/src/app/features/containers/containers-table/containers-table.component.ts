@@ -33,12 +33,9 @@ import { DialogModule } from 'primeng/dialog';
 import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
 import { RouterLink } from '@angular/router';
 import { ToolbarModule } from 'primeng/toolbar';
-import { ContainerActionsComponent } from 'src/app/shared/components/container-actions/container-actions.component';
-import {
-  ECheckStatus,
-  IHostCheckProgressCache,
-} from 'src/app/shared/interfaces/progress-cache.interface';
-import { HostCheckResultComponent } from 'src/app/shared/components/host-check-result/host-check-result.component';
+import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
+import { ECheckStatus, IHostCheckProgressCache } from '@shared/interfaces/progress-cache.interface';
+import { HostCheckResultComponent } from '@shared/components/host-check-result/host-check-result.component';
 
 interface IListParams {
   host: IHostInfo;

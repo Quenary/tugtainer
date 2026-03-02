@@ -29,7 +29,7 @@ import {
   ISettingUpdate,
   ITestNotificationRequestBody,
 } from '../settings.interface';
-import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
+import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -42,7 +42,7 @@ import { ToastService } from 'src/app/core/services/toast.service';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { TextareaModule } from 'primeng/textarea';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { BooleanFieldComponent } from 'src/app/shared/components/boolean-field/boolean-field.component';
+import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 
 @Component({
   selector: 'app-settings-form',

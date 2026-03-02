@@ -28,13 +28,13 @@ import { ButtonModule } from 'primeng/button';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { ContainerActionsComponent } from 'src/app/shared/components/container-actions/container-actions.component';
+import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { FormsModule } from '@angular/forms';
 import { ContainerCardLogsComponent } from './container-card-logs/container-card-logs.component';
-import { BooleanFieldComponent } from 'src/app/shared/components/boolean-field/boolean-field.component';
+import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { ContainerCardInspectComponent } from './container-card-inspect/container-card-inspect.component';
-import { DayjsPipe } from 'src/app/shared/pipes/dayjs.pipe';
+import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 
 @Component({
   selector: 'app-container-card',

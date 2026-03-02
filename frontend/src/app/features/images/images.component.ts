@@ -5,8 +5,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AccordionModule } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
-import { NoHostsComponent } from 'src/app/shared/components/no-hosts/no-hosts.component';
-import { WithHostsListDirective } from 'src/app/shared/directives/with-hosts-list.directive';
+import { NoHostsComponent } from '@shared/components/no-hosts/no-hosts.component';
+import { WithHostsListDirective } from '@shared/directives/with-hosts-list.directive';
 
 @Component({
   selector: 'app-images',

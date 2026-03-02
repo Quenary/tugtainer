@@ -13,17 +13,14 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { NoHostsComponent } from 'src/app/shared/components/no-hosts/no-hosts.component';
-import { WithHostsListDirective } from 'src/app/shared/directives/with-hosts-list.directive';
+import { NoHostsComponent } from '@shared/components/no-hosts/no-hosts.component';
+import { WithHostsListDirective } from '@shared/directives/with-hosts-list.directive';
 import { ToolbarModule } from 'primeng/toolbar';
-import {
-  ECheckStatus,
-  IAllCheckProgressCache,
-} from 'src/app/shared/interfaces/progress-cache.interface';
+import { ECheckStatus, IAllCheckProgressCache } from '@shared/interfaces/progress-cache.interface';
 import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
-import { HostCheckResultComponent } from 'src/app/shared/components/host-check-result/host-check-result.component';
+import { HostCheckResultComponent } from '@shared/components/host-check-result/host-check-result.component';
 import { SettingsApiService } from 'src/app/features/settings/settings-api.service';
 
 const onlyAvailableStorageKey = 'tugtainer-containers-only-available';

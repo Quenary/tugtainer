@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { NewPasswordFormComponent } from 'src/app/shared/components/new-password-form/new-password-form.component';
+import { NewPasswordFormComponent } from '@shared/components/new-password-form/new-password-form.component';
 import { SettingsFormComponent } from './settings-form/settings-form.component';
 import { ISetPasswordBody } from 'src/app/features/auth/auth.interface';
 import { TranslatePipe } from '@ngx-translate/core';
