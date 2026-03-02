@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable } from 'rxjs';
-import { ISetPasswordBody, TAuthProvider } from './auth-interface';
+import { ISetPasswordBody, TAuthProvider } from './auth.interface';
 
 @Injectable({
   providedIn: 'root',

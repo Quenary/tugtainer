@@ -10,13 +10,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, firstValueFrom, map, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
+import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import {
   EContainerHealthSeverity,
   EContainerStatusSeverity,
   IContainerInfo,
   IContainerPatchBody,
-} from 'src/app/entities/containers/containers-interface';
+} from 'src/app/features/containers/containers.interface';
 import { AccordionModule } from 'primeng/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Location } from '@angular/common';

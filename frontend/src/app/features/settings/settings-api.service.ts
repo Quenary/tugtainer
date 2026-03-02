@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable, tap } from 'rxjs';
-import { ISetting, ISettingUpdate, ITestNotificationRequestBody } from './settings-interface';
+import { ISetting, ISettingUpdate, ITestNotificationRequestBody } from './settings.interface';
 import { SettingsService } from './settings.service';
 
 @Injectable({

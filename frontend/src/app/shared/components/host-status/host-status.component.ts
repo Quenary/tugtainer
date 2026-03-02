@@ -4,8 +4,8 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { lastValueFrom } from 'rxjs';
-import { HostsApiService } from 'src/app/entities/hosts/hosts-api.service';
-import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
+import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
+import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
 
 @Component({
   selector: 'app-host-status',

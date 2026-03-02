@@ -2,7 +2,7 @@ import { Component, inject, resource, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { AuthApiService } from './entities/auth/auth-api.service';
+import { AuthApiService } from './features/auth/auth-api.service';
 import {
   catchError,
   debounceTime,
@@ -19,7 +19,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
 import { AsyncPipe } from '@angular/common';
-import { PublicApiService } from './entities/public/public-api.service';
+import { PublicApiService } from './features/public/public-api.service';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -29,7 +29,7 @@ import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToolbarModule } from 'primeng/toolbar';
 import { DeployGuidelineUrl } from './app.consts';
 import { ToastService } from './core/services/toast.service';
-import { IsUpdateAvailableResponseBody } from './entities/public/public-interface';
+import { IsUpdateAvailableResponseBody } from './features/public/public-interface';
 
 @Component({
   selector: 'app-root',

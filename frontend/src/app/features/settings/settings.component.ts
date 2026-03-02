@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NewPasswordFormComponent } from 'src/app/shared/components/new-password-form/new-password-form.component';
 import { SettingsFormComponent } from './settings-form/settings-form.component';
-import { ISetPasswordBody } from 'src/app/entities/auth/auth-interface';
+import { ISetPasswordBody } from 'src/app/features/auth/auth.interface';
 import { TranslatePipe } from '@ngx-translate/core';
-import { AuthApiService } from 'src/app/entities/auth/auth-api.service';
-import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
+import { AuthApiService } from 'src/app/features/auth/auth-api.service';
+import { SettingsApiService } from 'src/app/features/settings/settings-api.service';
 import { finalize } from 'rxjs';
-import { ISettingUpdate } from 'src/app/entities/settings/settings-interface';
+import { ISettingUpdate } from 'src/app/features/settings/settings.interface';
 import { DividerModule } from 'primeng/divider';
 import { AccordionModule } from 'primeng/accordion';
 import { ToastService } from 'src/app/core/services/toast.service';

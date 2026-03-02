@@ -16,15 +16,15 @@ import { ButtonGroupModule } from 'primeng/buttongroup';
 import { TooltipModule } from 'primeng/tooltip';
 import { finalize } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
+import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import {
   IContainerInfo,
   IContainerListItem,
   TControlContainerCommand,
-} from 'src/app/entities/containers/containers-interface';
-import { IGroupCheckProgressCache } from 'src/app/entities/progress-cache/progress-cache.interface';
-import { ESettingKey } from 'src/app/entities/settings/settings-interface';
-import { SettingsService } from 'src/app/entities/settings/settings.service';
+} from 'src/app/features/containers/containers.interface';
+import { IGroupCheckProgressCache } from 'src/app/shared/interfaces/progress-cache.interface';
+import { ESettingKey } from 'src/app/features/settings/settings.interface';
+import { SettingsService } from 'src/app/features/settings/settings.service';
 
 /**
  * Container action buttons and common logic

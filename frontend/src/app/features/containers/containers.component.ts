@@ -19,12 +19,12 @@ import { ToolbarModule } from 'primeng/toolbar';
 import {
   ECheckStatus,
   IAllCheckProgressCache,
-} from 'src/app/entities/progress-cache/progress-cache.interface';
-import { ContainersApiService } from 'src/app/entities/containers/containers-api.service';
+} from 'src/app/shared/interfaces/progress-cache.interface';
+import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
 import { HostCheckResultComponent } from 'src/app/shared/components/host-check-result/host-check-result.component';
-import { SettingsApiService } from 'src/app/entities/settings/settings-api.service';
+import { SettingsApiService } from 'src/app/features/settings/settings-api.service';
 
 const onlyAvailableStorageKey = 'tugtainer-containers-only-available';
 

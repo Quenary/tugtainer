@@ -24,9 +24,9 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, finalize, firstValueFrom, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { IHostInfo } from 'src/app/entities/hosts/hosts-interface';
-import { ImagesApiService } from 'src/app/entities/images/images-api.service';
-import { IImage, IPruneImageRequestBodySchema } from 'src/app/entities/images/images-interface';
+import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
+import { ImagesApiService } from 'src/app/features/images/images-api.service';
+import { IImage, IPruneImageRequestBodySchema } from 'src/app/features/images/images.interface';
 import { BooleanFieldComponent } from 'src/app/shared/components/boolean-field/boolean-field.component';
 import { DayjsPipe } from 'src/app/shared/pipes/dayjs.pipe';
 
