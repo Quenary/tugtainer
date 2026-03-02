@@ -12,8 +12,10 @@ from alembic import op
 import sqlalchemy as sa
 
 from backend.const import DEFAULT_NOTIFICATION_TEMPLATE
-from backend.enums.settings_enum import ESettingKey, ESettingType
-
+from backend.modules.settings.settings_enum import (
+    ESettingKey,
+    ESettingType,
+)
 
 # revision identifiers, used by Alembic.
 revision: str = "c34cbd8ce5b4"
