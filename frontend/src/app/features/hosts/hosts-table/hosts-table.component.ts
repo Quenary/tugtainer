@@ -13,7 +13,7 @@ import { catchError, firstValueFrom, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
 import { ICreateHost } from 'src/app/features/hosts/hosts.interface';
-import { HostStatusComponent } from 'src/app/shared/components/host-status/host-status.component';
+import { HostStatusComponent } from '@shared/components/host-status/host-status.component';
 
 @Component({
   selector: 'app-hosts-table',

@@ -22,7 +22,7 @@ import {
   IContainerListItem,
   TControlContainerCommand,
 } from 'src/app/features/containers/containers.interface';
-import { IGroupCheckProgressCache } from 'src/app/shared/interfaces/progress-cache.interface';
+import { IGroupCheckProgressCache } from '@shared/interfaces/progress-cache.interface';
 import { ESettingKey } from 'src/app/features/settings/settings.interface';
 import { SettingsService } from 'src/app/features/settings/settings.service';
 

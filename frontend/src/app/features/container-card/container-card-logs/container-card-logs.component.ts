@@ -11,8 +11,8 @@ import { catchError, debounceTime, firstValueFrom, of, startWith } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import { IGetContainerLogsRequestBody } from 'src/app/features/containers/containers.interface';
-import { BooleanFieldComponent } from 'src/app/shared/components/boolean-field/boolean-field.component';
-import { TInterfaceToForm } from 'src/app/shared/types/interface-to-form.type';
+import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
+import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 
 @Component({
   selector: 'app-container-card-logs',

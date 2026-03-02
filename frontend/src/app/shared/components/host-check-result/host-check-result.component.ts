@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { IHostCheckResult } from 'src/app/shared/interfaces/check-result.interface';
+import { IHostCheckResult } from '@shared/interfaces/check-result.interface';
 
 /**
  * Displaying check result of host
