@@ -13,21 +13,22 @@ export type TContainerCheckResult =
   | 'failed'
   | null;
 
-export interface IContainerCheckResult {
+export interface IContainerActionResult {
   container: IContainerInspectResult;
+  result: TContainerCheckResult;
+  image_spec: string | null;
   local_image: IImageInspectResult | null;
   remote_image: IImageInspectResult | null;
   local_digests: string[];
   remote_digests: string[];
-  result: TContainerCheckResult;
 }
 
-export interface IGroupCheckResult {
+export interface IGroupActionResult {
   host_id: number;
   host_name: string;
-  items: IContainerCheckResult[];
+  items: IContainerActionResult[];
 }
 
-export interface IHostCheckResult extends IGroupCheckResult {
+export interface IHostActionResult extends IGroupActionResult {
   prune_result: string | null;
 }

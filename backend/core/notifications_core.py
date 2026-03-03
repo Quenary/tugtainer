@@ -3,9 +3,9 @@ from apprise import Apprise, NotifyFormat
 from apprise.exception import AppriseException
 from typing import Any, cast
 from backend.config import Config
-from backend.core.container.schemas.check_result import (
-    ContainerCheckResult,
-    HostCheckResult,
+from backend.core.action_result import (
+    ContainerActionResult,
+    HostActionResult,
 )
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.exception import TugException
@@ -13,7 +13,7 @@ import jinja2
 from backend.modules.settings.settings_storage import SettingsStorage
 
 
-def any_worthy(items: list[ContainerCheckResult]) -> bool:
+def any_worthy(items: list[ContainerActionResult]) -> bool:
     return any(
         item.result
         in [
@@ -32,7 +32,7 @@ u_sentinel = object()
 
 
 async def send_check_notification(
-    results: list[HostCheckResult],
+    results: list[HostActionResult],
     title_template: str | None = cast(None, tt_sentinel),
     body_template: str | None = cast(None, bt_sentinel),
     urls: str | None = cast(None, u_sentinel),

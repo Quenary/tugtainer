@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, status
-from backend.core.cron_manager import schedule_check_on_init
+from backend.core.cron_manager import schedule_actions_on_init
 from backend.core.agent_client import load_agents_on_init
 from backend.modules.auth.auth_router import auth_router as auth_router
 from backend.modules.containers.containers_router import (
@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     # Code to run on startup
     await load_agents_on_init()
     await SettingsStorage.load_all()
-    await schedule_check_on_init()
+    await schedule_actions_on_init()
     yield  # App
     # Code to run on shutdown
 

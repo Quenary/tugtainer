@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { IHostCheckResult } from '@shared/interfaces/check-result.interface';
+import { IHostActionResult } from '@shared/interfaces/check-result.interface';
 
 /**
  * Displaying check result of host
@@ -12,5 +12,5 @@ import { IHostCheckResult } from '@shared/interfaces/check-result.interface';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HostCheckResultComponent {
-  public readonly result = input.required<IHostCheckResult>();
+  public readonly result = input.required<IHostActionResult>();
 }
