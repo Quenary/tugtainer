@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 from zoneinfo import available_timezones
 from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,9 +15,9 @@ from python_on_whales.components.image.models import (
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.modules.auth.auth_util import is_authorized
-from backend.core.container.schemas.check_result import (
-    ContainerCheckResult,
-    HostCheckResult,
+from backend.core.action_result import (
+    ContainerActionResult,
+    HostActionResult,
 )
 from backend.db.session import get_async_session
 from .settings_model import SettingModel
@@ -31,7 +32,12 @@ from backend.core.notifications_core import send_check_notification
 from backend.core.cron_manager import CronManager
 from .settings_enum import ESettingKey
 from backend.enums.cron_jobs_enum import ECronJob
-from backend.core.containers_core import check_all
+from backend.core.check_actions.check_all_containers import (
+    check_all_containers,
+)
+from backend.core.update_actions.update_all_containers import (
+    update_all_containers,
+)
 from backend.exception import TugException
 from jinja2.exceptions import TemplateError
 
@@ -44,7 +50,9 @@ settings_router = APIRouter(
 )
 
 
-@settings_router.get("/list", response_model=list[SettingsGetResponseItem])
+@settings_router.get(
+    "/list", response_model=list[SettingsGetResponseItem]
+)
 async def get_settings(
     session: AsyncSession = Depends(get_async_session),
 ):
@@ -92,44 +100,31 @@ async def change_system_settings(
 
     await session.commit()
 
-    # Only reschedule cron job if CRONTAB_EXPR or TIMEZONE were updated
-    cron_expr_item = next(
-        (
-            item
-            for item in data
-            if item.key == ESettingKey.CRONTAB_EXPR.value
-        ),
-        None,
-    )
-    timezone_item = next(
-        (
-            item
-            for item in data
-            if item.key == ESettingKey.TIMEZONE.value
-        ),
-        None,
-    )
-
-    if cron_expr_item or timezone_item:
-        # Get current values if not provided in the update
-        cron_expr = (
-            str(cron_expr_item.value)
-            if cron_expr_item
-            else SettingsStorage.get(ESettingKey.CRONTAB_EXPR)
-        )
-        timezone = (
-            str(timezone_item.value)
-            if timezone_item
-            else SettingsStorage.get(ESettingKey.TIMEZONE)
+    def _get(key: ESettingKey) -> str:
+        return next(
+            (
+                str(item.value)
+                for item in data
+                if item.key == key and item.value
+            ),
+            cast(str, SettingsStorage.get(key)),
         )
 
-        if cron_expr and timezone:
-            CronManager.schedule_job(
-                ECronJob.CHECK_CONTAINERS,
-                cron_expr,
-                timezone,
-                lambda: check_all(True),
-            )
+    check_cron_item = _get(ESettingKey.CHECK_CRONTAB_EXPR)
+    update_cron_item = _get(ESettingKey.UPDATE_CRONTAB_EXPR)
+    tz = _get(ESettingKey.TIMEZONE)
+    CronManager.schedule_job(
+        ECronJob.CHECK_CONTAINERS,
+        check_cron_item,
+        tz,
+        check_all_containers,
+    )
+    CronManager.schedule_job(
+        ECronJob.UPDATE_CONTAINERS,
+        update_cron_item,
+        tz,
+        update_all_containers,
+    )
 
     return {"status": "updated", "count": len(data)}
 
@@ -189,8 +184,8 @@ async def test_notification(data: TestNotificationRequestBody):
         test_digests: list[str] = [
             "sha256:f751174c3d8ae54b12575af320a4aa01bb3b6e61ab82aa1e4f8ecac8a079ce61",
         ]
-        items: list[ContainerCheckResult] = [
-            ContainerCheckResult(
+        items: list[ContainerActionResult] = [
+            ContainerActionResult(
                 container=test_container,
                 local_image=None,
                 remote_image=None,
@@ -198,7 +193,7 @@ async def test_notification(data: TestNotificationRequestBody):
                 remote_digests=[],
                 result=None,
             ),
-            ContainerCheckResult(
+            ContainerActionResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=None,
@@ -206,7 +201,7 @@ async def test_notification(data: TestNotificationRequestBody):
                 remote_digests=[],
                 result="not_available",
             ),
-            ContainerCheckResult(
+            ContainerActionResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
@@ -214,7 +209,7 @@ async def test_notification(data: TestNotificationRequestBody):
                 remote_digests=test_digests,
                 result="updated",
             ),
-            ContainerCheckResult(
+            ContainerActionResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
@@ -222,7 +217,7 @@ async def test_notification(data: TestNotificationRequestBody):
                 remote_digests=test_digests,
                 result="available",
             ),
-            ContainerCheckResult(
+            ContainerActionResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
@@ -230,7 +225,7 @@ async def test_notification(data: TestNotificationRequestBody):
                 remote_digests=test_digests,
                 result="available(notified)",
             ),
-            ContainerCheckResult(
+            ContainerActionResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
@@ -238,7 +233,7 @@ async def test_notification(data: TestNotificationRequestBody):
                 remote_digests=test_digests,
                 result="rolled_back",
             ),
-            ContainerCheckResult(
+            ContainerActionResult(
                 container=test_container,
                 local_image=test_image,
                 remote_image=test_image,
@@ -254,14 +249,14 @@ deleted: sha256:030dbd4c7f006cf2a8a482f9128f1b3238e5c820bb107aef0a47299e51179e4b
 
 Total reclaimed space: 1.5GB
 """
-        test_results: list[HostCheckResult] = [
-            HostCheckResult(
+        test_results: list[HostActionResult] = [
+            HostActionResult(
                 host_id=1,
                 host_name="test_host_1",
                 items=items,
                 prune_result=prune_result,
             ),
-            HostCheckResult(
+            HostActionResult(
                 host_id=2,
                 host_name="test_host_2",
                 items=items,

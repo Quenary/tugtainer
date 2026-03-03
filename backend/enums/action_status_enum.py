@@ -1,9 +1,9 @@
 from enum import Enum
 
 
-class ECheckStatus(str, Enum):
+class EActionStatus(str, Enum):
     """
-    Enum of available check process statuses
+    Enum of available action (check, update) statuses
     """
 
     PREPARING = "PREPARING"

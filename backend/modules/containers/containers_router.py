@@ -6,8 +6,26 @@ from python_on_whales.components.container.models import (
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from backend.core.check_actions.check_all_containers import (
+    check_all_containers,
+)
+from backend.core.check_actions.check_host_containers import (
+    check_host_containers,
+)
+from backend.core.check_actions.check_one_container import (
+    check_one_container,
+)
+from backend.core.update_actions.update_all_containers import (
+    update_all_containers,
+)
+from backend.core.update_actions.update_group_containers import (
+    update_group_containers,
+)
+from backend.core.update_actions.update_host_containers import (
+    update_host_containers,
+)
 from backend.modules.auth.auth_util import is_authorized
-from backend.core.container.util import is_protected_container
+from backend.core.container_util import is_protected_container
 from backend.modules.hosts.hosts_model import HostsModel
 from .containers_schemas import (
     ContainerGetResponseBody,
@@ -17,22 +35,19 @@ from .containers_schemas import (
 from backend.db.session import get_async_session
 from .containers_model import ContainersModel
 from backend.core.agent_client import AgentClientManager
-from backend.core.progress_cache.progress_cache_schemas import (
-    GroupCheckProgressCache,
-    HostCheckProgressCache,
-    AllCheckProgressCache,
+from backend.core.progress.progress_schemas import (
+    ContainerActionProgress,
+    GroupActionProgress,
+    HostActionProgress,
+    AllActionProgress,
 )
-from backend.core.progress_cache.progress_cache_util import (
+from backend.core.progress.progress_util import (
     ALL_CONTAINERS_STATUS_KEY,
+    get_container_cache_key,
     get_host_cache_key,
     get_group_cache_key,
 )
-from backend.core.progress_cache.progress_cache import ProcessCache
-from backend.core.containers_core import (
-    check_all,
-    check_host,
-    check_group,
-)
+from backend.core.progress.progress_cache import ProgressCache
 from backend.core.container_group.container_group import (
     get_container_group,
 )
@@ -166,8 +181,8 @@ async def patch_container_data(
     path="/check",
     description="Run general check process. Returns ID of the task that can be used for monitoring.",
 )
-async def check_all_ep(update: bool = False):
-    asyncio.create_task(check_all(update))
+async def check_all():
+    asyncio.create_task(check_all_containers())
     return ALL_CONTAINERS_STATUS_KEY
 
 
@@ -175,17 +190,15 @@ async def check_all_ep(update: bool = False):
     path="/check/{host_id}",
     description="Check specific host. Returns ID of the task that can be used for monitoring.",
 )
-async def check_host_ep(
+async def check_host(
     host_id: int,
-    update: bool = False,
     session: AsyncSession = Depends(get_async_session),
 ) -> str:
     host = await get_host(host_id, session)
     _raise_for_host_status(host)
-    containers = await get_host_containers(session, host_id)
     client = AgentClientManager.get_host_client(host)
-    _ = asyncio.create_task(
-        check_host(host, client, update, containers),
+    asyncio.create_task(
+        check_host_containers(host, client),
     )
     return get_host_cache_key(host)
 
@@ -194,10 +207,57 @@ async def check_host_ep(
     path="/check/{host_id}/{c_name}",
     description="Check specific container. Returns ID of the task that can be used for monitoring.",
 )
-async def check_container_ep(
+async def check_container(
     host_id: int,
     c_name: str,
-    update: bool = False,
+    session: AsyncSession = Depends(get_async_session),
+) -> str:
+    host = await get_host(host_id, session)
+    _raise_for_host_status(host)
+    client = AgentClientManager.get_host_client(host)
+    container = await client.container.inspect(c_name)
+    asyncio.create_task(
+        check_one_container(client, host, container)
+    )
+    return get_container_cache_key(
+        host,
+        container,
+    )
+
+
+@containers_router.post(
+    path="/update",
+    description="Run general update process. Returns ID of the task that can be used for monitoring.",
+)
+async def update_all():
+    asyncio.create_task(update_all_containers())
+    return ALL_CONTAINERS_STATUS_KEY
+
+
+@containers_router.post(
+    path="/update/{host_id}",
+    description="Update specific host. Returns ID of the task that can be used for monitoring.",
+)
+async def update_host(
+    host_id: int,
+    session: AsyncSession = Depends(get_async_session),
+) -> str:
+    host = await get_host(host_id, session)
+    _raise_for_host_status(host)
+    client = AgentClientManager.get_host_client(host)
+    asyncio.create_task(
+        update_host_containers(host, client),
+    )
+    return get_host_cache_key(host)
+
+
+@containers_router.post(
+    path="/update/{host_id}/{c_name}",
+    description="Update specific container. Returns ID of the task that can be used for monitoring.",
+)
+async def update_container(
+    host_id: int,
+    c_name: str,
     session: AsyncSession = Depends(get_async_session),
 ) -> str:
     host = await get_host(host_id, session)
@@ -210,30 +270,30 @@ async def check_container_ep(
         GetContainerListBodySchema(all=True)
     )
     db_containers = await get_host_containers(session, host_id)
-    group = get_container_group(
-        container, containers, db_containers, update
-    )
-    _ = asyncio.create_task(check_group(client, host, group, update))
+    group = get_container_group(container, containers, db_containers)
+    asyncio.create_task(update_group_containers(client, host, group))
     return get_group_cache_key(host, group)
 
 
 @containers_router.get(
     path="/progress",
     description="Get progress of general check",
-    response_model=AllCheckProgressCache
-    | HostCheckProgressCache
-    | GroupCheckProgressCache
+    response_model=AllActionProgress
+    | HostActionProgress
+    | GroupActionProgress
+    | ContainerActionProgress
     | None,
 )
 def progress(
     cache_id: str,
 ) -> (
-    AllCheckProgressCache
-    | HostCheckProgressCache
-    | GroupCheckProgressCache
+    AllActionProgress
+    | HostActionProgress
+    | GroupActionProgress
+    | ContainerActionProgress
     | None
 ):
-    CACHE = ProcessCache(cache_id)
+    CACHE = ProgressCache(cache_id)
     return CACHE.get()
 
 

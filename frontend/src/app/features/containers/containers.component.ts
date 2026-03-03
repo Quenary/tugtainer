@@ -16,7 +16,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NoHostsComponent } from '@shared/components/no-hosts/no-hosts.component';
 import { WithHostsListDirective } from '@shared/directives/with-hosts-list.directive';
 import { ToolbarModule } from 'primeng/toolbar';
-import { ECheckStatus, IAllCheckProgressCache } from '@shared/interfaces/progress-cache.interface';
+import { EActionStatus, IAllActionProgress } from '@shared/interfaces/progress.interface';
 import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
@@ -49,7 +49,7 @@ export class ContainersComponent extends WithHostsListDirective {
   private readonly translateService = inject(TranslateService);
   private readonly settingsApiService = inject(SettingsApiService);
 
-  protected readonly checkAllProgress = signal<IAllCheckProgressCache>(null);
+  protected readonly checkAllProgress = signal<IAllActionProgress>(null);
   protected readonly checkAllProgressResults = computed(() => {
     const checkAllProgress = this.checkAllProgress();
     return checkAllProgress?.result ? Object.values(checkAllProgress.result) : null;
@@ -62,7 +62,7 @@ export class ContainersComponent extends WithHostsListDirective {
     const checkAllProgress = this.checkAllProgress();
     return (
       !!checkAllProgress &&
-      ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkAllProgress.status)
+      ![EActionStatus.DONE, EActionStatus.ERROR].includes(checkAllProgress.status)
     );
   });
   protected readonly checkAllDialogVisible = signal<boolean>(false);
@@ -88,7 +88,7 @@ export class ContainersComponent extends WithHostsListDirective {
       next: (cache_id: string) => {
         this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
         this.containersApiService
-          .watchProgress<IAllCheckProgressCache>(cache_id)
+          .watchProgress<IAllActionProgress>(cache_id)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (res) => {

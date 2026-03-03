@@ -8,10 +8,7 @@ import {
   TControlContainerCommand,
   IGetContainerLogsRequestBody,
 } from './containers.interface';
-import {
-  ECheckStatus,
-  IBaseCheckProgressCache,
-} from '../../shared/interfaces/progress-cache.interface';
+import { EActionStatus, IActionProgress } from '../../shared/interfaces/progress.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -31,24 +28,28 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
     return this.httpClient.patch<IContainerListItem>(`${this.basePath}/${host_id}/${name}`, body);
   }
 
-  checkAll(update: boolean = false): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/check`, {}, { params: { update } });
+  checkAll(): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/check`, {});
   }
 
-  checkHost(host_id: number, update: boolean = false): Observable<string> {
-    return this.httpClient.post<string>(
-      `${this.basePath}/check/${host_id}`,
-      {},
-      { params: { update } },
-    );
+  checkHost(host_id: number): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/check/${host_id}`, {});
   }
 
-  checkContainer(host_id: number, name: string, update: boolean = false): Observable<string> {
-    return this.httpClient.post<string>(
-      `${this.basePath}/check/${host_id}/${name}`,
-      {},
-      { params: { update } },
-    );
+  checkContainer(host_id: number, name: string): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/check/${host_id}/${name}`, {});
+  }
+
+  updateAll(): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/update`, {});
+  }
+
+  updateHost(host_id: number): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/update/${host_id}`, {});
+  }
+
+  updateContainer(host_id: number, name: string): Observable<string> {
+    return this.httpClient.post<string>(`${this.basePath}/update/${host_id}/${name}`, {});
   }
 
   /**
@@ -56,7 +57,7 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
    * @param cache_id id of progress cache
    * @returns
    */
-  progress<T extends IBaseCheckProgressCache>(cache_id: string): Observable<T> {
+  progress<T extends IActionProgress>(cache_id: string): Observable<T> {
     return this.httpClient.get<T>(`${this.basePath}/progress`, { params: { cache_id } });
   }
 
@@ -65,10 +66,10 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
    * @param cache_id id of progress cache
    * @returns
    */
-  watchProgress<T extends IBaseCheckProgressCache>(cache_id: string): Observable<T> {
+  watchProgress<T extends IActionProgress>(cache_id: string): Observable<T> {
     return this.progress<T>(cache_id).pipe(
       repeat({ delay: 500 }),
-      takeWhile((res) => ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(res?.status), true),
+      takeWhile((res) => ![EActionStatus.DONE, EActionStatus.ERROR].includes(res?.status), true),
     );
   }
 

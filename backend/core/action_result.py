@@ -20,10 +20,12 @@ ContainerCheckResultType = Literal[
 
 
 @dataclass
-class CheckContainerUpdateAvailableResult:
-    result: ContainerCheckResultType = None
+class ContainerActionResult:
+    container: ContainerInspectResult
+    result: ContainerCheckResultType | None = None
     image_spec: str | None = None
     local_image: ImageInspectResult | None = None
+    remote_image: ImageInspectResult | None = None
     local_digests: list[str] = field(
         default_factory=list
     )
@@ -33,22 +35,12 @@ class CheckContainerUpdateAvailableResult:
 
 
 @dataclass
-class ContainerCheckResult:
-    container: ContainerInspectResult
-    local_image: ImageInspectResult | None
-    remote_image: ImageInspectResult | None
-    local_digests: list[str]
-    remote_digests: list[str]
-    result: ContainerCheckResultType
-
-
-@dataclass
-class GroupCheckResult:
+class GroupActionResult:
     host_id: int
     host_name: str
-    items: list[ContainerCheckResult] = field(default_factory=list)
+    items: list[ContainerActionResult] = field(default_factory=list)
 
 
 @dataclass
-class HostCheckResult(GroupCheckResult):
+class HostActionResult(GroupActionResult):
     prune_result: str | None = None

@@ -34,7 +34,7 @@ import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
 import { RouterLink } from '@angular/router';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
-import { ECheckStatus, IHostCheckProgressCache } from '@shared/interfaces/progress-cache.interface';
+import { EActionStatus, IHostActionProgress } from '@shared/interfaces/progress.interface';
 import { HostCheckResultComponent } from '@shared/components/host-check-result/host-check-result.component';
 
 interface IListParams {
@@ -118,7 +118,7 @@ export class ContainersTableComponent {
   /**
    * Check host state
    */
-  protected readonly checkHostProgress = signal<IHostCheckProgressCache>(null);
+  protected readonly checkHostProgress = signal<IHostActionProgress>(null);
   /**
    * Check host in progress flag
    */
@@ -126,7 +126,7 @@ export class ContainersTableComponent {
     const checkHostProgress = this.checkHostProgress();
     return (
       !!checkHostProgress &&
-      ![ECheckStatus.DONE, ECheckStatus.ERROR].includes(checkHostProgress.status)
+      ![EActionStatus.DONE, EActionStatus.ERROR].includes(checkHostProgress.status)
     );
   });
   /**
@@ -136,11 +136,14 @@ export class ContainersTableComponent {
 
   protected checkHost(update: boolean = false): void {
     const host = this.host();
-    this.containersApiService.checkHost(host.id, update).subscribe({
+    const req$ = update
+      ? this.containersApiService.updateHost(host.id)
+      : this.containersApiService.checkHost(host.id);
+    req$.subscribe({
       next: (cache_id: string) => {
         this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
         this.containersApiService
-          .watchProgress<IHostCheckProgressCache>(cache_id)
+          .watchProgress<IHostActionProgress>(cache_id)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (res) => {

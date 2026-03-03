@@ -1,48 +1,45 @@
 import logging
 from zoneinfo import ZoneInfo, available_timezones
 import aiocron
-from typing import Callable, Dict, cast
-from sqlalchemy import select
+from typing import Callable, Dict
+from backend.core.check_actions.check_all_containers import check_all_containers
+from backend.core.update_actions.update_all_containers import update_all_containers
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.enums.cron_jobs_enum import ECronJob
-from backend.core.containers_core import check_all
 from backend.db.session import async_session_maker
-from backend.modules.settings.settings_model import SettingModel
+from backend.modules.settings.settings_storage import SettingsStorage
 
 
 VALID_TIMEZONES = available_timezones()
 
 
-async def schedule_check_on_init():
+async def schedule_actions_on_init():
     """
     Schedule container check and update on app init
     """
     async with async_session_maker() as session:
-        stmt = (
-            select(SettingModel)
-            .where(SettingModel.key == ESettingKey.CRONTAB_EXPR)
-            .limit(1)
+        tz = SettingsStorage.get(ESettingKey.TIMEZONE)
+        check_crontab = SettingsStorage.get(
+            ESettingKey.CHECK_CRONTAB_EXPR
         )
-        result = await session.execute(stmt)
-        crontab_expr = result.scalar_one_or_none()
-
-        if not crontab_expr:
-            return
-
-        stmt = (
-            select(SettingModel)
-            .where(SettingModel.key == ESettingKey.TIMEZONE)
-            .limit(1)
+        update_crontab = SettingsStorage.get(
+            ESettingKey.UPDATE_CRONTAB_EXPR
         )
-        result = await session.execute(stmt)
-        tz = result.scalar_one_or_none()
 
-        CronManager.schedule_job(
-            ECronJob.CHECK_CONTAINERS,
-            str(crontab_expr.value),
-            tz.value if tz else None,
-            lambda: check_all(True),
-        )
+        if check_crontab:
+            CronManager.schedule_job(
+                ECronJob.CHECK_CONTAINERS,
+                check_crontab,
+                tz,
+                check_all_containers,
+            )
+        if update_crontab:
+            CronManager.schedule_job(
+                ECronJob.UPDATE_CONTAINERS,
+                update_crontab,
+                tz,
+                update_all_containers,
+            )
 
 
 class CronManager:

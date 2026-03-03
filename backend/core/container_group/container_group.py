@@ -3,7 +3,8 @@ from typing import Literal
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
-from backend.core.container.util.is_protected_container import (
+from backend.core.container_util import get_container_image_spec
+from backend.core.container_util.is_protected_container import (
     is_protected_container,
 )
 from backend.modules.containers.containers_model import (
@@ -130,15 +131,6 @@ def _sort_containers_by_dependencies(
     return res2
 
 
-def _get_action(
-    db_item: ContainersModel | None,
-) -> Literal["update", "check", None]:
-    """Get action from db"""
-    if db_item and db_item.check_enabled:
-        return "update" if db_item.update_enabled else "check"
-    return None
-
-
 def _get_db_item(
     c: ContainerInspectResult, items: list[ContainersModel]
 ) -> ContainersModel | None:
@@ -149,11 +141,14 @@ def _get_db_item(
 
 
 def _get_container_group_item(
-    c: ContainerInspectResult, c_db: ContainersModel
+    c: ContainerInspectResult, c_db: ContainersModel, update_manual: bool = False
 ) -> ContainerGroupItem:
     return ContainerGroupItem(
         container=c,
-        action=_get_action(c_db),
+        image_spec=get_container_image_spec(c),
+        update_enabled=c_db and c_db.update_enabled,
+        update_available=c_db and c_db.update_available,
+        update_manual=update_manual,
         protected=is_protected_container(c),
         service_name=_get_service_name(c),
         compose_deps=_get_dependencies(
@@ -162,6 +157,14 @@ def _get_container_group_item(
         tugtainer_deps=_get_dependencies(
             c, TUGTAINER_DEPENDS_ON_LABEL
         ),
+        local_digests=(
+            c_db.local_digests if c_db and c_db.local_digests else []
+        ),
+        remote_digests=(
+            c_db.remote_digests
+            if c_db and c_db.remote_digests
+            else []
+        ),
     )
 
 
@@ -169,7 +172,6 @@ def get_container_group(
     target: ContainerInspectResult,
     containers: list[ContainerInspectResult],
     containers_db: list[ContainersModel],
-    update: bool,
 ) -> ContainerGroup:
     """
     Get container group by single container.
@@ -181,23 +183,7 @@ def get_container_group(
     """
     target_c_gn = _get_group_name(target)
     target_db_item = _get_db_item(target, containers_db)
-    action = _get_action(target_db_item)
-    if update:
-        action = "update"
-    t_compose_deps = _get_dependencies(
-        target, DOCKER_COMPOSE_DEPENDS_ON_LABEL
-    )
-    t_tugtainer_deps = _get_dependencies(
-        target, TUGTAINER_DEPENDS_ON_LABEL
-    )
-    target_item = ContainerGroupItem(
-        container=target,
-        action=action,
-        protected=is_protected_container(target),
-        service_name=_get_service_name(target),
-        compose_deps=t_compose_deps,
-        tugtainer_deps=t_tugtainer_deps,
-    )
+    target_item = _get_container_group_item(target, target_db_item, True)
     group = ContainerGroup(
         name=target_c_gn,
         containers=[target_item],
@@ -215,7 +201,7 @@ def get_container_group(
         )
         if (
             c_gn == target_c_gn
-            or c.name in t_tugtainer_deps
+            or c.name in target_item.tugtainer_deps
             or target.name in c_tugtainer_deps
         ):
             c_db = _get_db_item(c, containers_db)

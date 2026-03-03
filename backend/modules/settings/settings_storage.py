@@ -21,7 +21,10 @@ class SettingsStorage:
 
     @classmethod
     @overload
-    def get(cls, key: Literal[ESettingKey.CRONTAB_EXPR]) -> str: ...
+    def get(cls, key: Literal[ESettingKey.CHECK_CRONTAB_EXPR])-> str: ...
+    @classmethod
+    @overload
+    def get(cls, key: Literal[ESettingKey.UPDATE_CRONTAB_EXPR]) -> str: ...
     @classmethod
     @overload
     def get(

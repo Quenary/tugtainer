@@ -1,27 +1,24 @@
 from sqlalchemy import select
-from backend.modules.containers.containers_model import ContainersModel
-from backend.core.container.schemas.check_result import (
-    ContainerCheckResultType,
-    GroupCheckResult,
+from backend.modules.containers.containers_model import (
+    ContainersModel,
+)
+from backend.core.action_result import (
+    GroupActionResult,
 )
 from backend.util.now import now
 from backend.db.session import async_session_maker
 
 
-async def update_containers_data_after_check(
-    result: GroupCheckResult | None,
+async def update_containers_data_after_action(
+    result: GroupActionResult | None,
 ) -> None:
-    """Update containers in db after check/update process"""
+    """Update containers in db after update process"""
     if not result:
         return
     valid_items = [item for item in result.items if item.result]
     if not valid_items:
         return
     _now = now()
-    in_available: list[ContainerCheckResultType] = [
-        "available",
-        "available(notified)",
-    ]
 
     async with async_session_maker() as session:
         container_names = [
@@ -40,10 +37,8 @@ async def update_containers_data_after_check(
             if container := containers_map.get(
                 str(item.container.name), None
             ):
-                container.update_available = (
-                    item.result in in_available
-                )
                 if item.result == "updated":
+                    container.update_available = False
                     container.updated_at = _now
                     container.local_digests = item.remote_digests
 

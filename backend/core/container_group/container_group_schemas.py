@@ -1,12 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Literal
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-from backend.core.container.schemas.check_result import (
+from backend.core.action_result import (
     ContainerCheckResultType,
 )
 from shared.schemas.container_schemas import (
@@ -31,19 +30,21 @@ class ContainerGroupItem:
     """
 
     container: ContainerInspectResult
-    action: Literal["update", "check", None]
+    update_enabled: bool  # whether container marked for auto-update
+    update_available: bool  # whether update available
+    update_manual: bool #whether container was manually selected for update
     protected: bool  # Whether container labeled with dev.quenary.tugtainer.protected=true, so it cannot be stopped and updated
     service_name: str | None  # docker compose service name
     compose_deps: list[str]  # docker compose dependencies
     tugtainer_deps: list[str]  # tugtainer dependencies
-    temp_result: ContainerCheckResultType | None = None
-    image_spec: str | None = None
+    image_spec: str | None
+    local_digests: list[str]
+    remote_digests: list[str]
     config: CreateContainerRequestBodySchema | None = None
     commands: list[list[str]] = field(default_factory=list)
     local_image: ImageInspectResult | None = None
     remote_image: ImageInspectResult | None = None
-    local_digests: list[str] = field(default_factory=list)
-    remote_digests: list[str] = field(default_factory=list)
+    result: ContainerCheckResultType | None = None
 
     @property
     def name(self) -> str:

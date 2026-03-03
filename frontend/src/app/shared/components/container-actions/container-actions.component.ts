@@ -22,7 +22,7 @@ import {
   IContainerListItem,
   TControlContainerCommand,
 } from 'src/app/features/containers/containers.interface';
-import { IGroupCheckProgressCache } from '@shared/interfaces/progress-cache.interface';
+import { IGroupActionProgress } from '@shared/interfaces/progress.interface';
 import { ESettingKey } from 'src/app/features/settings/settings.interface';
 import { SettingsService } from 'src/app/features/settings/settings.service';
 
@@ -55,7 +55,7 @@ export class ContainerActionsComponent {
   /**
    * Continuos progress events
    */
-  public readonly onProgress = output<IGroupCheckProgressCache>();
+  public readonly onProgress = output<IGroupActionProgress>();
   /**
    * Last progress event
    */
@@ -121,7 +121,10 @@ export class ContainerActionsComponent {
       return;
     }
     this.loading.set(update ? 'update' : 'check');
-    this.containersApiService.checkContainer(item.host_id, item.name, update).subscribe({
+    const req$ = update
+      ? this.containersApiService.updateContainer(item.host_id, item.name)
+      : this.containersApiService.checkContainer(item.host_id, item.name);
+    req$.subscribe({
       next: (cache_id) => {
         this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
         this.containersApiService

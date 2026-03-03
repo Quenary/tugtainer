@@ -186,9 +186,14 @@
       "APP_SETTINGS": "App settings"
     },
     "BY_KEY": {
-      "CRONTAB_EXPR": {
-        "LABEL": "Crontab expression",
+      "CHECK_CRONTAB_EXPR": {
+        "LABEL": "Check Crontab expression",
         "HINT": "Crontab expression for periodic checks e.g. \n'0 */1 * * *' for every hour\n\nClick for more info.",
+        "LINK": "https://crontab.guru/"
+      },
+      "UPDATE_CRONTAB_EXPR": {
+        "LABEL": "Update Crontab expression",
+        "HINT": "Crontab expression for periodic updates e.g. \n'0 */1 * * *' for every hour\n\nClick for more info.",
         "LINK": "https://crontab.guru/"
       },
       "NOTIFICATION_URLS": {

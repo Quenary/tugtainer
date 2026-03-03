@@ -7,7 +7,7 @@ _CACHE = TTLCache(maxsize=10, ttl=600)
 T = TypeVar("T", bound=Mapping[Any, Any])
 
 
-class ProcessCache(Generic[T]):
+class ProgressCache(Generic[T]):
     """
     Helper class for check/update progress.
     If data argument is passed, the cache will be replaced.
