@@ -33,6 +33,8 @@ from backend.core.container_util import (
     get_digests_for_platform,
 )
 from backend.modules.hosts.hosts_model import HostsModel
+from backend.modules.settings.settings_enum import ESettingKey
+from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.now import now
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
@@ -168,8 +170,12 @@ async def check_one_container(
                 f"{container.name} - local digests for platform: {local_digests}"
             )
 
-            # pull image before manifests
-            if False:  # TODO добавить настройку
+            # pull image before remote manifests
+            # https://github.com/Quenary/tugtainer/issues/114
+            if SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK):
+                logging.info(
+                    f"{container.name} - pulling image before remote manifest request"
+                )
                 remote_image = await client.image.pull(
                     PullImageRequestBodySchema(image=image_spec)
                 )
