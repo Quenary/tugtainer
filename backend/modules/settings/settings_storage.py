@@ -27,6 +27,9 @@ class SettingsStorage:
     def get(cls, key: Literal[ESettingKey.UPDATE_CRONTAB_EXPR]) -> str: ...
     @classmethod
     @overload
+    def get(cls, key: Literal[ESettingKey.REGISTRY_REQ_DELAY]) -> int: ...
+    @classmethod
+    @overload
     def get(
         cls, key: Literal[ESettingKey.NOTIFICATION_URLS]
     ) -> str: ...

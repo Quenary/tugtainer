@@ -1,3 +1,4 @@
+import asyncio
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
@@ -57,6 +58,7 @@ async def update_group_containers(
     logging.info(
         f"""Starting update of group: '{group.name}', containers count: {len(group.containers)}"""
     )
+    DELAY = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
     STATUS_KEY = get_group_cache_key(host, group)
     CACHE = ProgressCache[GroupActionProgress](STATUS_KEY)
     STATE = CACHE.get()
@@ -191,6 +193,7 @@ async def update_group_containers(
                     )
                 )
                 gc.remote_image = remote_image
+                await asyncio.sleep(DELAY)
             except Exception as e:
                 logging.exception(e)
                 logging.error(

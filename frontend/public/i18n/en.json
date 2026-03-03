@@ -206,6 +206,10 @@
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
       },
+      "REGISTRY_REQ_DELAY": {
+        "LABEL": "Registry requests delay, in seconds",
+        "HINT": "Delay between registry requests like manifest, pull, etc. to avoid rate limits."
+      },
       "PULL_BEFORE_CHECK": {
         "LABEL": "Pull before check",
         "HINT": "This can be useful if you use a registry proxy that only updates manifests when pulling."

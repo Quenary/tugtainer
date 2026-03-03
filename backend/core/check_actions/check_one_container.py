@@ -1,3 +1,4 @@
+import asyncio
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -55,6 +56,7 @@ async def check_one_container(
         f"{container.name} - Checking container update availability."
     )
     result = ContainerActionResult(container)
+    DELAY = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
     CACHE_KEY = get_container_cache_key(
         host,
         container,
@@ -162,6 +164,7 @@ async def check_one_container(
                         os,
                         str(local_image.id),
                     )
+                    await asyncio.sleep(DELAY)
                     if local_digests:
                         break
 
@@ -180,8 +183,7 @@ async def check_one_container(
                     PullImageRequestBodySchema(image=image_spec)
                 )
                 result.remote_image = remote_image
-
-            # TODO добавить задержку между запросами
+                await asyncio.sleep(DELAY)
 
             # get remote digests
             remote_manifest = await client.manifest.inspect(
