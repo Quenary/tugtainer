@@ -1,6 +1,10 @@
 import logging
+from typing import cast
 from .check_one_container import check_one_container
-from .check_actions_util import sort_containers_by_checked_at
+from .check_actions_util import (
+    filter_containers_by_check_enabled,
+    sort_containers_by_checked_at,
+)
 from backend.db.session import async_session_maker
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.core.action_result import (
@@ -27,11 +31,13 @@ from shared.schemas.container_schemas import (
 async def check_host_containers(
     host: HostsModel,
     client: AgentClient,
+    manual: bool = False,
 ) -> HostActionResult | None:
     """
     Check all host's containers.
     :param host: host info
     :param client: host agent client
+    :param manual: manual check includes all containers
     """
     logging.info(f"Starting check action for host: {host.name}")
     result = HostActionResult(host_id=host.id, host_name=host.name)
@@ -53,8 +59,15 @@ async def check_host_containers(
                 session,
                 host.id,
             )
+            containers_db_map = {
+                item.name: item for item in containers_db
+            }
+
+        containers = filter_containers_by_check_enabled(
+            containers, containers_db_map, manual
+        )
         containers = sort_containers_by_checked_at(
-            containers, containers_db
+            containers, containers_db_map
         )
 
         CACHE.update(

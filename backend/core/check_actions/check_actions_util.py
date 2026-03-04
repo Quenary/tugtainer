@@ -8,15 +8,29 @@ from backend.modules.containers.containers_model import (
 )
 
 
+def filter_containers_by_check_enabled(
+    containers: list[ContainerInspectResult],
+    containers_db_map: dict[str, ContainersModel],
+    manual: bool = False,
+) -> list[ContainerInspectResult]:
+    if manual:
+        return containers
+    _containers: list[ContainerInspectResult] = []
+    for c in containers:
+        c_db = containers_db_map.get(cast(str, c.name))
+        if c_db and c_db.check_enabled:
+            _containers.append(c)
+    return _containers
+
+
 def sort_containers_by_checked_at(
     containers: list[ContainerInspectResult],
-    containers_db: list[ContainersModel],
+    containers_db_map: dict[str, ContainersModel],
 ) -> list[ContainerInspectResult]:
     """
     Sort containers by checked_at date
     (from earliest to latest)
     """
-    containers_db_map = {item.name: item for item in containers_db}
     return sorted(
         containers,
         key=lambda c: (

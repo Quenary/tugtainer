@@ -182,7 +182,7 @@ async def patch_container_data(
     description="Run general check process. Returns ID of the task that can be used for monitoring.",
 )
 async def check_all():
-    asyncio.create_task(check_all_containers())
+    asyncio.create_task(check_all_containers(True))
     return ALL_CONTAINERS_STATUS_KEY
 
 
@@ -198,7 +198,7 @@ async def check_host(
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
     asyncio.create_task(
-        check_host_containers(host, client),
+        check_host_containers(host, client, True),
     )
     return get_host_cache_key(host)
 

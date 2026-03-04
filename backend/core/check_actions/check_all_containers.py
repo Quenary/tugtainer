@@ -20,9 +20,12 @@ from backend.core.progress.progress_cache import ProgressCache
 from backend.core.agent_client import AgentClientManager
 
 
-async def check_all_containers():
+async def check_all_containers(
+    manual: bool = False,
+):
     """
     Check all containers of all hosts
+    :param manual: manual check includes all containers
     """
     CACHE = ProgressCache[AllActionProgress](
         ALL_CONTAINERS_STATUS_KEY
@@ -51,7 +54,7 @@ async def check_all_containers():
         results: list[HostActionResult] = []
         for host in hosts:
             client = AgentClientManager.get_host_client(host)
-            result = await check_host_containers(host, client)
+            result = await check_host_containers(host, client, manual)
             if result:
                 results += [result]
 

@@ -175,6 +175,7 @@ def get_container_group(
 ) -> ContainerGroup:
     """
     Get container group by single container.
+    This function should be used for manual updates.
     :param target: target container
     :param containers: list of all host's containers
     :param containers_db: list of  all host's container's db data
