@@ -12,7 +12,8 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 - [main features](#main-features)
 - [deploy](#deploy)
-- [check and update process](#check-and-update-process)
+- [check process](#check-process)
+- [update process](#update-process)
 - [private registries](#private-registries)
 - [custom labels](#custom-labels)
 - [notifications](#notifications)
@@ -95,48 +96,48 @@ Automatic updates are disabled by default. You can choose only what you need.
   [docker-compose.app.yml](./docker-compose.app.yml) and [docker-compose.agent.yml](./docker-compose.agent.yml) use this approach by default.
 
   Manual setup:
-
   - Deploy socket-proxy e.g. https://hub.docker.com/r/linuxserver/socket-proxy
   - Enable at least **CONTAINERS, IMAGES, POST, INFO, PING** for the **check** feature, and **NETWORKS** for the **update** feature;
   - Set env var DOCKER_HOST="tcp://my-socket-proxy:port" to the Tugtainer(-agent) container(s);
 
-## Check and update process:
+## Check process:
+
+1. Request manifest of local image by sha (if missing or image changed since last check);
+2. Pull remote image (if enabled in the settings, disabled by default), this may be handy if you using registry proxy;
+3. Request manifest of remote image by tag;
+4. Compare digests based on platform and architecture;
+5. If different, the container **marked as available**.
+
+**Scheduled** process includes all enabled hosts and all container **selected for auto-check**.
+
+**Manual** process includes all containers despite auto-check toggle (or a single container if you've clicked one)
+
+## Update process:
 
 - ### Groups
+  - Every update process performed by a group of containers;
 
-  Every check/update process performed by a group of containers.
+  - Containers from the same **compose project** (same **com.docker.compose.project** and **com.docker.compose.project.config_files** labels) will end up in the same group;
 
-  - Containers from the same **compose project** (same **com.docker.compose.project** and **com.docker.compose.project.config_files** labels) will end up in the same group.
-
-  - Containers labeled with [dev.quenary.tugtainer.depends_on](#custom-labels) will end up in a group with listed containers.
+  - Containers labeled with [dev.quenary.tugtainer.depends_on](#custom-labels) will end up in a group with listed containers;
 
   - Otherwise, there will be a group of one container.
 
-- ### Scheduled:
+- ### Process
+  1. Container(s) distributed among **group(s)**;
+  2. If there is an **updatable** container, the update process begins:
+     - **updatable** container is a container which **marked as available** and **selected for auto-update** or **was clicked for update**;
+     - [protected](#custom-labels) containers will be skipped;
+     - not `running` containers will be skipped by default (can be changed in the settings);
+  3. **Image pull** performed for **updatable** containers;
+  4. All containers of the group are stopped in **order from most dependent**;
+  5. Then, in reverse order **from most dependable**:
+     - Updatable containers being recreated and started;
+     - Non-updatable containers being started.
 
-  - For each **host defined in the UI**, the check/update process starts at time specified in the settings;
-  - All containers of the host are distributed among **groups**;
-  - Each container in the group receives an **action based on your selection in the UI** (check/update/none);
-  - [_Actual process_](#actual-process)
+  **Scheduled process** being performed for all enabled hosts.
 
-- ### Click of check/update button:
-
-  - **The container** (and **possible participants**) added to a group;
-  - **The container** receives an action based on the button you've clicked (check or update);
-  - **Other possible participants** receives an **action based on your selection in the UI**. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked for auto-update** and there is **new image** for it, **it will also be updated**. Otherwise, **participant** will not be updated even if there is a new image for it.
-  - [_Actual process_](#actual-process)
-
-- ### Actual process
-
-  - The manifests of the local and remote images are being compared, for containers marked for **check**;
-  - If there is a **new image** for any group's container and it is **marked for auto-update**, the update process begins;
-    - [protected](#custom-labels) containers will be skipped
-    - not `running` containers will be skipped
-  - **Image pull** performed for updatable containers;
-  - All containers in the group are stopped in **order from most dependent**;
-  - Then, **in reverse order** (from most dependable):
-    - Updatable containers being recreated and started;
-    - Non-updatable containers being started;
+  **Manual process** may still include participants that will be updated. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked as available** and **selected for auto-update**, it will also be updated.
 
 ## Private registries
 
