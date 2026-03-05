@@ -21,7 +21,13 @@ class SettingsStorage:
 
     @classmethod
     @overload
-    def get(cls, key: Literal[ESettingKey.CRONTAB_EXPR]) -> str: ...
+    def get(cls, key: Literal[ESettingKey.CHECK_CRONTAB_EXPR])-> str: ...
+    @classmethod
+    @overload
+    def get(cls, key: Literal[ESettingKey.UPDATE_CRONTAB_EXPR]) -> str: ...
+    @classmethod
+    @overload
+    def get(cls, key: Literal[ESettingKey.REGISTRY_REQ_DELAY]) -> int: ...
     @classmethod
     @overload
     def get(
@@ -44,6 +50,11 @@ class SettingsStorage:
     @overload
     def get(
         cls, key: Literal[ESettingKey.UPDATE_ONLY_RUNNING],
+    )-> bool: ...
+    @classmethod
+    @overload
+    def get(
+        cls, key: Literal[ESettingKey.PULL_BEFORE_CHECK],
     )-> bool: ...
     @classmethod
     def get(cls, key: ESettingKey, default=None):

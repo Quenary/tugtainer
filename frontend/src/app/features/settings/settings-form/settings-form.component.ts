@@ -159,7 +159,8 @@ export class SettingsFormComponent {
 
   private getValueValidators(key: ESettingKey): ValidatorFn[] {
     switch (key) {
-      case ESettingKey.CRONTAB_EXPR:
+      case ESettingKey.CHECK_CRONTAB_EXPR:
+      case ESettingKey.UPDATE_CRONTAB_EXPR:
         return [Validators.required, this.cronValidator];
       case ESettingKey.TIMEZONE:
         return [Validators.required, this.timezoneValidator];

@@ -5,10 +5,10 @@ from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from .containers_schemas import ContainersListItem
-from backend.core.container.util import (
+from backend.core.container_util import (
     get_container_health_status_str,
 )
-from backend.core.container.util.is_protected_container import (
+from backend.core.container_util.is_protected_container import (
     is_protected_container,
 )
 from datetime import datetime

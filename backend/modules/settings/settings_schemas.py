@@ -11,12 +11,21 @@ class SettingsPatchRequestItem(BaseModel):
 
     @model_validator(mode="after")
     def validate_setting(self):
-        if self.key == ESettingKey.CRONTAB_EXPR:
+        if self.key == ESettingKey.CHECK_CRONTAB_EXPR:
+            _ = validate_cron_expr(str(self.value))
+            return self
+        elif self.key == ESettingKey.UPDATE_CRONTAB_EXPR:
             _ = validate_cron_expr(str(self.value))
             return self
         elif self.key == ESettingKey.TIMEZONE:
             _ = validate_timezone(str(self.value))
             return self
+        elif self.key == ESettingKey.REGISTRY_REQ_DELAY:
+            if isinstance(self.value, int) and self.value > 0:  
+                return self
+            raise ValueError(
+                    f"Invalid {ESettingKey.REGISTRY_REQ_DELAY}, expected positive integer."
+                )
         else:
             return self
 

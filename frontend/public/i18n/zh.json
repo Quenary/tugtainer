@@ -147,8 +147,13 @@
       "APP_SETTINGS": "应用设置"
     },
     "BY_KEY": {
-      "CRONTAB_EXPR": {
-        "LABEL": "Crontab 表达式",
+      "CHECK_CRONTAB_EXPR": {
+        "LABEL": "Check Crontab 表达式",
+        "HINT": "用于定期检查的 Crontab 表达式，例如 \n'0 */1 * * *' 表示每小时一次\n\n点击了解更多信息。",
+        "LINK": "https://crontab.guru/"
+      },
+      "UPDATE_CRONTAB_EXPR": {
+        "LABEL": "Update Crontab 表达式",
         "HINT": "用于定期检查的 Crontab 表达式，例如 \n'0 */1 * * *' 表示每小时一次\n\n点击了解更多信息。",
         "LINK": "https://crontab.guru/"
       },

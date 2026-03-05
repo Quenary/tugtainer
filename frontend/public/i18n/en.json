@@ -122,9 +122,9 @@
     "PORTS": "Ports",
     "HEALTH": "Health",
     "CHECK_ENABLED": "Check",
-    "CHECK_HINT": "Periodically check for a new image.",
+    "CHECK_HINT": "Automatically check for update on scheduled job.",
     "UPDATE_ENABLED": "Update",
-    "UPDATE_HINT": "Automatically update container when a new image is detected.",
+    "UPDATE_HINT": "Automatically update (if available) on scheduled job.",
     "CHECKED_AT": "Last check",
     "UPDATED_AT": "Last update",
     "UPDATE": "Update",
@@ -186,9 +186,14 @@
       "APP_SETTINGS": "App settings"
     },
     "BY_KEY": {
-      "CRONTAB_EXPR": {
-        "LABEL": "Crontab expression",
+      "CHECK_CRONTAB_EXPR": {
+        "LABEL": "Check Crontab expression",
         "HINT": "Crontab expression for periodic checks e.g. \n'0 */1 * * *' for every hour\n\nClick for more info.",
+        "LINK": "https://crontab.guru/"
+      },
+      "UPDATE_CRONTAB_EXPR": {
+        "LABEL": "Update Crontab expression",
+        "HINT": "Crontab expression for periodic updates e.g. \n'0 */1 * * *' for every hour\n\nClick for more info.",
         "LINK": "https://crontab.guru/"
       },
       "NOTIFICATION_URLS": {
@@ -200,6 +205,14 @@
       "TIMEZONE": {
         "LABEL": "Timezone",
         "HINT": "Timezone in IANA format, e.g. Europe/Moscow"
+      },
+      "REGISTRY_REQ_DELAY": {
+        "LABEL": "Registry requests delay, in seconds",
+        "HINT": "Delay between registry requests like manifest, pull, etc. to avoid rate limits."
+      },
+      "PULL_BEFORE_CHECK": {
+        "LABEL": "Pull before check",
+        "HINT": "This can be useful if you use a registry proxy that only updates manifests when pulling."
       },
       "UPDATE_ONLY_RUNNING": {
         "LABEL": "Update only running containers",
