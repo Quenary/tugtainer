@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.25.0 (2026-03-05)
+
+### Features
+
+- Separate crontab for check/update ([#144](https://github.com/Quenary/tugtainer/pull/144),
+  [`c6d1ecd`](https://github.com/Quenary/tugtainer/commit/c6d1ecd87b732d5f0555af64629e76b8cea9cf47))
+
+
 ## v1.24.1 (2026-03-02)
 
 ### Bug Fixes
