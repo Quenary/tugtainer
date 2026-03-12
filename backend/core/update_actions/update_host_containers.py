@@ -44,7 +44,7 @@ async def update_host_containers(
     CACHE = ProgressCache[HostActionProgress](STATUS_KEY)
     try:
         STATE = CACHE.get()
-        if is_allowed_start_cache(STATE):
+        if not is_allowed_start_cache(STATE):
             logging.warning(
                 f"Update process for {STATUS_KEY} is already running."
             )
