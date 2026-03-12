@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.25.1 (2026-03-12)
+
+### Bug Fixes
+
+- **backend**: Scheduled container update ([#154](https://github.com/Quenary/tugtainer/pull/154),
+  [`c809010`](https://github.com/Quenary/tugtainer/commit/c809010f368181665d157b4aa82148cd39ddde56))
+
+
 ## v1.25.0 (2026-03-05)
 
 ### Features
