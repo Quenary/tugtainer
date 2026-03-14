@@ -31,6 +31,7 @@ from backend.core.container_group.container_group_schemas import (
 from backend.core.agent_client import AgentClient
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+from backend.util.jitter import jitter
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -196,7 +197,7 @@ async def update_group_containers(
                     )
                 )
                 gc.remote_image = remote_image
-                await asyncio.sleep(DELAY)
+                await asyncio.sleep(jitter(DELAY))
             except Exception as e:
                 logging.exception(e)
                 logging.error(
