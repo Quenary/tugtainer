@@ -37,7 +37,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TooltipModule } from 'primeng/tooltip';
 import { FluidModule } from 'primeng/fluid';
 import { NgTemplateOutlet } from '@angular/common';
-import { AutoCompleteModule } from 'primeng/autocomplete';
+import { AutoCompleteCompleteEvent, AutoCompleteModule } from 'primeng/autocomplete';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { TextareaModule } from 'primeng/textarea';
@@ -73,15 +73,16 @@ export class SettingsFormComponent {
 
   public readonly OnSubmit = output<ISettingUpdate[]>();
 
-  public readonly ESettingKey = ESettingKey;
-  public readonly keyTranslates = this.translateService.instant('SETTINGS.BY_KEY');
-  public readonly isLoading = signal<boolean>(false);
-  public readonly formArray = new FormArray<FormGroup<TInterfaceToForm<ISetting>>>([]);
+  protected readonly ESettingKey = ESettingKey;
+  protected readonly keyTranslates = this.translateService.instant('SETTINGS.BY_KEY');
+  protected readonly isLoading = signal<boolean>(false);
+  protected readonly formArray = new FormArray<FormGroup<TInterfaceToForm<ISetting>>>([]);
 
   private readonly timezones = resource({
     loader: () =>
       firstValueFrom(
         this.settingsApiService.getAvailableTimezones().pipe(
+          map((list) => list.sort((a, b) => a.localeCompare(b))),
           catchError((error) => {
             this.toastService.error(error);
             return of([]);
@@ -105,15 +106,25 @@ export class SettingsFormComponent {
     defaultValue: [],
   });
 
-  public readonly timezonesSearch = signal<string>(null);
-  public readonly displayedTimezones = computed<string[]>(() => {
+  /**
+   * Timezones autocomplete query.
+   *
+   * This should be an object to "update" list
+   * even if query not changed (on autocomplete arrow click).
+   */
+  protected readonly timezonesAutocompleteEvent = signal<AutoCompleteCompleteEvent | null>(null);
+  /**
+   * Timezones autocomplete list
+   */
+  protected readonly displayedTimezones = computed<string[]>(() => {
     const timezones = this.timezones.value();
-    let search = this.timezonesSearch();
-    if (!search) {
-      return timezones;
+    const timezonesAutocompleteEvent = this.timezonesAutocompleteEvent();
+    let query: string = timezonesAutocompleteEvent?.query ?? '';
+    if (!query) {
+      return [...timezones];
     }
-    search = search.toLocaleLowerCase();
-    return timezones.filter((t) => t.toLowerCase().includes(search));
+    query = query.toLocaleLowerCase();
+    return timezones.filter((t) => t.toLowerCase().includes(query));
   });
 
   private cronValidator: ValidatorFn = (control: AbstractControl<string>) => {
@@ -169,13 +180,13 @@ export class SettingsFormComponent {
     }
   }
 
-  public onHintClick(link: string): void {
+  protected onHintClick(link: string): void {
     if (link) {
       window.open(link, '_blank');
     }
   }
 
-  public onTestNotification(): void {
+  protected onTestNotification(): void {
     const values = this.getSettingsValues();
     const title_template = values.find(
       (item) => item.key == ESettingKey.NOTIFICATION_TITLE_TEMPLATE,
@@ -209,7 +220,7 @@ export class SettingsFormComponent {
     }));
   }
 
-  public submit(): void {
+  protected submit(): void {
     if (this.formArray.invalid) {
       this.formArray.controls.forEach((c) => {
         if (c.invalid) {
