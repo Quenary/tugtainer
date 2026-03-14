@@ -21,6 +21,7 @@ class Config:
     DOMAIN: ClassVar[str | None]
     ENABLE_PUBLIC_API: ClassVar[bool]
     GH_TOKEN: ClassVar[str]
+    DOCKER_CONFIG_PATH: ClassVar[str]
 
     # OIDC Configuration
     OIDC_ENABLED: ClassVar[bool]
@@ -71,6 +72,9 @@ class Config:
                 == "true"
             )
             cls.GH_TOKEN = os.getenv("GH_TOKEN", "")
+            cls.DOCKER_CONFIG_PATH = os.getenv(
+                "DOCKER_CONFIG_PATH", "~/.docker"
+            )
 
             # OIDC Configuration
             cls.OIDC_ENABLED = (

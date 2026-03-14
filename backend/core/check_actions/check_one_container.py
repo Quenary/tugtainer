@@ -8,6 +8,9 @@ from python_on_whales.components.image.models import (
 import logging
 from sqlalchemy import select
 from backend.core.agent_client import AgentClient
+from backend.core.check_actions.check_actions_util import (
+    get_image_remote_digest,
+)
 from backend.core.progress.progress_cache import ProgressCache
 from backend.core.progress.progress_schemas import (
     ContainerActionProgress,
@@ -31,7 +34,6 @@ from backend.modules.containers.containers_util import (
 )
 from backend.core.container_util import (
     get_container_image_spec,
-    get_digests_for_platform,
 )
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
@@ -102,20 +104,11 @@ async def check_one_container(
                 CACHE.update({"status": EActionStatus.DONE})
                 return result
 
-            architecture = local_image.architecture
-            os = local_image.os
-            if not architecture:
-                logging.warning(
-                    f"{container.name} - Image missing 'architecture', exiting."
-                )
-                CACHE.update({"status": EActionStatus.DONE})
-                return result
-            if not os:
-                logging.warning(
-                    f"{container.name} - Image missing 'os', exiting."
-                )
-                CACHE.update({"status": EActionStatus.DONE})
-                return result
+            local_digests = local_image.repo_digests
+            result.local_digests = local_image.repo_digests
+            logging.info(
+                f"{container.name} - local digests: {local_digests}"
+            )
 
             stmt = (
                 select(ContainersModel)
@@ -128,56 +121,13 @@ async def check_one_container(
             stmt_res = await session.execute(stmt)
             c_db = stmt_res.scalar_one_or_none()
 
-            local_digests: list[str] = (
-                c_db.local_digests
-                if c_db and c_db.local_digests
-                else []
-            )
-            stored_image_id = c_db.image_id if c_db else None
-
-            logging.debug(
-                f"{container.name} - actual image id: {image_id}"
-            )
-            logging.debug(
-                f"{container.name} - stored image id: {stored_image_id}"
-            )
-
             CACHE.update({"status": EActionStatus.CHECKING})
-            # get local digests if missing
-            # or if stored image_id does not match current
-            if (
-                not local_digests
-                or not stored_image_id
-                or stored_image_id != image_id
-            ):
-                for digest in local_image.repo_digests:
-                    local_manifest = await client.manifest.inspect(
-                        digest
-                    )
-                    logging.debug(
-                        f"{container.name} - local manifest:\n{local_manifest}"
-                    )
 
-                    local_digests = get_digests_for_platform(
-                        local_manifest,
-                        architecture,
-                        os,
-                        str(local_image.id),
-                    )
-                    await asyncio.sleep(DELAY)
-                    if local_digests:
-                        break
-
-            result.local_digests = local_digests
-            logging.info(
-                f"{container.name} - local digests for platform: {local_digests}"
-            )
-
-            # pull image before remote manifests
+            # pull image before digests
             # https://github.com/Quenary/tugtainer/issues/114
             if SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK):
                 logging.info(
-                    f"{container.name} - pulling image before remote manifest request"
+                    f"{container.name} - pulling image before remote digests"
                 )
                 remote_image = await client.image.pull(
                     PullImageRequestBodySchema(image=image_spec)
@@ -186,25 +136,30 @@ async def check_one_container(
                 await asyncio.sleep(DELAY)
 
             # get remote digests
-            remote_manifest = await client.manifest.inspect(
-                image_spec
-            )
-            logging.debug(
-                f"{container.name} - remote manifest:\n{remote_manifest}"
-            )
-            remote_digests = get_digests_for_platform(
-                remote_manifest,
-                architecture,
-                os,
-                str(local_image.id),
-            )
+            remote_digests: list[str] = []
+            for d in local_digests:
+                try:
+                    rd = await get_image_remote_digest(image_spec, d)
+                    if rd:
+                        remote_digests = [rd]
+                        break
+                    await asyncio.sleep(DELAY)
+                except Exception as e:
+                    logging.error(
+                        f"{container.name} - failed to get remote digest for {image_spec} with local digest {d}"
+                    )
+                    logging.exception(e)
             result.remote_digests = remote_digests
             logging.info(
-                f"{container.name} - remote digests for platform: {remote_digests}"
+                f"{container.name} - Remote digests: {remote_digests}"
             )
 
             result_lit: ContainerCheckResultType = "not_available"
-            if remote_digests and remote_digests != local_digests:
+            # check if any remote digest missing in local_digests
+            if any(
+                all(rd not in ld for ld in local_digests)
+                for rd in remote_digests
+            ):
                 if c_db and c_db.remote_digests == remote_digests:
                     result_lit = "available(notified)"
                 else:
