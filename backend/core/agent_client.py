@@ -321,7 +321,14 @@ class AgentClientCommand:
             body,
             timeout=self._agent_client._long_timeout,
         )
-        return TypeAdapter(tuple[str, str]).validate_python(data)
+        if not data:
+            return ("", "")
+        if isinstance(data, str):
+            return (data, "")
+        try:
+            return TypeAdapter(tuple[str, str]).validate_python(data)
+        except Exception:
+            return (str(data), "")
 
 
 class AgentClientNetwork:
