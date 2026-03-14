@@ -1,5 +1,10 @@
 from typing import Any
-from python_on_whales.components.container.models import ContainerConfig, ContainerHostConfig, ContainerInspectResult, NetworkSettings
+from python_on_whales.components.container.models import (
+    ContainerConfig,
+    ContainerHostConfig,
+    ContainerInspectResult,
+    NetworkSettings,
+)
 from python_on_whales.utils import ValidPortMapping
 from .map_port_bindings_to_list import map_port_bindings_to_list
 
@@ -25,6 +30,7 @@ def get_container_net_kwargs(
     IP: str | None = None
     IP6: str | None = None
     LINK: list[str] = HOST_CONFIG.links or []
+    MAC_ADDRESS: str | None = None
     NETWORKS: list[str] = []
     NETWORK_ALIASES: list[str] = []
     PUBLISH: list[ValidPortMapping] = map_port_bindings_to_list(
@@ -43,6 +49,11 @@ def get_container_net_kwargs(
         if MAIN_NETWORK.ipam_config:
             IP = MAIN_NETWORK.ipam_config.ipv4_address
             IP6 = MAIN_NETWORK.ipam_config.ipv6_address
+            # preserve mac address if static ips used
+            # https://github.com/Quenary/tugtainer/issues/126
+            MAC_ADDRESS = (
+                MAIN_NETWORK.mac_address or CONFIG.mac_address
+            )
         for net in NETWORKS_KEYS[1:]:
             # Additional networks returned as commands
             # as docker cli doesn't support multiple aliases for multiple networks inline (in create/run)
@@ -56,6 +67,12 @@ def get_container_net_kwargs(
                     _cmd += ["--ip", ipam.ipv4_address]
                 if ipam.ipv6_address:
                     _cmd += ["--ip6", ipam.ipv6_address]
+                # preserve mac address if static ips used
+                # https://github.com/Quenary/tugtainer/issues/126
+                MAC_ADDRESS = (
+                    MAC_ADDRESS
+                    or NETWORK_SETTINGS.networks[net].mac_address
+                )
             _cmd += [net, container.name]
             COMMANDS.append(_cmd)
     elif NETWORK_MODE:
@@ -76,6 +93,7 @@ def get_container_net_kwargs(
         HOSTNAME = None
         IP = None
         IP6 = None
+        MAC_ADDRESS = None
         LINK = []
         NETWORK_ALIASES = []
         PUBLISH = []
@@ -89,6 +107,7 @@ def get_container_net_kwargs(
         "ip": IP,
         "ip6": IP6,
         "link": LINK,
+        "mac_address": MAC_ADDRESS,
         "networks": NETWORKS,
         "network_aliases": NETWORK_ALIASES,
         "publish": PUBLISH,

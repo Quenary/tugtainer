@@ -138,8 +138,6 @@ def get_container_config(
         "kernel_memory": HOST_CONFIG.kernel_memory,
         "labels": VALID_LABELS,
         **map_log_config_to_kwargs(HOST_CONFIG.log_config),
-        # Add setting to keep mac?
-        # "mac_address": NETWORK_SETTINGS.mac_address,
         "memory": HOST_CONFIG.memory,
         "memory_reservation": HOST_CONFIG.memory_reservation,
         "memory_swap": HOST_CONFIG.memory_swap,
