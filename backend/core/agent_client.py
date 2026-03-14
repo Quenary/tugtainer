@@ -27,6 +27,7 @@ from shared.schemas.image_schemas import (
     TagImageRequestBodySchema,
 )
 from shared.schemas.manifest_schema import ManifestInspectSchema
+from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 from shared.util.custom_json_dumps import custom_json_dumps
 from shared.util.signature import get_signature_headers
 import aiohttp
@@ -55,6 +56,7 @@ class AgentClient:
         self.image = AgentClientImage(self)
         self.command = AgentClientCommand(self)
         self.manifest = AgentClientManifest(self)
+        self.network = AgentClientNetwork(self)
 
     async def _request(
         self,
@@ -320,6 +322,21 @@ class AgentClientCommand:
             timeout=self._agent_client._long_timeout,
         )
         return TypeAdapter(tuple[str, str]).validate_python(data)
+
+
+class AgentClientNetwork:
+    def __init__(self, agent_client: AgentClient):
+        self._agent_client = agent_client
+
+    async def disconnect(
+        self,
+        body: NetworkDisconnectBodySchema,
+    ) -> None:
+        await self._agent_client._request(
+            "POST",
+            "/api/network/disconnect",
+            body,
+        )
 
 
 async def load_agents_on_init():
