@@ -38,6 +38,7 @@ from backend.core.container_util import (
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+from backend.util.jitter import jitter
 from backend.util.now import now
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
@@ -133,7 +134,7 @@ async def check_one_container(
                     PullImageRequestBodySchema(image=image_spec)
                 )
                 result.remote_image = remote_image
-                await asyncio.sleep(DELAY)
+                await asyncio.sleep(jitter(DELAY))
 
             # get remote digests
             remote_digests: list[str] = []
@@ -143,7 +144,7 @@ async def check_one_container(
                     if rd:
                         remote_digests = [rd]
                         break
-                    await asyncio.sleep(DELAY)
+                    await asyncio.sleep(jitter(DELAY))
                 except Exception as e:
                     logging.error(
                         f"{container.name} - failed to get remote digest for {image_spec} with local digest {d}"
