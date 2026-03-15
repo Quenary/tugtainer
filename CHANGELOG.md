@@ -1,6 +1,44 @@
 # CHANGELOG
 
 
+## v1.26.0 (2026-03-15)
+
+### Bug Fixes
+
+- **agent**: Command/run result validation error
+  ([`ae452f9`](https://github.com/Quenary/tugtainer/commit/ae452f9193e0a53fe51b375b679cfecce813865c))
+
+- **backend**: AgentClient.command.run output handling
+  ([`2b3ddd5`](https://github.com/Quenary/tugtainer/commit/2b3ddd59c8493dea8d98be513f330b88aa301a63))
+
+- **backend**: Network endpoint conflict during container recreation
+  ([#155](https://github.com/Quenary/tugtainer/pull/155),
+  [`14d0b35`](https://github.com/Quenary/tugtainer/commit/14d0b3575e3352e9c2897b6886aaabe5423435ac))
+
+- **backend**: Preserve mac if ipamconfig presented
+  ([#156](https://github.com/Quenary/tugtainer/pull/156),
+  [`bf847d2`](https://github.com/Quenary/tugtainer/commit/bf847d209d8d1ed4ae678908add3d889fc2963f4))
+
+- **frontend**: Display timezones list on arrow click
+  ([#157](https://github.com/Quenary/tugtainer/pull/157),
+  [`b855a29`](https://github.com/Quenary/tugtainer/commit/b855a294d8eca60910e1d07934fb35b311efb76b))
+
+### Features
+
+- **backend**: Cache is_update_available request to save gh rate limits
+  ([`c144c2c`](https://github.com/Quenary/tugtainer/commit/c144c2cba0640ad6a4f4eafde35fe10f0566c62d))
+
+- **backend**: Check by digest from registry head request
+  ([#158](https://github.com/Quenary/tugtainer/pull/158),
+  [`34f04c5`](https://github.com/Quenary/tugtainer/commit/34f04c578361f752ffd5d7387d176ee261716cd2))
+
+- **backend**: Jitter for registry requests ([#159](https://github.com/Quenary/tugtainer/pull/159),
+  [`3d01121`](https://github.com/Quenary/tugtainer/commit/3d01121f061f310ffd69d7ed11fc6ee3708bbaa3))
+
+- **frontend**: Autofocus on auth forms ([#160](https://github.com/Quenary/tugtainer/pull/160),
+  [`d015c30`](https://github.com/Quenary/tugtainer/commit/d015c304a6a0a7614f67236b3744d8ac0284f2d3))
+
+
 ## v1.25.1 (2026-03-12)
 
 ### Bug Fixes
