@@ -31,6 +31,7 @@ from backend.core.container_group.container_group_schemas import (
 from backend.core.agent_client import AgentClient
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+from backend.util.jitter import jitter
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -41,7 +42,11 @@ from shared.schemas.image_schemas import (
     TagImageRequestBodySchema,
 )
 from backend.const import TUGTAINER_PROTECTED_LABEL
-from .update_actions_util import update_containers_data_after_action
+from shared.schemas.network_schemas import NetworkDisconnectBodySchema
+from .update_actions_util import (
+    disconnect_all_networks,
+    update_containers_data_after_action,
+)
 
 
 async def update_group_containers(
@@ -89,8 +94,7 @@ async def update_group_containers(
     def _will_update(gc: ContainerGroupItem) -> bool:
         """Whether to update container"""
         updatable = gc.update_available and (
-            gc.update_enabled or
-            gc.update_manual
+            gc.update_enabled or gc.update_manual
         )
         return bool(
             updatable
@@ -193,7 +197,7 @@ async def update_group_containers(
                     )
                 )
                 gc.remote_image = remote_image
-                await asyncio.sleep(DELAY)
+                await asyncio.sleep(jitter(DELAY))
             except Exception as e:
                 logging.exception(e)
                 logging.error(
@@ -254,6 +258,9 @@ async def update_group_containers(
             config = cast(CreateContainerRequestBodySchema, gc.config)
             logging.info(f"Starting update of container {gc.name}...")
             try:
+                await disconnect_all_networks(
+                    client, gc.container, True
+                )
                 logging.info("Removing container...")
                 await client.container.remove(gc.name)
                 logging.info("Merging configs...")
@@ -292,6 +299,9 @@ async def update_group_containers(
                     if await client.container.exists(gc.name):
                         logging.warning(
                             "Removing failed container..."
+                        )
+                        await disconnect_all_networks(
+                            client, gc.container, True
                         )
                         await client.container.stop(gc.name)
                         await client.container.remove(gc.name)

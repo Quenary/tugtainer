@@ -64,7 +64,7 @@
           inputId="value-{{ key }}"
           [suggestions]="displayedTimezones()"
           [dropdown]="true"
-          (completeMethod)="timezonesSearch.set($event.query)"
+          (completeMethod)="timezonesAutocompleteEvent.set($event)"
           [formControl]="control"
           appendTo="body"
         >

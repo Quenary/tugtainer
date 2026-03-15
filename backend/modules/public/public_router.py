@@ -7,12 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.db.session import get_async_session
 from .public_schemas import (
     IsUpdateAvailableResponseBodySchema,
-    VersionResponseBody
+    VersionResponseBody,
 )
 from backend.core.cron_manager import CronManager
 from backend.enums.cron_jobs_enum import ECronJob
 from backend.modules.hosts.hosts_schemas import HostSummary
-from backend.modules.containers.containers_model import ContainersModel
+from backend.modules.containers.containers_model import (
+    ContainersModel,
+)
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.core.agent_client import AgentClientManager
 from backend.modules.containers.containers_util import (
@@ -22,6 +24,8 @@ from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
 from backend.config import Config
+from cachetools import TTLCache
+from cachetools_async import cached as cached_async
 
 
 public_router = APIRouter(tags=["public"], prefix="/public")
@@ -179,6 +183,7 @@ async def get_summary(
     description="Is update of the Tugtainer available",
     response_model=IsUpdateAvailableResponseBodySchema,
 )
+@cached_async(cache=TTLCache(maxsize=1, ttl=3600))
 async def is_update_available():
     try:
         with open("/app/version", "r") as file:
@@ -202,9 +207,12 @@ async def is_update_available():
             data: dict[str, Any] = await res.json()
             remote_version = data.get("tag_name", "")
             release_url = data.get("html_url", "")
-    is_available = version.parse(remote_version) > version.parse(
-        local_version
-    )
+    try:
+        is_available = version.parse(remote_version) > version.parse(
+            local_version
+        )
+    except version.InvalidVersion as e:
+        raise HTTPException(status_code=500, detail=str(e))
     return {
         "is_available": is_available,
         "release_url": release_url,
