@@ -17,6 +17,7 @@ import { PasswordModule } from 'primeng/password';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { Divider } from 'primeng/divider';
 import { map } from 'rxjs';
+import { AutoFocusModule } from 'primeng/autofocus';
 
 @Component({
   selector: 'app-new-password-form',
@@ -27,6 +28,7 @@ import { map } from 'rxjs';
     PasswordModule,
     IftaLabelModule,
     Divider,
+    AutoFocusModule,
   ],
   templateUrl: './new-password-form.component.html',
   styleUrl: './new-password-form.component.scss',
@@ -52,7 +54,7 @@ export class NewPasswordFormComponent {
     };
   };
 
-  public readonly form = new FormGroup<TInterfaceToForm<ISetPasswordBody>>(
+  protected readonly form = new FormGroup<TInterfaceToForm<ISetPasswordBody>>(
     {
       password: new FormControl<string>(null, [
         Validators.required,
@@ -66,11 +68,11 @@ export class NewPasswordFormComponent {
     this.passwordMatchValidator(),
   );
 
-  public readonly confirmPasswordError = toSignal(
+  protected readonly confirmPasswordError = toSignal(
     this.form.valueChanges.pipe(map(() => !!this.form.errors?.['passwordMatchValidator'])),
   );
 
-  public onSubmit(): void {
+  protected onSubmit(): void {
     if (this.form.invalid) {
       return;
     }
