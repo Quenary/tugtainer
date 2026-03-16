@@ -31,10 +31,12 @@ Automatic updates are disabled by default. You can choose only what you need.
 - Crontab scheduling
 - Notifications to a wide range of services
 - Per-container config (check only or auto-update)
-- Manual check and update
+- Automatic/manual check and update
 - Automatic/manual image pruning
 - Linked containers support (compose and custom)
 - Private registries support
+- Basic container control (start, stop, etc.)
+- Container detailed info (inspect, logs)
 
 ## Deploy:
 
@@ -102,13 +104,13 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 ## Check process:
 
-1. Request manifest of local image by sha (if missing or image changed since last check);
-2. Pull remote image (if enabled in the settings, disabled by default), this may be handy if you using registry proxy;
-3. Request manifest of remote image by tag;
-4. Compare digests based on platform and architecture;
+1. Verify that a container is suitable for checking (not local image);
+2. Pull image (if enabled in the settings, disabled by default), this may be handy if you using registry proxy;
+3. Request current digest of an image from a registry;
+4. Compare digests;
 5. If different, the container **marked as available**.
 
-**Scheduled** process includes all enabled hosts and all container **selected for auto-check**.
+**Scheduled** process includes all enabled hosts and all containers **selected for auto-check**.
 
 **Manual** process includes all containers despite auto-check toggle (or a single container if you've clicked one)
 
