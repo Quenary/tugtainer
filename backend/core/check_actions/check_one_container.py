@@ -82,6 +82,7 @@ async def check_one_container(
                 )
                 CACHE.update({"status": EActionStatus.DONE})
                 return result
+            logging.info(f"{container.name} - image_spec: {image_spec}")
 
             result.image_spec = image_spec
             image_id = container.image
