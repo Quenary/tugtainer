@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
-
 import { authGuard } from './auth-guard';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('authGuard', () => {
   let authApiServiceMock: jasmine.SpyObj<AuthApiService>;
@@ -15,6 +15,7 @@ describe('authGuard', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideZonelessChangeDetection(),
         { provide: AuthApiService, useValue: authApiServiceMock },
         { provide: Router, useValue: routerMock },
       ],
@@ -26,7 +27,7 @@ describe('authGuard', () => {
   }
 
   it('should return true when user is authorized', (done) => {
-    authApiServiceMock.isAuthorized.and.returnValue(of());
+    authApiServiceMock.isAuthorized.and.returnValue(of(null));
 
     runGuard().subscribe((result) => {
       expect(result).toBeTrue();

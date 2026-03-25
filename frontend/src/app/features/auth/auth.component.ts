@@ -112,7 +112,7 @@ export class AuthComponent {
     });
   }
 
-  onSubmitNewPassword($event: ISetPasswordBody): void {
+  protected onSubmitNewPassword($event: ISetPasswordBody): void {
     this.isLoading.set(true);
     this.authApiService
       .setPassword($event)
@@ -128,7 +128,7 @@ export class AuthComponent {
       });
   }
 
-  onSubmitLogin(password: string): void {
+  protected onSubmitLogin(password: string): void {
     this.isLoading.set(true);
     this.authApiService
       .login('password', { password }, {})
@@ -143,7 +143,7 @@ export class AuthComponent {
       });
   }
 
-  onOidcLogin(): void {
+  protected onOidcLogin(): void {
     this.authApiService.initiateLogin('oidc');
   }
 }
