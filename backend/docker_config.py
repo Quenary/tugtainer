@@ -39,11 +39,20 @@ class DockerConfig:
         Get Basic auth token for registry
         """
 
-        # dockerhub special case
-        if registry in ["registry-1.docker.io", "docker.io"]:
-            registry = "https://index.docker.io/v1/"
-
         entry = self.auths.get(registry)
+
+        # dockerhub special case
+        if not entry:
+            if registry in ["registry-1.docker.io", "docker.io"]:
+                registry = "https://index.docker.io/v1/"
+                entry = self.auths.get(registry)
+
+        # find by partial match
+        if not entry:
+            for k, v in self.auths.items():
+                if registry in k or k in registry:
+                    entry = v
+                    break
 
         if not entry:
             return None
