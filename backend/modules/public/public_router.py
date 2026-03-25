@@ -5,6 +5,7 @@ from sqlalchemy import select, text
 from packaging import version
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.db.session import get_async_session
+from backend.modules.public.public_util import fetch_latest_release
 from .public_schemas import (
     IsUpdateAvailableResponseBodySchema,
     VersionResponseBody,
@@ -26,6 +27,7 @@ from shared.schemas.container_schemas import (
 from backend.config import Config
 from cachetools import TTLCache
 from cachetools_async import cached as cached_async
+import logging
 
 
 public_router = APIRouter(tags=["public"], prefix="/public")
@@ -190,23 +192,15 @@ async def is_update_available():
             local_version = file.readline()
     except FileNotFoundError:
         raise HTTPException(404, "Version file not found")
-    url = "https://api.github.com/repos/quenary/tugtainer/releases/latest"
-    headers: dict[str, str] = {}
-    if Config.GH_TOKEN:
-        headers["Authorization"] = f"Bearer {Config.GH_TOKEN}"
-    async with aiohttp.ClientSession(
-        headers=headers,
-        timeout=aiohttp.ClientTimeout(15),
-        trust_env=True,
-    ) as session:
-        async with session.request(
-            "GET",
-            url,
-        ) as res:
-            res.raise_for_status()
-            data: dict[str, Any] = await res.json()
-            remote_version = data.get("tag_name", "")
-            release_url = data.get("html_url", "")
+    try:
+        data = await fetch_latest_release()
+        remote_version = data.get("tag_name", "")
+        release_url = data.get("html_url", "")
+    except Exception as e:
+        detail = "Failed to fetch latest release"
+        logging.error(detail)
+        logging.exception(e)
+        raise HTTPException(500, detail)
     try:
         is_available = version.parse(remote_version) > version.parse(
             local_version
