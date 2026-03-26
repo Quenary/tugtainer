@@ -16,7 +16,7 @@ class DockerConfig:
     data: dict[str, Any]
     auths: dict[str, Any]
 
-    def __new__(cls, path: str = Config.DOCKER_CONFIG_PATH):
+    def __new__(cls, path: str = Config.DOCKER_CONFIG):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._load(path)
@@ -28,9 +28,12 @@ class DockerConfig:
         try:
             if self.path.exists():
                 with open(self.path, "r") as f:
+                    logging.info(f"Docker config loaded successfully from {self.path}")
                     self.data = json.load(f)
+            else:
+                logging.warning(f"Missing docker config file: {self.path}")
         except Exception as e:
-            logging.error(f"Error loading docker config file: {path}")
+            logging.error(f"Error loading docker config file: {self.path}")
             logging.exception(e)
         self.auths = self.data.get("auths", {})
 
