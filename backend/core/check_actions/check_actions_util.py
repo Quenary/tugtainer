@@ -9,6 +9,9 @@ from backend.modules.containers.containers_model import (
 )
 import aiohttp
 from urllib.parse import urlencode
+from backend.modules.settings.settings_enum import ESettingKey
+from backend.modules.settings.settings_storage import SettingsStorage
+import logging
 
 
 def filter_containers_by_check_enabled(
@@ -59,8 +62,22 @@ async def get_image_remote_digest(
     :param local_digest: local digest to utilize If-None-Match 304 response
     :return: new image digest if any or local_digest
     """
-
     registry, repo, tag = parse_image_spec(spec)
+    logging.info(f"Checking registry: {registry}, repo: {repo}, tag: {tag}")
+
+    insecure_registries = SettingsStorage.get(
+        ESettingKey.INSECURE_REGISTRIES
+    )
+    logging.debug(f"Insecure Registries: {insecure_registries}")
+
+    ssl: bool = bool(
+        not insecure_registries
+        or not any(
+            x and registry and registry in x or x in registry
+            for x in insecure_registries.splitlines()
+        )
+    )
+    logging.info(f"SSL (secure/insecure): {ssl}")
 
     url = f"https://{registry}/v2/{repo}/manifests/{tag}"
 
@@ -93,7 +110,9 @@ async def get_image_remote_digest(
         ) or resp.headers.get("Etag")
 
     async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.head(url, headers=headers) as resp:
+        async with session.head(
+            url, headers=headers, ssl=ssl
+        ) as resp:
             if resp.status == 401:
                 auth = resp.headers.get("WWW-Authenticate", "")
                 bearer_token = await get_registry_bearer_token(

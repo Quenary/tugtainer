@@ -228,6 +228,10 @@
         "HINT": "Jinja2 template of notification body.\n\nClick for more info.",
         "LINK": "https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications"
       },
+      "INSECURE_REGISTRIES": {
+        "LABEL": "Insecure registries",
+        "HINT": "One registry per line, e.g.\n\nmy.registry.local\n10.0.0.25:5000\n\nThis setting affects only HEAD request (check for update).\nFor pull you have to modify /etc/docker/daemon.json at host machine.\nThis can be useful if you use a custom registry."
+      },
       "SEND_TEST_NOTIFICATION": "Send test notification"
     }
   }

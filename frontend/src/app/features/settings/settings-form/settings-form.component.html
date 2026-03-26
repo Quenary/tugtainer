@@ -87,6 +87,19 @@
         </label>
       </p-iftalabel>
     }
+    @case (ESettingKey.INSECURE_REGISTRIES) {
+      <p-iftalabel style="width: 100%">
+        <textarea
+          pTextarea
+          rows="3"
+          id="value-{{ key }}"
+          [formControl]="control"
+        ></textarea>
+        <label for="value-{{ key }}">
+          {{ keyTranslates[key]?.LABEL ?? key }}
+        </label>
+      </p-iftalabel>
+    }
     @case (ESettingKey.NOTIFICATION_BODY_TEMPLATE) {
       <p-iftalabel style="width: 100%">
         <textarea
