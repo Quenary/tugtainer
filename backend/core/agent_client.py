@@ -417,10 +417,11 @@ async def load_agents_on_init():
         for h in hosts:
             try:
                 await AgentClientManager.set_client(h)
-                logging.info(f"Docker host '{h.name}' loaded.")
-            except Exception as e:
-                logging.error(f"Error loading docker host '{h.name}'")
-                logging.exception(e)
+                logging.info(f"{h.name}: agent client loaded")
+            except Exception:
+                logging.exception(
+                    f"{h.name}: failed to load agent client"
+                )
 
 
 class AgentClientManager:

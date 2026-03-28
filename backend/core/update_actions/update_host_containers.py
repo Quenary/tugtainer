@@ -92,18 +92,16 @@ async def update_host_containers(
                 result.prune_result = await client.image.prune(
                     PruneImagesRequestBodySchema(all=host.prune_all)
                 )
-            except Exception as e:
-                logging.exception(e)
-                logging.error(
+            except Exception:
+                logging.exception(
                     f"Failed to prune images on host '{host.name}'"
                 )
 
         CACHE.update({"status": EActionStatus.DONE, "result": result})
         return result
-    except Exception as e:
+    except Exception:
+        logging.exception(f"Failed to update host {host.name}")
         CACHE.update(
             {"status": EActionStatus.ERROR},
         )
-        logging.exception(e)
-        logging.error(f"Failed to update host {host.name}")
         return None

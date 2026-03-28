@@ -82,7 +82,9 @@ async def check_one_container(
                 )
                 CACHE.update({"status": EActionStatus.DONE})
                 return result
-            logging.info(f"{container.name} - image_spec: {image_spec}")
+            logging.info(
+                f"{container.name} - image_spec: {image_spec}"
+            )
 
             result.image_spec = image_spec
             image_id = container.image
@@ -147,10 +149,9 @@ async def check_one_container(
                         break
                     await asyncio.sleep(jitter(DELAY))
                 except Exception as e:
-                    logging.error(
+                    logging.exception(
                         f"{container.name} - failed to get remote digest for {image_spec} with local digest {d}"
                     )
-                    logging.exception(e)
             result.remote_digests = remote_digests
             logging.info(
                 f"{container.name} - Remote digests: {remote_digests}"
@@ -186,8 +187,10 @@ async def check_one_container(
                 {"status": EActionStatus.DONE, "result": result}
             )
             return result
-        except Exception as e:
-            logging.exception(e)
+        except Exception:
+            logging.exception(
+                f"{container.name} - Failed to check container"
+            )
             CACHE.update(
                 {"status": EActionStatus.ERROR, "result": result}
             )

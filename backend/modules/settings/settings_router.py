@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import cast
 from zoneinfo import available_timezones
-from apprise.exception import AppriseException
 from fastapi import APIRouter, Depends, HTTPException
 from python_on_whales.components.container.models import (
     ContainerConfig,
@@ -38,8 +37,7 @@ from backend.core.check_actions.check_all_containers import (
 from backend.core.update_actions.update_all_containers import (
     update_all_containers,
 )
-from backend.exception import TugException
-from jinja2.exceptions import TemplateError
+from backend.exception import TugNotificationException
 
 VALID_TIMEZONES = available_timezones()
 
@@ -270,8 +268,10 @@ Total reclaimed space: 1.5GB
             urls=data.urls,
         )
         return {}
-    except (TugException, AppriseException, TemplateError) as e:
+    except TugNotificationException as e:
         raise HTTPException(500, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"Unknown error: {e}")
 
 
 @settings_router.get(

@@ -168,9 +168,8 @@ async def update_group_containers(
                     logging.info(out)
                 if err:
                     logging.error(err)
-            except Exception as e:
-                logging.exception(e)
-                logging.error(f"Error while running command {c}")
+            except Exception:
+                logging.exception(f"Error while running command {c}")
 
     # endregion
 
@@ -201,10 +200,9 @@ async def update_group_containers(
                 )
                 gc.remote_image = remote_image
                 await asyncio.sleep(jitter(DELAY))
-            except Exception as e:
-                logging.exception(e)
-                logging.error(
-                    f"""Failed to pull the image for container {gc.container.name} with spec {gc.image_spec}"""
+            except Exception:
+                logging.exception(
+                    f"Failed to pull the image for container {gc.container.name} with spec {gc.image_spec}"
                 )
                 result = _group_state_to_result(group)
                 await update_containers_data_after_action(result)
@@ -227,20 +225,17 @@ async def update_group_containers(
             )
             gc.config = config
             gc.commands = commands
-        except Exception as e:
-            logging.exception(e)
+        except Exception:
+            logging.exception("Failed to get config.")
             if _will_update(gc):
-                logging.error(
-                    """Failed to get config for updatable container. Exiting group update."""
-                )
+                logging.error("Exiting group update.")
                 return await _on_stop_fail()
         try:
             logging.info(f"Stopping container {gc.container.name}...")
             await client.container.stop(gc.name)
-        except Exception as e:
-            logging.exception(e)
-            logging.error(
-                """Failed to stop container. Exiting group update."""
+        except Exception:
+            logging.exception(
+                "Failed to stop container. Exiting group update."
             )
             return await _on_stop_fail()
 
@@ -296,9 +291,8 @@ async def update_group_containers(
                 )
                 await client.container.stop(gc.name)
                 await client.container.remove(gc.name)
-            except Exception as e:
-                logging.exception(e)
-                logging.error("Update failed, rolling back...")
+            except Exception:
+                logging.exception("Update failed, rolling back...")
                 # Try to remove possibly existing container
                 try:
                     if await client.container.exists(gc.name):
@@ -342,9 +336,8 @@ async def update_group_containers(
                     "Container is unhealthy after rolling back!"
                 )
             # Failed to roll back
-            except Exception as e:
-                logging.exception(e)
-                logging.error("Failed to roll back container!")
+            except Exception:
+                logging.exception("Failed to roll back container!")
                 gc.result = "failed"
                 any_failed = True
         # Start not updatable container
@@ -368,9 +361,8 @@ async def update_group_containers(
                     continue
                 logging.warning("Container is unhealthy! Continue...")
                 continue
-            except Exception as e:
-                logging.exception(e)
-                logging.warning(
+            except Exception:
+                logging.exception(
                     "Failed to start non-updatable container. Continue..."
                 )
     result = _group_state_to_result(group)

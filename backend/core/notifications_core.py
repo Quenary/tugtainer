@@ -8,7 +8,7 @@ from backend.core.action_result import (
     HostActionResult,
 )
 from backend.modules.settings.settings_enum import ESettingKey
-from backend.exception import TugException
+from backend.exception import TugNotificationException
 import jinja2
 from backend.modules.settings.settings_storage import SettingsStorage
 
@@ -57,7 +57,9 @@ async def send_check_notification(
             urls = SettingsStorage.get(ESettingKey.NOTIFICATION_URLS)
 
         if not urls:
-            return
+            raise TugNotificationException(
+                "Failed to send notification. URLs is undefined."
+            )
         _urls = [
             line.strip() for line in urls.splitlines() if line.strip()
         ]
@@ -80,14 +82,17 @@ async def send_check_notification(
             body = _body_template.render(**context)
 
         if not body or not body.strip():
-            logging.warning("No notification body after template render, exiting.")
+            logging.warning(
+                "No notification body after template render, exiting."
+            )
             return
 
         return await send_notification(title, body, urls=_urls)
-    except jinja2.exceptions.TemplateError as e:
-        logging.exception(e)
-        logging.error('Failed to send notification')
-        raise e
+    except jinja2.TemplateError as e:
+        logging.exception("Failed to render notification template")
+        raise TugNotificationException(
+            f"Failed to render notification template: {e}"
+        )
 
 
 async def send_notification(
@@ -110,16 +115,15 @@ async def send_notification(
                 body_format=body_format,
             )
             if result == False:
-                message = "Failed to send notification, but no exception was raised by Apprise."
-                logging.error(message)
-                raise TugException(message)
+                raise TugNotificationException(
+                    "Failed to send notification, but no exception was raised by Apprise."
+                )
         except AppriseException as e:
-            logging.error(
-                "Failed to send notification. Apprise exception:"
+            logging.exception("Failed to send notification")
+            raise TugNotificationException(
+                f"Failed to send notification. Apprise exception: {e}"
             )
-            logging.exception(e)
-            raise e
     else:
-        message = "Failed to send notification. URL is undefined."
-        logging.error(message)
-        raise TugException(message)
+        raise TugNotificationException(
+            "Failed to send notification. URLs is undefined."
+        )
