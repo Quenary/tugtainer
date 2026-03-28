@@ -33,7 +33,7 @@ class TugAgentClientError(TugException):
         self.body = body
 
     def __str__(self) -> str:
-        res = self.message
+        res = f"{self.message} ({self.status})"
         if isinstance(self.body, dict) and (
             _d := self.body.get("detail")
         ):

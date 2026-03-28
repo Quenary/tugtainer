@@ -1,6 +1,9 @@
+import asyncio
 from inspect import signature
+import json
 from typing import Any, Literal
 from aiohttp.typedefs import Query
+from fastapi import status
 from pydantic import BaseModel, TypeAdapter
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
@@ -64,7 +67,7 @@ class AgentClient:
         path: str,
         body: dict | BaseModel | None = None,
         params: Query | None = None,
-        timeout: int | None = None,
+        timeout: int | float | None = None,
     ) -> Any | None:
         if not timeout:
             timeout = self._timeout
@@ -80,44 +83,56 @@ class AgentClient:
             body=_body,
             params=params,
         )
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=timeout),
-            json_serialize=custom_json_dumps,
-            trust_env=True,
-        ) as session:
-            async with session.request(
-                method,
-                url,
-                headers=headers,
-                json=_body,
-                params=params,
-                ssl=self._ssl,
-            ) as resp:
-                # Parse error manually to get detail
-                if resp.status >= 400:
+
+        try:
+            async with aiohttp.ClientSession(
+                json_serialize=custom_json_dumps,
+                trust_env=True,
+            ) as session:
+                async with session.request(
+                    method,
+                    url,
+                    headers=headers,
+                    json=_body,
+                    params=params,
+                    ssl=self._ssl,
+                    timeout=aiohttp.ClientTimeout(total=timeout),
+                ) as resp:
                     try:
-                        error_body = await resp.json()
-                    except:
-                        error_body = await resp.text()
-                    logging.error(
-                        f"Agent error:\n{resp.status}\n{error_body}"
-                    )
-                    raise TugAgentClientError(
-                        f"Agent error {resp.status}",
-                        resp.status,
-                        error_body,
-                    )
-                # Raise other errors
-                resp.raise_for_status()
-                # Json response body
-                if resp.content_length and resp.content_length > 0:
-                    return await resp.json()
-                # Chunked responses without content_length
-                if resp.headers.get("Transfer-Encoding") == "chunked":
+                        resp.raise_for_status()
+                    except aiohttp.ClientResponseError as e:
+                        logging.exception(e)
+                        try:
+                            error_body = await resp.json()
+                        except:
+                            error_body = await resp.text()
+                        raise TugAgentClientError(
+                            f"Agent response error",
+                            resp.status,
+                            error_body,
+                        )
+
                     text = await resp.text()
-                    return await resp.json() if text else None
-                # Empty response body
-                return None
+                    if not text:
+                        return None
+                    try:
+                        return json.loads(text)
+                    except Exception:
+                        return text
+        except asyncio.TimeoutError as e:
+            logging.exception(e)
+            raise TugAgentClientError(
+                f"Agent timeout error",
+                status.HTTP_408_REQUEST_TIMEOUT,
+                "The problem is most likely related to the low Agent Timeout value, which you can increase in the host settings.",
+            )
+        except aiohttp.ClientError as e:
+            logging.exception(e)
+            raise TugAgentClientError(
+                "Agent connection error",
+                status.HTTP_502_BAD_GATEWAY,
+                str(e),
+            )
 
 
 class AgentClientPublic:
@@ -276,7 +291,9 @@ class AgentClientImage:
         self, body: GetImageListBodySchema
     ) -> list[ImageInspectResult]:
         data = await self._agent_client._request(
-            "POST", f"/api/image/list", body
+            "POST",
+            f"/api/image/list",
+            body,
         )
         return TypeAdapter(list[ImageInspectResult]).validate_python(
             data or []
