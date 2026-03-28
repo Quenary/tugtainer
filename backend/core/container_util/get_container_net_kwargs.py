@@ -1,4 +1,5 @@
 from typing import Any
+from packaging import version
 from python_on_whales.components.container.models import (
     ContainerConfig,
     ContainerHostConfig,
@@ -6,11 +7,16 @@ from python_on_whales.components.container.models import (
     NetworkSettings,
 )
 from python_on_whales.utils import ValidPortMapping
+from shared.schemas.docker_version_scheme import DockerVersionScheme
+from shared.util.get_docker_client_api_version import (
+    get_docker_client_api_version,
+)
 from .map_port_bindings_to_list import map_port_bindings_to_list
 
 
 def get_container_net_kwargs(
     container: ContainerInspectResult,
+    docker_version: DockerVersionScheme | None,
 ) -> tuple[dict[Any, Any], list[list[str]]]:
     """
     Get container networking params dict that matches kwargs for create/run.
@@ -22,6 +28,9 @@ def get_container_net_kwargs(
     CONFIG = container.config or ContainerConfig()
     HOST_CONFIG = container.host_config or ContainerHostConfig()
     NETWORK_SETTINGS = container.network_settings or NetworkSettings()
+    docker_client_api_version = get_docker_client_api_version(
+        docker_version
+    )
 
     DNS: list[str] = HOST_CONFIG.dns or []
     DNS_OPTIONS: list[str] = HOST_CONFIG.dns_options or []
@@ -98,6 +107,12 @@ def get_container_net_kwargs(
         NETWORK_ALIASES = []
         PUBLISH = []
         PUBLISH_ALL = False
+
+    if (
+        docker_client_api_version
+        and docker_client_api_version < version.parse("1.44")
+    ):
+        MAC_ADDRESS = None
 
     return {
         "dns": DNS,

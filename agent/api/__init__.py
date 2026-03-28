@@ -4,3 +4,4 @@ from .image_api import router as image_router
 from .command_api import router as command_router
 from .manifest_api import router as manifest_router
 from .network_api import router as network_router
+from .common_api import router as common_router

@@ -55,6 +55,14 @@ async def update_host_containers(
         )
         logging.info(f"Starting update for host '{host.name}'")
 
+        try:
+            docker_version = await client.common.version()
+        except Exception:
+            logging.exception(
+                f"{host.name}: Failed to get docker version"
+            )
+            docker_version = None
+
         containers: list[ContainerInspectResult] = (
             await client.container.list(
                 GetContainerListBodySchema(all=True)
@@ -71,7 +79,9 @@ async def update_host_containers(
         )
 
         for group in groups.values():
-            res = await update_group_containers(client, host, group)
+            res = await update_group_containers(
+                client, host, group, docker_version
+            )
             if res:
                 result.items.extend(res.items)
 

@@ -22,6 +22,7 @@ from shared.schemas.container_schemas import (
 )
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostInfo
+from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
     InspectImageRequestBodySchema,
@@ -62,6 +63,7 @@ class AgentClient:
         self.command = AgentClientCommand(self)
         self.manifest = AgentClientManifest(self)
         self.network = AgentClientNetwork(self)
+        self.common = AgentClientCommon(self)
 
     async def close_session(self):
         async with self._session_lock:
@@ -392,6 +394,18 @@ class AgentClientNetwork:
             "/api/network/disconnect",
             body,
         )
+
+
+class AgentClientCommon:
+    def __init__(self, agent_client: AgentClient):
+        self._agent_client = agent_client
+
+    async def version(self):
+        data = await self._agent_client._request(
+            "GET",
+            "/api/common/version",
+        )
+        return DockerVersionScheme.model_validate(data)
 
 
 async def load_agents_on_init():

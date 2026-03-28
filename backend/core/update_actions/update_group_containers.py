@@ -36,6 +36,7 @@ from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
+from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
     PullImageRequestBodySchema,
@@ -53,6 +54,7 @@ async def update_group_containers(
     client: AgentClient,
     host: HostsModel,
     group: ContainerGroup,
+    docker_version: DockerVersionScheme | None,
 ) -> GroupActionResult | None:
     """
     Update group of containers.
@@ -74,6 +76,7 @@ async def update_group_containers(
         return None
 
     CACHE.set({"status": EActionStatus.PREPARING})
+
     for gc in group.containers:
         local_image: ImageInspectResult | None = None
         if gc.container.image:
@@ -219,7 +222,9 @@ async def update_group_containers(
             logging.info(
                 f"Getting config for container {gc.container.name}..."
             )
-            config, commands = get_container_config(gc.container)
+            config, commands = get_container_config(
+                gc.container, docker_version
+            )
             gc.config = config
             gc.commands = commands
         except Exception as e:
