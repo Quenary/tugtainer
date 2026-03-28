@@ -6,7 +6,7 @@
     "start": "ng serve --host=0.0.0.0",
     "build": "ng build --configuration=production",
     "watch": "ng build --watch --configuration=development",
-    "test": "ng test --browsers=ChromeHeadless",
+    "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadless"
   },
   "prettier": {

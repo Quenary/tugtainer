@@ -9,6 +9,9 @@ from backend.modules.containers.containers_model import (
 )
 import aiohttp
 from urllib.parse import urlencode
+from backend.modules.settings.settings_enum import ESettingKey
+from backend.modules.settings.settings_storage import SettingsStorage
+import logging
 
 
 def filter_containers_by_check_enabled(
@@ -59,10 +62,29 @@ async def get_image_remote_digest(
     :param local_digest: local digest to utilize If-None-Match 304 response
     :return: new image digest if any or local_digest
     """
-
     registry, repo, tag = parse_image_spec(spec)
 
-    url = f"https://{registry}/v2/{repo}/manifests/{tag}"
+    insecure_registries = SettingsStorage.get(
+        ESettingKey.INSECURE_REGISTRIES
+    )
+    logging.debug(f"Insecure Registries: {insecure_registries}")
+
+    insecure: bool = bool(
+        insecure_registries
+        and any(
+            x and registry and (registry in x or x in registry)
+            for x in insecure_registries.splitlines()
+        )
+    )
+
+    schemes: list[str] = ["https"]
+    if insecure:
+        schemes.append("http")
+    ssl = not insecure
+
+    logging.info(
+        f"Checking registry: {registry}, repo: {repo}, tag: {tag}, insecure: {insecure}"
+    )
 
     headers = {
         "Accept": ",".join(
@@ -81,10 +103,9 @@ async def get_image_remote_digest(
 
     docker_config = DockerConfig()
     basic_token = docker_config.get_basic_token(registry)
-    if basic_token:
-        headers["Authorization"] = f"Basic {basic_token}"
 
     def _on_resp(resp: aiohttp.ClientResponse) -> str | None:
+        logging.debug(resp)
         resp.raise_for_status()
         if resp.status == 304:
             return local_digest
@@ -92,21 +113,75 @@ async def get_image_remote_digest(
             "Docker-Content-Digest"
         ) or resp.headers.get("Etag")
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.head(url, headers=headers) as resp:
-            if resp.status == 401:
-                auth = resp.headers.get("WWW-Authenticate", "")
-                bearer_token = await get_registry_bearer_token(
-                    session, auth, repo, basic_token
-                )
-                headers["Authorization"] = f"Bearer {bearer_token}"
+    async def _do_request(
+        session: aiohttp.ClientSession,
+        url: str,
+        headers: dict,
+        ssl: bool = True,
+    ):
+        async with session.head(
+            url, headers=headers, ssl=ssl
+        ) as resp:
+            logging.debug(f"Response: {resp}")
 
-                async with session.head(
-                    url, headers=headers
-                ) as resp2:
-                    return _on_resp(resp2)
+            if resp.status in (401, 403):
+                logging.info(
+                    f"Registry responded with {resp.status}, trying auth"
+                )
+
+                auth_header = resp.headers.get("WWW-Authenticate", "")
+                auth_applied = False
+
+                if "Bearer" in auth_header:
+                    logging.info(f"Trying Bearer token flow with: {auth_header}")
+                    bearer_token = await get_registry_bearer_token(
+                        session,
+                        auth_header,
+                        repo,
+                        basic_token,
+                        ssl,
+                    )
+                    headers["Authorization"] = (
+                        f"Bearer {bearer_token}"
+                    )
+                    auth_applied = True
+                elif basic_token:
+                    logging.info("Fallback to Basic auth")
+                    headers["Authorization"] = f"Basic {basic_token}"
+                    auth_applied = True
+
+                if auth_applied:
+                    async with session.head(
+                        url, headers=headers, ssl=ssl
+                    ) as resp2:
+                        return _on_resp(resp2)
 
             return _on_resp(resp)
+
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        last_error: Exception | None = None
+
+        for scheme in schemes:
+            url = f"{scheme}://{registry}/v2/{repo}/manifests/{tag}"
+
+            logging.info(f"Trying {url}")
+
+            try:
+                attempt_headers = dict(headers)
+                return await _do_request(
+                    session, url, attempt_headers, ssl
+                )
+            except (
+                aiohttp.ClientSSLError,
+                aiohttp.ClientConnectorError,
+            ) as e:
+                logging.warning(f"Error on {scheme}: {e}")
+                last_error = e
+
+        if last_error:
+            raise last_error
+
+        return None
 
 
 def parse_image_spec(spec: str) -> tuple[str, str, str]:
@@ -144,6 +219,7 @@ async def get_registry_bearer_token(
     auth_header: str,
     repo: str,
     basic_token: str | None = None,
+    ssl: bool = True,
 ) -> str:
     """
     Get registry bearer token
@@ -152,6 +228,7 @@ async def get_registry_bearer_token(
         e.g. Bearer realm="https://auth.docker.io/token",service="registry.docker.io",scope="repository:library/nginx:pull"
     :param repo: repo name
     :param basic_token: basic token
+    :param ssl: ssl flag for request
     :return: token
     """
 
@@ -174,7 +251,7 @@ async def get_registry_bearer_token(
     if basic_token:
         headers["Authorization"] = f"Basic {basic_token}"
 
-    async with session.get(url, headers=headers) as resp:
+    async with session.get(url, headers=headers, ssl=ssl) as resp:
         resp.raise_for_status()
         data: dict[str, Any] = await resp.json()
         return data.get("token") or data.get("access_token") or ""

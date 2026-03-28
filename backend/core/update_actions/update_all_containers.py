@@ -66,11 +66,15 @@ async def update_all_containers():
                 },
             }
         )
-        await send_check_notification(results)
+        try:
+            await send_check_notification(results)
+        except Exception:
+            logging.exception(
+                "Failed to send notification after update"
+            )
 
-    except Exception as e:
+    except Exception:
         CACHE.update({"status": EActionStatus.ERROR})
-        logging.exception(e)
-        logging.error(
+        logging.exception(
             "Error while updating of all containers for all hosts"
         )

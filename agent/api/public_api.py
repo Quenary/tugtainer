@@ -13,11 +13,12 @@ async def health():
     try:
         _ = await asyncall(DOCKER.info)
         return "OK"
-    except DockerException as e:
-        logging.exception(e)
+    except DockerException:
+        message = "Failed to get docker cli info"
+        logging.exception(message)
         raise HTTPException(
             status.HTTP_424_FAILED_DEPENDENCY,
-            "Failed to get docker cli info",
+            message,
         )
 
 

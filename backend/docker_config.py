@@ -16,7 +16,7 @@ class DockerConfig:
     data: dict[str, Any]
     auths: dict[str, Any]
 
-    def __new__(cls, path: str = Config.DOCKER_CONFIG_PATH):
+    def __new__(cls, path: str = Config.DOCKER_CONFIG):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._load(path)
@@ -28,10 +28,18 @@ class DockerConfig:
         try:
             if self.path.exists():
                 with open(self.path, "r") as f:
+                    logging.info(
+                        f"Docker config loaded successfully from {self.path}"
+                    )
                     self.data = json.load(f)
-        except Exception as e:
-            logging.error(f"Error loading docker config file: {path}")
-            logging.exception(e)
+            else:
+                logging.warning(
+                    f"Missing docker config file: {self.path}"
+                )
+        except Exception:
+            logging.exception(
+                f"Error loading docker config file: {self.path}"
+            )
         self.auths = self.data.get("auths", {})
 
     def get_basic_token(self, registry: str) -> str | None:
@@ -39,11 +47,20 @@ class DockerConfig:
         Get Basic auth token for registry
         """
 
-        # dockerhub special case
-        if registry in ["registry-1.docker.io", "docker.io"]:
-            registry = "https://index.docker.io/v1/"
-
         entry = self.auths.get(registry)
+
+        # dockerhub special case
+        if not entry:
+            if registry in ["registry-1.docker.io", "docker.io"]:
+                registry = "https://index.docker.io/v1/"
+                entry = self.auths.get(registry)
+
+        # find by partial match
+        if not entry:
+            for k, v in self.auths.items():
+                if registry in k or k in registry:
+                    entry = v
+                    break
 
         if not entry:
             return None

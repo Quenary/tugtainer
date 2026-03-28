@@ -55,6 +55,14 @@ async def update_host_containers(
         )
         logging.info(f"Starting update for host '{host.name}'")
 
+        try:
+            docker_version = await client.common.version()
+        except Exception:
+            logging.exception(
+                f"{host.name}: Failed to get docker version"
+            )
+            docker_version = None
+
         containers: list[ContainerInspectResult] = (
             await client.container.list(
                 GetContainerListBodySchema(all=True)
@@ -71,7 +79,9 @@ async def update_host_containers(
         )
 
         for group in groups.values():
-            res = await update_group_containers(client, host, group)
+            res = await update_group_containers(
+                client, host, group, docker_version
+            )
             if res:
                 result.items.extend(res.items)
 
@@ -82,18 +92,16 @@ async def update_host_containers(
                 result.prune_result = await client.image.prune(
                     PruneImagesRequestBodySchema(all=host.prune_all)
                 )
-            except Exception as e:
-                logging.exception(e)
-                logging.error(
+            except Exception:
+                logging.exception(
                     f"Failed to prune images on host '{host.name}'"
                 )
 
         CACHE.update({"status": EActionStatus.DONE, "result": result})
         return result
-    except Exception as e:
+    except Exception:
+        logging.exception(f"Failed to update host {host.name}")
         CACHE.update(
             {"status": EActionStatus.ERROR},
         )
-        logging.exception(e)
-        logging.error(f"Failed to update host {host.name}")
         return None

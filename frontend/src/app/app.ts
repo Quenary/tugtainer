@@ -5,7 +5,6 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthApiService } from './features/auth/auth-api.service';
 import {
   catchError,
-  debounceTime,
   finalize,
   firstValueFrom,
   map,
@@ -135,12 +134,10 @@ export class App {
 
   protected readonly isToolbarVisible = toSignal<boolean>(
     this.router.events.pipe(
-      debounceTime(100),
       map(() => {
-        const exclude = ['/', '/auth'];
-        return !exclude.includes(this.router.url);
+        return !['/', '/auth'].includes(this.router.url);
       }),
-      startWith(false),
+      startWith(!['/', '/auth'].includes(this.router.url)),
     ),
   );
 

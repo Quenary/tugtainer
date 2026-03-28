@@ -11,8 +11,6 @@ class Config:
     AGENT_SECRET: ClassVar[str | None]
     AGENT_SIGNATURE_TTL: ClassVar[int]
     DOCKER_TIMEOUT: ClassVar[int]
-    DOCKER_HOST: ClassVar[str | None]
-    DOCKER_CONFIG_PATH: ClassVar[str]
 
     @classmethod
     def load(cls):
@@ -28,10 +26,6 @@ class Config:
             )
             cls.DOCKER_TIMEOUT = int(
                 os.getenv("DOCKER_TIMEOUT") or 15
-            )
-            cls.DOCKER_HOST = os.getenv("DOCKER_HOST") or None
-            cls.DOCKER_CONFIG_PATH = os.getenv(
-                "DOCKER_CONFIG_PATH", "~/.docker"
             )
 
 

@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI, HTTPException, Request, status
 from python_on_whales import DockerException
 from agent.api import (
+    common_router,
     public_router,
     container_router,
     image_router,
@@ -30,6 +31,7 @@ app.include_router(image_router)
 app.include_router(command_router)
 app.include_router(manifest_router)
 app.include_router(network_router)
+app.include_router(common_router)
 
 
 @app.exception_handler(asyncio.TimeoutError)

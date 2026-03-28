@@ -10,6 +10,7 @@ from backend.util.subtract_dict import subtract_dict
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
+from shared.schemas.docker_version_scheme import DockerVersionScheme
 from .map_ulimits_to_arg import map_ulimits_to_arg
 from .map_ulimits_to_arg import map_ulimits_to_arg
 from .map_healthcheck_to_kwargs import map_healthcheck_to_kwargs
@@ -76,6 +77,7 @@ def merge_container_config_with_image(
 
 def get_container_config(
     container: ContainerInspectResult,
+    docker_version: DockerVersionScheme | None,
 ) -> tuple[CreateContainerRequestBodySchema, list[list[str]]]:
     """
     Get container config dict that matches kwargs for create/run.
@@ -88,7 +90,9 @@ def get_container_config(
 
     ENVS = map_env_to_dict(CONFIG.env)
 
-    NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(container)
+    NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(
+        container, docker_version
+    )
     if NET_COMMANDS:
         COMMANDS += NET_COMMANDS
 

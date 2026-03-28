@@ -1,6 +1,9 @@
+import asyncio
 from inspect import signature
+import json
 from typing import Any, Literal
 from aiohttp.typedefs import Query
+from fastapi import status
 from pydantic import BaseModel, TypeAdapter
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
@@ -19,6 +22,7 @@ from shared.schemas.container_schemas import (
 )
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostInfo
+from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
     InspectImageRequestBodySchema,
@@ -51,12 +55,37 @@ class AgentClient:
             600  # timeout for potentially long requests
         )
         self._ssl = ssl
+        self._session: aiohttp.ClientSession | None = None
+        self._session_lock = asyncio.Lock()
         self.public = AgentClientPublic(self)
         self.container = AgentClientContainer(self)
         self.image = AgentClientImage(self)
         self.command = AgentClientCommand(self)
         self.manifest = AgentClientManifest(self)
         self.network = AgentClientNetwork(self)
+        self.common = AgentClientCommon(self)
+
+    async def close_session(self):
+        async with self._session_lock:
+            if self._session and not self._session.closed:
+                await self._session.close()
+            self._session = None
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get existing session or create a new one."""
+        async with self._session_lock:
+            if self._session is None or self._session.closed:
+                self._session = aiohttp.ClientSession(
+                    json_serialize=custom_json_dumps,
+                    trust_env=True,
+                )
+            return self._session
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        await self.close_session()
 
     async def _request(
         self,
@@ -64,7 +93,7 @@ class AgentClient:
         path: str,
         body: dict | BaseModel | None = None,
         params: Query | None = None,
-        timeout: int | None = None,
+        timeout: int | float | None = None,
     ) -> Any | None:
         if not timeout:
             timeout = self._timeout
@@ -80,11 +109,9 @@ class AgentClient:
             body=_body,
             params=params,
         )
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=timeout),
-            json_serialize=custom_json_dumps,
-            trust_env=True,
-        ) as session:
+        session = await self._get_session()
+
+        try:
             async with session.request(
                 method,
                 url,
@@ -92,32 +119,53 @@ class AgentClient:
                 json=_body,
                 params=params,
                 ssl=self._ssl,
+                timeout=aiohttp.ClientTimeout(total=timeout),
             ) as resp:
-                # Parse error manually to get detail
-                if resp.status >= 400:
+                try:
+                    resp.raise_for_status()
+                except aiohttp.ClientResponseError as e:
+                    message = "Agent request error"
+                    logging.exception(message)
                     try:
                         error_body = await resp.json()
-                    except:
+                    except Exception:
                         error_body = await resp.text()
-                    logging.error(
-                        f"Agent error:\n{resp.status}\n{error_body}"
-                    )
                     raise TugAgentClientError(
-                        f"Agent error {resp.status}",
+                        message,
+                        url,
+                        method,
                         resp.status,
                         error_body,
                     )
-                # Raise other errors
-                resp.raise_for_status()
-                # Json response body
-                if resp.content_length and resp.content_length > 0:
-                    return await resp.json()
-                # Chunked responses without content_length
-                if resp.headers.get("Transfer-Encoding") == "chunked":
-                    text = await resp.text()
-                    return await resp.json() if text else None
-                # Empty response body
-                return None
+
+                text = await resp.text()
+                if not text:
+                    return None
+                try:
+                    return json.loads(text)
+                except Exception:
+                    return text
+        except asyncio.TimeoutError as e:
+            message = "Agent timeout error"
+            logging.exception(message)
+            raise TugAgentClientError(
+                message,
+                url,
+                method,
+                status.HTTP_408_REQUEST_TIMEOUT,
+                "The problem is most likely related to the low Agent Timeout value, which you can increase in the host settings.",
+            )
+        except aiohttp.ClientError as e:
+            message = "Agent connection error"
+            logging.exception(message)
+            await self.close_session()
+            raise TugAgentClientError(
+                message,
+                url,
+                method,
+                status.HTTP_502_BAD_GATEWAY,
+                str(e),
+            )
 
 
 class AgentClientPublic:
@@ -276,7 +324,9 @@ class AgentClientImage:
         self, body: GetImageListBodySchema
     ) -> list[ImageInspectResult]:
         data = await self._agent_client._request(
-            "POST", f"/api/image/list", body
+            "POST",
+            f"/api/image/list",
+            body,
         )
         return TypeAdapter(list[ImageInspectResult]).validate_python(
             data or []
@@ -346,6 +396,18 @@ class AgentClientNetwork:
         )
 
 
+class AgentClientCommon:
+    def __init__(self, agent_client: AgentClient):
+        self._agent_client = agent_client
+
+    async def version(self):
+        data = await self._agent_client._request(
+            "GET",
+            "/api/common/version",
+        )
+        return DockerVersionScheme.model_validate(data)
+
+
 async def load_agents_on_init():
     """Get hosts from db and init clients"""
     async with async_session_maker() as session:
@@ -354,11 +416,12 @@ async def load_agents_on_init():
         hosts = result.scalars().all()
         for h in hosts:
             try:
-                AgentClientManager.set_client(h)
-                logging.info(f"Docker host '{h.name}' loaded.")
-            except Exception as e:
-                logging.error(f"Error loading docker host '{h.name}'")
-                logging.exception(e)
+                await AgentClientManager.set_client(h)
+                logging.info(f"{h.name}: agent client loaded")
+            except Exception:
+                logging.exception(
+                    f"{h.name}: failed to load agent client"
+                )
 
 
 class AgentClientManager:
@@ -373,8 +436,8 @@ class AgentClientManager:
         return cls._INSTANCE
 
     @classmethod
-    def set_client(cls, host: HostsModel):
-        cls.remove_client(host.id)
+    async def set_client(cls, host: HostsModel):
+        await cls.remove_client(host.id)
         cls._HOST_CLIENTS[host.id] = cls._create_client(host)
 
     @classmethod
@@ -382,7 +445,7 @@ class AgentClientManager:
         if host.id in cls._HOST_CLIENTS:
             return cls._HOST_CLIENTS[host.id]
         client = cls._create_client(host)
-        cls._HOST_CLIENTS[host.id] = cls._create_client(host)
+        cls._HOST_CLIENTS[host.id] = client
         return client
 
     @classmethod
@@ -407,5 +470,13 @@ class AgentClientManager:
         )
 
     @classmethod
-    def remove_client(cls, id: int):
-        cls._HOST_CLIENTS.pop(id, None)
+    async def remove_client(cls, id: int):
+        client = cls._HOST_CLIENTS.pop(id, None)
+        if client:
+            await client.close_session()
+
+    @classmethod
+    async def remove_all(cls):
+        for client in cls._HOST_CLIENTS.values():
+            await client.close_session()
+        cls._HOST_CLIENTS.clear()

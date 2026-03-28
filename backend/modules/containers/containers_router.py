@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Any, Awaitable, Callable, Literal
 from fastapi import APIRouter, Depends, HTTPException, status
 from python_on_whales.components.container.models import (
@@ -216,9 +217,7 @@ async def check_container(
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
     container = await client.container.inspect(c_name)
-    asyncio.create_task(
-        check_one_container(client, host, container)
-    )
+    asyncio.create_task(check_one_container(client, host, container))
     return get_container_cache_key(
         host,
         container,
@@ -262,16 +261,30 @@ async def update_container(
 ) -> str:
     host = await get_host(host_id, session)
     _raise_for_host_status(host)
+
     client = AgentClientManager.get_host_client(host)
+
     if not await client.container.exists(c_name):
         raise HTTPException(404, "Container not found")
+
     container = await client.container.inspect(c_name)
     containers = await client.container.list(
         GetContainerListBodySchema(all=True)
     )
     db_containers = await get_host_containers(session, host_id)
     group = get_container_group(container, containers, db_containers)
-    asyncio.create_task(update_group_containers(client, host, group))
+
+    try:
+        docker_version = await client.common.version()
+    except Exception:
+        logging.exception(
+            f"Failed to get docker version while updating {c_name}"
+        )
+        docker_version = None
+
+    asyncio.create_task(
+        update_group_containers(client, host, group, docker_version)
+    )
     return get_group_cache_key(host, group)
 
 

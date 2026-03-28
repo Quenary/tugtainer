@@ -83,10 +83,9 @@ async def check_host_containers(
 
         CACHE.update({"status": EActionStatus.DONE, "result": result})
         return result
-    except Exception as e:
+    except Exception:
+        logging.exception(f"Failed to check host {host.name}")
         CACHE.update(
             {"status": EActionStatus.ERROR},
         )
-        logging.exception(e)
-        logging.error(f"Failed to check host {host.name}")
         return None
