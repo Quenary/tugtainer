@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v1.27.0 (2026-03-28)
+
+### Bug Fixes
+
+- Rename env DOCKER_CONFIG_PATH to DOCKER_CONFIG
+  ([`51dabf6`](https://github.com/Quenary/tugtainer/commit/51dabf6469a6a6233e0de497e0f3982b07f5eb7b))
+
+- Update container with docker api version <1.44
+  ([`0016d2f`](https://github.com/Quenary/tugtainer/commit/0016d2fea2827bcc2046fd81ee1efdcaf9de1c82))
+
+- **backend**: Docker auth flow for HEAD (check) request
+  ([`3a402d0`](https://github.com/Quenary/tugtainer/commit/3a402d0bf490d4774ca9e0304d3763edc9c6b51a))
+
+- **backend**: Registry token for HEAD req from config.json
+  ([`bd1e89b`](https://github.com/Quenary/tugtainer/commit/bd1e89b9faff6f8b83e934b8af3ae7c58f7fbf01))
+
+### Documentation
+
+- Edited readme
+  ([`afc1aa8`](https://github.com/Quenary/tugtainer/commit/afc1aa80eb72aec72a999b5b21405dbbeb14ee4e))
+
+### Features
+
+- Allow check from insecure registries
+  ([`9b643e1`](https://github.com/Quenary/tugtainer/commit/9b643e13784e38ef577698feccaf1165322300f3))
+
+
 ## v1.26.0 (2026-03-15)
 
 ### Bug Fixes
