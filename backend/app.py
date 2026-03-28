@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, status
 from backend.core.cron_manager import schedule_actions_on_init
-from backend.core.agent_client import load_agents_on_init
+from backend.core.agent_client import AgentClientManager, load_agents_on_init
 from backend.modules.auth.auth_router import auth_router as auth_router
 from backend.modules.containers.containers_router import (
     containers_router as containers_router,
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     await schedule_actions_on_init()
     yield  # App
     # Code to run on shutdown
-
+    await AgentClientManager.remove_all()
 
 app = FastAPI(root_path="/api", lifespan=lifespan)
 app.include_router(auth_router)

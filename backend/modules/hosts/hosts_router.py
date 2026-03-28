@@ -58,7 +58,7 @@ async def create(
     await session.commit()
     await session.refresh(new_host)
     if new_host.enabled:
-        AgentClientManager.set_client(new_host)
+        await AgentClientManager.set_client(new_host)
     return new_host
 
 
@@ -90,9 +90,9 @@ async def update(
             setattr(host, key, value)
     await session.commit()
     await session.refresh(host)
-    AgentClientManager.remove_client(host.id)
+    await AgentClientManager.remove_client(host.id)
     if host.enabled:
-        AgentClientManager.set_client(host)
+        await AgentClientManager.set_client(host)
     return host
 
 
@@ -102,7 +102,7 @@ async def delete(
     session: AsyncSession = Depends(get_async_session),
 ):
     host = await get_host(id, session)
-    AgentClientManager.remove_client(host)
+    await AgentClientManager.remove_client(host)
     await session.delete(host)
     await session.commit()
     return {"detail": "Host deleted successfully"}
