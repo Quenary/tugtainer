@@ -9,51 +9,37 @@
     "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadless"
   },
-  "prettier": {
-    "printWidth": 100,
-    "singleAttributePerLine": true,
-    "singleQuote": true,
-    "overrides": [
-      {
-        "files": "*.html",
-        "options": {
-          "parser": "angular"
-        }
-      }
-    ]
-  },
   "private": true,
   "dependencies": {
-    "@angular-devkit/build-angular": "^20.3.2",
-    "@angular/common": "^20.3.0",
-    "@angular/compiler": "^20.3.0",
-    "@angular/core": "^20.3.0",
-    "@angular/forms": "^20.3.0",
-    "@angular/platform-browser": "^20.3.0",
-    "@angular/router": "^20.3.0",
+    "@angular/common": "^21.2.6",
+    "@angular/compiler": "^21.2.6",
+    "@angular/core": "^21.2.6",
+    "@angular/forms": "^21.2.6",
+    "@angular/platform-browser": "^21.2.6",
+    "@angular/router": "^21.2.6",
     "@ngx-translate/core": "^17.0.0",
     "@ngx-translate/http-loader": "^17.0.0",
-    "@primeuix/themes": "^1.2.3",
-    "cron-validate": "^1.5.2",
-    "dayjs": "^1.11.19",
+    "@primeuix/themes": "^2.0.3",
+    "cron-validate": "^1.5.3",
+    "dayjs": "^1.11.20",
     "primeicons": "^7.0.0",
-    "primeng": "^20.1.2",
+    "primeng": "^21.1.4",
     "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.2",
-    "@angular/cli": "^20.3.2",
-    "@angular/compiler-cli": "^20.3.0",
+    "@angular/build": "^21.2.5",
+    "@angular/cli": "^21.2.5",
+    "@angular/compiler-cli": "^21.2.6",
     "@types/jasmine": "~5.1.0",
-    "baseline-browser-mapping": "^2.9.14",
+    "baseline-browser-mapping": "^2.10.12",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "prettier": "^3.6.2",
+    "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   }
 }

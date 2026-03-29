@@ -1,3 +1,4 @@
+import { TagSeverity } from '@shared/types/tag-severity.type';
 import { TIncomplete } from '../../shared/types/incomplete.type';
 
 /**
@@ -89,9 +90,9 @@ export enum EContainerStatus {
 /**
  * Mapping of container status to primeng severity color
  */
-export const EContainerStatusSeverity: Record<EContainerStatus, string> = {
-  [EContainerStatus.created]: 'primary',
-  [EContainerStatus.paused]: 'contrast',
+export const EContainerStatusSeverity: Record<EContainerStatus, TagSeverity> = {
+  [EContainerStatus.created]: 'contrast',
+  [EContainerStatus.paused]: 'secondary',
   [EContainerStatus.running]: 'success',
   [EContainerStatus.restarting]: 'info',
   [EContainerStatus.removing]: 'warn',
@@ -101,7 +102,7 @@ export const EContainerStatusSeverity: Record<EContainerStatus, string> = {
 /**
  * Mapping of container health status to primeng severity color
  */
-export const EContainerHealthSeverity: Record<string, string> = {
+export const EContainerHealthSeverity: Record<string, TagSeverity> = {
   healthy: 'success',
   unhealthy: 'danger',
 };

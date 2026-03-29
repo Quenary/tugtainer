@@ -13,7 +13,6 @@ import { provideTranslateLoader, provideTranslateService } from '@ngx-translate/
 import { localeInitializer } from './core/initializers/locale-initializer';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
@@ -43,7 +42,6 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
-    provideAnimationsAsync(),
     provideTranslateService({
       loader: provideTranslateLoader(SlickTranslationLoader),
       fallbackLang: 'en',
