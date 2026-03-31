@@ -3,6 +3,7 @@
   flex-direction: column;
   overflow: hidden;
   overflow-y: auto;
+  flex: 1;
 
   p-toolbar {
     margin-bottom: 1rem;
@@ -21,6 +22,18 @@
       align-items: center;
       gap: 1rem;
       flex-wrap: wrap;
+    }
+  }
+
+  .inspect-content {
+    overflow: hidden;
+    width: 100%;
+    display: block;
+
+    ::ng-deep .p-accordioncontent-wrapper {
+      display: block;
+      overflow: hidden;
+      width: 100%;
     }
   }
 }
