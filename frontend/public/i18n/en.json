@@ -21,6 +21,11 @@
     "0": "Tug",
     "1": "tainer"
   },
+  "THEMES": {
+    "AUTO": "Auto",
+    "LIGHT": "Light",
+    "DARK": "Dark"
+  },
   "NAV": {
     "AUTH": "Tugtainer. Authorization.",
     "HOSTS": "Tugtainer. Hosts.",

@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  inject,
   LOCALE_ID,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
@@ -9,7 +10,10 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideTranslateLoader, provideTranslateService } from '@ngx-translate/core';
+import {
+  provideTranslateLoader,
+  provideTranslateService,
+} from '@ngx-translate/core';
 import { localeInitializer } from './core/initializers/locale-initializer';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
@@ -17,6 +21,7 @@ import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
 import { supportedLocales } from './app.consts';
+import { AppThemeService } from './core/services/theme.service';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -50,16 +55,25 @@ export const appConfig: ApplicationConfig = {
     {
       provide: LOCALE_ID,
       useFactory: () => {
-        const locale = navigator.language ? navigator.language.split('-')[0] : 'en';
+        const locale = navigator.language
+          ? navigator.language.split('-')[0]
+          : 'en';
         return supportedLocales.find((l) => l === locale) || 'en';
       },
     },
     providePrimeNG({
       theme: {
         preset: themePreset,
+        options: {
+          darkModeSelector: '.app-dark',
+        },
       },
     }),
     provideAppInitializer(() => localeInitializer()),
+    provideAppInitializer(() => {
+      const themeService = inject(AppThemeService);
+      themeService.init();
+    }),
     MessageService,
   ],
 };
