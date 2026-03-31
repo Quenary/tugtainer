@@ -14,7 +14,7 @@ body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
 
-  // Styles of table header cells
+  //#region Styles of table header cells
   --p-datatable-header-cell-selected-background: color-mix(
     in srgb,
     var(--p-primary-400),
@@ -32,10 +32,9 @@ body {
       height: auto;
     }
   }
-  .p-panelmenu-item-link-active {
-    --p-panelmenu-item-icon-color: var(--p-primary-500);
+  //#endregion
+
+  a {
+    color: var(--p-button-text-primary-color);
   }
-}
-a {
-  color: var(--p-button-text-primary-color);
 }

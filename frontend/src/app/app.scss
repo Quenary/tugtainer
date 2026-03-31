@@ -7,24 +7,37 @@
   width: 100%;
   height: 100%;
 
-  .theme-select-item {
-    display: inline-flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
+  p-drawer {
+    --p-drawer-content-padding: 0;
+
+    p-menu {
+      --p-menu-border-color: transparent;
+      --p-menu-item-padding: 0.5rem 1.25rem;
+
+      ::ng-deep .p-menu-item-link-active {
+        --p-menu-item-icon-color: var(--p-button-text-primary-color);
+      }
+    }
+
+    .theme-select-item {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
   }
 
   p-toolbar {
     width: 100%;
-  }
 
-  .app-menu-end {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    white-space: nowrap;
-    & > * {
-      cursor: pointer;
+    .app-toolbar-end {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+      & > * {
+        cursor: pointer;
+      }
     }
   }
 

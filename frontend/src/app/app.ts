@@ -24,7 +24,6 @@ import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { LogoComponent } from './shared/components/logo/logo.component';
 import { DrawerModule } from 'primeng/drawer';
-import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToolbarModule } from 'primeng/toolbar';
 import { DeployGuidelineUrl } from './app.consts';
 import { ToastService } from './core/services/toast.service';
@@ -32,6 +31,7 @@ import { IsUpdateAvailableResponseBody } from './features/public/public-interfac
 import { SelectModule } from 'primeng/select';
 import { Theme, AppThemeService } from './core/services/theme.service';
 import { FormsModule } from '@angular/forms';
+import { MenuModule } from 'primeng/menu';
 
 @Component({
   selector: 'app-root',
@@ -45,7 +45,7 @@ import { FormsModule } from '@angular/forms';
     DialogModule,
     LogoComponent,
     DrawerModule,
-    PanelMenuModule,
+    MenuModule,
     ToolbarModule,
     SelectModule,
     AsyncPipe,

@@ -7,10 +7,10 @@
     <app-logo></app-logo>
   </ng-template>
 
-  <p-panel-menu
+  <p-menu
     [model]="menuItems$ | async"
     (click)="menuOpened.set(false)">
-  </p-panel-menu>
+  </p-menu>
 
   <ng-template #footer>
     <p-select
@@ -47,8 +47,8 @@
   </ng-template>
 
   <ng-template #end>
-    <section class="app-menu-end">
-      <span class="app-menu-end-version"> </span>
+    <section class="app-toolbar-end">
+      <span> </span>
       @if (version.value(); as data) {
       <p-tag severity="contrast"> {{ data.image_version }} </p-tag>
       } @if (isUpdateAvailable.value()?.is_available) {
