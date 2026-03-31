@@ -1,6 +1,31 @@
 # CHANGELOG
 
 
+## v1.28.0 (2026-03-31)
+
+### Bug Fixes
+
+- **frontend**: Auth page styles
+  ([`b763d3c`](https://github.com/Quenary/tugtainer/commit/b763d3c198df74f8b534251c6b7271f46ae6ae46))
+
+- **frontend**: Container card styles
+  ([`7b82849`](https://github.com/Quenary/tugtainer/commit/7b82849ae8ded4934a5136757f89802ebaf973f6))
+
+- **frontend**: Menu flicker after navigation
+  ([`e162ef8`](https://github.com/Quenary/tugtainer/commit/e162ef81f04770f69cb7e02d70756239d8d2f097))
+
+- **frontend**: Update angular to 21
+  ([`082e079`](https://github.com/Quenary/tugtainer/commit/082e079077d9e2f8009f2501f925c7e771947192))
+
+### Features
+
+- **frontend**: Clickable container name
+  ([`bafc883`](https://github.com/Quenary/tugtainer/commit/bafc8830a4de3ed827412ca3d1420ed0c62828e4))
+
+- **frontend**: Theme select
+  ([`2fe4672`](https://github.com/Quenary/tugtainer/commit/2fe46724c19cfeea6f778dd18983ce5688ca1fec))
+
+
 ## v1.27.0 (2026-03-28)
 
 ### Bug Fixes
