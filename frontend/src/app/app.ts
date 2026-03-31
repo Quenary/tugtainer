@@ -24,11 +24,14 @@ import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { LogoComponent } from './shared/components/logo/logo.component';
 import { DrawerModule } from 'primeng/drawer';
-import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToolbarModule } from 'primeng/toolbar';
 import { DeployGuidelineUrl } from './app.consts';
 import { ToastService } from './core/services/toast.service';
 import { IsUpdateAvailableResponseBody } from './features/public/public-interface';
+import { SelectModule } from 'primeng/select';
+import { Theme, AppThemeService } from './core/services/theme.service';
+import { FormsModule } from '@angular/forms';
+import { MenuModule } from 'primeng/menu';
 
 @Component({
   selector: 'app-root',
@@ -42,8 +45,11 @@ import { IsUpdateAvailableResponseBody } from './features/public/public-interfac
     DialogModule,
     LogoComponent,
     DrawerModule,
-    PanelMenuModule,
+    MenuModule,
     ToolbarModule,
+    SelectModule,
+    AsyncPipe,
+    FormsModule,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -54,7 +60,13 @@ export class App {
   private readonly router = inject(Router);
   private readonly publicApiService = inject(PublicApiService);
   private readonly toastService = inject(ToastService);
+  private readonly themeService = inject(AppThemeService);
 
+  protected readonly theme$ = this.themeService.theme$;
+  protected readonly themes$ = this.themeService.themes$;
+  /**
+   * Whether to show new version dialog
+   */
   protected readonly showNewVersionDialog = signal<boolean>(false);
   /**
    * Is auth disabled
@@ -95,41 +107,42 @@ export class App {
         ),
       ),
   });
-  protected readonly menuItems$: Observable<MenuItem[]> = this.translateService.onLangChange.pipe(
-    startWith({}),
-    switchMap(() => this.translateService.get('MENU')),
-    map(
-      (t) =>
-        <MenuItem[]>[
-          {
-            label: t.HOSTS,
-            routerLink: '/hosts',
-            icon: 'pi pi-server',
-          },
-          {
-            label: t.CONTAINERS,
-            routerLink: '/containers',
-            icon: 'pi pi-box',
-          },
-          {
-            label: t.IMAGES,
-            routerLink: '/images',
-            icon: 'pi pi-file',
-          },
-          {
-            label: t.SETTINGS,
-            routerLink: '/settings',
-            icon: 'pi pi-cog',
-          },
-          {
-            label: t.GITHUB,
-            url: 'https://github.com/Quenary/tugtainer',
-            target: '_blank',
-            icon: 'pi pi-github',
-          },
-        ],
-    ),
-  );
+  protected readonly menuItems$: Observable<MenuItem[]> =
+    this.translateService.onLangChange.pipe(
+      startWith({}),
+      switchMap(() => this.translateService.get('MENU')),
+      map(
+        (t) =>
+          <MenuItem[]>[
+            {
+              label: t.HOSTS,
+              routerLink: '/hosts',
+              icon: 'pi pi-server',
+            },
+            {
+              label: t.CONTAINERS,
+              routerLink: '/containers',
+              icon: 'pi pi-box',
+            },
+            {
+              label: t.IMAGES,
+              routerLink: '/images',
+              icon: 'pi pi-file',
+            },
+            {
+              label: t.SETTINGS,
+              routerLink: '/settings',
+              icon: 'pi pi-cog',
+            },
+            {
+              label: t.GITHUB,
+              url: 'https://github.com/Quenary/tugtainer',
+              target: '_blank',
+              icon: 'pi pi-github',
+            },
+          ],
+      ),
+    );
   protected readonly menuOpened = signal<boolean>(false);
 
   protected readonly isToolbarVisible = toSignal<boolean>(
@@ -158,5 +171,9 @@ export class App {
 
   protected openReleaseNotes(): void {
     window.open(this.isUpdateAvailable.value().release_url, '_blank');
+  }
+
+  protected selectTheme(theme: Theme): void {
+    this.themeService.setTheme(theme);
   }
 }

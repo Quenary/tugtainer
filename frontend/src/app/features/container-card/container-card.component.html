@@ -3,14 +3,12 @@
     <p-button
       icon="pi pi-arrow-left"
       text
-      (onClick)="goBack()"
-    ></p-button>
+      (onClick)="goBack()"></p-button>
     <p-button
       icon="pi pi-refresh"
       text
       [loading]="info.isLoading()"
-      (onClick)="info.reload()"
-    ></p-button>
+      (onClick)="info.reload()"></p-button>
   </ng-template>
 
   <ng-template #end>
@@ -18,15 +16,13 @@
       withControl
       [item]="info.value()?.item"
       (onDone)="info.reload()"
-      (onControlDone)="onControlDone($event)"
-    ></app-container-actions>
+      (onControlDone)="onControlDone($event)"></app-container-actions>
   </ng-template>
 </p-toolbar>
 
 <p-accordion
   [value]="accordionValue()"
-  (valueChange)="accordionValue.set($event)"
->
+  (valueChange)="accordionValue.set($event)">
   <p-accordion-panel value="general">
     <p-accordion-header>
       {{ 'CONTAINERS.GENERAL.LABEL' | translate }}
@@ -38,8 +34,7 @@
             <p-toggle-switch
               inputId="container-check-enabled"
               [ngModel]="_item.check_enabled"
-              (ngModelChange)="patchContainer({ check_enabled: $event })"
-            ></p-toggle-switch>
+              (ngModelChange)="patchContainer({ check_enabled: $event })"></p-toggle-switch>
             <label for="container-check-enabled">
               {{ 'CONTAINERS.CHECK' | translate }}
             </label>
@@ -49,8 +44,7 @@
               <p-toggle-switch
                 inputId="container-update-enabled"
                 [ngModel]="_item.update_enabled"
-                (ngModelChange)="patchContainer({ update_enabled: $event })"
-              ></p-toggle-switch>
+                (ngModelChange)="patchContainer({ update_enabled: $event })"></p-toggle-switch>
               <label for="container-update-enabled">
                 {{ 'CONTAINERS.UPDATE' | translate }}
               </label>
@@ -63,8 +57,7 @@
                 severity="warn"
                 icon="pi pi-lock"
                 [value]="'CONTAINERS.PROTECTED' | translate"
-                [pTooltip]="'CONTAINERS.PROTECTED_CONTAINER_HINT' | translate"
-              >
+                [pTooltip]="'CONTAINERS.PROTECTED_CONTAINER_HINT' | translate">
               </p-tag>
             }
             @if (_item.update_available) {
@@ -72,21 +65,18 @@
                 class="general-content-state-tag"
                 severity="success"
                 icon="pi pi-check-circle"
-                [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"
-              ></p-tag>
+                [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"></p-tag>
             }
             <p-tag
               class="general-content-state-tag"
               [severity]="EContainerStatusSeverity[_item.status]"
               [value]="
                 _item.status == 'exited' ? _item.status + ' ' + _item.exit_code : _item.status
-              "
-            ></p-tag>
+              "></p-tag>
             <p-tag
               class="general-content-state-tag"
               [severity]="EContainerHealthSeverity[_item.health] ?? 'secondary'"
-              [value]="_item.health"
-            ></p-tag>
+              [value]="_item.health"></p-tag>
           </section>
 
           <p-ifta-label>
@@ -94,8 +84,7 @@
               id="container-name"
               pInputText
               readonly
-              [value]="_item.name"
-            />
+              [value]="_item.name" />
             <label for="container-name">
               {{ 'CONTAINERS.NAME' | translate }}
             </label>
@@ -106,8 +95,7 @@
               id="container-image"
               pInputText
               readonly
-              [value]="_item.image"
-            />
+              [value]="_item.image" />
             <label for="container-image">
               {{ 'CONTAINERS.IMAGE' | translate }}
             </label>
@@ -121,8 +109,7 @@
               pTextarea
               readonly
               rows="2"
-              [value]="_item.container_id"
-            ></textarea>
+              [value]="_item.container_id"></textarea>
             <label for="container-id">
               {{ 'CONTAINERS.CONTAINER_ID' | translate }}
             </label>
@@ -136,8 +123,7 @@
               pTextarea
               readonly
               [rows]="itemPortsRows()"
-              [value]="itemPorts()"
-            ></textarea>
+              [value]="itemPorts()"></textarea>
             <label for="container-ports">
               {{ 'CONTAINERS.PORTS' | translate }}
             </label>
@@ -148,8 +134,7 @@
               id="container-checked-at"
               pInputText
               readonly
-              [value]="_item.checked_at | dayjs"
-            />
+              [value]="_item.checked_at | dayjs" />
             <label for="container-checked-at">
               {{ 'CONTAINERS.CHECKED_AT' | translate }}
             </label>
@@ -160,8 +145,7 @@
               id="container-updated-at"
               pInputText
               readonly
-              [value]="_item.updated_at | dayjs"
-            />
+              [value]="_item.updated_at | dayjs" />
             <label for="container-updated-at">
               {{ 'CONTAINERS.UPDATED_AT' | translate }}
             </label>
@@ -175,9 +159,10 @@
     <p-accordion-header>
       {{ 'CONTAINERS.INSPECT.LABEL' | translate }}
     </p-accordion-header>
-    <p-accordion-content>
+    <p-accordion-content class="inspect-content">
       @defer (when info.hasValue()) {
-        <app-container-card-inspect [inspect]="info.value()?.inspect"> </app-container-card-inspect>
+        <app-container-card-inspect [inspect]="info.value()?.inspect">
+        </app-container-card-inspect>
       }
     </p-accordion-content>
   </p-accordion-panel>
@@ -190,8 +175,7 @@
       @defer (when accordionValue() == 'logs') {
         <app-container-card-logs
           [hostId]="hostId()"
-          [containerNameOrId]="containerNameOrId()"
-        ></app-container-card-logs>
+          [containerNameOrId]="containerNameOrId()"></app-container-card-logs>
       }
     </p-accordion-content>
   </p-accordion-panel>

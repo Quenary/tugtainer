@@ -4,27 +4,28 @@
     @if (isPasswordSet.value()) {
       <app-auth-form
         [isLoading]="isLoading()"
-        (OnSubmit)="onSubmitLogin($event)"
-      >
+        (OnSubmit)="onSubmitLogin($event)">
       </app-auth-form>
     } @else {
       <app-new-password-form
         [isLoading]="isLoading()"
-        (OnSubmit)="onSubmitNewPassword($event)"
-      ></app-new-password-form>
+        (OnSubmit)="onSubmitNewPassword($event)"></app-new-password-form>
     }
   }
+
+  @if (showDivider()) {
+    <p-divider></p-divider>
+  }
+
   @if (isOidcEnabled.value()) {
-    <div class="oidc-only-login">
-      <p-button
-        [loading]="isLoading()"
-        severity="primary"
-        size="large"
-        icon="pi pi-id-card"
-        [label]="'AUTH.LOGIN_WITH_OIDC' | translate"
-        (onClick)="onOidcLogin()"
-      >
-      </p-button>
-    </div>
+    <p-button
+      class="oidc-button"
+      [fluid]="true"
+      [loading]="isLoading()"
+      severity="primary"
+      icon="pi pi-id-card"
+      [label]="'AUTH.SIGNIN_WITH_OIDC' | translate"
+      (onClick)="onOidcLogin()">
+    </p-button>
   }
 </div>

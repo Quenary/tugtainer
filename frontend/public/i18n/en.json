@@ -21,6 +21,11 @@
     "0": "Tug",
     "1": "tainer"
   },
+  "THEMES": {
+    "AUTO": "Auto",
+    "LIGHT": "Light",
+    "DARK": "Dark"
+  },
   "NAV": {
     "AUTH": "Tugtainer. Authorization.",
     "HOSTS": "Tugtainer. Hosts.",
@@ -55,9 +60,12 @@
       "MEDIUM": "Average complexity",
       "STRONG": "Complex password"
     },
-    "PASSWORD_HINTS": ["At least one lowercase", "At least one uppercase", "At least one numeric"],
-    "OR": "Or",
-    "LOGIN_WITH_OIDC": "Login with OIDC"
+    "PASSWORD_HINTS": [
+      "At least one lowercase",
+      "At least one uppercase",
+      "At least one numeric"
+    ],
+    "SIGNIN_WITH_OIDC": "Sign-in with OIDC"
   },
   "HOSTS": {
     "NO_HOSTS_FOUND": "No hosts found",

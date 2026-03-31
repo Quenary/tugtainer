@@ -20,15 +20,26 @@ describe('AuthComponent', () => {
   let toastServiceMock: jasmine.SpyObj<ToastService>;
 
   beforeEach(async () => {
-    authApiServiceMock = jasmine.createSpyObj('AuthApiService', ['initiateLogin'], {
-      isDisabled: jasmine.createSpy('isDisabled').and.returnValue(of(false)),
-      isPasswordSet: jasmine.createSpy('isPasswordSet').and.returnValue(of(true)),
-      isAuthProviderEnabled: jasmine.createSpy('isAuthProviderEnabled').and.returnValue(of(true)),
-      setPassword: jasmine.createSpy('setPassword').and.returnValue(of({})),
-      login: jasmine.createSpy('login').and.returnValue(of({})),
-    });
+    authApiServiceMock = jasmine.createSpyObj(
+      'AuthApiService',
+      ['initiateLogin'],
+      {
+        isDisabled: jasmine.createSpy('isDisabled').and.returnValue(of(false)),
+        isPasswordSet: jasmine
+          .createSpy('isPasswordSet')
+          .and.returnValue(of(true)),
+        isAuthProviderEnabled: jasmine
+          .createSpy('isAuthProviderEnabled')
+          .and.returnValue(of(true)),
+        setPassword: jasmine.createSpy('setPassword').and.returnValue(of({})),
+        login: jasmine.createSpy('login').and.returnValue(of({})),
+      },
+    );
     routerMock = jasmine.createSpyObj('Router', ['navigate']);
-    toastServiceMock = jasmine.createSpyObj('ToastService', ['success', 'error']);
+    toastServiceMock = jasmine.createSpyObj('ToastService', [
+      'success',
+      'error',
+    ]);
 
     await TestBed.configureTestingModule({
       imports: [AuthComponent],
@@ -79,7 +90,7 @@ describe('AuthComponent', () => {
     );
     fixture.detectChanges();
     await fixture.whenStable();
-    const oidcButton = de.query(By.css('.oidc-only-login'));
+    const oidcButton = de.query(By.css('.oidc-button'));
     expect(oidcButton).toBeTruthy();
   });
 
@@ -101,7 +112,9 @@ describe('AuthComponent', () => {
   });
 
   it('should not navigate after failure login', async () => {
-    authApiServiceMock.login.and.returnValue(throwError(() => new Error('test')));
+    authApiServiceMock.login.and.returnValue(
+      throwError(() => new Error('test')),
+    );
     fixture.detectChanges();
     await fixture.whenStable();
     component['onSubmitLogin']('test');

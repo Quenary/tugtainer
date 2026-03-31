@@ -51,8 +51,7 @@
       "STRONG": "复杂密码"
     },
     "PASSWORD_HINTS": ["至少一个小写字母", "至少一个大写字母", "至少一个数字"],
-    "OR": "或",
-    "LOGIN_WITH_OIDC": "使用 OIDC 登录"
+    "SIGNIN_WITH_OIDC": "使用 OIDC 登录"
   },
   "HOSTS": {
     "NO_HOSTS_FOUND": "未找到主机",

@@ -10,24 +10,21 @@
         pInputText
         type="text"
         (input)="dt2.filterGlobal($event.target.value, 'contains')"
-        [placeholder]="'CONTAINERS.SEARCH_PLACEHOLDER' | translate"
-      />
+        [placeholder]="'CONTAINERS.SEARCH_PLACEHOLDER' | translate" />
     </p-iconfield>
     <p-button
       icon="pi pi-refresh"
       [loading]="list.isLoading()"
       text
       rounded
-      (onClick)="list.reload()"
-    ></p-button>
+      (onClick)="list.reload()"></p-button>
   </ng-template>
   <ng-template #end>
     <p-button
       severity="success"
       [loading]="checkHostActive()"
       [label]="'CONTAINERS.CHECK_ALL' | translate"
-      (onClick)="checkHost()"
-    ></p-button>
+      (onClick)="checkHost()"></p-button>
   </ng-template>
 </p-toolbar>
 
@@ -42,8 +39,7 @@
   ]"
   [scrollable]="true"
   scrollHeight="flex"
-  [value]="list.value()"
->
+  [value]="list.value()">
   <ng-template #header>
     <tr>
       <th pSortableColumn="name">
@@ -52,54 +48,46 @@
       </th>
       <th
         pSortableColumn="status"
-        style="width: 10%"
-      >
+        style="width: 10%">
         {{ 'CONTAINERS.STATUS' | translate }}
         <p-sortIcon field="status"></p-sortIcon>
       </th>
       <th
         pSortableColumn="health"
-        style="width: 10%"
-      >
+        style="width: 10%">
         {{ 'CONTAINERS.HEALTH' | translate }}
         <p-sortIcon field="health"></p-sortIcon>
       </th>
       <th
         pSortableColumn="check_enabled"
-        style="width: 10%"
-      >
+        style="width: 10%">
         {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
         <i
           class="pi pi-question-circle"
           style="margin: 0 0.5rem"
           [pTooltip]="'CONTAINERS.CHECK_HINT' | translate"
-          tooltipPosition="left"
-        ></i>
+          tooltipPosition="left"></i>
         <p-sortIcon field="check_enabled"></p-sortIcon>
       </th>
       <th
         pSortableColumn="update_enabled"
-        style="width: 10%"
-      >
+        style="width: 10%">
         {{ 'CONTAINERS.UPDATE_ENABLED' | translate }}
         <i
           class="pi pi-question-circle"
           style="margin: 0 0.5rem"
           [pTooltip]="'CONTAINERS.UPDATE_HINT' | translate"
-          tooltipPosition="left"
-        ></i>
+          tooltipPosition="left"></i>
         <p-sortIcon field="update_enabled"></p-sortIcon>
       </th>
       <th
         pSortableColumn="update_available"
-        style="width: 10%"
-      >
+        style="width: 10%">
         <i
           class="pi pi-question-circle"
           style="margin: 0 0.5rem"
           [pTooltip]="'CONTAINERS.MAIN_BTN_HINT' | translate"
-          tooltipPosition="left"
-        ></i>
+          tooltipPosition="left"></i>
         <p-sortIcon field="update_available"></p-sortIcon>
       </th>
     </tr>
@@ -107,32 +95,30 @@
 
   <ng-template
     #body
-    let-container
-  >
+    let-container>
     <tr>
       <td>
-        <p-button
-          text
-          icon="pi pi-external-link"
-          rounded
-          routerLink="/hosts/{{ container.host_id }}/{{ container.name || container.container_id }}"
-        ></p-button>
-        {{ container.name }}
+        <a
+          routerLink="/hosts/{{ container.host_id }}/{{ container.name || container.container_id }}">
+          <p-button
+            text
+            icon="pi pi-external-link"
+            rounded></p-button>
+          {{ container.name }}
+        </a>
         @if (container.protected) {
           <p-tag
             severity="warn"
             icon="pi pi-lock"
             [value]="'CONTAINERS.PROTECTED' | translate"
-            [pTooltip]="'CONTAINERS.PROTECTED_CONTAINER_HINT' | translate"
-          >
+            [pTooltip]="'CONTAINERS.PROTECTED_CONTAINER_HINT' | translate">
           </p-tag>
         }
         @if (container.update_available) {
           <p-tag
             severity="success"
             icon="pi pi-check-circle"
-            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"
-          ></p-tag>
+            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"></p-tag>
         }
       </td>
       <td>
@@ -142,14 +128,12 @@
             container.status == 'exited'
               ? container.status + ' ' + container.exit_code
               : container.status
-          "
-        ></p-tag>
+          "></p-tag>
       </td>
       <td>
         <p-tag
           [severity]="EContainerHealthSeverity[container.health] ?? 'secondary'"
-          [value]="container.health"
-        ></p-tag>
+          [value]="container.health"></p-tag>
       </td>
       <td>
         <p-togglebutton
@@ -159,8 +143,7 @@
           [onLabel]="'GENERAL.ON' | translate"
           [offLabel]="'GENERAL.OFF' | translate"
           [onIcon]="'pi pi-check-circle'"
-          [offIcon]="'pi pi-circle-off'"
-        />
+          [offIcon]="'pi pi-circle-off'" />
       </td>
       <td>
         @if (!container.protected) {
@@ -171,15 +154,13 @@
             [onLabel]="'GENERAL.ON' | translate"
             [offLabel]="'GENERAL.OFF' | translate"
             [onIcon]="'pi pi-check-circle'"
-            [offIcon]="'pi pi-circle-off'"
-          />
+            [offIcon]="'pi pi-circle-off'" />
         }
       </td>
       <td style="padding-right: 0">
         <app-container-actions
           [item]="container"
-          (onDone)="onContainerProgressDone()"
-        ></app-container-actions>
+          (onDone)="onContainerProgressDone()"></app-container-actions>
       </td>
     </tr>
   </ng-template>
@@ -190,8 +171,7 @@
   [modal]="true"
   [draggable]="false"
   [visible]="checkHostDialogVisible()"
-  (visibleChange)="checkHostDialogVisible.set(false)"
->
+  (visibleChange)="checkHostDialogVisible.set(false)">
   @if (checkHostProgress()?.result; as res) {
     <app-host-check-result [result]="res"></app-host-check-result>
   }

@@ -2,55 +2,71 @@
 
 <p-drawer
   [visible]="menuOpened()"
-  (visibleChange)="menuOpened.set($event)"
->
+  (visibleChange)="menuOpened.set($event)">
   <ng-template #header>
     <app-logo></app-logo>
   </ng-template>
-  <p-panel-menu
+
+  <p-menu
     [model]="menuItems$ | async"
-    (click)="menuOpened.set(false)"
-  ></p-panel-menu>
+    (click)="menuOpened.set(false)">
+  </p-menu>
+
+  <ng-template #footer>
+    <p-select
+      fluid
+      [options]="themes$ | async"
+      optionValue="value"
+      optionLabel="label"
+      [ngModel]="theme$ | async"
+      (ngModelChange)="selectTheme($event)">
+      <ng-template #dropdownicon>
+        <i class="pi pi-palette"></i>
+      </ng-template>
+      <ng-template
+        #item
+        let-item>
+        <span class="theme-select-item">
+          {{ item.label }}
+          <i [class]="item.icon"></i>
+        </span>
+      </ng-template>
+    </p-select>
+  </ng-template>
 </p-drawer>
 
 @if (isToolbarVisible()) {
-  <p-toolbar>
-    <ng-template #start>
+<p-toolbar>
+  <ng-template #start>
+    <p-button
+      icon="pi pi-bars"
+      text
+      severity="contrast"
+      (onClick)="menuOpened.set(true)"></p-button>
+    <app-logo></app-logo>
+  </ng-template>
+
+  <ng-template #end>
+    <section class="app-toolbar-end">
+      <span> </span>
+      @if (version.value(); as data) {
+      <p-tag severity="contrast"> {{ data.image_version }} </p-tag>
+      } @if (isUpdateAvailable.value()?.is_available) {
+      <p-tag
+        severity="success"
+        (click)="showNewVersionDialog.set(true)">
+        {{ 'MENU.UPDATE' | translate }}
+      </p-tag>
+      } @if (!isAuthDisabled.value()) {
       <p-button
-        icon="pi pi-bars"
-        text
         severity="contrast"
-        (onClick)="menuOpened.set(true)"
-      ></p-button>
-      <app-logo></app-logo>
-    </ng-template>
-    <ng-template #end>
-      <section class="app-menu-end">
-        <span class="app-menu-end-version"> </span>
-        @if (version.value(); as data) {
-          <p-tag severity="contrast">
-            {{ data.image_version }}
-          </p-tag>
-        }
-        @if (isUpdateAvailable.value()?.is_available) {
-          <p-tag
-            severity="success"
-            (click)="showNewVersionDialog.set(true)"
-          >
-            {{ 'MENU.UPDATE' | translate }}
-          </p-tag>
-        }
-        @if (!isAuthDisabled.value()) {
-          <p-button
-            severity="contrast"
-            icon="pi pi-sign-out"
-            text
-            (onClick)="logout()"
-          ></p-button>
-        }
-      </section>
-    </ng-template>
-  </p-toolbar>
+        icon="pi pi-sign-out"
+        text
+        (onClick)="logout()"></p-button>
+      }
+    </section>
+  </ng-template>
+</p-toolbar>
 }
 
 <section class="app-content">
@@ -58,32 +74,27 @@
 </section>
 
 @defer {
-  <p-dialog
-    [header]="'MENU.UPDATE' | translate"
-    [modal]="true"
-    [draggable]="false"
-    [style]="{ width: '35rem' }"
-    [visible]="showNewVersionDialog()"
-    (visibleChange)="showNewVersionDialog.set($event)"
-  >
-    @for (item of 'MENU.UPDATE_NOTES' | translate; track item) {
-      <span>
-        {{ item }}
-      </span>
-    }
-    <ng-template #footer>
-      <p-button
-        icon="pi pi-link"
-        severity="success"
-        [label]="'UPDATE_DIALOGUE.DEPLOY_GUIDELINE' | translate"
-        (onClick)="openDeployGuideline()"
-      ></p-button>
-      <p-button
-        icon="pi pi-link"
-        severity="success"
-        [label]="'UPDATE_DIALOGUE.RELEASE_NOTES' | translate"
-        (onClick)="openReleaseNotes()"
-      ></p-button>
-    </ng-template>
-  </p-dialog>
+<p-dialog
+  [header]="'MENU.UPDATE' | translate"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: '35rem' }"
+  [visible]="showNewVersionDialog()"
+  (visibleChange)="showNewVersionDialog.set($event)">
+  @for (item of 'MENU.UPDATE_NOTES' | translate; track item) {
+  <span> {{ item }} </span>
+  }
+  <ng-template #footer>
+    <p-button
+      icon="pi pi-link"
+      severity="success"
+      [label]="'UPDATE_DIALOGUE.DEPLOY_GUIDELINE' | translate"
+      (onClick)="openDeployGuideline()"></p-button>
+    <p-button
+      icon="pi pi-link"
+      severity="success"
+      [label]="'UPDATE_DIALOGUE.RELEASE_NOTES' | translate"
+      (onClick)="openReleaseNotes()"></p-button>
+  </ng-template>
+</p-dialog>
 }
