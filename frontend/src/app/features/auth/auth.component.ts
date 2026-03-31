@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   resource,
@@ -27,6 +28,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     ButtonModule,
     DividerModule,
     TranslatePipe,
+    DividerModule,
   ],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',
@@ -101,6 +103,14 @@ export class AuthComponent {
           }),
         ),
       ),
+  });
+  /**
+   * Whether to show divider
+   */
+  protected readonly showDivider = computed(() => {
+    const isPasswordEnabled = this.isPasswordEnabled.value();
+    const isOidcEnabled = this.isOidcEnabled.value();
+    return isPasswordEnabled && isOidcEnabled;
   });
 
   constructor() {
