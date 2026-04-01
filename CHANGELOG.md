@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.28.1 (2026-04-01)
+
+### Bug Fixes
+
+- **frontend**: PrimeNG v21 Accordion content overflow
+  ([`82e40e4`](https://github.com/Quenary/tugtainer/commit/82e40e41bea66106f5c295cbe1ef5709f13d822b))
+
+- **frontend**: Set password form styles
+  ([`3829f7f`](https://github.com/Quenary/tugtainer/commit/3829f7f27069583eeed4e97ec9abbcd44bafca63))
+
+
 ## v1.28.0 (2026-03-31)
 
 ### Bug Fixes
