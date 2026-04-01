@@ -1,15 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { TranslateLoader } from '@ngx-translate/core';
-import {
-  catchError,
-  map,
-  Observable,
-  of,
-  shareReplay,
-  switchMap,
-  tap,
-} from 'rxjs';
+import { catchError, map, Observable, of, shareReplay, switchMap } from 'rxjs';
 import { PublicApiService } from 'src/app/features/public/public-api.service';
 import { parse } from 'yaml';
 
@@ -24,24 +16,23 @@ export class SlickTranslationLoader implements TranslateLoader {
   );
 
   getTranslation(lang: string): Observable<any> {
-    let version: string | null = null;
     return this.version$.pipe(
-      tap((res) => {
-        version = res;
-      }),
-      switchMap(() =>
-        this.httpClient.get(`i18n/${lang}.yaml`, {
-          params: { version },
-          responseType: 'text',
-        }),
+      switchMap((version) =>
+        this.loadYaml(`i18n/${lang}.yaml`, version).pipe(
+          catchError(() =>
+            this.loadYaml(`i18n/${lang.split('-')[0]}.yaml`, version),
+          ),
+        ),
       ),
-      catchError(() =>
-        this.httpClient.get(`i18n/${lang.split('-')[0]}.yaml`, {
-          params: { version },
-          responseType: 'text',
-        }),
-      ),
-      map((data) => parse(data)),
     );
+  }
+
+  private loadYaml(path: string, version: string): Observable<any> {
+    return this.httpClient
+      .get(path, {
+        params: { version },
+        responseType: 'text',
+      })
+      .pipe(map((data) => parse(data)));
   }
 }
