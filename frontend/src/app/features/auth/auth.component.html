@@ -9,7 +9,9 @@
     } @else {
       <app-new-password-form
         [isLoading]="isLoading()"
-        (OnSubmit)="onSubmitNewPassword($event)"></app-new-password-form>
+        [fluidButton]="true"
+        (OnSubmit)="onSubmitNewPassword($event)">
+      </app-new-password-form>
     }
   }
 
