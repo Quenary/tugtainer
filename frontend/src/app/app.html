@@ -81,9 +81,7 @@
   [style]="{ width: '35rem' }"
   [visible]="showNewVersionDialog()"
   (visibleChange)="showNewVersionDialog.set($event)">
-  @for (item of 'MENU.UPDATE_NOTES' | translate; track item) {
-  <span> {{ item }} </span>
-  }
+  <span> {{ 'MENU.UPDATE_NOTES' | translate }} </span>
   <ng-template #footer>
     <p-button
       icon="pi pi-link"

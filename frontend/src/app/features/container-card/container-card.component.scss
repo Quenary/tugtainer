@@ -24,16 +24,4 @@
       flex-wrap: wrap;
     }
   }
-
-  .inspect-content {
-    overflow: hidden;
-    width: 100%;
-    display: block;
-
-    ::ng-deep .p-accordioncontent-wrapper {
-      display: block;
-      overflow: hidden;
-      width: 100%;
-    }
-  }
 }

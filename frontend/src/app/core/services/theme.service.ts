@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { BehaviorSubject, map, Observable, startWith, switchMap } from 'rxjs';
+import { BehaviorSubject, map, Observable } from 'rxjs';
 import { EStorageKey } from 'src/app/app.enums';
 
 export type Theme = 'app-auto' | 'app-light' | 'app-dark';
@@ -20,10 +20,9 @@ export class AppThemeService {
   public get theme$(): Observable<Theme | null> {
     return this._theme$.asObservable();
   }
-  public readonly themes$: Observable<ITheme[]> =
-    this.translateService.onLangChange.pipe(
-      startWith({}),
-      switchMap(() => this.translateService.get('THEMES')),
+  public readonly themes$: Observable<ITheme[]> = this.translateService
+    .getStreamOnTranslationChange('THEMES')
+    .pipe(
       map((t) => [
         { value: 'app-auto', label: t['AUTO'], icon: 'pi pi-heart' },
         { value: 'app-light', label: t['LIGHT'], icon: 'pi pi-sun' },

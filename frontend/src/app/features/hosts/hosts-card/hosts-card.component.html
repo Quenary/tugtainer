@@ -3,28 +3,25 @@
 <form
   [formGroup]="form"
   class="hosts-form"
-  (submit)="save()"
->
+  (submit)="save()">
   <p-accordion
     [value]="accordionValue()"
     (valueChange)="accordionValue.set($event)"
-    [multiple]="true"
-  >
+    [multiple]="true">
     <p-accordion-panel value="help">
       <p-accordion-header>
         {{ 'HOSTS.CARD.HELP.LABEL' | translate }}
       </p-accordion-header>
       <p-accordion-content>
         <section class="accordion-content">
-          @for (t of 'HOSTS.CARD.HELP.TEXT' | translate; track t) {
-            <div>{{ t }}</div>
-          }
+          <span class="help-text">
+            {{'HOSTS.CARD.HELP.TEXT' | translate}}
+          </span>
           <p-button
             icon="pi pi-link"
             severity="success"
             [label]="'HOSTS.CARD.HELP.HELP_BTN' | translate"
-            (onClick)="openHelp()"
-          ></p-button>
+            (onClick)="openHelp()"></p-button>
         </section>
       </p-accordion-content>
     </p-accordion-panel>
@@ -38,8 +35,7 @@
           <app-boolean-field style="width: 100%">
             <p-toggle-switch
               [inputId]="'host-enabled'"
-              formControlName="enabled"
-            ></p-toggle-switch>
+              formControlName="enabled"></p-toggle-switch>
             <label for="host-enabled">
               {{ 'HOSTS.CARD.GENERAL.ENABLED' | translate }}
             </label>
@@ -48,48 +44,42 @@
           <app-boolean-field>
             <p-toggle-switch
               [inputId]="'host-prune'"
-              formControlName="prune"
-            ></p-toggle-switch>
+              formControlName="prune"></p-toggle-switch>
             <label for="host-prune">
               {{ 'HOSTS.CARD.GENERAL.PRUNE' | translate }}
               <i
                 class="pi pi-question-circle"
                 style="margin: 0 0.5rem"
                 [pTooltip]="'HOSTS.CARD.GENERAL.PRUNE_HINT' | translate"
-                tooltipPosition="left"
-              ></i>
+                tooltipPosition="left"></i>
             </label>
           </app-boolean-field>
 
           <app-boolean-field>
             <p-toggle-switch
               [inputId]="'host-prune-all'"
-              formControlName="prune_all"
-            ></p-toggle-switch>
+              formControlName="prune_all"></p-toggle-switch>
             <label for="host-prune-all">
               {{ 'HOSTS.CARD.GENERAL.PRUNE_ALL' | translate }}
               <i
                 class="pi pi-question-circle"
                 style="margin: 0 0.5rem"
                 [pTooltip]="'HOSTS.CARD.GENERAL.PRUNE_ALL_HINT' | translate"
-                tooltipPosition="left"
-              ></i>
+                tooltipPosition="left"></i>
             </label>
           </app-boolean-field>
 
           <app-boolean-field>
             <p-toggle-switch
               [inputId]="'host-ssl'"
-              formControlName="ssl"
-            ></p-toggle-switch>
+              formControlName="ssl"></p-toggle-switch>
             <label for="host-ssl">
               {{ 'HOSTS.CARD.GENERAL.SSL' | translate }}
               <i
                 class="pi pi-question-circle"
                 style="margin: 0 0.5rem"
                 [pTooltip]="'HOSTS.CARD.GENERAL.SSL_HINT' | translate"
-                tooltipPosition="left"
-              ></i>
+                tooltipPosition="left"></i>
             </label>
           </app-boolean-field>
 
@@ -98,8 +88,7 @@
               fluid
               pInputText
               id="host-name"
-              formControlName="name"
-            />
+              formControlName="name" />
             <label for="host-name">
               {{ 'HOSTS.CARD.GENERAL.NAME' | translate }}
             </label>
@@ -111,8 +100,7 @@
               pInputText
               id="host-url"
               formControlName="url"
-              [placeholder]="'HOSTS.CARD.GENERAL.URL_PLACEHOLDER' | translate"
-            />
+              [placeholder]="'HOSTS.CARD.GENERAL.URL_PLACEHOLDER' | translate" />
             <label for="host-url">
               {{ 'HOSTS.CARD.GENERAL.URL' | translate }}
             </label>
@@ -125,8 +113,7 @@
               autocomplete="agent-secret"
               formControlName="secret"
               [toggleMask]="true"
-              [feedback]="false"
-            >
+              [feedback]="false">
             </p-password>
             <label for="host-secret">
               {{ 'HOSTS.CARD.GENERAL.SECRET' | translate }}
@@ -138,13 +125,11 @@
               <p-input-number
                 fluid
                 inputId="host-timeout"
-                formControlName="timeout"
-              >
+                formControlName="timeout">
               </p-input-number>
               <p-inputicon
                 class="pi pi-question-circle"
-                [pTooltip]="'HOSTS.CARD.GENERAL.TIMEOUT_HINT' | translate"
-              ></p-inputicon>
+                [pTooltip]="'HOSTS.CARD.GENERAL.TIMEOUT_HINT' | translate"></p-inputicon>
             </p-iconfield>
             <label for="host-timeout">
               {{ 'HOSTS.CARD.GENERAL.TIMEOUT' | translate }}
@@ -156,13 +141,11 @@
               <p-input-number
                 fluid
                 inputId="host-cont-hc-timeout"
-                formControlName="container_hc_timeout"
-              >
+                formControlName="container_hc_timeout">
               </p-input-number>
               <p-inputicon
                 class="pi pi-question-circle"
-                [pTooltip]="'HOSTS.CARD.GENERAL.CONTAINER_HC_TIMEOUT_HINT' | translate"
-              ></p-inputicon>
+                [pTooltip]="'HOSTS.CARD.GENERAL.CONTAINER_HC_TIMEOUT_HINT' | translate"></p-inputicon>
             </p-iconfield>
             <label for="host-cont-hc-timeout">
               {{ 'HOSTS.CARD.GENERAL.CONTAINER_HC_TIMEOUT' | translate }}
@@ -179,16 +162,14 @@
         [label]="'GENERAL.GO_BACK' | translate"
         routerLink="/hosts"
         severity="secondary"
-        icon="pi pi-arrow-left"
-      ></p-button>
+        icon="pi pi-arrow-left"></p-button>
       <p-button
         type="submit"
         [label]="saveTitle()"
         [loading]="isLoading()"
         severity="success"
         [disabled]="!form.dirty"
-        icon="pi pi-save"
-      ></p-button>
+        icon="pi pi-save"></p-button>
     </p-button-group>
 
     @if (id()) {
@@ -196,8 +177,7 @@
         icon="pi pi-trash"
         severity="danger"
         [label]="'GENERAL.DELETE' | translate"
-        (onClick)="confirmDelete($event)"
-      ></p-button>
+        (onClick)="confirmDelete($event)"></p-button>
     }
   </section>
 </form>

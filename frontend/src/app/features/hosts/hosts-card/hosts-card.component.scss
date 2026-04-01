@@ -15,6 +15,11 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 1rem;
+
+      .help-text {
+        width: 100%;
+        white-space: pre-line;
+      }
     }
 
     .buttons {

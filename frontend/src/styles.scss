@@ -37,4 +37,10 @@ body {
   a {
     color: var(--p-button-text-primary-color);
   }
+
+  // Fix for primeng accordion in v21
+  .p-accordioncontent-wrapper {
+    display: block;
+    overflow: hidden;
+  }
 }

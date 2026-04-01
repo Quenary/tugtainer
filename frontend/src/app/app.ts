@@ -12,7 +12,6 @@ import {
   of,
   retry,
   startWith,
-  switchMap,
   throwError,
 } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -107,10 +106,9 @@ export class App {
         ),
       ),
   });
-  protected readonly menuItems$: Observable<MenuItem[]> =
-    this.translateService.onLangChange.pipe(
-      startWith({}),
-      switchMap(() => this.translateService.get('MENU')),
+  protected readonly menuItems$: Observable<MenuItem[]> = this.translateService
+    .getStreamOnTranslationChange('MENU')
+    .pipe(
       map(
         (t) =>
           <MenuItem[]>[
