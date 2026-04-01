@@ -11,7 +11,7 @@ export class SlickTranslationLoader implements TranslateLoader {
   protected readonly httpClient = inject(HttpClient);
   protected readonly version$ = this.publicApiService.getVersion().pipe(
     map((res) => res?.image_version),
-    catchError(() => of('v1.2.3\n')),
+    catchError(() => of(null)),
     shareReplay(),
   );
 
