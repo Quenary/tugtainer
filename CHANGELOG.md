@@ -1,9 +1,15 @@
 # CHANGELOG
 
 
+## v1.28.2 (2026-04-01)
+
+
 ## v1.28.1 (2026-04-01)
 
 ### Bug Fixes
+
+- **build**: Frontend build budgets
+  ([`54a5ec9`](https://github.com/Quenary/tugtainer/commit/54a5ec9e3991c0fce8fd4611dc0ba22aa3054bc2))
 
 - **frontend**: PrimeNG v21 Accordion content overflow
   ([`82e40e4`](https://github.com/Quenary/tugtainer/commit/82e40e41bea66106f5c295cbe1ef5709f13d822b))
