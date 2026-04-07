@@ -11,6 +11,10 @@ class IsUpdateAvailableResponseBodySchema(BaseModel):
 
 
 
+class TotalUpdateCountResponseBodySchema(BaseModel):
+    total_updates: int
+
+
 class VersionResponseBody(BaseModel):
     """Versions schema"""
 

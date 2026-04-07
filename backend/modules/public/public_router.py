@@ -8,6 +8,7 @@ from backend.db.session import get_async_session
 from backend.modules.public.public_util import fetch_latest_release
 from .public_schemas import (
     IsUpdateAvailableResponseBodySchema,
+    TotalUpdateCountResponseBodySchema,
     VersionResponseBody,
 )
 from backend.core.cron_manager import CronManager
@@ -178,6 +179,43 @@ async def get_summary(
         )
 
     return summaries
+
+
+@public_router.get(
+    "/update_count",
+    description="Get total number of containers with available updates",
+    response_model=TotalUpdateCountResponseBodySchema,
+)
+async def get_update_count(
+    session: AsyncSession = Depends(get_async_session),
+) -> TotalUpdateCountResponseBodySchema:
+    if not Config.ENABLE_PUBLIC_API:
+        raise HTTPException(404, "Not Found")
+
+    stmt = select(HostsModel).where(HostsModel.enabled == True)
+    result = await session.execute(stmt)
+    hosts = result.scalars().all()
+
+    total_updates = 0
+    for host in hosts:
+        client = AgentClientManager.get_host_client(host)
+        containers = await client.container.list(
+            GetContainerListBodySchema(all=True)
+        )
+        db_result = await session.execute(
+            select(ContainersModel).where(
+                ContainersModel.host_id == host.id
+            )
+        )
+        containers_db = db_result.scalars().all()
+        containers_db_map = {item.name: item for item in containers_db}
+
+        for container in containers:
+            db_item = containers_db_map.get(container.name)
+            if db_item and db_item.update_available:
+                total_updates += 1
+
+    return {"total_updates": total_updates}
 
 
 @public_router.get(
