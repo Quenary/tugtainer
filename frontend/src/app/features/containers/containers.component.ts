@@ -72,6 +72,17 @@ export class ContainersComponent extends WithHostsListDirective {
   protected readonly onlyAvailable = signal<boolean>(
     localStorage.getItemJson(onlyAvailableStorageKey) ?? false,
   );
+  /**
+   * Hosts displayed in the accordion. When {@link onlyAvailable} is true,
+   * hosts whose containers all have no update available are hidden.
+   */
+  protected readonly filteredHosts = computed(() => {
+    const hosts = this.hosts.value() ?? [];
+    if (!this.onlyAvailable()) {
+      return hosts;
+    }
+    return hosts.filter((h) => (h.available_updates_count ?? 0) > 0);
+  });
 
   constructor() {
     super();

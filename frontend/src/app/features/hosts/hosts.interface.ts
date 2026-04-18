@@ -11,6 +11,7 @@ export interface ICreateHost {
 }
 export interface IHostInfo extends ICreateHost {
   id: number;
+  available_updates_count: number;
 }
 export interface IHostStatus {
   id: number;
