@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.28.3 (2026-04-01)
+
+### Bug Fixes
+
+- **frontend**: Zh translation loading
+  ([`071dfd4`](https://github.com/Quenary/tugtainer/commit/071dfd49246583b606b1754f786e662f67f2a4f3))
+
+
 ## v1.28.2 (2026-04-01)
 
 
