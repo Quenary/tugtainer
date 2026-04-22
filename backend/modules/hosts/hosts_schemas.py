@@ -16,6 +16,7 @@ class HostBase(BaseModel):
 
 class HostInfo(HostBase):
     id: int
+    available_updates_count: int = 0
     model_config = ConfigDict(from_attributes=True)
 
 

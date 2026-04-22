@@ -36,7 +36,7 @@
     [value]="accordionValue()"
     (valueChange)="accordionValue.set($event)"
   >
-    @for (h of hosts.value(); track h) {
+    @for (h of filteredHosts(); track h) {
       <p-accordion-panel
         [value]="h.id"
         [disabled]="!h.enabled"
