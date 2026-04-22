@@ -18,7 +18,7 @@ class Config:
             load_dotenv()
             cls.HOSTNAME = os.getenv("HOSTNAME", "")
             cls.LOG_LEVEL = (
-                os.getenv("LOG_LEVEL") or "warning"
+                os.getenv("LOG_LEVEL") or "info"
             ).upper()
             cls.AGENT_SECRET = os.getenv("AGENT_SECRET") or None
             cls.AGENT_SIGNATURE_TTL = int(

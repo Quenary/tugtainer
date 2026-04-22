@@ -1,7 +1,7 @@
 import logging
 from apprise import Apprise, NotifyFormat
 from apprise.exception import AppriseException
-from typing import Any, cast
+from typing import Any, Final, cast
 from backend.config import Config
 from backend.core.action_result import (
     ContainerActionResult,
@@ -44,6 +44,7 @@ async def send_check_notification(
     :param body_template: override body template
     :param urls: override urls
     """
+    logger: Final = logging.getLogger("send_check_notification")
     try:
         if title_template == tt_sentinel:
             title_template = SettingsStorage.get(
@@ -64,13 +65,16 @@ async def send_check_notification(
             line.strip() for line in urls.splitlines() if line.strip()
         ]
 
-        jinja2_env = jinja2.Environment(
+        jinja2_env: Final = jinja2.Environment(
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=False,
         )
         jinja2_env.filters["any_worthy"] = any_worthy
-        context = {"results": results, "hostname": Config.HOSTNAME}
+        context: Final = {
+            "results": results,
+            "hostname": Config.HOSTNAME,
+        }
 
         title = None
         if title_template:
@@ -82,14 +86,14 @@ async def send_check_notification(
             body = _body_template.render(**context)
 
         if not body or not body.strip():
-            logging.warning(
-                "No notification body after template render, exiting."
+            logger.warning(
+                "No notification body after template render. Exiting."
             )
             return
 
         return await send_notification(title, body, urls=_urls)
     except jinja2.TemplateError as e:
-        logging.exception("Failed to render notification template")
+        logger.exception("Failed to render notification template")
         raise TugNotificationException(
             f"Failed to render notification template: {e}"
         )
@@ -101,15 +105,16 @@ async def send_notification(
     body_format: NotifyFormat = NotifyFormat.MARKDOWN,
     urls: list[str] = [],
 ):
-    logging.info(f"Sending notification")
-    logging.debug(f"Title: {title}")
-    logging.debug(f"Body: {body}")
+    logger: Final = logging.getLogger("send_notification")
+    logger.debug(f"Title: {title}")
+    logger.debug(f"Body: {body}")
 
     if urls:
         try:
-            _apprise = Apprise()
+            logger.info(f"Sending notification")
+            _apprise: Final = Apprise()
             _apprise.add(cast(Any, urls))
-            result = await _apprise.async_notify(
+            result: Final = await _apprise.async_notify(
                 title=title,
                 body=body,
                 body_format=body_format,
@@ -119,7 +124,7 @@ async def send_notification(
                     "Failed to send notification, but no exception was raised by Apprise."
                 )
         except AppriseException as e:
-            logging.exception("Failed to send notification")
+            logger.exception("Failed to send notification")
             raise TugNotificationException(
                 f"Failed to send notification. Apprise exception: {e}"
             )

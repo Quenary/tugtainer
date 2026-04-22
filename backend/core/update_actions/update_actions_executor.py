@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import textwrap
 from typing import Final, cast
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
@@ -62,14 +61,7 @@ async def execute_update_plan(
     plan: UpdatePlan,
     docker_version: DockerVersionScheme | None,
 ) -> UpdatePlanResult | None:
-    logger.info(
-        textwrap.dedent(
-            f"""\
-            to_update={plan.to_update}
-            affected={plan.affected}
-            order={plan.order}"""
-        )
-    )
+    logger.info(f"to_update={plan.to_update}, affected={plan.affected}, order={plan.order}")
     delay: Final = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
     status_key: Final = get_plan_cache_key(host, plan)
     cache: Final = ProgressCache[UpdatePlanProgress](status_key)

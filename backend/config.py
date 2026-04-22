@@ -37,7 +37,7 @@ class Config:
             load_dotenv()
             cls.HOSTNAME = os.getenv("HOSTNAME", "")
             cls.LOG_LEVEL = (
-                os.getenv("LOG_LEVEL") or "warning"
+                os.getenv("LOG_LEVEL") or "info"
             ).upper()
             cls.DISABLE_AUTH = (
                 os.getenv("DISABLE_AUTH", "false").lower() == "true"
