@@ -14,7 +14,7 @@ async def wait_for_container_healthy(
     client: AgentClient,
     container: ContainerInspectResult,
     timeout: int = 60,
-) -> bool:
+) -> tuple[bool, ContainerInspectResult]:
     """
     Wait for container healthy status or timeout.
     If the healthcheck property is missing,
@@ -23,16 +23,16 @@ async def wait_for_container_healthy(
     has_healthcheck = bool(container.state and container.state.health)
     id = container.id
     if not id:
-        return False
+        return False, container
     start = time.time()
     while time.time() - start < timeout:
         container = await client.container.inspect(id)
         if has_healthcheck:
             health = get_container_health_status_str(container)
             if health == "healthy":
-                return True
+                return True, container
         elif is_running_container(container):
-            return True
+            return True, container
         await asyncio.sleep(5)
     container = await client.container.inspect(id)
     health = get_container_health_status_str(container)
@@ -41,5 +41,5 @@ async def wait_for_container_healthy(
         "healthy",
         "unknown",
     ]:
-        return True
-    return False
+        return True, container
+    return False, container

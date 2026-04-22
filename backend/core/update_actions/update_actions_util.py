@@ -1,26 +1,22 @@
 import logging
-from typing import cast
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from sqlalchemy import select
 from backend.core.agent_client import AgentClient
-from backend.core.container_group.container_group_schemas import (
-    ContainerGroupItem,
-)
 from backend.modules.containers.containers_model import (
     ContainersModel,
 )
 from backend.core.action_result import (
-    GroupActionResult,
+    UpdatePlanResult,
 )
 from backend.util.now import now
 from backend.db.session import async_session_maker
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 
 
-async def update_containers_data_after_action(
-    result: GroupActionResult | None,
+async def update_containers_data_after_execution(
+    result: UpdatePlanResult | None,
 ) -> None:
     """Update containers in db after update process"""
     if not result:
@@ -85,3 +81,44 @@ async def disconnect_all_networks(
             )
         except Exception:
             pass
+
+
+def get_dependencies(
+    container: ContainerInspectResult, label: str
+) -> set[str]:
+    """Get list of dependencies from label"""
+    labels: dict[str, str] = (
+        container.config.labels
+        if container.config and container.config.labels
+        else {}
+    )
+
+    # E.g. "service1:condition:value,service2:condition:value"
+    # Or "containername1, containername2" for custom label
+    depends_on_label: str = labels.get(label, "")
+
+    dependencies: set[str] = set()
+
+    if not depends_on_label:
+        return dependencies
+
+    for dep in depends_on_label.split(","):
+        parts = dep.strip().split(":")  # first part is service name
+        if parts:
+            name = parts[0].strip()
+            if name:
+                dependencies.add(name)
+
+    return dependencies
+
+
+def get_compose_id(c: ContainerInspectResult) -> str | None:
+    """
+    Combine labels to get unique id for a compose project
+    """
+    labels = c.config.labels if c.config and c.config.labels else {}
+    proj = labels.get("com.docker.compose.project", "")
+    fil = labels.get("com.docker.compose.project.config_files", "")
+    if proj or fil:
+        return f"{proj}:{fil}"
+    return None

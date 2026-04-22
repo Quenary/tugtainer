@@ -26,3 +26,4 @@ from .get_container_entrypoint_str import get_container_entrypoint_str
 from .is_protected_container import is_protected_container
 from .is_running_container import is_running_container
 from .get_digests_for_platform import get_digests_for_platform
+from .get_service_name import get_service_name

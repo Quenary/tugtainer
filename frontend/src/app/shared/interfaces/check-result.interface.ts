@@ -23,12 +23,12 @@ export interface IContainerActionResult {
   remote_digests: string[];
 }
 
-export interface IGroupActionResult {
+export interface IUpdatePlanResult {
   host_id: number;
   host_name: string;
   items: IContainerActionResult[];
 }
 
-export interface IHostActionResult extends IGroupActionResult {
+export interface IHostActionResult extends IUpdatePlanResult {
   prune_result: string | null;
 }

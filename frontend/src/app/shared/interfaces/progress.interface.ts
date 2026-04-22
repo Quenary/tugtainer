@@ -1,6 +1,6 @@
 import {
   IContainerActionResult,
-  IGroupActionResult,
+  IUpdatePlanResult,
   IHostActionResult,
 } from './check-result.interface';
 
@@ -25,7 +25,7 @@ export interface IContainerActionProgress extends IActionProgress {
  * Group update progress cache
  */
 export interface IGroupActionProgress extends IActionProgress {
-  result?: IGroupActionResult;
+  result?: IUpdatePlanResult;
 }
 /**
  * Host check/update progress cache

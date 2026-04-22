@@ -1,7 +1,14 @@
+from typing import Final
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 import logging
+from backend.core.update_actions.update_actions_executor import (
+    execute_update_plan,
+)
+from backend.core.update_actions.update_actions_plan import (
+    build_update_plan,
+)
 from backend.db.session import async_session_maker
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.core.action_result import (
@@ -19,15 +26,11 @@ from backend.core.progress.progress_util import (
     is_allowed_start_cache,
 )
 from backend.core.progress.progress_cache import ProgressCache
-from backend.core.container_group.container_group import (
-    get_containers_groups,
-)
 from backend.core.agent_client import AgentClient
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
 from shared.schemas.image_schemas import PruneImagesRequestBodySchema
-from .update_group_containers import update_group_containers
 
 
 async def update_host_containers(
@@ -39,28 +42,30 @@ async def update_host_containers(
     :param host: host info from db
     :param client: host's docker client
     """
-    result = HostActionResult(host_id=host.id, host_name=host.name)
-    STATUS_KEY = get_host_cache_key(host)
-    CACHE = ProgressCache[HostActionProgress](STATUS_KEY)
-    try:
-        STATE = CACHE.get()
-        if not is_allowed_start_cache(STATE):
-            logging.warning(
-                f"Update process for {STATUS_KEY} is already running."
-            )
-            return None
+    result: Final = HostActionResult(
+        host_id=host.id, host_name=host.name
+    )
+    status_key: Final = get_host_cache_key(host)
+    cache: Final = ProgressCache[HostActionProgress](status_key)
+    state: Final = cache.get()
+    logger: Final = logging.getLogger(
+        f"update_host_containers.{host.id}:{host.name}"
+    )
 
-        CACHE.set(
+    if not is_allowed_start_cache(state):
+        logger.warning(f"Update already running. Exiting.")
+        return None
+
+    try:
+        cache.set(
             {"status": EActionStatus.PREPARING},
         )
-        logging.info(f"Starting update for host '{host.name}'")
+        logger.info("Starting update")
 
         try:
             docker_version = await client.common.version()
         except Exception:
-            logging.exception(
-                f"{host.name}: Failed to get docker version"
-            )
+            logger.exception("Failed to get docker version")
             docker_version = None
 
         containers: list[ContainerInspectResult] = (
@@ -68,40 +73,36 @@ async def update_host_containers(
                 GetContainerListBodySchema(all=True)
             )
         )
-        async with async_session_maker() as session:
-            containers_db = await get_host_containers(
-                session,
-                host.id,
-            )
-        groups = get_containers_groups(containers, containers_db)
-        CACHE.update(
+
+        plan = await build_update_plan(host, containers)
+
+        cache.update(
             {"status": EActionStatus.UPDATING},
         )
 
-        for group in groups.values():
-            res = await update_group_containers(
-                client, host, group, docker_version
-            )
-            if res:
-                result.items.extend(res.items)
+        plan_res = await execute_update_plan(
+            client, host, containers, plan, docker_version
+        )
+
+        if plan_res:
+            result.items.extend(plan_res.items)
 
         if host.prune:
-            CACHE.update({"status": EActionStatus.PRUNING})
-            logging.info(f"Pruning images on host '{host.name}'")
+            cache.update({"status": EActionStatus.PRUNING})
+            logger.info("Pruning images...")
             try:
                 result.prune_result = await client.image.prune(
                     PruneImagesRequestBodySchema(all=host.prune_all)
                 )
             except Exception:
-                logging.exception(
-                    f"Failed to prune images on host '{host.name}'"
-                )
+                logger.exception("Failed to prune images")
 
-        CACHE.update({"status": EActionStatus.DONE, "result": result})
+        cache.update({"status": EActionStatus.DONE, "result": result})
+        logger.info("Update completed")
         return result
-    except Exception:
-        logging.exception(f"Failed to update host {host.name}")
-        CACHE.update(
+    except:
+        logger.exception(f"Failed to update")
+        cache.update(
             {"status": EActionStatus.ERROR},
         )
         return None

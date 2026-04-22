@@ -1,5 +1,4 @@
 from typing import Any, cast
-from cachetools import TTLCache
 import pytest
 from fastapi.testclient import TestClient
 
