@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 import aiohttp
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, text
@@ -208,14 +208,18 @@ async def get_update_count(
             )
         )
         containers_db = db_result.scalars().all()
-        containers_db_map = {item.name: item for item in containers_db}
+        containers_db_map = {
+            item.name: item for item in containers_db
+        }
 
         for container in containers:
-            db_item = containers_db_map.get(container.name)
+            db_item = containers_db_map.get(cast(str, container.name))
             if db_item and db_item.update_available:
                 total_updates += 1
 
-    return {"total_updates": total_updates}
+    return TotalUpdateCountResponseBodySchema.model_validate(
+        {"total_updates": total_updates}
+    )
 
 
 @public_router.get(

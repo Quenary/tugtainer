@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from pytest_mock import MockerFixture
 from backend.app import app
+from backend.db.session import get_async_session
 
 module_path = "backend.modules.public.public_router"
 
@@ -112,10 +113,7 @@ async def test_get_update_count(
     async def fake_get_async_session():
         yield fake_session
 
-    mocker.patch(
-        f"{module_path}.get_async_session",
-        fake_get_async_session,
-    )
+    app.dependency_overrides[get_async_session] = fake_get_async_session
 
     fake_client = mocker.Mock()
     fake_container = mocker.Mock()
