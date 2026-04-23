@@ -19,8 +19,9 @@ Automatic updates are disabled by default. You can choose only what you need.
 - [notifications](#notifications)
 - [auth](#auth)
 - [env](#env)
-- [Screenshots](#screenshots)
-- [develop](#develop)
+- [screenshots](#screenshots)
+- [contributing](#contributing)
+- [development](#develop)
 - [todo](#todo)
 
 ## Main features:
@@ -116,30 +117,31 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 ## Update process:
 
-- ### Groups
-  - Every update process performed by a group of containers;
-
-  - Containers from the same **compose project** (same **com.docker.compose.project** and **com.docker.compose.project.config_files** labels) will end up in the same group;
-
-  - Containers labeled with [dev.quenary.tugtainer.depends_on](#custom-labels) will end up in a group with listed containers;
-
-  - Otherwise, there will be a group of one container.
+- ### Dependency graph
+  - Containers of a host are processed as a single set;
+  - A global dependency graph is constructed for all containers with:
+    - Compose dependencies (**com.docker.compose.depends_on** label for containers with same **com.docker.compose.project** and **com.docker.compose.project.config_files** labels)
+    - Custom dependencies [dev.quenary.tugtainer.depends_on](#custom-labels)
+  - Dependencies are directional: if container A depends on B, B must be started before A and stopped after A;
+  - Containers without dependencies are treated as independent nodes in the graph
 
 - ### Process
-  1. Container(s) distributed among **group(s)**;
-  2. If there is an **updatable** container, the update process begins:
-     - **updatable** container is a container which **marked as available** and **selected for auto-update** or **was clicked for update**;
-     - [protected](#custom-labels) containers will be skipped;
-     - not `running` containers will be skipped by default (can be changed in the settings);
-  3. **Image pull** performed for **updatable** containers;
-  4. All containers of the group are stopped in **order from most dependent**;
-  5. Then, in reverse order **from most dependable**:
-     - Updatable containers being recreated and started;
-     - Non-updatable containers being started.
+  1. A global dependency graph is built:
+     - [protected](#custom-labels) containers are skipped;
+     - not `running` containers are skipped by default (can be changed in the settings);
+  2. A set of **updatable** containers is calculated:
+     - Updatable container is a container which **marked as available** and **selected for auto-update** or **was clicked for update**;
+  3. A set of **affected** containers is calculated:
+     - includes all containers that depend (directly or transitively) on any updatable container;
+     - excludes the updatable containers themselves;
+  4. A unified topological execution order is built based on the dependency graph;
+  5. **Image pull** performed for **updatable** containers;
+  6. All involved containers (**updatable** and **affected**) are stopped once, in order from most dependent to most dependable;
+  7. Then, in reverse order (from most dependable to most dependent):
+     - **Updatable** containers are recreated and started;
+     - **Affected** containers are started;
 
   **Scheduled process** being performed for all enabled hosts.
-
-  **Manual process** may still include participants that will be updated. For instance, if you've clicked the update button for container 'a', and container 'b' is **participant** and it is **marked as available** and **selected for auto-update**, it will also be updated.
 
 ## Private registries
 
@@ -254,14 +256,37 @@ Environment variables are not required, but you can still define some. There is 
 <img src="resources/tugtainer-settings-v1.2.3.png" width="48%">
 </p>
 
-## Develop:
+## Contributing
+
+Contributions are welcome. Please follow these guidelines to keep the project consistent and maintainable.
+
+- ### Commits:
+  - Use the [Conventional Commits](https://www.conventionalcommits.org/) format for all commit messages e.g. `feat(backend): add user authentication`. Common types: feat, fix, docs, refactor, test, chore
+  - Keep commits focused, avoid mixing unrelated changes
+- ### Code Changes:
+  - Follow the existing code style and structure
+  - Prefer clear, readable solutions
+  - Avoid introducing unnecessary dependencies
+- ### Tests:
+  - All new features must include unit tests
+  - If you modify existing functionality, update or add/extend the related tests
+  - Ensure all tests pass before submitting changes
+- ### Pull Requests:
+  - Provide a clear description of what was changed and why
+  - Reference related issues if applicable
+  - Keep pull requests focused, avoid mixing unrelated changes
+- ### General
+  - If a breaking change is required, сonsider opening an issue and discussing it first
+  - Update documentation (this file) when behavior changes
+
+## Development:
 
 - angular for frontend
 - python for backend and agent
 
 See [/backend/README.md](/backend/README.md) and [/frontend/README.md](/frontend/README.md) for more details
 
-### TODO:
+## TODO:
 
 - add unit tests
 - Dozzle integration or something more universal (list of urls for redirects?)

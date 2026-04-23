@@ -26,21 +26,17 @@ class ContainerActionResult:
     image_spec: str | None = None
     local_image: ImageInspectResult | None = None
     remote_image: ImageInspectResult | None = None
-    local_digests: list[str] = field(
-        default_factory=list
-    )
-    remote_digests: list[str] = field(
-        default_factory=list
-    )
+    local_digests: list[str] = field(default_factory=list)
+    remote_digests: list[str] = field(default_factory=list)
 
 
 @dataclass
-class GroupActionResult:
+class UpdatePlanResult:
     host_id: int
     host_name: str
     items: list[ContainerActionResult] = field(default_factory=list)
 
 
 @dataclass
-class HostActionResult(GroupActionResult):
+class HostActionResult(UpdatePlanResult):
     prune_result: str | None = None

@@ -1,4 +1,5 @@
 import asyncio
+from typing import Final
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -55,39 +56,36 @@ async def check_one_container(
     Check if there is new image for the container.
     This func should not raise exceptions.
     """
-    logging.info(
-        f"{container.name} - Checking container update availability."
-    )
-    result = ContainerActionResult(container)
-    DELAY = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
-    CACHE_KEY = get_container_cache_key(
+    result: Final = ContainerActionResult(container)
+    delay: Final = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
+    cache_key: Final = get_container_cache_key(
         host,
         container,
     )
-    CACHE = ProgressCache[ContainerActionProgress](CACHE_KEY)
+    cache: Final = ProgressCache[ContainerActionProgress](cache_key)
+    state: Final = cache.get()
+    logger: Final = logging.getLogger(
+        f"check_one_container.{container.name}"
+    )
+
+    if not is_allowed_start_cache(state):
+        logger.warning("Check action already running. Exiting.")
+        return result
+
     async with async_session_maker() as session:
         try:
-            STATE = CACHE.get()
-            if not is_allowed_start_cache(STATE):
-                logging.warning(
-                    f"{container.name} - check action already running."
-                )
-                return result
+            logger.info("Checking container update availability")
+            cache.set({"status": EActionStatus.PREPARING})
 
-            CACHE.set({"status": EActionStatus.PREPARING})
-            image_spec = get_container_image_spec(container)
+            image_spec: Final = get_container_image_spec(container)
             if not image_spec:
-                logging.warning(
-                    f"{container.name} - Cannot proceed, no image spec."
-                )
-                CACHE.update({"status": EActionStatus.DONE})
+                logger.warning("Missing image spec. Exiting.")
+                cache.update({"status": EActionStatus.DONE})
                 return result
-            logging.info(
-                f"{container.name} - image_spec: {image_spec}"
-            )
+            logger.info(f"Image_spec is {image_spec}")
 
             result.image_spec = image_spec
-            image_id = container.image
+            image_id: Final = container.image
             local_image: ImageInspectResult
             if image_id:
                 local_image = await client.image.inspect(
@@ -102,42 +100,38 @@ async def check_one_container(
             result.local_image = local_image
 
             if not local_image.repo_digests:
-                logging.warning(
-                    f"{container.name} - Image missing repo digests. Presumably a local image."
+                logger.warning(
+                    "Missing repo digests. Presumably a local image. Exiting."
                 )
-                CACHE.update({"status": EActionStatus.DONE})
+                cache.update({"status": EActionStatus.DONE})
                 return result
 
-            local_digests = local_image.repo_digests
+            local_digests: Final = local_image.repo_digests
             result.local_digests = local_image.repo_digests
-            logging.info(
-                f"{container.name} - local digests: {local_digests}"
-            )
+            logger.info(f"Local digests is {local_digests}")
 
-            stmt = (
-                select(ContainersModel)
-                .where(
-                    ContainersModel.host_id == host.id,
-                    ContainersModel.name == container.name,
+            c_db: Final = (
+                await session.execute(
+                    select(ContainersModel)
+                    .where(
+                        ContainersModel.host_id == host.id,
+                        ContainersModel.name == container.name,
+                    )
+                    .limit(1)
                 )
-                .limit(1)
-            )
-            stmt_res = await session.execute(stmt)
-            c_db = stmt_res.scalar_one_or_none()
+            ).scalar_one_or_none()
 
-            CACHE.update({"status": EActionStatus.CHECKING})
+            cache.update({"status": EActionStatus.CHECKING})
 
             # pull image before digests
             # https://github.com/Quenary/tugtainer/issues/114
             if SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK):
-                logging.info(
-                    f"{container.name} - pulling image before remote digests"
-                )
-                remote_image = await client.image.pull(
+                logger.info("Pulling image before remote digests")
+                remote_image: Final = await client.image.pull(
                     PullImageRequestBodySchema(image=image_spec)
                 )
                 result.remote_image = remote_image
-                await asyncio.sleep(jitter(DELAY))
+                await asyncio.sleep(jitter(delay))
 
             # get remote digests
             remote_digests: list[str] = []
@@ -147,15 +141,15 @@ async def check_one_container(
                     if rd:
                         remote_digests = [rd]
                         break
-                    await asyncio.sleep(jitter(DELAY))
                 except Exception as e:
-                    logging.exception(
-                        f"{container.name} - failed to get remote digest for {image_spec} with local digest {d}"
+                    logger.exception(
+                        f"Failed to get remote digest for {image_spec} {d}"
                     )
+                finally:
+                    await asyncio.sleep(jitter(delay))
+
             result.remote_digests = remote_digests
-            logging.info(
-                f"{container.name} - Remote digests: {remote_digests}"
-            )
+            logger.info(f"Remote digests is {remote_digests}")
 
             result_lit: ContainerCheckResultType = "not_available"
             # check if any remote digest missing in local_digests
@@ -167,12 +161,10 @@ async def check_one_container(
                     result_lit = "available(notified)"
                 else:
                     result_lit = "available"
-            logging.info(
-                f"{container.name} - Check result is {result_lit}"
-            )
+            logger.info(f"Check result is {result_lit}")
             result.result = result_lit
 
-            result_db: ContainerInsertOrUpdateData = {
+            result_db: Final[ContainerInsertOrUpdateData] = {
                 "update_available": result_lit != "not_available",
                 "checked_at": now(),
                 "local_digests": local_digests,
@@ -183,15 +175,13 @@ async def check_one_container(
                 session, host.id, str(container.name), result_db
             )
 
-            CACHE.update(
+            cache.update(
                 {"status": EActionStatus.DONE, "result": result}
             )
             return result
-        except Exception:
-            logging.exception(
-                f"{container.name} - Failed to check container"
-            )
-            CACHE.update(
+        except:
+            logger.exception("Failed to check container")
+            cache.update(
                 {"status": EActionStatus.ERROR, "result": result}
             )
             return result

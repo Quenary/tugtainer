@@ -16,11 +16,14 @@ from backend.core.check_actions.check_host_containers import (
 from backend.core.check_actions.check_one_container import (
     check_one_container,
 )
+from backend.core.update_actions.update_actions_executor import (
+    execute_update_plan,
+)
+from backend.core.update_actions.update_actions_plan import (
+    build_update_plan,
+)
 from backend.core.update_actions.update_all_containers import (
     update_all_containers,
-)
-from backend.core.update_actions.update_group_containers import (
-    update_group_containers,
 )
 from backend.core.update_actions.update_host_containers import (
     update_host_containers,
@@ -38,7 +41,7 @@ from .containers_model import ContainersModel
 from backend.core.agent_client import AgentClientManager
 from backend.core.progress.progress_schemas import (
     ContainerActionProgress,
-    GroupActionProgress,
+    UpdatePlanProgress,
     HostActionProgress,
     AllActionProgress,
 )
@@ -46,12 +49,9 @@ from backend.core.progress.progress_util import (
     ALL_CONTAINERS_STATUS_KEY,
     get_container_cache_key,
     get_host_cache_key,
-    get_group_cache_key,
+    get_plan_cache_key,
 )
 from backend.core.progress.progress_cache import ProgressCache
-from backend.core.container_group.container_group import (
-    get_container_group,
-)
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
     GetContainerLogsRequestBody,
@@ -271,8 +271,12 @@ async def update_container(
     containers = await client.container.list(
         GetContainerListBodySchema(all=True)
     )
-    db_containers = await get_host_containers(session, host_id)
-    group = get_container_group(container, containers, db_containers)
+
+    plan = await build_update_plan(
+        host,
+        containers,
+        [container],
+    )
 
     try:
         docker_version = await client.common.version()
@@ -283,9 +287,11 @@ async def update_container(
         docker_version = None
 
     asyncio.create_task(
-        update_group_containers(client, host, group, docker_version)
+        execute_update_plan(
+            client, host, containers, plan, docker_version
+        )
     )
-    return get_group_cache_key(host, group)
+    return get_plan_cache_key(host, plan)
 
 
 @containers_router.get(
@@ -293,7 +299,7 @@ async def update_container(
     description="Get progress of general check",
     response_model=AllActionProgress
     | HostActionProgress
-    | GroupActionProgress
+    | UpdatePlanProgress
     | ContainerActionProgress
     | None,
 )
@@ -302,7 +308,7 @@ def progress(
 ) -> (
     AllActionProgress
     | HostActionProgress
-    | GroupActionProgress
+    | UpdatePlanProgress
     | ContainerActionProgress
     | None
 ):

@@ -33,6 +33,7 @@ services:
         VERSION: dev build
     environment:
       AGENT_SECRET: testsecret
+      ENABLE_PUBLIC_API: "true"
       LOG_LEVEL: info
       DOCKER_HOST: tcp://socket-proxy:2375
     volumes:

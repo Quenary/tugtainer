@@ -1,14 +1,13 @@
 import uuid
-
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
-)
-from backend.core.container_group.container_group_schemas import (
-    ContainerGroup,
 )
 from backend.core.progress.progress_cache import ProgressCache
 from backend.core.progress.progress_schemas import (
     ActionProgress,
+)
+from backend.core.update_actions.update_actions_schema import (
+    UpdatePlan,
 )
 from backend.enums.action_status_enum import EActionStatus
 from backend.modules.hosts.hosts_model import HostsModel
@@ -20,10 +19,8 @@ def get_host_cache_key(host: HostsModel) -> str:
     return f"{host.id}:{host.name}"
 
 
-def get_group_cache_key(
-    host: HostsModel, group: ContainerGroup
-) -> str:
-    return f"{get_host_cache_key(host)}:{group.name}"
+def get_plan_cache_key(host: HostsModel, plan: UpdatePlan) -> str:
+    return f"{get_host_cache_key(host)}:{sorted(plan.to_update)}"
 
 
 def get_container_cache_key(

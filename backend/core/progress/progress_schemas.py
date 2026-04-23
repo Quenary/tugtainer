@@ -1,8 +1,8 @@
 from typing import Optional, TypedDict
 from backend.core.action_result import (
     ContainerActionResult,
-    GroupActionResult,
     HostActionResult,
+    UpdatePlanResult,
 )
 from backend.enums.action_status_enum import EActionStatus
 
@@ -17,12 +17,10 @@ class ContainerActionProgress(ActionProgress, total=False):
     result: Optional[ContainerActionResult]
 
 
-class GroupActionProgress(ActionProgress, total=False):
-    """Data of group update progress"""
+class UpdatePlanProgress(ActionProgress, total=False):
+    """Data of update plan execution progress"""
 
-    result: Optional[
-        GroupActionResult
-    ]  # Data wil be available only in the end
+    result: Optional[UpdatePlanResult]
 
 
 class HostActionProgress(ActionProgress, total=False):

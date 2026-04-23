@@ -16,8 +16,8 @@ from shared.util.endpoint_logging_filter import EndpointLoggingFilter
 
 logging.basicConfig(
     level=Config.LOG_LEVEL,
-    format="AGENT - %(levelname)s - %(asctime)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    format="AGENT - %(levelname)s - %(name)s: %(message)s",
+    force=True,
 )
 
 uvicorn_logger = logging.getLogger("uvicorn.access")

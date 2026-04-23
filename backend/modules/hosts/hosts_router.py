@@ -11,7 +11,10 @@ from .hosts_schemas import (
 )
 from backend.db.session import get_async_session
 from .hosts_model import HostsModel
-from backend.modules.hosts.hosts_util import get_host
+from backend.modules.hosts.hosts_util import (
+    annotate_available_updates_count,
+    get_host,
+)
 
 hosts_router = APIRouter(
     prefix="/hosts",
@@ -30,7 +33,9 @@ async def get_list(
 ):
     stmt = select(HostsModel)
     result = await session.execute(stmt)
-    return result.scalars().all()
+    hosts = list(result.scalars().all())
+    await annotate_available_updates_count(hosts, session)
+    return hosts
 
 
 @hosts_router.post(
@@ -59,6 +64,7 @@ async def create(
     await session.refresh(new_host)
     if new_host.enabled:
         await AgentClientManager.set_client(new_host)
+    await annotate_available_updates_count([new_host], session)
     return new_host
 
 
@@ -71,7 +77,9 @@ async def read(
     id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
-    return await get_host(id, session)
+    host = await get_host(id, session)
+    await annotate_available_updates_count([host], session)
+    return host
 
 
 @hosts_router.put(
@@ -93,6 +101,7 @@ async def update(
     await AgentClientManager.remove_client(host.id)
     if host.enabled:
         await AgentClientManager.set_client(host)
+    await annotate_available_updates_count([host], session)
     return host
 
 

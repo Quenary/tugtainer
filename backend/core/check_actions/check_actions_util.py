@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, cast
+from typing import Any, Final, cast
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
@@ -62,12 +62,13 @@ async def get_image_remote_digest(
     :param local_digest: local digest to utilize If-None-Match 304 response
     :return: new image digest if any or local_digest
     """
+    logger:Final = logging.getLogger('get_image_remote_digest')
     registry, repo, tag = parse_image_spec(spec)
 
     insecure_registries = SettingsStorage.get(
         ESettingKey.INSECURE_REGISTRIES
     )
-    logging.debug(f"Insecure Registries: {insecure_registries}")
+    logger.debug(f"Insecure Registries: {insecure_registries}")
 
     insecure: bool = bool(
         insecure_registries
@@ -82,7 +83,7 @@ async def get_image_remote_digest(
         schemes.append("http")
     ssl = not insecure
 
-    logging.info(
+    logger.info(
         f"Checking registry: {registry}, repo: {repo}, tag: {tag}, insecure: {insecure}"
     )
 
@@ -105,7 +106,7 @@ async def get_image_remote_digest(
     basic_token = docker_config.get_basic_token(registry)
 
     def _on_resp(resp: aiohttp.ClientResponse) -> str | None:
-        logging.debug(resp)
+        logger.debug(resp)
         resp.raise_for_status()
         if resp.status == 304:
             return local_digest
@@ -122,10 +123,10 @@ async def get_image_remote_digest(
         async with session.head(
             url, headers=headers, ssl=ssl
         ) as resp:
-            logging.debug(f"Response: {resp}")
+            logger.debug(resp)
 
             if resp.status in (401, 403):
-                logging.info(
+                logger.info(
                     f"Registry responded with {resp.status}, trying auth"
                 )
 
@@ -133,7 +134,7 @@ async def get_image_remote_digest(
                 auth_applied = False
 
                 if "Bearer" in auth_header:
-                    logging.info(f"Trying Bearer token flow with: {auth_header}")
+                    logger.info(f"Trying Bearer token flow with: {auth_header}")
                     bearer_token = await get_registry_bearer_token(
                         session,
                         auth_header,
@@ -146,7 +147,7 @@ async def get_image_remote_digest(
                     )
                     auth_applied = True
                 elif basic_token:
-                    logging.info("Fallback to Basic auth")
+                    logger.info("Fallback to Basic auth")
                     headers["Authorization"] = f"Basic {basic_token}"
                     auth_applied = True
 
@@ -164,7 +165,7 @@ async def get_image_remote_digest(
         for scheme in schemes:
             url = f"{scheme}://{registry}/v2/{repo}/manifests/{tag}"
 
-            logging.info(f"Trying {url}")
+            logger.info(f"Trying {url}")
 
             try:
                 attempt_headers = dict(headers)
@@ -175,7 +176,7 @@ async def get_image_remote_digest(
                 aiohttp.ClientSSLError,
                 aiohttp.ClientConnectorError,
             ) as e:
-                logging.warning(f"Error on {scheme}: {e}")
+                logger.warning(f"Error on {scheme}: {e}")
                 last_error = e
 
         if last_error:

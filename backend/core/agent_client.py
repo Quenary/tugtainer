@@ -1,7 +1,7 @@
 import asyncio
 from inspect import signature
 import json
-from typing import Any, Literal
+from typing import Any, Final, Literal
 from aiohttp.typedefs import Query
 from fastapi import status
 from pydantic import BaseModel, TypeAdapter
@@ -54,16 +54,17 @@ class AgentClient:
         self._long_timeout = (
             600  # timeout for potentially long requests
         )
-        self._ssl = ssl
+        self._ssl:Final = ssl
         self._session: aiohttp.ClientSession | None = None
-        self._session_lock = asyncio.Lock()
-        self.public = AgentClientPublic(self)
-        self.container = AgentClientContainer(self)
-        self.image = AgentClientImage(self)
-        self.command = AgentClientCommand(self)
-        self.manifest = AgentClientManifest(self)
-        self.network = AgentClientNetwork(self)
-        self.common = AgentClientCommon(self)
+        self._session_lock:Final = asyncio.Lock()
+        self._logger:Final = logging.getLogger(self.__class__.__name__)
+        self.public:Final = AgentClientPublic(self)
+        self.container:Final = AgentClientContainer(self)
+        self.image:Final = AgentClientImage(self)
+        self.command:Final = AgentClientCommand(self)
+        self.manifest:Final = AgentClientManifest(self)
+        self.network:Final = AgentClientNetwork(self)
+        self.common:Final = AgentClientCommon(self)
 
     async def close_session(self):
         async with self._session_lock:
@@ -125,7 +126,7 @@ class AgentClient:
                     resp.raise_for_status()
                 except aiohttp.ClientResponseError as e:
                     message = "Agent request error"
-                    logging.exception(message)
+                    self._logger.exception(message)
                     try:
                         error_body = await resp.json()
                     except Exception:
@@ -147,7 +148,7 @@ class AgentClient:
                     return text
         except asyncio.TimeoutError as e:
             message = "Agent timeout error"
-            logging.exception(message)
+            self._logger.exception(message)
             raise TugAgentClientError(
                 message,
                 url,
@@ -157,7 +158,7 @@ class AgentClient:
             )
         except aiohttp.ClientError as e:
             message = "Agent connection error"
-            logging.exception(message)
+            self._logger.exception(message)
             await self.close_session()
             raise TugAgentClientError(
                 message,
@@ -417,7 +418,7 @@ async def load_agents_on_init():
         for h in hosts:
             try:
                 await AgentClientManager.set_client(h)
-                logging.info(f"{h.name}: agent client loaded")
+                logging.info(f"{h.id}.{h.name}: agent client loaded")
             except Exception:
                 logging.exception(
                     f"{h.name}: failed to load agent client"
