@@ -1,9 +1,17 @@
 :host {
   width: 100%;
-  height: auto;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 
   p-toolbar {
     margin-bottom: 1rem;
+  }
+
+  p-table {
+    width: 100%;
+    flex: 1;
+    overflow: hidden;
+    overflow-y: auto;
   }
 }
