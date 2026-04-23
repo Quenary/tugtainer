@@ -1,12 +1,34 @@
 # CHANGELOG
 
 
+## v1.29.0 (2026-04-23)
+
+### Documentation
+
+- **readme**: Edited Update process section, added Contributing section
+  ([`f7c55f0`](https://github.com/Quenary/tugtainer/commit/f7c55f0381a420fcb84e407909c453ea56d12aba))
+
+### Features
+
+- **backend**: /public/update_count endpoint for dashboard/status pages by @ftsiadimos
+  ([#177](https://github.com/Quenary/tugtainer/pull/177),
+  [`978f053`](https://github.com/Quenary/tugtainer/commit/978f0534c4b147b34e3b24ed7444d5b93eab7303))
+
+- **hosts**: Hide hosts with no matching containers when filtering available
+  ([`7666476`](https://github.com/Quenary/tugtainer/commit/76664767283e78d98e87c21835e804a1b271e90e))
+
+
 ## v1.28.3 (2026-04-01)
 
 ### Bug Fixes
 
 - **frontend**: Zh translation loading
   ([`071dfd4`](https://github.com/Quenary/tugtainer/commit/071dfd49246583b606b1754f786e662f67f2a4f3))
+
+### Features
+
+- **backend**: Update plan with dependency graph, restart only affected containers
+  ([`1a46cdf`](https://github.com/Quenary/tugtainer/commit/1a46cdf6879ca3731dac15a9b1aab3e4b5bcfafb))
 
 
 ## v1.28.2 (2026-04-01)
