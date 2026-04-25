@@ -241,6 +241,31 @@ Auth cookies are not domain-specific and not https only, but you can change this
 
 Starting with v1.6.0, you can use the OpenID Connect provider instead of password. This can also be configured using env variables.
 
+## Public API
+
+Tugtainer can expose a small auth-free public API when `ENABLE_PUBLIC_API=true`.
+
+- `GET /api/public/update_count`
+  - returns `{"total_updates": <number>}`
+  - shows the total number of containers currently marked as having available updates
+- `GET /api/public/summary`
+  - returns host/container summary statistics
+
+To enable this in Docker, set:
+
+```bash
+-e ENABLE_PUBLIC_API=true
+```
+
+Or in compose:
+
+```yaml
+services:
+  app:
+    environment:
+      - ENABLE_PUBLIC_API=true
+```
+
 ## Env:
 
 Environment variables are not required, but you can still define some. There is [.env.example](/.env.example) containing list of vars with description.
