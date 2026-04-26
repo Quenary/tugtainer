@@ -12,3 +12,4 @@ runs:
         
     - name: Install frontend dependencies
       run: npm ci
+      shell: bash
