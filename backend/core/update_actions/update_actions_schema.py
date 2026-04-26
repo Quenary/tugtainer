@@ -1,11 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Final, cast
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
+
 from backend.core.action_result import ContainerCheckResultType
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -33,8 +35,8 @@ class UpdatePlanItem:
     """
 
     container: ContainerInspectResult
-    image_spec: Final[str | None]
-    was_running: Final[bool]
+    image_spec: Final[str | None] = None
+    was_running: Final[bool | None] = None
     config: CreateContainerRequestBodySchema | None = None
     commands: list[list[str]] = field(default_factory=list)
     local_image: ImageInspectResult | None = None

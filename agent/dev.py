@@ -1,5 +1,6 @@
-import uvicorn
 import os
+
+import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,5 +21,5 @@ if __name__ == "__main__":
             ],
             log_level=log_level,
         )
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         print("Dev server shutdown by user.")

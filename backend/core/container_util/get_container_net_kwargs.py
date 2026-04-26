@@ -1,4 +1,5 @@
-from typing import Any
+from typing import Any, cast
+
 from packaging import version
 from python_on_whales.components.container.models import (
     ContainerConfig,
@@ -7,10 +8,12 @@ from python_on_whales.components.container.models import (
     NetworkSettings,
 )
 from python_on_whales.utils import ValidPortMapping
+
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.util.get_docker_client_api_version import (
     get_docker_client_api_version,
 )
+
 from .map_port_bindings_to_list import map_port_bindings_to_list
 
 
@@ -28,9 +31,7 @@ def get_container_net_kwargs(
     CONFIG = container.config or ContainerConfig()
     HOST_CONFIG = container.host_config or ContainerHostConfig()
     NETWORK_SETTINGS = container.network_settings or NetworkSettings()
-    docker_client_api_version = get_docker_client_api_version(
-        docker_version
-    )
+    docker_client_api_version = get_docker_client_api_version(docker_version)
 
     DNS: list[str] = HOST_CONFIG.dns or []
     DNS_OPTIONS: list[str] = HOST_CONFIG.dns_options or []
@@ -60,9 +61,7 @@ def get_container_net_kwargs(
             IP6 = MAIN_NETWORK.ipam_config.ipv6_address
             # preserve mac address if static ips used
             # https://github.com/Quenary/tugtainer/issues/126
-            MAC_ADDRESS = (
-                MAIN_NETWORK.mac_address or CONFIG.mac_address
-            )
+            MAC_ADDRESS = MAIN_NETWORK.mac_address or CONFIG.mac_address
         for net in NETWORKS_KEYS[1:]:
             # Additional networks returned as commands
             # as docker cli doesn't support multiple aliases for multiple networks inline (in create/run)
@@ -78,11 +77,8 @@ def get_container_net_kwargs(
                     _cmd += ["--ip6", ipam.ipv6_address]
                 # preserve mac address if static ips used
                 # https://github.com/Quenary/tugtainer/issues/126
-                MAC_ADDRESS = (
-                    MAC_ADDRESS
-                    or NETWORK_SETTINGS.networks[net].mac_address
-                )
-            _cmd += [net, container.name]
+                MAC_ADDRESS = MAC_ADDRESS or NETWORK_SETTINGS.networks[net].mac_address
+            _cmd += [net, cast(str, container.name)]
             COMMANDS.append(_cmd)
     elif NETWORK_MODE:
         NETWORKS = [NETWORK_MODE]
@@ -93,8 +89,7 @@ def get_container_net_kwargs(
 
     # Remove unsupported values
     if NETWORK_MODE and (
-        NETWORK_MODE in ["host", "none"]
-        or NETWORK_MODE.startswith("container:")
+        NETWORK_MODE in ["host", "none"] or NETWORK_MODE.startswith("container:")
     ):
         DNS = []
         DNS_OPTIONS = []
@@ -108,10 +103,7 @@ def get_container_net_kwargs(
         PUBLISH = []
         PUBLISH_ALL = False
 
-    if (
-        docker_client_api_version
-        and docker_client_api_version < version.parse("1.44")
-    ):
+    if docker_client_api_version and docker_client_api_version < version.parse("1.44"):
         MAC_ADDRESS = None
 
     return {

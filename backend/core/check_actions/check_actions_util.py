@@ -1,17 +1,19 @@
+import logging
 from datetime import datetime
 from typing import Any, Final, cast
+from urllib.parse import urlencode
+
+import aiohttp
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
+
 from backend.docker_config import DockerConfig
 from backend.modules.containers.containers_model import (
     ContainersModel,
 )
-import aiohttp
-from urllib.parse import urlencode
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
-import logging
 
 
 def filter_containers_by_check_enabled(

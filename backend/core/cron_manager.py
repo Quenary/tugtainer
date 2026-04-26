@@ -1,14 +1,14 @@
 import logging
+from collections.abc import Callable
 from zoneinfo import ZoneInfo, available_timezones
+
 import aiocron
-from typing import Callable, Dict
+
 from backend.core.check_actions.check_all_containers import check_all_containers
 from backend.core.update_actions.update_all_containers import update_all_containers
-from backend.modules.settings.settings_enum import ESettingKey
 from backend.enums.cron_jobs_enum import ECronJob
-from backend.db.session import async_session_maker
+from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
-
 
 VALID_TIMEZONES = available_timezones()
 
@@ -17,34 +17,33 @@ async def schedule_actions_on_init():
     """
     Schedule container check and update on app init
     """
-    async with async_session_maker() as session:
-        tz = SettingsStorage.get(ESettingKey.TIMEZONE)
-        check_crontab = SettingsStorage.get(
-            ESettingKey.CHECK_CRONTAB_EXPR
-        )
-        update_crontab = SettingsStorage.get(
-            ESettingKey.UPDATE_CRONTAB_EXPR
-        )
+    tz = SettingsStorage.get(ESettingKey.TIMEZONE)
+    check_crontab = SettingsStorage.get(
+        ESettingKey.CHECK_CRONTAB_EXPR
+    )
+    update_crontab = SettingsStorage.get(
+        ESettingKey.UPDATE_CRONTAB_EXPR
+    )
 
-        if check_crontab:
-            CronManager.schedule_job(
-                ECronJob.CHECK_CONTAINERS,
-                check_crontab,
-                tz,
-                check_all_containers,
-            )
-        if update_crontab:
-            CronManager.schedule_job(
-                ECronJob.UPDATE_CONTAINERS,
-                update_crontab,
-                tz,
-                update_all_containers,
-            )
+    if check_crontab:
+        CronManager.schedule_job(
+            ECronJob.CHECK_CONTAINERS,
+            check_crontab,
+            tz,
+            check_all_containers,
+        )
+    if update_crontab:
+        CronManager.schedule_job(
+            ECronJob.UPDATE_CONTAINERS,
+            update_crontab,
+            tz,
+            update_all_containers,
+        )
 
 
 class CronManager:
     _instance = None
-    _jobs: Dict[str, aiocron.Cron] = {}
+    _jobs: dict[str, aiocron.Cron] = {}
 
     def __new__(cls, *args, **kwargs):
         # Singleton

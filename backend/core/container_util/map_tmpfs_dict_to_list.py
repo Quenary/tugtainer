@@ -1,9 +1,8 @@
 from pathlib import Path
-from typing import Dict
 
 
 def map_tmpfs_dict_to_list(
-    tmpfs: Dict[Path, str] | None,
+    tmpfs: dict[Path, str] | None,
 ) -> list[str]:
     """
     Map docker inspect tmpfs dict to list of valid strs.

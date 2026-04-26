@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import Any, Literal
+
 from fastapi import HTTPException, Request, Response, status
 from jose import JWTError, jwt
+
 from backend.config import Config
 from backend.util.now import now
 
@@ -73,8 +75,8 @@ class AuthProvider(ABC):
                 algorithms=[Config.JWT_ALGORITHM],
             )
             return payload
-        except JWTError:
+        except JWTError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token is invalid or expired",
-            )
+            ) from e

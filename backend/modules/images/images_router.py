@@ -3,12 +3,12 @@ from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.modules.auth.auth_util import is_authorized
-from backend.modules.images.images_util import map_image_schema
-from .images_schemas import ImageGetResponseBody
-from backend.modules.hosts.hosts_util import get_host
+
 from backend.core.agent_client import AgentClientManager
 from backend.db.session import get_async_session
+from backend.modules.auth.auth_util import is_authorized
+from backend.modules.hosts.hosts_util import get_host
+from backend.modules.images.images_util import map_image_schema
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
@@ -16,6 +16,8 @@ from shared.schemas.image_schemas import (
     GetImageListBodySchema,
     PruneImagesRequestBodySchema,
 )
+
+from .images_schemas import ImageGetResponseBody
 
 images_router = APIRouter(
     prefix="/images",

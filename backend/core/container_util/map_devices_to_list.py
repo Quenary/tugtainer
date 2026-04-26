@@ -1,11 +1,11 @@
-from typing import List
+
 from python_on_whales.components.container.models import (
     ContainerDevice,
 )
 
 
 def map_devices_to_list(
-    devices: List[ContainerDevice] | None,
+    devices: list[ContainerDevice] | None,
 ) -> list[str]:
     """
     Map docker inspect devices to list of strings

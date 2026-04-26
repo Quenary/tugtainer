@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
+
 from agent.auth import verify_signature
 from agent.docker_client import DOCKER
 from agent.unil.asyncall import asyncall
 from shared.schemas.docker_version_scheme import DockerVersionScheme
-
 
 router = APIRouter(
     prefix="/common",

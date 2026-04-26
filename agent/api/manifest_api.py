@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
-from agent.auth import verify_signature
-from agent.unil.asyncall import asyncall
-from agent.docker_client import DOCKER
-from shared.schemas.manifest_schema import ManifestInspectSchema
 
+from agent.auth import verify_signature
+from agent.docker_client import DOCKER
+from agent.unil.asyncall import asyncall
+from shared.schemas.manifest_schema import ManifestInspectSchema
 
 router = APIRouter(
     prefix="/manifest",

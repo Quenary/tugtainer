@@ -1,7 +1,8 @@
-import time
 import asyncio
+import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Any
+from typing import Any
 
 
 def delay_to_minimum(min_seconds: float = 1):

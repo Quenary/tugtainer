@@ -1,6 +1,7 @@
-from typing import Any, Callable, TypedDict, cast
-from ipaddress import ip_address
 import re
+from collections.abc import Callable
+from ipaddress import ip_address
+from typing import Any, TypedDict
 
 DOCKER_NAME_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$")
 
@@ -95,7 +96,7 @@ def command_validator(cmd: list[str]) -> list[str]:
             f"Expected {len(positional_validators)} positional args, got {len(positional)}"
         )
 
-    for value, validator in zip(positional, positional_validators):
+    for value, validator in zip(positional, positional_validators, strict=True):
         validator(value)
 
     return cmd

@@ -1,6 +1,7 @@
+from unittest.mock import MagicMock
+
 import pytest
 from pytest_mock import MockerFixture
-from unittest.mock import MagicMock
 
 from backend.modules.hosts.hosts_util import (
     annotate_available_updates_count,
@@ -35,23 +36,46 @@ async def test_annotate_zero_when_query_returns_nothing(
 
 
 @pytest.mark.asyncio
-async def test_annotate_populates_counts_and_defaults_missing(
-    mocker: MockerFixture,
+@pytest.mark.parametrize(
+    "host_ids, db_rows, expected",
+    [
+        # базовый кейс (твой текущий)
+        ([1, 2, 3], [(1, 3), (2, 1)], {1: 3, 2: 1, 3: 0}),
+        # все хосты есть
+        ([1, 2], [(1, 5), (2, 7)], {1: 5, 2: 7}),
+        # никто не вернулся из БД
+        ([1, 2], [], {1: 0, 2: 0}),
+        # один хост
+        ([42], [(42, 9)], {42: 9}),
+        # пустой список (важный edge case)
+        ([], [], {}),
+    ],
+)
+async def test_annotate_available_updates_count(
+    mocker,
+    host_ids,
+    db_rows,
+    expected,
 ):
-    host_a, host_b, host_c = MagicMock(), MagicMock(), MagicMock()
-    host_a.id, host_b.id, host_c.id = 1, 2, 3
+    hosts = []
+    for hid in host_ids:
+        h = MagicMock()
+        h.id = hid
+        hosts.append(h)
 
     result = MagicMock()
-    # host_c is intentionally absent from the query result; its count must
-    # fall back to 0.
-    result.all.return_value = [(1, 3), (2, 1)]
+    result.all.return_value = db_rows
+
     session = mocker.AsyncMock()
     session.execute = mocker.AsyncMock(return_value=result)
 
-    await annotate_available_updates_count(
-        [host_a, host_b, host_c], session
-    )
+    await annotate_available_updates_count(hosts, session)
 
-    assert host_a.available_updates_count == 3
-    assert host_b.available_updates_count == 1
-    assert host_c.available_updates_count == 0
+    for h in hosts:
+        assert h.available_updates_count == expected[h.id]
+
+    # дополнительная проверка: если список пустой — execute не вызывается
+    if not hosts:
+        session.execute.assert_not_called()
+    else:
+        session.execute.assert_called_once()

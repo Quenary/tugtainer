@@ -1,0 +1,33 @@
+name: Setup Python Environment with uv
+description: Setup Python, uv, cache and install dependencies
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      id: python
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.13
+
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: 3.13
+        activate-environment: true
+
+    - name: Cache venv + uv cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          .venv
+          ~/.cache/uv
+        key: venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.python.outputs.python-version }}-${{ hashFiles('uv.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.python.outputs.python-version }}-
+          venv-${{ runner.os }}-${{ runner.arch }}-
+          venv-${{ runner.os }}-
+
+    - name: Install dependencies
+      run: uv sync --locked
+      shell: bash

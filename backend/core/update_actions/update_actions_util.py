@@ -1,17 +1,19 @@
 import logging
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from sqlalchemy import select
-from backend.core.agent_client import AgentClient
-from backend.modules.containers.containers_model import (
-    ContainersModel,
-)
+
 from backend.core.action_result import (
     UpdatePlanResult,
 )
-from backend.util.now import now
+from backend.core.agent_client import AgentClient
 from backend.db.session import async_session_maker
+from backend.modules.containers.containers_model import (
+    ContainersModel,
+)
+from backend.util.now import now
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 
 

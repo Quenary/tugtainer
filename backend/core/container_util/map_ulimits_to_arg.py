@@ -1,7 +1,8 @@
+from collections.abc import Iterable
+
 from python_on_whales.components.container.models import (
     ContainerUlimit,
 )
-from typing import Iterable
 
 
 def map_ulimits_to_arg(
@@ -12,6 +13,6 @@ def map_ulimits_to_arg(
     if not ulimits:
         return res
 
-    for l in ulimits:
-        res.append(f"{l.name}={l.soft or 0}:{l.hard or 0}")
+    for lim in ulimits:
+        res.append(f"{lim.name}={lim.soft or 0}:{lim.hard or 0}")
     return res

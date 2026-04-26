@@ -1,35 +1,36 @@
-from typing import Any, cast
-import aiohttp
+import logging
+from typing import cast
+
+from cachetools import TTLCache
+from cachetools_async import cached as cached_async
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, text
 from packaging import version
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.config import Config
+from backend.core.agent_client import AgentClientManager
+from backend.core.cron_manager import CronManager
 from backend.db.session import get_async_session
+from backend.enums.cron_jobs_enum import ECronJob
+from backend.modules.containers.containers_model import (
+    ContainersModel,
+)
+from backend.modules.containers.containers_util import (
+    map_container_schema,
+)
+from backend.modules.hosts.hosts_model import HostsModel
+from backend.modules.hosts.hosts_schemas import HostSummary
 from backend.modules.public.public_util import fetch_latest_release
+from shared.schemas.container_schemas import (
+    GetContainerListBodySchema,
+)
+
 from .public_schemas import (
     IsUpdateAvailableResponseBodySchema,
     TotalUpdateCountResponseBodySchema,
     VersionResponseBody,
 )
-from backend.core.cron_manager import CronManager
-from backend.enums.cron_jobs_enum import ECronJob
-from backend.modules.hosts.hosts_schemas import HostSummary
-from backend.modules.containers.containers_model import (
-    ContainersModel,
-)
-from backend.modules.hosts.hosts_model import HostsModel
-from backend.core.agent_client import AgentClientManager
-from backend.modules.containers.containers_util import (
-    map_container_schema,
-)
-from shared.schemas.container_schemas import (
-    GetContainerListBodySchema,
-)
-from backend.config import Config
-from cachetools import TTLCache
-from cachetools_async import cached as cached_async
-import logging
-
 
 public_router = APIRouter(tags=["public"], prefix="/public")
 
@@ -37,10 +38,10 @@ public_router = APIRouter(tags=["public"], prefix="/public")
 @public_router.get("/version", response_model=VersionResponseBody)
 def get_version():
     try:
-        with open("/app/version", "r") as file:
+        with open("/app/version") as file:
             return {"image_version": file.readline()}
-    except FileNotFoundError:
-        raise HTTPException(404, "Version file not found")
+    except FileNotFoundError as e:
+        raise HTTPException(404, "Version file not found") from e
 
 
 @public_router.get("/health")
@@ -48,7 +49,7 @@ async def health(session: AsyncSession = Depends(get_async_session)):
     try:
         await session.execute(text("SELECT 1"))
     except Exception as e:
-        raise HTTPException(503, f"Database error {e}")
+        raise HTTPException(503, f"Database error {e}") from e
     cron_jobs = CronManager.get_jobs()
     if ECronJob.CHECK_CONTAINERS not in cron_jobs:
         raise HTTPException(500, "Main cron job not running")
@@ -192,7 +193,7 @@ async def get_update_count(
     if not Config.ENABLE_PUBLIC_API:
         raise HTTPException(404, "Not Found")
 
-    stmt = select(HostsModel).where(HostsModel.enabled == True)
+    stmt = select(HostsModel).where(HostsModel.enabled)
     result = await session.execute(stmt)
     hosts = result.scalars().all()
 
@@ -230,24 +231,24 @@ async def get_update_count(
 @cached_async(cache=TTLCache(maxsize=1, ttl=3600))
 async def is_update_available():
     try:
-        with open("/app/version", "r") as file:
+        with open("/app/version") as file:
             local_version = file.readline()
-    except FileNotFoundError:
-        raise HTTPException(404, "Version file not found")
+    except FileNotFoundError as e:
+        raise HTTPException(404, "Version file not found") from e
     try:
         data = await fetch_latest_release()
         remote_version = data.get("tag_name", "")
         release_url = data.get("html_url", "")
-    except Exception:
+    except Exception as e:
         message = "Failed to fetch latest release"
         logging.exception(message)
-        raise HTTPException(500, message)
+        raise HTTPException(500, message) from e
     try:
         is_available = version.parse(remote_version) > version.parse(
             local_version
         )
     except version.InvalidVersion as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     return {
         "is_available": is_available,
         "release_url": release_url,

@@ -1,14 +1,14 @@
 import logging
 from typing import Final
+
 from sqlalchemy import select
-from backend.db.session import async_session_maker
-from backend.modules.hosts.hosts_model import HostsModel
+
 from backend.core.action_result import (
     HostActionResult,
 )
 from backend.core.agent_client import AgentClientManager
 from backend.core.notifications_core import send_check_notification
-from backend.enums.action_status_enum import EActionStatus
+from backend.core.progress.progress_cache import ProgressCache
 from backend.core.progress.progress_schemas import (
     AllActionProgress,
 )
@@ -16,7 +16,10 @@ from backend.core.progress.progress_util import (
     ALL_CONTAINERS_STATUS_KEY,
     is_allowed_start_cache,
 )
-from backend.core.progress.progress_cache import ProgressCache
+from backend.db.session import async_session_maker
+from backend.enums.action_status_enum import EActionStatus
+from backend.modules.hosts.hosts_model import HostsModel
+
 from .update_host_containers import update_host_containers
 
 
@@ -47,7 +50,7 @@ async def update_all_containers():
                 (
                     await session.execute(
                         select(HostsModel).where(
-                            HostsModel.enabled == True
+                            HostsModel.enabled
                         )
                     )
                 )
@@ -66,7 +69,7 @@ async def update_all_containers():
                 )
                 if result:
                     results += [result]
-            except:
+            except Exception:
                 logger.exception(
                     f"Failed to update containers of {host.name}"
                 )

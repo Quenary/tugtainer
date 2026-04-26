@@ -1,4 +1,5 @@
 from fastapi import Request
+
 from agent.config import Config
 from shared.util.signature import verify_signature_headers
 
@@ -9,7 +10,7 @@ async def verify_signature(req: Request):
         return
     try:
         body = await req.json()
-    except:
+    except Exception:
         body = None
     params = dict(req.query_params) if req.query_params else None
     verify_signature_headers(

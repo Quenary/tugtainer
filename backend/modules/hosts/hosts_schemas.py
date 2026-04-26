@@ -1,4 +1,4 @@
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -8,7 +8,7 @@ class HostBase(BaseModel):
     prune: bool
     prune_all: bool
     url: str
-    secret: Optional[str] = None
+    secret: str | None = None
     ssl: bool
     timeout: int
     container_hc_timeout: int

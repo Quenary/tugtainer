@@ -36,19 +36,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: 3.13
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: 3.13
-          activate-environment: true
-
-      - name: Install dependencies
-        run: uv sync --locked
+      - uses: ./.github/actions/setup-python-env
 
       - name: Run pytest
         run: python -m pytest
+
+  backend-lint:
+    name: Run Backend Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup-python-env
+
+      - name: Run pytest
+        run: ruff check agent backend shared
+
+  backend-typechecks:
+    name: Run Backend Typechecks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup-python-env
+
+      - name: Run pytest
+        run: mypy agent backend shared

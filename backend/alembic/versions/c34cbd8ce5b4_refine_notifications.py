@@ -6,10 +6,10 @@ Create Date: 2025-11-26 21:39:47.683226
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 from backend.const import DEFAULT_NOTIFICATION_TEMPLATE
 from backend.modules.settings.settings_enum import (
@@ -19,9 +19,9 @@ from backend.modules.settings.settings_enum import (
 
 # revision identifiers, used by Alembic.
 revision: str = "c34cbd8ce5b4"
-down_revision: Union[str, Sequence[str], None] = "2adcf3451f67"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "2adcf3451f67"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -71,7 +71,7 @@ def downgrade() -> None:
         batch_op.drop_column("notified_available_digests")
     conn = op.get_bind()
     stmt = sa.text(
-        f"""
+        """
     DELETE FROM settings WHERE key in :keys
     """
     ).bindparams(sa.bindparam("keys", expanding=True))

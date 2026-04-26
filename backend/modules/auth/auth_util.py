@@ -1,7 +1,10 @@
 from typing import Any
+
 from fastapi import HTTPException, Request, status
 from jose import jwt
+
 from backend.config import Config
+
 from .providers.auth_oidc_provider import AuthOidcProvider
 from .providers.auth_password_provider import (
     AuthPasswordProvider,
@@ -24,7 +27,7 @@ def _decode_token(token: str) -> dict[str, Any] | None:
             algorithms=[Config.JWT_ALGORITHM],
         )
         return data
-    except:
+    except Exception:
         return None
 
 

@@ -1,7 +1,9 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from backend.db.base_model import BaseModel
-from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from backend.modules.containers.containers_model import ContainersModel
@@ -40,7 +42,7 @@ class HostsModel(BaseModel):
         String,
         nullable=False,
     )
-    secret: Mapped[Optional[str]] = mapped_column(
+    secret: Mapped[str | None] = mapped_column(
         String, nullable=True
     )
     ssl: Mapped[bool] = mapped_column(

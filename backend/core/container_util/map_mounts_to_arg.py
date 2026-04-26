@@ -23,7 +23,7 @@ def map_mounts_to_arg(
         if dst:
             mount_list.append(f"dst={dst}")
 
-        read_only: bool = mount.rw == False
+        read_only: bool = mount.rw is False
         if read_only:
             mount_list.append("readonly")
 

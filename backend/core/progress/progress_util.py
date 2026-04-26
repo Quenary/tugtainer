@@ -1,8 +1,9 @@
 import uuid
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
-from backend.core.progress.progress_cache import ProgressCache
+
 from backend.core.progress.progress_schemas import (
     ActionProgress,
 )

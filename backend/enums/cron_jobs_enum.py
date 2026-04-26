@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ECronJob(str, Enum):
+class ECronJob(StrEnum):
     """Enum of crontab jobs keys"""
 
     CHECK_CONTAINERS = "CHECK_CONTAINERS"

@@ -1,19 +1,11 @@
 import logging
-from typing import Final, cast
-from .check_one_container import check_one_container
-from .check_actions_util import (
-    filter_containers_by_check_enabled,
-    sort_containers_by_checked_at,
-)
-from backend.db.session import async_session_maker
-from backend.modules.hosts.hosts_model import HostsModel
+from typing import Final
+
 from backend.core.action_result import (
     HostActionResult,
 )
-from backend.modules.containers.containers_util import (
-    get_host_containers,
-)
-from backend.enums.action_status_enum import EActionStatus
+from backend.core.agent_client import AgentClient
+from backend.core.progress.progress_cache import ProgressCache
 from backend.core.progress.progress_schemas import (
     HostActionProgress,
 )
@@ -21,11 +13,21 @@ from backend.core.progress.progress_util import (
     get_host_cache_key,
     is_allowed_start_cache,
 )
-from backend.core.progress.progress_cache import ProgressCache
-from backend.core.agent_client import AgentClient
+from backend.db.session import async_session_maker
+from backend.enums.action_status_enum import EActionStatus
+from backend.modules.containers.containers_util import (
+    get_host_containers,
+)
+from backend.modules.hosts.hosts_model import HostsModel
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
+
+from .check_actions_util import (
+    filter_containers_by_check_enabled,
+    sort_containers_by_checked_at,
+)
+from .check_one_container import check_one_container
 
 
 async def check_host_containers(
@@ -88,7 +90,7 @@ async def check_host_containers(
 
         cache.update({"status": EActionStatus.DONE, "result": result})
         return result
-    except:
+    except Exception:
         logger.exception("Failed to check host")
         cache.update(
             {"status": EActionStatus.ERROR},

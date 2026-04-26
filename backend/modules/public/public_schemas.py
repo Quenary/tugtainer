@@ -1,5 +1,5 @@
+
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
 
 
 class IsUpdateAvailableResponseBodySchema(BaseModel):
@@ -18,4 +18,4 @@ class TotalUpdateCountResponseBodySchema(BaseModel):
 class VersionResponseBody(BaseModel):
     """Versions schema"""
 
-    image_version: Optional[str] = None
+    image_version: str | None = None

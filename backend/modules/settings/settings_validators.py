@@ -1,7 +1,7 @@
 from datetime import datetime
-from cronsim import CronSim, CronSimError
 from zoneinfo import available_timezones
 
+from cronsim import CronSim, CronSimError
 
 VALID_TIMEZONES = available_timezones()
 
@@ -16,7 +16,7 @@ def validate_cron_expr(expr: str) -> str:
     except CronSimError as e:
         raise ValueError(
             f"Invalid cron expression: {expr}. Details: {e}"
-        )
+        ) from None
     return expr
 
 

@@ -1,7 +1,10 @@
 from typing import Any, Literal, overload
+
 from sqlalchemy import event, select
-from .settings_enum import ESettingKey
+
 from backend.db.session import async_session_maker
+
+from .settings_enum import ESettingKey
 from .settings_model import SettingModel
 from .settings_util import get_setting_typed_value
 
@@ -21,7 +24,7 @@ class SettingsStorage:
 
     @classmethod
     @overload
-    def get(cls, key: Literal[ESettingKey.CHECK_CRONTAB_EXPR])-> str: ...
+    def get(cls, key: Literal[ESettingKey.CHECK_CRONTAB_EXPR]) -> str: ...
     @classmethod
     @overload
     def get(cls, key: Literal[ESettingKey.UPDATE_CRONTAB_EXPR]) -> str: ...
@@ -30,37 +33,40 @@ class SettingsStorage:
     def get(cls, key: Literal[ESettingKey.REGISTRY_REQ_DELAY]) -> int: ...
     @classmethod
     @overload
-    def get(
-        cls, key: Literal[ESettingKey.NOTIFICATION_URLS]
-    ) -> str: ...
+    def get(cls, key: Literal[ESettingKey.NOTIFICATION_URLS]) -> str: ...
     @classmethod
     @overload
     def get(cls, key: Literal[ESettingKey.TIMEZONE]) -> str: ...
     @classmethod
     @overload
+    def get(cls, key: Literal[ESettingKey.NOTIFICATION_TITLE_TEMPLATE]) -> str: ...
+    @classmethod
+    @overload
+    def get(cls, key: Literal[ESettingKey.NOTIFICATION_BODY_TEMPLATE]) -> str: ...
+    @classmethod
+    @overload
     def get(
-        cls, key: Literal[ESettingKey.NOTIFICATION_TITLE_TEMPLATE]
+        cls,
+        key: Literal[ESettingKey.UPDATE_ONLY_RUNNING],
+    ) -> bool: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
+        key: Literal[ESettingKey.PULL_BEFORE_CHECK],
+    ) -> bool: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
+        key: Literal[ESettingKey.INSECURE_REGISTRIES],
     ) -> str: ...
     @classmethod
     @overload
     def get(
-        cls, key: Literal[ESettingKey.NOTIFICATION_BODY_TEMPLATE]
-    ) -> str: ...
-    @classmethod
-    @overload
-    def get(
-        cls, key: Literal[ESettingKey.UPDATE_ONLY_RUNNING],
-    )-> bool: ...
-    @classmethod
-    @overload
-    def get(
-        cls, key: Literal[ESettingKey.PULL_BEFORE_CHECK],
-    )-> bool: ...
-    @classmethod
-    @overload
-    def get(
-        cls, key: Literal[ESettingKey.INSECURE_REGISTRIES],
-    )-> str: ...
+        cls,
+        key: ESettingKey,
+    ) -> Any: ...
     @classmethod
     def get(cls, key: ESettingKey, default=None):
         """Get value of setting"""
@@ -76,9 +82,7 @@ class SettingsStorage:
         """Load setting by key from db"""
         async with async_session_maker() as session:
             result = await session.execute(
-                select(SettingModel).where(
-                    SettingModel.key == key.value
-                )
+                select(SettingModel).where(SettingModel.key == key.value)
             )
             setting = result.scalar_one_or_none()
             if setting:
@@ -98,9 +102,7 @@ class SettingsStorage:
                 key = ESettingKey(row.key)
             except ValueError:
                 continue
-            cls._VALUES[key] = get_setting_typed_value(
-                row.value, row.value_type
-            )
+            cls._VALUES[key] = get_setting_typed_value(row.value, row.value_type)
 
 
 @event.listens_for(SettingModel, "after_update")

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, field_validator
+
 from .auth_validators import password_validator
 
 

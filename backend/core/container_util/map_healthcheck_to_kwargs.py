@@ -1,5 +1,5 @@
-from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any
+
 from python_on_whales.components.container.models import (
     ContainerHealthCheck,
 )
@@ -7,12 +7,12 @@ from python_on_whales.components.container.models import (
 
 def map_healthcheck_to_kwargs(
     cfg: ContainerHealthCheck | None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Map docker inspect healthcheck to run/create kwargs"""
     if not cfg:
         return {"healthcheck": False}
 
-    def ns_to_sec(ns: Optional[int]) -> Optional[int]:
+    def ns_to_sec(ns: int | None) -> int | None:
         return int(ns / 1_000_000_000) if ns else None
 
     test = cfg.test

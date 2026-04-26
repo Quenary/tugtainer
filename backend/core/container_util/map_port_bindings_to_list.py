@@ -1,13 +1,13 @@
-from typing import Dict, List
+
 from python_on_whales.components.container.models import PortBinding
 from python_on_whales.utils import ValidPortMapping
 
 
 def map_port_bindings_to_list(
-    bindings: Dict[str, List[PortBinding] | None] | None,
+    bindings: dict[str, list[PortBinding] | None] | None,
 ) -> list[ValidPortMapping]:
     """Map docker inspect PortBindings to list of ValidPortMapping"""
-    result: List[ValidPortMapping] = []
+    result: list[ValidPortMapping] = []
 
     if not bindings:
         return result

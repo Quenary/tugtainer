@@ -1,8 +1,9 @@
 from typing import Any, cast
+
 import pytest
 from fastapi.testclient import TestClient
-
 from pytest_mock import MockerFixture
+
 from backend.app import app
 from backend.db.session import get_async_session
 
@@ -36,7 +37,7 @@ async def test_is_update_available(
     cast(Any, is_update_available).cache.clear()
 
     mocker.patch(
-        f"builtins.open", mocker.mock_open(read_data=current_version)
+        "builtins.open", mocker.mock_open(read_data=current_version)
     )
     mocker.patch(
         f"{module_path}.fetch_latest_release",
@@ -58,9 +59,6 @@ async def test_is_update_available(
 async def test_get_update_count(
     mocker: MockerFixture,
 ):
-    from backend.modules.public.public_router import (
-        Config,
-    )
     from backend.modules.containers.containers_model import (
         ContainersModel,
     )

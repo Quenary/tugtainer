@@ -27,7 +27,7 @@ class DockerConfig:
         self.data = {}
         try:
             if self.path.exists():
-                with open(self.path, "r") as f:
+                with open(self.path) as f:
                     logging.info(
                         f"Docker config loaded successfully from {self.path}"
                     )

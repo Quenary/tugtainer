@@ -1,4 +1,5 @@
 import pytest
+
 from backend.core.check_actions.check_actions_util import (
     parse_image_spec,
 )
