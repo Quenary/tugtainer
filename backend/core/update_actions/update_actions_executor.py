@@ -1,25 +1,29 @@
 import asyncio
 import logging
 from typing import Final, cast
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
+
 from backend.core.action_result import (
     ContainerActionResult,
     UpdatePlanResult,
 )
 from backend.core.agent_client import AgentClient
-from backend.core.container_util import (
-    get_container_image_spec,
-    is_running_container,
-    wait_for_container_healthy,
-)
 from backend.core.container_util.container_config import (
     get_container_config,
     merge_container_config_with_image,
+)
+from backend.core.container_util.get_container_image_spec import (
+    get_container_image_spec,
+)
+from backend.core.container_util.is_running_container import is_running_container
+from backend.core.container_util.wait_for_container_healthy import (
+    wait_for_container_healthy,
 )
 from backend.core.progress.progress_cache import ProgressCache
 from backend.core.progress.progress_schemas import UpdatePlanProgress
@@ -61,7 +65,9 @@ async def execute_update_plan(
     plan: UpdatePlan,
     docker_version: DockerVersionScheme | None,
 ) -> UpdatePlanResult | None:
-    logger.info(f"to_update={plan.to_update}, affected={plan.affected}, order={plan.order}")
+    logger.info(
+        f"to_update={plan.to_update}, affected={plan.affected}, order={plan.order}"
+    )
     delay: Final = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
     status_key: Final = get_plan_cache_key(host, plan)
     cache: Final = ProgressCache[UpdatePlanProgress](status_key)
@@ -71,9 +77,7 @@ async def execute_update_plan(
         return None
 
     if not plan.to_update:
-        logger.warning(
-            f"{status_key} has no containers to update. Exiting."
-        )
+        logger.warning(f"{status_key} has no containers to update. Exiting.")
         return None
 
     cache.set({"status": EActionStatus.PREPARING})
@@ -99,40 +103,28 @@ async def execute_update_plan(
                 logger.info(f"Getting local image for {item.name}")
                 if item.container.image:
                     local_image = await client.image.inspect(
-                        InspectImageRequestBodySchema(
-                            spec_or_id=item.container.image
-                        )
+                        InspectImageRequestBodySchema(spec_or_id=item.container.image)
                     )
                 elif item.image_spec:
                     local_image = await client.image.inspect(
-                        InspectImageRequestBodySchema(
-                            spec_or_id=item.image_spec
-                        )
+                        InspectImageRequestBodySchema(spec_or_id=item.image_spec)
                     )
                 else:
-                    raise Exception(
-                        f"No image id or image spec specified"
-                    )
+                    raise Exception("No image id or image spec specified")
                 item.local_image = local_image
             except Exception as e:
-                logger.exception(
-                    f"Failed to get local image for {item.name}"
-                )
+                logger.exception(f"Failed to get local image for {item.name}")
                 item.errors.append(e)
 
             # Pull new image
             try:
                 logger.info(f"Pulling image for {item.name}")
                 remote_image = await client.image.pull(
-                    PullImageRequestBodySchema(
-                        image=cast(str, item.image_spec)
-                    )
+                    PullImageRequestBodySchema(image=cast(str, item.image_spec))
                 )
                 item.remote_image = remote_image
             except Exception as e:
-                logger.exception(
-                    f"Failed to pull image for {item.name}"
-                )
+                logger.exception(f"Failed to pull image for {item.name}")
                 item.errors.append(e)
 
             # Prepare config
@@ -145,9 +137,7 @@ async def execute_update_plan(
                 item.config = config
                 item.commands = commands
             except Exception as e:
-                logger.exception(
-                    f"Failed to get config for {item.name}"
-                )
+                logger.exception(f"Failed to get config for {item.name}")
                 item.errors.append(e)
 
             await asyncio.sleep(jitter(delay))
@@ -182,9 +172,7 @@ async def execute_update_plan(
         Mutates the item's container attribute.
         """
         if not item.was_running:
-            logger.info(
-                f"{item.name} wasn't running before execution, continue..."
-            )
+            logger.info(f"{item.name} wasn't running before execution, continue...")
             return
 
         item.container = await client.container.inspect(item.name)
@@ -203,7 +191,7 @@ async def execute_update_plan(
         )
         item.container = container
         if healthy:
-            logger.info(f"Container is healthy!")
+            logger.info("Container is healthy!")
             return
         raise Exception(f"{item.name} is unhealthy!")
 
@@ -231,9 +219,7 @@ async def execute_update_plan(
             # Updating containers
             if name in plan.to_update:
                 if not _can_update(item):
-                    logger.warning(
-                        f"Cannot update {item.name} due to prior errors"
-                    )
+                    logger.warning(f"Cannot update {item.name} due to prior errors")
                     try:
                         await _attempt_start_with_health(item)
                     except Exception as e:
@@ -245,20 +231,12 @@ async def execute_update_plan(
 
                 logger.info(f"Starting update of {item.name}")
                 image_spec = cast(str, item.image_spec)
-                local_image = cast(
-                    ImageInspectResult, item.local_image
-                )
-                remote_image = cast(
-                    ImageInspectResult, item.remote_image
-                )
-                config = cast(
-                    CreateContainerRequestBodySchema, item.config
-                )
+                local_image = cast(ImageInspectResult, item.local_image)
+                remote_image = cast(ImageInspectResult, item.remote_image)
+                config = cast(CreateContainerRequestBodySchema, item.config)
 
                 try:
-                    await disconnect_all_networks(
-                        client, item.container, True
-                    )
+                    await disconnect_all_networks(client, item.container, True)
 
                     logger.info("Removing container...")
                     await client.container.remove(item.name)
@@ -269,9 +247,7 @@ async def execute_update_plan(
                     )
 
                     logger.info("Recreating container...")
-                    item.container = await client.container.create(
-                        merged_config
-                    )
+                    item.container = await client.container.create(merged_config)
                     if not item.was_running:
                         logger.info(
                             "Container recreated. It wasn't running before update, consider as success and continue..."
@@ -282,17 +258,13 @@ async def execute_update_plan(
                     logger.info("Starting container...")
                     await client.container.start(item.name)
                     await _run_commands(item)
-                    item.container = await client.container.inspect(
-                        item.name
-                    )
+                    item.container = await client.container.inspect(item.name)
 
                     logger.info("Waiting for healthchecks...")
-                    healthy, container = (
-                        await wait_for_container_healthy(
-                            client,
-                            item.container,
-                            host.container_hc_timeout,
-                        )
+                    healthy, container = await wait_for_container_healthy(
+                        client,
+                        item.container,
+                        host.container_hc_timeout,
                     )
                     item.container = container
                     if healthy:
@@ -300,13 +272,9 @@ async def execute_update_plan(
                         item.result = "updated"
                         continue
 
-                    logger.warning(
-                        "Container is unhealthy, rolling back..."
-                    )
+                    logger.warning("Container is unhealthy, rolling back...")
                     await client.container.stop(item.name)
-                    await disconnect_all_networks(
-                        client, item.container, True
-                    )
+                    await disconnect_all_networks(client, item.container, True)
                     await client.container.remove(item.name)
                 except Exception as e:
                     logger.exception(
@@ -316,18 +284,12 @@ async def execute_update_plan(
                     # Cleanup after update error
                     try:
                         if await client.container.exists(item.name):
-                            logger.warning(
-                                "Removing failed container"
-                            )
+                            logger.warning("Removing failed container")
                             await client.container.stop(item.name)
-                            await disconnect_all_networks(
-                                client, item.container, True
-                            )
-                            await client.container.remove(
-                                name_or_id=item.name
-                            )
+                            await disconnect_all_networks(client, item.container, True)
+                            await client.container.remove(name_or_id=item.name)
                     except Exception as e:
-                        logger.exception(f"Cleanup error")
+                        logger.exception("Cleanup error")
                         item.errors.append(e)
 
                 # Rolling back
@@ -342,43 +304,31 @@ async def execute_update_plan(
                         )
                     )
                 except Exception as e:
-                    logger.exception(f"Failed to tag previous image")
+                    logger.exception("Failed to tag previous image")
                     item.errors.append(e)
                 try:
-                    logger.warning(
-                        "Creating container with previous configuration..."
-                    )
-                    item.container = await client.container.create(
-                        config
-                    )
+                    logger.warning("Creating container with previous configuration...")
+                    item.container = await client.container.create(config)
 
                     logger.warning("Starting container...")
                     await client.container.start(item.name)
                     await _run_commands(item)
-                    item.container = await client.container.inspect(
-                        item.name
-                    )
+                    item.container = await client.container.inspect(item.name)
                     item.result = "rolled_back"
 
                     logger.warning("Waiting for healthchecks...")
-                    healthy, container = (
-                        await wait_for_container_healthy(
-                            client,
-                            item.container,
-                            host.container_hc_timeout,
-                        )
+                    healthy, container = await wait_for_container_healthy(
+                        client,
+                        item.container,
+                        host.container_hc_timeout,
                     )
                     item.container = container
                     if healthy:
-                        logger.warning(
-                            "Container is heailthy after rolling back!"
-                        )
+                        logger.warning("Container is heailthy after rolling back!")
                         continue
-                    logger.error(
-                        "Container is unhealthy after rolling back!"
-                    )
+                    logger.error("Container is unhealthy after rolling back!")
                 except Exception as e:
-                    logger.exception(f"Error while rolling back!")
+                    logger.exception("Error while rolling back!")
                     item.errors.append(e)
                     item.result = "failed"
 
@@ -387,18 +337,14 @@ async def execute_update_plan(
                 try:
                     await _attempt_start_with_health(item)
                 except Exception as e:
-                    logger.exception(
-                        f"Error while starting {item.name}. Continue..."
-                    )
+                    logger.exception(f"Error while starting {item.name}. Continue...")
                     item.errors.append(e)
 
     logger.info("Finished plan execution")
 
     errors_count = sum(len(item.errors) for item in items)
     if errors_count:
-        logger.warning(
-            f"Total errors: {errors_count} (see logs for details)"
-        )
+        logger.warning(f"Total errors: {errors_count} (see logs for details)")
 
     result: Final = UpdatePlanResult(
         host_id=host.id,

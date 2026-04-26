@@ -1,5 +1,7 @@
 from typing import Any
+
 import aiohttp
+
 from backend.config import Config
 
 

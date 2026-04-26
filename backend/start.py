@@ -1,6 +1,7 @@
-import subprocess
-import uvicorn
 import os
+import subprocess
+
+import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()

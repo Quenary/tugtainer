@@ -1,6 +1,9 @@
-import pytest
+from collections.abc import Sequence
+from typing import Any, cast
 from unittest.mock import AsyncMock
-from typing import Any, Sequence, cast
+
+import pytest
+
 from backend.core.update_actions.update_actions_plan import (
     build_update_plan,
 )

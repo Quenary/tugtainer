@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import cast
 from zoneinfo import available_timezones
+
 from fastapi import APIRouter, Depends, HTTPException
 from python_on_whales.components.container.models import (
     ContainerConfig,
@@ -13,31 +14,33 @@ from python_on_whales.components.image.models import (
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.modules.auth.auth_util import is_authorized
+
 from backend.core.action_result import (
     ContainerActionResult,
     HostActionResult,
 )
+from backend.core.check_actions.check_all_containers import (
+    check_all_containers,
+)
+from backend.core.cron_manager import CronManager
+from backend.core.notifications_core import send_check_notification
+from backend.core.update_actions.update_all_containers import (
+    update_all_containers,
+)
 from backend.db.session import get_async_session
+from backend.enums.cron_jobs_enum import ECronJob
+from backend.exception import TugNotificationException
+from backend.modules.auth.auth_util import is_authorized
+
+from .settings_enum import ESettingKey
 from .settings_model import SettingModel
-from .settings_util import get_setting_typed_value
-from .settings_storage import SettingsStorage
 from .settings_schemas import (
     SettingsGetResponseItem,
     SettingsPatchRequestItem,
     TestNotificationRequestBody,
 )
-from backend.core.notifications_core import send_check_notification
-from backend.core.cron_manager import CronManager
-from .settings_enum import ESettingKey
-from backend.enums.cron_jobs_enum import ECronJob
-from backend.core.check_actions.check_all_containers import (
-    check_all_containers,
-)
-from backend.core.update_actions.update_all_containers import (
-    update_all_containers,
-)
-from backend.exception import TugNotificationException
+from .settings_storage import SettingsStorage
+from .settings_util import get_setting_typed_value
 
 VALID_TIMEZONES = available_timezones()
 
@@ -48,9 +51,7 @@ settings_router = APIRouter(
 )
 
 
-@settings_router.get(
-    "/list", response_model=list[SettingsGetResponseItem]
-)
+@settings_router.get("/list", response_model=list[SettingsGetResponseItem])
 async def get_settings(
     session: AsyncSession = Depends(get_async_session),
 ):
@@ -77,17 +78,11 @@ async def change_system_settings(
     session: AsyncSession = Depends(get_async_session),
 ):
     for s in data:
-        stmt = (
-            select(SettingModel)
-            .where(SettingModel.key == s.key)
-            .limit(1)
-        )
+        stmt = select(SettingModel).where(SettingModel.key == s.key).limit(1)
         result = await session.execute(stmt)
         setting = result.scalar_one_or_none()
         if not setting:
-            raise HTTPException(
-                status_code=404, detail=f"Setting '{s.key}' not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Setting '{s.key}' not found")
         if setting.value_type != type(s.value).__name__:
             raise HTTPException(
                 400,
@@ -100,11 +95,7 @@ async def change_system_settings(
 
     def _get(key: ESettingKey) -> str:
         return next(
-            (
-                str(item.value)
-                for item in data
-                if item.key == key and item.value
-            ),
+            (str(item.value) for item in data if item.key == key and item.value),
             cast(str, SettingsStorage.get(key)),
         )
 
@@ -269,9 +260,9 @@ Total reclaimed space: 1.5GB
         )
         return {}
     except TugNotificationException as e:
-        raise HTTPException(500, str(e))
+        raise HTTPException(500, str(e)) from e
     except Exception as e:
-        raise HTTPException(500, f"Unknown error: {e}")
+        raise HTTPException(500, f"Unknown error: {e}") from e
 
 
 @settings_router.get(

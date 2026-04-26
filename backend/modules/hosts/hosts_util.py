@@ -1,7 +1,10 @@
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.modules.containers.containers_model import ContainersModel
+from backend.modules.hosts.hosts_schemas import HostInfo
+
 from .hosts_model import HostsModel
 
 
@@ -16,7 +19,7 @@ async def get_host(host_id: int, session: AsyncSession) -> HostsModel:
 
 
 async def annotate_available_updates_count(
-    hosts: list[HostsModel], session: AsyncSession
+    hosts: list[HostInfo], session: AsyncSession
 ) -> None:
     """Populate each host's ``available_updates_count`` ad-hoc attribute.
 

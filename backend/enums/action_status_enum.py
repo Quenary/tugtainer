@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class EActionStatus(str, Enum):
+class EActionStatus(StrEnum):
     """
     Enum of available action (check, update) statuses
     """

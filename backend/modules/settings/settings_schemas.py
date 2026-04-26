@@ -1,13 +1,15 @@
-from pydantic import BaseModel, model_validator
-from typing import Optional, Union
 from datetime import datetime
+
+from pydantic import BaseModel, model_validator
+
 from backend.modules.settings.settings_enum import ESettingKey
+
 from .settings_validators import validate_cron_expr, validate_timezone
 
 
 class SettingsPatchRequestItem(BaseModel):
     key: str
-    value: Union[bool, int, float, str]
+    value: bool | int | float | str
 
     @model_validator(mode="after")
     def validate_setting(self):
@@ -36,6 +38,6 @@ class SettingsGetResponseItem(SettingsPatchRequestItem):
 
 
 class TestNotificationRequestBody(BaseModel):
-    title_template: Optional[str] = None
-    body_template: Optional[str] = None
-    urls: Optional[str] = None
+    title_template: str | None = None
+    body_template: str | None = None
+    urls: str | None = None

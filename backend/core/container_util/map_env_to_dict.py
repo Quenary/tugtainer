@@ -2,7 +2,7 @@ def map_env_to_dict(env: list[str] | None) -> dict:
     """
     Maps list of env vars to {key:value} dict
     """
-    _env = {}
+    _env: dict = {}
     if not env:
         return _env
     for e in env:

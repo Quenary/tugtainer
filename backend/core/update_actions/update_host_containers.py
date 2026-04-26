@@ -1,23 +1,15 @@
+import logging
 from typing import Final
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
-import logging
-from backend.core.update_actions.update_actions_executor import (
-    execute_update_plan,
-)
-from backend.core.update_actions.update_actions_plan import (
-    build_update_plan,
-)
-from backend.db.session import async_session_maker
-from backend.modules.hosts.hosts_model import HostsModel
+
 from backend.core.action_result import (
     HostActionResult,
 )
-from backend.modules.containers.containers_util import (
-    get_host_containers,
-)
-from backend.enums.action_status_enum import EActionStatus
+from backend.core.agent_client import AgentClient
+from backend.core.progress.progress_cache import ProgressCache
 from backend.core.progress.progress_schemas import (
     HostActionProgress,
 )
@@ -25,8 +17,14 @@ from backend.core.progress.progress_util import (
     get_host_cache_key,
     is_allowed_start_cache,
 )
-from backend.core.progress.progress_cache import ProgressCache
-from backend.core.agent_client import AgentClient
+from backend.core.update_actions.update_actions_executor import (
+    execute_update_plan,
+)
+from backend.core.update_actions.update_actions_plan import (
+    build_update_plan,
+)
+from backend.enums.action_status_enum import EActionStatus
+from backend.modules.hosts.hosts_model import HostsModel
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
@@ -53,7 +51,7 @@ async def update_host_containers(
     )
 
     if not is_allowed_start_cache(state):
-        logger.warning(f"Update already running. Exiting.")
+        logger.warning("Update already running. Exiting.")
         return None
 
     try:
@@ -100,8 +98,8 @@ async def update_host_containers(
         cache.update({"status": EActionStatus.DONE, "result": result})
         logger.info("Update completed")
         return result
-    except:
-        logger.exception(f"Failed to update")
+    except Exception:
+        logger.exception("Failed to update")
         cache.update(
             {"status": EActionStatus.ERROR},
         )

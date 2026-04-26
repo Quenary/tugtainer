@@ -1,17 +1,19 @@
 from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from python_on_whales.components.image.models import (
+    ImageInspectResult,
+)
+
 from agent.auth import verify_signature
 from agent.docker_client import DOCKER
+from agent.unil.asyncall import asyncall
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
     InspectImageRequestBodySchema,
     PruneImagesRequestBodySchema,
     PullImageRequestBodySchema,
     TagImageRequestBodySchema,
-)
-from agent.unil.asyncall import asyncall
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
 )
 
 router = APIRouter(
@@ -24,9 +26,7 @@ router = APIRouter(
 async def is_exists(spec_or_id: str) -> Literal[True]:
     exists = await asyncall(lambda: DOCKER.image.exists(spec_or_id))
     if not exists:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "Image not found"
-        )
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Image not found")
     return True
 
 
@@ -37,15 +37,13 @@ async def is_exists(spec_or_id: str) -> Literal[True]:
 )
 async def inspect(body: InspectImageRequestBodySchema):
     _ = await is_exists(body.spec_or_id)
-    return await asyncall(
-        lambda: DOCKER.image.inspect(body.spec_or_id)
-    )
+    return await asyncall(lambda: DOCKER.image.inspect(body.spec_or_id))
 
 
 @router.post(
     "/list",
     description="Get list of images",
-    response_model=list[ImageInspectResult],
+    response_model=list[ImageInspectResult],  # type: ignore
 )
 async def list(body: GetImageListBodySchema):
     args = body.model_dump(exclude_unset=True)
@@ -82,6 +80,4 @@ async def pull(body: PullImageRequestBodySchema):
 )
 async def tag(body: TagImageRequestBodySchema):
     _ = await is_exists(body.spec_or_id)
-    return await asyncall(
-        lambda: DOCKER.image.tag(body.spec_or_id, body.tag)
-    )
+    return await asyncall(lambda: DOCKER.image.tag(body.spec_or_id, body.tag))

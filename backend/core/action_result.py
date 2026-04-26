@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Literal
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-
 
 ContainerCheckResultType = Literal[
     "not_available",

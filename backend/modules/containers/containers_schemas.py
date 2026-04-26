@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+
 from pydantic import BaseModel
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
@@ -11,36 +11,36 @@ class ContainersListItem(BaseModel):
     name: str  # name of the container
     container_id: str  # id of the container
     image: str | None  # image of the container
-    ports: Dict[str, List[PortBinding] | None] | None
+    ports: dict[str, list[PortBinding] | None] | None
     status: str | None
     exit_code: int | None
     health: str | None
     protected: bool  # Whether container labeled with dev.quenary.tugtainer.protected=true
     host_id: int  # host id is also stored in db, but it must be always defined
     # Those keys stored in db, but might be undefined for new containers
-    id: Optional[int] = None  # id of the row
-    check_enabled: Optional[bool] = (
+    id: int | None = None  # id of the row
+    check_enabled: bool | None = (
         None  # Is check for update enabled
     )
-    update_enabled: Optional[bool] = None  # Is auto update enabled
-    update_available: Optional[bool] = (
+    update_enabled: bool | None = None  # Is auto update enabled
+    update_available: bool | None = (
         None  # Is container update available
     )
-    checked_at: Optional[datetime] = None  # Date of check for update
-    updated_at: Optional[datetime] = None  # Date of last update
-    created_at: Optional[datetime] = (
+    checked_at: datetime | None = None  # Date of check for update
+    updated_at: datetime | None = None  # Date of last update
+    created_at: datetime | None = (
         None  # Date of creation of db entry
     )
-    modified_at: Optional[datetime] = (
+    modified_at: datetime | None = (
         None  # Date ofmodification db entry
     )
 
 
 class ContainerGetResponseBody(BaseModel):
-    item: Optional[ContainersListItem] = None
+    item: ContainersListItem | None = None
     inspect: ContainerInspectResult
 
 
 class ContainerPatchRequestBody(BaseModel):
-    check_enabled: Optional[bool] = None
-    update_enabled: Optional[bool] = None
+    check_enabled: bool | None = None
+    update_enabled: bool | None = None

@@ -1,6 +1,6 @@
+import json
 from datetime import date, datetime
 from functools import partial
-import json
 
 
 def _json_serializer(obj):

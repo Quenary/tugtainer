@@ -1,6 +1,7 @@
 import os
-from dotenv import load_dotenv
 from typing import ClassVar
+
+from dotenv import load_dotenv
 
 
 class Config:

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ESettingKey(str, Enum):
+class ESettingKey(StrEnum):
     """
     Enum of app settings keys.
     It is helper, do not use for validation.
@@ -19,7 +19,7 @@ class ESettingKey(str, Enum):
     INSECURE_REGISTRIES = "INSECURE_REGISTRIES"
 
 
-class ESettingType(str, Enum):
+class ESettingType(StrEnum):
     """
     Enum of app settings types.
     It is helper, do not use for validation.

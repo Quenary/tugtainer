@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from python_on_whales.components.buildx.imagetools.models import (
     ImageVariantManifest,
-    ManifestConfig,
 )
 
 

@@ -1,15 +1,17 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     ForeignKey,
     Integer,
     String,
     text,
-    JSON,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from backend.db.base_model import BaseModel
 from backend.util.now import now
 
@@ -49,10 +51,10 @@ class ContainersModel(BaseModel):
         default=False,
         server_default=text("FALSE"),
     )
-    checked_at: Mapped[Optional[datetime]] = mapped_column(
+    checked_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    updated_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(

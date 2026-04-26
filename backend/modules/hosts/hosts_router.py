@@ -1,19 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.core.agent_client import AgentClientManager
-from backend.modules.auth.auth_util import is_authorized
-from backend.exception import TugAgentClientError
-from .hosts_schemas import (
-    HostInfo,
-    HostBase,
-    HostStatusResponseBody,
-)
 from backend.db.session import get_async_session
-from .hosts_model import HostsModel
+from backend.exception import TugAgentClientError
+from backend.modules.auth.auth_util import is_authorized
 from backend.modules.hosts.hosts_util import (
     annotate_available_updates_count,
     get_host,
+)
+
+from .hosts_model import HostsModel
+from .hosts_schemas import (
+    HostBase,
+    HostInfo,
+    HostStatusResponseBody,
 )
 
 hosts_router = APIRouter(
@@ -34,8 +36,9 @@ async def get_list(
     stmt = select(HostsModel)
     result = await session.execute(stmt)
     hosts = list(result.scalars().all())
-    await annotate_available_updates_count(hosts, session)
-    return hosts
+    hosts_dto: list[HostInfo] = [HostInfo.model_validate(h) for h in hosts]
+    await annotate_available_updates_count(hosts_dto, session)
+    return hosts_dto
 
 
 @hosts_router.post(
@@ -48,11 +51,7 @@ async def create(
     body: HostBase,
     session: AsyncSession = Depends(get_async_session),
 ):
-    stmt = (
-        select(HostsModel)
-        .where(HostsModel.name == body.name)
-        .limit(1)
-    )
+    stmt = select(HostsModel).where(HostsModel.name == body.name).limit(1)
     result = await session.execute(stmt)
     host = result.scalar_one_or_none()
     if host:
@@ -64,8 +63,9 @@ async def create(
     await session.refresh(new_host)
     if new_host.enabled:
         await AgentClientManager.set_client(new_host)
-    await annotate_available_updates_count([new_host], session)
-    return new_host
+    host_dto = HostInfo.model_validate(new_host)
+    await annotate_available_updates_count([host_dto], session)
+    return host_dto
 
 
 @hosts_router.get(
@@ -78,8 +78,9 @@ async def read(
     session: AsyncSession = Depends(get_async_session),
 ):
     host = await get_host(id, session)
-    await annotate_available_updates_count([host], session)
-    return host
+    host_dto = HostInfo.model_validate(host)
+    await annotate_available_updates_count([host_dto], session)
+    return host_dto
 
 
 @hosts_router.put(
@@ -101,8 +102,9 @@ async def update(
     await AgentClientManager.remove_client(host.id)
     if host.enabled:
         await AgentClientManager.set_client(host)
-    await annotate_available_updates_count([host], session)
-    return host
+    host_dto = HostInfo.model_validate(host)
+    await annotate_available_updates_count([host_dto], session)
+    return host_dto
 
 
 @hosts_router.delete(path="/{id}", description="Delete host")
@@ -111,7 +113,7 @@ async def delete(
     session: AsyncSession = Depends(get_async_session),
 ):
     host = await get_host(id, session)
-    await AgentClientManager.remove_client(host)
+    await AgentClientManager.remove_client(host.id)
     await session.delete(host)
     await session.commit()
     return {"detail": "Host deleted successfully"}
@@ -127,9 +129,7 @@ async def get_status(
     response: Response,
     session: AsyncSession = Depends(get_async_session),
 ) -> HostStatusResponseBody:
-    response.headers["Cache-Control"] = (
-        "no-cache, no-store, must-revalidate"
-    )
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     host = await get_host(id, session)

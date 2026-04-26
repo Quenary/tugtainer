@@ -2,23 +2,24 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
-    Response,
     Request,
+    Response,
     status,
 )
 from fastapi.responses import PlainTextResponse, RedirectResponse
+
 from backend.config import Config
-from .providers.auth_provider import AuthProvider
-from .auth_util import (
-    AUTH_PASSWORD_PROVIDER,
-    auth_provider_by_name,
-    active_auth_provider,
-    is_authorized,
-)
 from backend.exception import TugNoAuthProviderException
 from backend.util.delay_to_minimum import delay_to_minimum
-from .auth_schemas import PasswordSetRequestBody
 
+from .auth_schemas import PasswordSetRequestBody
+from .auth_util import (
+    AUTH_PASSWORD_PROVIDER,
+    active_auth_provider,
+    auth_provider_by_name,
+    is_authorized,
+)
+from .providers.auth_provider import AuthProvider
 
 auth_router: APIRouter = APIRouter(prefix="/auth", tags=["auth"])
 

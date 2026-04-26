@@ -1,15 +1,17 @@
 import asyncio
 import logging
+
 from fastapi import FastAPI, HTTPException, Request, status
 from python_on_whales import DockerException
+
 from agent.api import (
+    command_router,
     common_router,
-    public_router,
     container_router,
     image_router,
-    command_router,
     manifest_router,
     network_router,
+    public_router,
 )
 from agent.config import Config
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter

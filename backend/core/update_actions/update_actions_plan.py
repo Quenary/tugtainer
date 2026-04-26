@@ -1,22 +1,21 @@
-from typing import Sequence, cast
+from collections.abc import Sequence
+from typing import cast
 
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from sqlalchemy import select
+
 from backend.const import (
     DOCKER_COMPOSE_DEPENDS_ON_LABEL,
     TUGTAINER_DEPENDS_ON_LABEL,
 )
-from backend.core.container_util import (
-    get_service_name,
-    is_protected_container,
-    is_running_container,
-)
+from backend.core.container_util.get_service_name import get_service_name
+from backend.core.container_util.is_protected_container import is_protected_container
+from backend.core.container_util.is_running_container import is_running_container
 from backend.core.update_actions.update_actions_schema import (
     UpdatePlan,
 )
-from .update_actions_util import get_compose_id, get_dependencies
 from backend.db.session import async_session_maker
 from backend.modules.containers.containers_model import (
     ContainersModel,
@@ -24,6 +23,8 @@ from backend.modules.containers.containers_model import (
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+
+from .update_actions_util import get_compose_id, get_dependencies
 
 
 async def build_update_plan(
@@ -37,17 +38,13 @@ async def build_update_plan(
     :param containers: containers to process
     :param manual_for: override updatable containers (for manual runs)
     """
-    update_only_running = SettingsStorage.get(
-        ESettingKey.UPDATE_ONLY_RUNNING
-    )
+    update_only_running = SettingsStorage.get(ESettingKey.UPDATE_ONLY_RUNNING)
     async with async_session_maker() as session:
         containers_db = {
             c.name: c
             for c in (
                 await session.execute(
-                    select(ContainersModel).where(
-                        ContainersModel.host_id == host.id
-                    )
+                    select(ContainersModel).where(ContainersModel.host_id == host.id)
                 )
             )
             .scalars()
@@ -77,40 +74,30 @@ async def build_update_plan(
                 to_update.add(c_name)
 
     # region Dependency graphs
-    compose_service_names: dict[str, dict[str, str]] = (
-        {}
-    )  # Map of service name to container name per compose
-    depends_on_map: dict[str, set[str]] = (
-        {}
-    )  # Container to dependencies
-    dependables_map: dict[str, set[str]] = (
-        {}
-    )  # Container to dependables (reverse)
+    compose_service_names: dict[
+        str, dict[str, str]
+    ] = {}  # Map of service name to container name per compose
+    depends_on_map: dict[str, set[str]] = {}  # Container to dependencies
+    dependables_map: dict[str, set[str]] = {}  # Container to dependables (reverse)
 
     for c in containers:
         c_name = cast(str, c.name)
         srvn = get_service_name(c)
         compose_id = get_compose_id(c)
         if srvn and compose_id:
-            if not isinstance(
-                compose_service_names.get(compose_id), dict
-            ):
+            if not isinstance(compose_service_names.get(compose_id), dict):
                 compose_service_names[compose_id] = {}
             compose_service_names[compose_id][srvn] = c_name
 
     for c in containers:
         c_name = cast(str, c.name)
-        depends_on_map[c_name] = get_dependencies(
-            c, TUGTAINER_DEPENDS_ON_LABEL
-        )
+        depends_on_map[c_name] = get_dependencies(c, TUGTAINER_DEPENDS_ON_LABEL)
 
         compose_id = get_compose_id(c)
 
         if compose_id:
             neighbors = compose_service_names.get(compose_id, {})
-            for d in get_dependencies(
-                c, DOCKER_COMPOSE_DEPENDS_ON_LABEL
-            ):
+            for d in get_dependencies(c, DOCKER_COMPOSE_DEPENDS_ON_LABEL):
                 if d_name := neighbors.get(d):
                     depends_on_map[c_name].add(d_name)
 

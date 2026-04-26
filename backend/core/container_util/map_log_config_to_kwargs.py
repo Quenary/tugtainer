@@ -1,4 +1,6 @@
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
+
 from python_on_whales.components.container.models import (
     ContainerLogConfig,
 )
@@ -6,7 +8,7 @@ from python_on_whales.components.container.models import (
 
 def map_log_config_to_kwargs(
     cfg: ContainerLogConfig | None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Map docker inspect log config to run/create kwargs"""
     if not cfg:
         return {

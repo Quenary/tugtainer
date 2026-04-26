@@ -1,14 +1,16 @@
-from datetime import timedelta
 import logging
-from jose import jwt
-from starlette.responses import RedirectResponse, Response
 import secrets
+from datetime import timedelta
 from typing import Any, Literal, cast
 from urllib.parse import urlencode
+
 import aiohttp
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
+from jose import jwt
+
 from backend.config import Config
+
 from .auth_provider import AuthProvider
 
 
@@ -71,7 +73,7 @@ class AuthOidcProvider(AuthProvider):
             raise HTTPException(
                 status_code=400,
                 detail=f"Error initiating OIDC login: {str(e)}",
-            )
+            ) from e
 
     async def logout(
         self, request: Request, response: Response
@@ -143,7 +145,7 @@ class AuthOidcProvider(AuthProvider):
             discovery_doc = await self._fetch_oidc_discovery(
                 config["well_known_url"]
             )
-            logging.debug(f"OIDC Discovery successful")
+            logging.debug("OIDC Discovery successful")
             user_data = await self._exchange_oidc_code(
                 code, state, discovery_doc, config
             )
@@ -151,7 +153,7 @@ class AuthOidcProvider(AuthProvider):
                 f"OIDC Token exchange successful: {user_data}"
             )  # Debug print
             tokens = self._create_oidc_user_session(user_data)
-            logging.debug(f"OIDC Session created")
+            logging.debug("OIDC Session created")
 
             # Create response for redirect
             response = RedirectResponse(
@@ -187,7 +189,7 @@ class AuthOidcProvider(AuthProvider):
             raise HTTPException(
                 status_code=400,
                 detail=f"Error processing OIDC callback: {str(e)}",
-            )
+            ) from e
 
     def _get_oidc_config(self) -> dict[str, str]:
         """Get OIDC configuration from settings"""
@@ -217,7 +219,7 @@ class AuthOidcProvider(AuthProvider):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Error fetching OIDC discovery document: {str(e)}",
-            )
+            ) from e
 
     def _create_oidc_authorization_url(
         self,
@@ -248,7 +250,7 @@ class AuthOidcProvider(AuthProvider):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Error creating authorization URL: {str(e)}",
-            )
+            ) from e
 
     async def _exchange_oidc_code(
         self,
@@ -322,7 +324,7 @@ class AuthOidcProvider(AuthProvider):
             raise HTTPException(
                 status_code=400,
                 detail=f"Error exchanging authorization code: {str(e)}",
-            )
+            ) from e
 
     def _create_oidc_user_session(
         self,

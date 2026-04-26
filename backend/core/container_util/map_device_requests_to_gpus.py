@@ -1,12 +1,12 @@
-from typing import Union, List
+
 from python_on_whales.components.container.models import (
     ContainerDeviceRequest,
 )
 
 
 def map_device_requests_to_gpus(
-    device_requests: List[ContainerDeviceRequest] | None,
-) -> Union[int, str, None]:
+    device_requests: list[ContainerDeviceRequest] | None,
+) -> int | str | None:
     """Map docker inspect device requests to gpus param"""
     if not device_requests:
         return None

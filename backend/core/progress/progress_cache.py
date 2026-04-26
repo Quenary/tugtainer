@@ -1,13 +1,12 @@
-from typing import Any, Generic, Mapping, TypeVar
+from collections.abc import Mapping
+from typing import Any
+
 from cachetools import TTLCache
 
 _CACHE = TTLCache(maxsize=10, ttl=600)
 
 
-T = TypeVar("T", bound=Mapping[Any, Any])
-
-
-class ProgressCache(Generic[T]):
+class ProgressCache[T:Mapping[Any, Any]]:
     """
     Helper class for check/update progress.
     If data argument is passed, the cache will be replaced.

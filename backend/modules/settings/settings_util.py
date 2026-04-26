@@ -1,18 +1,17 @@
 from backend.modules.settings.settings_enum import ESettingType
 
 
-def get_setting_typed_value(value: str, value_type: str):
+def get_setting_typed_value(value: str, value_type: str) -> bool | float | int | str:
     """
     Helper func to get typed app setting value
     """
-    res = value
     try:
         if value_type == ESettingType.BOOL:
-            res = res.lower() == "true"
+            return value.lower() == "true"
         elif value_type == ESettingType.FLOAT:
-            res = float(res)
+            return float(value)
         elif value_type == ESettingType.INT:
-            res = int(res)
+            return int(value)
+        return value
     except Exception:
-        pass
-    return res
+        return value

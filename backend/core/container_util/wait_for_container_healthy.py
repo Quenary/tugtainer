@@ -1,12 +1,15 @@
+import asyncio
 import time
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
+
 from backend.core.agent_client import AgentClient
+
 from .get_container_health_status_str import (
     get_container_health_status_str,
 )
-import asyncio
 from .is_running_container import is_running_container
 
 

@@ -1,16 +1,25 @@
 import asyncio
+import logging
 from typing import Final
+
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-import logging
 from sqlalchemy import select
+
+from backend.core.action_result import (
+    ContainerActionResult,
+    ContainerCheckResultType,
+)
 from backend.core.agent_client import AgentClient
 from backend.core.check_actions.check_actions_util import (
     get_image_remote_digest,
+)
+from backend.core.container_util.get_container_image_spec import (
+    get_container_image_spec,
 )
 from backend.core.progress.progress_cache import ProgressCache
 from backend.core.progress.progress_schemas import (
@@ -25,16 +34,9 @@ from backend.enums.action_status_enum import EActionStatus
 from backend.modules.containers.containers_model import (
     ContainersModel,
 )
-from backend.core.action_result import (
-    ContainerActionResult,
-    ContainerCheckResultType,
-)
 from backend.modules.containers.containers_util import (
-    insert_or_update_container,
     ContainerInsertOrUpdateData,
-)
-from backend.core.container_util import (
-    get_container_image_spec,
+    insert_or_update_container,
 )
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
@@ -64,9 +66,7 @@ async def check_one_container(
     )
     cache: Final = ProgressCache[ContainerActionProgress](cache_key)
     state: Final = cache.get()
-    logger: Final = logging.getLogger(
-        f"check_one_container.{container.name}"
-    )
+    logger: Final = logging.getLogger(f"check_one_container.{container.name}")
 
     if not is_allowed_start_cache(state):
         logger.warning("Check action already running. Exiting.")
@@ -93,9 +93,7 @@ async def check_one_container(
                 )
             else:
                 local_image = await client.image.inspect(
-                    InspectImageRequestBodySchema(
-                        spec_or_id=image_spec
-                    )
+                    InspectImageRequestBodySchema(spec_or_id=image_spec)
                 )
             result.local_image = local_image
 
@@ -141,7 +139,7 @@ async def check_one_container(
                     if rd:
                         remote_digests = [rd]
                         break
-                except Exception as e:
+                except Exception:
                     logger.exception(
                         f"Failed to get remote digest for {image_spec} {d}"
                     )
@@ -153,10 +151,7 @@ async def check_one_container(
 
             result_lit: ContainerCheckResultType = "not_available"
             # check if any remote digest missing in local_digests
-            if any(
-                all(rd not in ld for ld in local_digests)
-                for rd in remote_digests
-            ):
+            if any(all(rd not in ld for ld in local_digests) for rd in remote_digests):
                 if c_db and c_db.remote_digests == remote_digests:
                     result_lit = "available(notified)"
                 else:
@@ -175,13 +170,9 @@ async def check_one_container(
                 session, host.id, str(container.name), result_db
             )
 
-            cache.update(
-                {"status": EActionStatus.DONE, "result": result}
-            )
+            cache.update({"status": EActionStatus.DONE, "result": result})
             return result
-        except:
+        except Exception:
             logger.exception("Failed to check container")
-            cache.update(
-                {"status": EActionStatus.ERROR, "result": result}
-            )
+            cache.update({"status": EActionStatus.ERROR, "result": result})
             return result

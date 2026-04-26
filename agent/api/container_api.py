@@ -1,16 +1,18 @@
 from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
+
 from agent.auth import verify_signature
 from agent.docker_client import DOCKER
+from agent.unil.asyncall import asyncall
 from shared.schemas.container_schemas import (
-    GetContainerListBodySchema,
     CreateContainerRequestBodySchema,
+    GetContainerListBodySchema,
     GetContainerLogsRequestBody,
 )
-from agent.unil.asyncall import asyncall
 
 router = APIRouter(
     prefix="/container",
@@ -20,20 +22,16 @@ router = APIRouter(
 
 
 async def is_exists(name_or_id: str) -> Literal[True]:
-    exists = await asyncall(
-        lambda: DOCKER.container.exists(name_or_id)
-    )
+    exists = await asyncall(lambda: DOCKER.container.exists(name_or_id))
     if not exists:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "Container not found"
-        )
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Container not found")
     return True
 
 
 @router.post(
     "/list",
     description="Get list of all containers",
-    response_model=list[ContainerInspectResult],
+    response_model=list[ContainerInspectResult],  # type: ignore
 )
 async def list(body: GetContainerListBodySchema):
     args = body.model_dump(exclude_unset=True)
@@ -55,9 +53,7 @@ async def exists(name_or_id: str) -> bool:
     response_model=ContainerInspectResult,
 )
 async def inspect(name_or_id: str, _=Depends(is_exists)):
-    return await asyncall(
-        lambda: DOCKER.container.inspect(name_or_id)
-    )
+    return await asyncall(lambda: DOCKER.container.inspect(name_or_id))
 
 
 @router.post(
@@ -67,9 +63,7 @@ async def inspect(name_or_id: str, _=Depends(is_exists)):
 )
 async def create(body: CreateContainerRequestBodySchema):
     args = body.model_dump(exclude_unset=True)
-    return await asyncall(
-        lambda: DOCKER.container.create(**args), asyncall_timeout=600
-    )
+    return await asyncall(lambda: DOCKER.container.create(**args), asyncall_timeout=600)
 
 
 @router.post(
@@ -78,7 +72,7 @@ async def create(body: CreateContainerRequestBodySchema):
     response_model=str,
 )
 async def start(name_or_id: str, _=Depends(is_exists)) -> str:
-    __ = await asyncall(
+    await asyncall(
         lambda: DOCKER.container.start(name_or_id),
         asyncall_timeout=600,
     )
@@ -91,7 +85,7 @@ async def start(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
-    __ = await asyncall(
+    await asyncall(
         lambda: DOCKER.container.stop(name_or_id),
         asyncall_timeout=600,
     )
@@ -104,7 +98,7 @@ async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def restart(name_or_id: str, _=Depends(is_exists)) -> str:
-    __ = await asyncall(
+    await asyncall(
         lambda: DOCKER.container.restart(name_or_id),
         asyncall_timeout=600,
     )
@@ -117,7 +111,7 @@ async def restart(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def kill(name_or_id: str, _=Depends(is_exists)) -> str:
-    __ = await asyncall(
+    await asyncall(
         lambda: DOCKER.container.kill(name_or_id),
         asyncall_timeout=600,
     )
@@ -130,7 +124,7 @@ async def kill(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def pause(name_or_id: str, _=Depends(is_exists)) -> str:
-    __ = await asyncall(
+    await asyncall(
         lambda: DOCKER.container.pause(name_or_id),
         asyncall_timeout=600,
     )
@@ -143,7 +137,7 @@ async def pause(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def unpause(name_or_id: str, _=Depends(is_exists)) -> str:
-    __ = await asyncall(
+    await asyncall(
         lambda: DOCKER.container.unpause(name_or_id),
         asyncall_timeout=600,
     )
@@ -156,7 +150,7 @@ async def unpause(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def remove(name_or_id: str, _=Depends(is_exists)) -> str:
-    __ = await asyncall(
+    await asyncall(
         lambda: DOCKER.container.remove(name_or_id),
         asyncall_timeout=600,
     )
@@ -174,7 +168,5 @@ async def logs(
     _=Depends(is_exists),
 ):
     return await asyncall(
-        lambda: DOCKER.container.logs(
-            name_or_id, **body.model_dump(exclude_unset=True)
-        )
+        lambda: DOCKER.container.logs(name_or_id, **body.model_dump(exclude_unset=True))
     )

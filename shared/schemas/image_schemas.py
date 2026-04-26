@@ -1,8 +1,6 @@
-from typing import Any, Iterable, Mapping, Optional
+from typing import Any
+
 from pydantic import BaseModel
-from python_on_whales.components.image.cli_wrapper import (
-    ImageListFilter,
-)
 
 
 class InspectImageRequestBodySchema(BaseModel):
@@ -10,14 +8,14 @@ class InspectImageRequestBodySchema(BaseModel):
 
 
 class GetImageListBodySchema(BaseModel):
-    repository_or_tag: Optional[str] = None
-    filters: Optional[dict[str, Any]] = {}
-    all: Optional[bool] = True
+    repository_or_tag: str | None = None
+    filters: dict[str, Any] | None = {}
+    all: bool | None = True
 
 
 class PruneImagesRequestBodySchema(BaseModel):
-    all: Optional[bool] = False
-    filters: Optional[dict[str, Any]] = {}
+    all: bool | None = False
+    filters: dict[str, Any] | None = {}
 
 
 class PullImageRequestBodySchema(BaseModel):

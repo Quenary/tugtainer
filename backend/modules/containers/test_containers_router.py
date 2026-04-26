@@ -1,11 +1,13 @@
-import pytest
-from pytest_mock import MockerFixture
-from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
+
+import pytest
+from fastapi.testclient import TestClient
+from pytest_mock import MockerFixture
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.app import app
 from backend.core.agent_client import (
     AgentClient,

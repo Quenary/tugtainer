@@ -1,15 +1,14 @@
 from datetime import datetime, timedelta
 from typing import (
     Literal,
-    Optional,
-    Union,
 )
+
 from pydantic import BaseModel
 from python_on_whales.utils import ValidPath, ValidPortMapping
 
 
 class GetContainerListBodySchema(BaseModel):
-    all: Optional[bool] = True
+    all: bool | None = True
 
 
 class CreateContainerRequestBodySchema(BaseModel):
@@ -19,111 +18,104 @@ class CreateContainerRequestBodySchema(BaseModel):
     """
 
     image: str
-    command: Optional[list[str]] = None
-    add_hosts: Optional[tuple[str, str]] = None
-    blkio_weight: Optional[int] = None
-    blkio_weight_device: Optional[list[str]] = None
-    cap_add: Optional[list[str]] = None
-    cap_drop: Optional[list[str]] = None
-    cgroup_parent: Optional[str] = None
-    cgroupns: Optional[str] = None
-    cidfile: Optional[ValidPath] = None
-    cpu_period: Optional[int] = None
-    cpu_quota: Optional[int] = None
-    cpu_rt_period: Optional[int] = None
-    cpu_rt_runtime: Optional[int] = None
-    cpu_shares: Optional[int] = None
-    cpus: Optional[float] = None
-    cpuset_cpus: Optional[list[int]] = None
-    cpuset_mems: Optional[list[int]] = None
-    detach: Optional[bool] = None
-    devices: Optional[list[str]] = None
-    device_cgroup_rules: Optional[list[str]] = None
-    device_read_bps: Optional[list[str]] = None
-    device_read_iops: Optional[list[str]] = None
-    device_write_bps: Optional[list[str]] = None
-    device_write_iops: Optional[list[str]] = None
-    content_trust: Optional[bool] = None
-    dns: Optional[list[str]] = None
-    dns_options: Optional[list[str]] = None
-    dns_search: Optional[list[str]] = None
-    domainname: Optional[str] = None
-    entrypoint: Optional[str] = None
-    envs: Optional[dict[str, str]] = None
-    env_files: Optional[Union[ValidPath, list[ValidPath]]] = None
-    env_host: Optional[bool] = None
-    expose: Optional[Union[int, list[int]]] = None
-    gpus: Optional[Union[int, str]] = None
-    groups_add: Optional[list[str]] = None
-    healthcheck: Optional[bool] = None
-    health_cmd: Optional[str] = None
-    health_interval: Optional[int] = None
-    health_retries: Optional[int] = None
-    health_start_period: Optional[int] = None
-    health_timeout: Optional[int] = None
-    hostname: Optional[str] = None
-    init: Optional[bool] = None
-    interactive: Optional[bool] = None
-    ip: Optional[str] = None
-    ip6: Optional[str] = None
-    ipc: Optional[str] = None
-    isolation: Optional[str] = None
-    kernel_memory: Optional[Union[int, str]] = None
-    labels: Optional[dict[str, str]] = None
-    label_files: Optional[list[ValidPath]] = None
-    link: Optional[list[str]] = None
-    link_local_ip: Optional[list[str]] = None
-    log_driver: Optional[str] = None
-    log_options: Optional[list[str]] = None
-    mac_address: Optional[str] = None
-    memory: Optional[Union[int, str]] = None
-    memory_reservation: Optional[Union[int, str]] = None
-    memory_swap: Optional[Union[int, str]] = None
-    memory_swappiness: Optional[int] = None
-    mounts: Optional[list[list[str]]] = None
-    name: Optional[str] = None
-    networks: Optional[list[str]] = None
-    network_aliases: Optional[list[str]] = None
-    oom_kill: Optional[bool] = None
-    oom_score_adj: Optional[int] = None
-    pid: Optional[str] = None
-    pids_limit: Optional[int] = None
-    platform: Optional[str] = None
-    pod: Optional[str] = None
-    privileged: Optional[bool] = None
-    publish: Optional[list[ValidPortMapping]] = None
-    publish_all: Optional[bool] = None
-    pull: Optional[str] = None
-    read_only: Optional[bool] = None
-    restart: Optional[str] = None
-    remove: Optional[bool] = None
-    runtime: Optional[str] = None
-    security_options: Optional[list[str]] = None
-    shm_size: Optional[Union[int, str]] = None
-    sig_proxy: Optional[bool] = None
-    stop_signal: Optional[Union[int, str]] = None
-    stop_timeout: Optional[int] = None
-    storage_options: Optional[list[str]] = None
-    sysctl: Optional[dict[str, str]] = None
-    systemd: Optional[Union[bool, Literal["always"]]] = None
-    tmpfs: Optional[list[ValidPath]] = None
-    tty: Optional[bool] = None
-    tz: Optional[str] = None
-    ulimit: Optional[list[str]] = None
-    user: Optional[str] = None
-    userns: Optional[str] = None
-    uts: Optional[str] = None
-    volumes: Optional[
-        list[
-            Union[
-                tuple[ValidPath, ValidPath],
-                tuple[ValidPath, ValidPath, str],
-            ]
-        ]
-    ] = None
-    volume_driver: Optional[str] = None
-    volumes_from: Optional[list[str]] = None
-    workdir: Optional[ValidPath] = None
+    command: list[str] | None = None
+    add_hosts: tuple[str, str] | None = None
+    blkio_weight: int | None = None
+    blkio_weight_device: list[str] | None = None
+    cap_add: list[str] | None = None
+    cap_drop: list[str] | None = None
+    cgroup_parent: str | None = None
+    cgroupns: str | None = None
+    cidfile: ValidPath | None = None
+    cpu_period: int | None = None
+    cpu_quota: int | None = None
+    cpu_rt_period: int | None = None
+    cpu_rt_runtime: int | None = None
+    cpu_shares: int | None = None
+    cpus: float | None = None
+    cpuset_cpus: list[int] | None = None
+    cpuset_mems: list[int] | None = None
+    detach: bool | None = None
+    devices: list[str] | None = None
+    device_cgroup_rules: list[str] | None = None
+    device_read_bps: list[str] | None = None
+    device_read_iops: list[str] | None = None
+    device_write_bps: list[str] | None = None
+    device_write_iops: list[str] | None = None
+    content_trust: bool | None = None
+    dns: list[str] | None = None
+    dns_options: list[str] | None = None
+    dns_search: list[str] | None = None
+    domainname: str | None = None
+    entrypoint: str | None = None
+    envs: dict[str, str] | None = None
+    env_files: ValidPath | list[ValidPath] | None = None
+    env_host: bool | None = None
+    expose: int | list[int] | None = None
+    gpus: int | str | None = None
+    groups_add: list[str] | None = None
+    healthcheck: bool | None = None
+    health_cmd: str | None = None
+    health_interval: int | None = None
+    health_retries: int | None = None
+    health_start_period: int | None = None
+    health_timeout: int | None = None
+    hostname: str | None = None
+    init: bool | None = None
+    interactive: bool | None = None
+    ip: str | None = None
+    ip6: str | None = None
+    ipc: str | None = None
+    isolation: str | None = None
+    kernel_memory: int | str | None = None
+    labels: dict[str, str] | None = None
+    label_files: list[ValidPath] | None = None
+    link: list[str] | None = None
+    link_local_ip: list[str] | None = None
+    log_driver: str | None = None
+    log_options: list[str] | None = None
+    mac_address: str | None = None
+    memory: int | str | None = None
+    memory_reservation: int | str | None = None
+    memory_swap: int | str | None = None
+    memory_swappiness: int | None = None
+    mounts: list[list[str]] | None = None
+    name: str | None = None
+    networks: list[str] | None = None
+    network_aliases: list[str] | None = None
+    oom_kill: bool | None = None
+    oom_score_adj: int | None = None
+    pid: str | None = None
+    pids_limit: int | None = None
+    platform: str | None = None
+    pod: str | None = None
+    privileged: bool | None = None
+    publish: list[ValidPortMapping] | None = None
+    publish_all: bool | None = None
+    pull: str | None = None
+    read_only: bool | None = None
+    restart: str | None = None
+    remove: bool | None = None
+    runtime: str | None = None
+    security_options: list[str] | None = None
+    shm_size: int | str | None = None
+    sig_proxy: bool | None = None
+    stop_signal: int | str | None = None
+    stop_timeout: int | None = None
+    storage_options: list[str] | None = None
+    sysctl: dict[str, str] | None = None
+    systemd: bool | Literal["always"] | None = None
+    tmpfs: list[ValidPath] | None = None
+    tty: bool | None = None
+    tz: str | None = None
+    ulimit: list[str] | None = None
+    user: str | None = None
+    userns: str | None = None
+    uts: str | None = None
+    volumes: list[tuple[ValidPath, ValidPath] | tuple[ValidPath, ValidPath, str]] | None = None
+    volume_driver: str | None = None
+    volumes_from: list[str] | None = None
+    workdir: ValidPath | None = None
 
 
 class GetContainerLogsRequestBody(BaseModel):

@@ -1,7 +1,10 @@
 import asyncio
-from inspect import signature
 import json
+import logging
+from inspect import signature
 from typing import Any, Final, Literal
+
+import aiohttp
 from aiohttp.typedefs import Query
 from fastapi import status
 from pydantic import BaseModel, TypeAdapter
@@ -12,16 +15,17 @@ from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
 from sqlalchemy import select
+
 from backend.db.session import async_session_maker
 from backend.exception import TugAgentClientError
-from shared.schemas.command_schemas import RunCommandRequestBodySchema
-from shared.schemas.container_schemas import (
-    GetContainerListBodySchema,
-    CreateContainerRequestBodySchema,
-    GetContainerLogsRequestBody,
-)
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostInfo
+from shared.schemas.command_schemas import RunCommandRequestBodySchema
+from shared.schemas.container_schemas import (
+    CreateContainerRequestBodySchema,
+    GetContainerListBodySchema,
+    GetContainerLogsRequestBody,
+)
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
@@ -34,8 +38,6 @@ from shared.schemas.manifest_schema import ManifestInspectSchema
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 from shared.util.custom_json_dumps import custom_json_dumps
 from shared.util.signature import get_signature_headers
-import aiohttp
-import logging
 
 
 class AgentClient:
@@ -51,20 +53,18 @@ class AgentClient:
         self._url = url
         self._secret = secret
         self._timeout = timeout
-        self._long_timeout = (
-            600  # timeout for potentially long requests
-        )
-        self._ssl:Final = ssl
+        self._long_timeout = 600  # timeout for potentially long requests
+        self._ssl: Final = ssl
         self._session: aiohttp.ClientSession | None = None
-        self._session_lock:Final = asyncio.Lock()
-        self._logger:Final = logging.getLogger(self.__class__.__name__)
-        self.public:Final = AgentClientPublic(self)
-        self.container:Final = AgentClientContainer(self)
-        self.image:Final = AgentClientImage(self)
-        self.command:Final = AgentClientCommand(self)
-        self.manifest:Final = AgentClientManifest(self)
-        self.network:Final = AgentClientNetwork(self)
-        self.common:Final = AgentClientCommon(self)
+        self._session_lock: Final = asyncio.Lock()
+        self._logger: Final = logging.getLogger(self.__class__.__name__)
+        self.public: Final = AgentClientPublic(self)
+        self.container: Final = AgentClientContainer(self)
+        self.image: Final = AgentClientImage(self)
+        self.command: Final = AgentClientCommand(self)
+        self.manifest: Final = AgentClientManifest(self)
+        self.network: Final = AgentClientNetwork(self)
+        self.common: Final = AgentClientCommon(self)
 
     async def close_session(self):
         async with self._session_lock:
@@ -137,7 +137,7 @@ class AgentClient:
                         method,
                         resp.status,
                         error_body,
-                    )
+                    ) from e
 
                 text = await resp.text()
                 if not text:
@@ -146,7 +146,7 @@ class AgentClient:
                     return json.loads(text)
                 except Exception:
                     return text
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             message = "Agent timeout error"
             self._logger.exception(message)
             raise TugAgentClientError(
@@ -155,7 +155,7 @@ class AgentClient:
                 method,
                 status.HTTP_408_REQUEST_TIMEOUT,
                 "The problem is most likely related to the low Agent Timeout value, which you can increase in the host settings.",
-            )
+            ) from e
         except aiohttp.ClientError as e:
             message = "Agent connection error"
             self._logger.exception(message)
@@ -166,7 +166,7 @@ class AgentClient:
                 method,
                 status.HTTP_502_BAD_GATEWAY,
                 str(e),
-            )
+            ) from e
 
 
 class AgentClientPublic:
@@ -174,26 +174,20 @@ class AgentClientPublic:
         self._agent_client = agent_client
 
     async def health(self):
-        return await self._agent_client._request(
-            "GET", "/api/public/health"
-        )
+        return await self._agent_client._request("GET", "/api/public/health")
 
     async def access(self):
-        return await self._agent_client._request(
-            "GET", "/api/public/access"
-        )
+        return await self._agent_client._request("GET", "/api/public/access")
 
 
 class AgentClientManifest:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    async def inspect(
-        self, spec_or_digest: str
-    ) -> ManifestInspectSchema:
+    async def inspect(self, spec_or_digest: str) -> ManifestInspectSchema:
         data = await self._agent_client._request(
             "GET",
-            f"/api/manifest/inspect",
+            "/api/manifest/inspect",
             params={"spec_or_digest": spec_or_digest},
             timeout=self._agent_client._long_timeout,
         )
@@ -207,12 +201,8 @@ class AgentClientContainer:
     async def list(
         self, body: GetContainerListBodySchema
     ) -> list[ContainerInspectResult]:
-        data = await self._agent_client._request(
-            "POST", f"/api/container/list", body
-        )
-        return TypeAdapter(
-            list[ContainerInspectResult]
-        ).validate_python(data or [])
+        data = await self._agent_client._request("POST", "/api/container/list", body)
+        return TypeAdapter(list[ContainerInspectResult]).validate_python(data or [])
 
     async def exists(self, name_or_id: str) -> bool:
         data = await self._agent_client._request(
@@ -220,9 +210,7 @@ class AgentClientContainer:
         )
         return bool(data)
 
-    async def inspect(
-        self, name_or_id: str
-    ) -> ContainerInspectResult:
+    async def inspect(self, name_or_id: str) -> ContainerInspectResult:
         data = await self._agent_client._request(
             "GET", f"/api/container/inspect/{name_or_id}"
         )
@@ -233,7 +221,7 @@ class AgentClientContainer:
     ) -> ContainerInspectResult:
         data = await self._agent_client._request(
             "POST",
-            f"/api/container/create",
+            "/api/container/create",
             body,
             timeout=self._agent_client._long_timeout,
         )
@@ -313,62 +301,48 @@ class AgentClientImage:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    async def inspect(
-        self, body: InspectImageRequestBodySchema
-    ) -> ImageInspectResult:
-        data = await self._agent_client._request(
-            "GET", f"/api/image/inspect", body
-        )
+    async def inspect(self, body: InspectImageRequestBodySchema) -> ImageInspectResult:
+        data = await self._agent_client._request("GET", "/api/image/inspect", body)
         return ImageInspectResult.model_validate(data)
 
-    async def list(
-        self, body: GetImageListBodySchema
-    ) -> list[ImageInspectResult]:
+    async def list(self, body: GetImageListBodySchema) -> list[ImageInspectResult]:
         data = await self._agent_client._request(
             "POST",
-            f"/api/image/list",
+            "/api/image/list",
             body,
         )
-        return TypeAdapter(list[ImageInspectResult]).validate_python(
-            data or []
-        )
+        return TypeAdapter(list[ImageInspectResult]).validate_python(data or [])
 
     async def prune(self, body: PruneImagesRequestBodySchema) -> str:
         data = await self._agent_client._request(
             "POST",
-            f"/api/image/prune",
+            "/api/image/prune",
             body,
             timeout=self._agent_client._long_timeout,
         )
         return str(data)
 
-    async def pull(
-        self, body: PullImageRequestBodySchema
-    ) -> ImageInspectResult:
+    async def pull(self, body: PullImageRequestBodySchema) -> ImageInspectResult:
         data = await self._agent_client._request(
             "POST",
-            f"/api/image/pull",
+            "/api/image/pull",
             body,
             timeout=self._agent_client._long_timeout,
         )
         return ImageInspectResult.model_validate(data)
 
     async def tag(self, body: TagImageRequestBodySchema):
-        return await self._agent_client._request(
-            "POST", f"/api/image/tag", body
-        )
+        return await self._agent_client._request("POST", "/api/image/tag", body)
 
 
 class AgentClientCommand:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
 
-    async def run(
-        self, body: RunCommandRequestBodySchema
-    ) -> tuple[str, str]:
+    async def run(self, body: RunCommandRequestBodySchema) -> tuple[str, str]:
         data = await self._agent_client._request(
             "POST",
-            f"/api/command/run",
+            "/api/command/run",
             body,
             timeout=self._agent_client._long_timeout,
         )
@@ -412,7 +386,7 @@ class AgentClientCommon:
 async def load_agents_on_init():
     """Get hosts from db and init clients"""
     async with async_session_maker() as session:
-        stmt = select(HostsModel).where(HostsModel.enabled == True)
+        stmt = select(HostsModel).where(HostsModel.enabled)
         result = await session.execute(stmt)
         hosts = result.scalars().all()
         for h in hosts:
@@ -420,9 +394,7 @@ async def load_agents_on_init():
                 await AgentClientManager.set_client(h)
                 logging.info(f"{h.id}.{h.name}: agent client loaded")
             except Exception:
-                logging.exception(
-                    f"{h.name}: failed to load agent client"
-                )
+                logging.exception(f"{h.name}: failed to load agent client")
 
 
 class AgentClientManager:
@@ -456,7 +428,7 @@ class AgentClientManager:
         filtered = {
             k: v
             for k, v in info.model_dump(exclude_unset=True).items()
-            if k in allowed_keys and v != None
+            if k in allowed_keys and v is not None
         }
         return AgentClient(**filtered)
 
@@ -466,9 +438,7 @@ class AgentClientManager:
         Get all registered host clients.
         :returns: list of tuple(host_id, client)
         """
-        return list[tuple[int, AgentClient]](
-            cls._HOST_CLIENTS.items()
-        )
+        return list[tuple[int, AgentClient]](cls._HOST_CLIENTS.items())
 
     @classmethod
     async def remove_client(cls, id: int):

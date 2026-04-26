@@ -1,7 +1,9 @@
-from backend.db.base_model import BaseModel
-from sqlalchemy import String, DateTime, text
-from sqlalchemy.orm import mapped_column, Mapped
 from datetime import datetime
+
+from sqlalchemy import DateTime, String, text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from backend.db.base_model import BaseModel
 from backend.util.now import now
 
 

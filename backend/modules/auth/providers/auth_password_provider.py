@@ -1,12 +1,15 @@
+import os
 from datetime import timedelta
 from typing import Any, Literal, cast
+
+import bcrypt
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import PlainTextResponse
+
+from backend.config import Config
+
 from ..auth_schemas import PasswordSetRequestBody
 from .auth_provider import AuthProvider
-from backend.config import Config
-import bcrypt
-import os
 
 
 class AuthPasswordProvider(AuthProvider):
@@ -200,7 +203,7 @@ class AuthPasswordProvider(AuthProvider):
         """
         if not os.path.isfile(Config.PASSWORD_FILE):
             return None
-        with open(Config.PASSWORD_FILE, "r") as f:
+        with open(Config.PASSWORD_FILE) as f:
             return f.read()
 
     def _write_password_hash(self, password_hash: str) -> None:
