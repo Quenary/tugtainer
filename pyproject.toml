@@ -27,9 +27,11 @@ dependencies = [
 dev = [
     "fastapi-cli>=0.0.20",
     "fastapi[standard]>=0.128.0",
+    "mypy>=1.20.2",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-mock>=3.15.1",
+    "ruff>=0.15.11",
     "uvicorn[standard]>=0.40.0",
     "watchfiles>=1.1.1",
     "websockets>=15.0.1",
@@ -79,3 +81,28 @@ exclude_commit_patterns = [
     '''Initial [Cc]ommit.*''',
 ]
 mode = "init"
+
+[tool.ruff]
+target-version = "py313"
+
+lint.select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # import sorting
+  "B",   # bugbear
+  "UP",  # pyupgrade
+]
+
+lint.ignore = [
+  "E501",  # line too long (если используешь formatter)
+  "B008",  # Checks for function calls in default function arguments
+]
+
+
+[tool.mypy]
+ignore_missing_imports = true
+no_strict_optional = true
+
+[[tool.mypy.overrides]]
+module = "cachetools.*"
+ignore_missing_imports = true
