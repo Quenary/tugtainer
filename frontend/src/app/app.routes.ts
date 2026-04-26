@@ -19,14 +19,16 @@ export const routes: Routes = [
   {
     path: 'auth',
     title: titleTranslate('NAV.AUTH'),
-    loadComponent: () => import('./features/auth/auth.component').then((c) => c.AuthComponent),
+    loadComponent: () =>
+      import('./features/auth/auth.component').then((c) => c.AuthComponent),
   },
   // AUTHORIZED
   {
     path: 'hosts',
     title: titleTranslate('NAV.HOSTS'),
     canActivate: [authGuard],
-    loadComponent: () => import('./features/hosts/hosts.component').then((c) => c.HostsComponent),
+    loadComponent: () =>
+      import('./features/hosts/hosts.component').then((c) => c.HostsComponent),
     children: [
       {
         path: ':id',
@@ -49,20 +51,26 @@ export const routes: Routes = [
     title: titleTranslate('NAV.CONTAINERS'),
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/containers/containers.component').then((c) => c.ContainersComponent),
+      import('./features/containers/containers.component').then(
+        (c) => c.ContainersComponent,
+      ),
   },
   {
     path: 'images',
     title: titleTranslate('NAV.IMAGES'),
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/images/images.component').then((c) => c.ImagesComponent),
+      import('./features/images/images.component').then(
+        (c) => c.ImagesComponent,
+      ),
   },
   {
     path: 'settings',
     title: titleTranslate('NAV.SETTINGS'),
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/settings/settings.component').then((c) => c.SettingsComponent),
+      import('./features/settings/settings.component').then(
+        (c) => c.SettingsComponent,
+      ),
   },
 ];

@@ -1,7 +1,6 @@
 <p-tabs
   lazy
-  value="json"
->
+  value="json">
   <p-tablist>
     <p-tab value="json">
       {{ 'CONTAINERS.INSPECT.JSON' | translate }}
@@ -21,8 +20,7 @@
     <p-tabpanel value="tree">
       <p-tree
         style="padding: 0"
-        [value]="inspectTree()"
-      ></p-tree>
+        [value]="inspectTree()"></p-tree>
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>

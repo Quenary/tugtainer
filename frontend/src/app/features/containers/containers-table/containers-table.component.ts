@@ -34,7 +34,10 @@ import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
 import { RouterLink } from '@angular/router';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
-import { EActionStatus, IHostActionProgress } from '@shared/interfaces/progress.interface';
+import {
+  EActionStatus,
+  IHostActionProgress,
+} from '@shared/interfaces/progress.interface';
 import { HostCheckResultComponent } from '@shared/components/host-check-result/host-check-result.component';
 
 interface IListParams {
@@ -126,7 +129,9 @@ export class ContainersTableComponent {
     const checkHostProgress = this.checkHostProgress();
     return (
       !!checkHostProgress &&
-      ![EActionStatus.DONE, EActionStatus.ERROR].includes(checkHostProgress.status)
+      ![EActionStatus.DONE, EActionStatus.ERROR].includes(
+        checkHostProgress.status,
+      )
     );
   });
   /**
@@ -134,14 +139,16 @@ export class ContainersTableComponent {
    */
   protected readonly checkHostDialogVisible = signal<boolean>(false);
 
-  protected checkHost(update: boolean = false): void {
+  protected checkHost(update = false): void {
     const host = this.host();
     const req$ = update
       ? this.containersApiService.updateHost(host.id)
       : this.containersApiService.checkHost(host.id);
     req$.subscribe({
       next: (cache_id: string) => {
-        this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
+        this.toastService.success(
+          this.translateService.instant('GENERAL.IN_PROGRESS'),
+        );
         this.containersApiService
           .watchProgress<IHostActionProgress>(cache_id)
           .pipe(takeUntilDestroyed(this.destroyRef))
@@ -161,11 +168,17 @@ export class ContainersTableComponent {
     });
   }
 
-  protected onCheckEnabledChange(check_enabled: boolean, container: IContainerListItem): void {
+  protected onCheckEnabledChange(
+    check_enabled: boolean,
+    container: IContainerListItem,
+  ): void {
     this.patchContainer(container.name, { check_enabled });
   }
 
-  protected onUpdateEnabledChange(update_enabled: boolean, container: IContainerListItem): void {
+  protected onUpdateEnabledChange(
+    update_enabled: boolean,
+    container: IContainerListItem,
+  ): void {
     this.patchContainer(container.name, { update_enabled });
   }
 

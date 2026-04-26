@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+} from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TreeNode } from 'primeng/api';
 import { TabsModule } from 'primeng/tabs';
@@ -62,7 +67,9 @@ export class ContainerCardInspectComponent {
       };
     }
 
-    const children: TreeNode[] = Object.entries(value).map(([k, v]) => this.getTree(v, k));
+    const children: TreeNode[] = Object.entries(value).map(([k, v]) =>
+      this.getTree(v, k),
+    );
 
     return {
       label: key,

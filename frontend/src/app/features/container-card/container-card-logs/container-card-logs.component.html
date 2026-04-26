@@ -1,12 +1,10 @@
 <form
   [formGroup]="form"
-  class="logs-form"
->
+  class="logs-form">
   <p-ifta-label>
     <p-input-number
       [inputId]="'container-logs-tail'"
-      formControlName="tail"
-    >
+      formControlName="tail">
     </p-input-number>
     <label for="container-logs-tail">
       {{ 'CONTAINERS.LOGS.TAIL' | translate }}
@@ -20,8 +18,7 @@
       hourFormat="24"
       [showTime]="true"
       showIcon
-      appendTo="body"
-    ></p-date-picker>
+      appendTo="body"></p-date-picker>
     <label for="container-logs-since">
       {{ 'CONTAINERS.LOGS.SINCE' | translate }}
     </label>
@@ -34,8 +31,7 @@
       hourFormat="24"
       [showTime]="true"
       showIcon
-      appendTo="body"
-    ></p-date-picker>
+      appendTo="body"></p-date-picker>
     <label for="container-logs-until">
       {{ 'CONTAINERS.LOGS.UNTIL' | translate }}
     </label>
@@ -44,8 +40,7 @@
   <app-boolean-field>
     <p-toggle-switch
       [inputId]="'container-logs-timestamps'"
-      formControlName="timestamps"
-    ></p-toggle-switch>
+      formControlName="timestamps"></p-toggle-switch>
     <label for="container-logs-timestamps">
       {{ 'CONTAINERS.LOGS.TIMESTAMPS' | translate }}
     </label>
@@ -54,8 +49,7 @@
   <app-boolean-field>
     <p-toggle-switch
       [inputId]="'container-logs-details'"
-      formControlName="details"
-    ></p-toggle-switch>
+      formControlName="details"></p-toggle-switch>
     <label for="container-logs-details">
       {{ 'CONTAINERS.LOGS.DETAILS' | translate }}
     </label>
@@ -66,8 +60,7 @@
     icon="pi pi-refresh"
     [label]="'GENERAL.REFRESH' | translate"
     [loading]="logs.isLoading()"
-    (onClick)="logs.reload()"
-  ></p-button>
+    (onClick)="logs.reload()"></p-button>
 </form>
 <section class="logs-text">
   <code style="white-space: pre">

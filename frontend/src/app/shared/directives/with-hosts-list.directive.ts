@@ -1,4 +1,12 @@
-import { computed, Directive, effect, inject, model, resource, signal } from '@angular/core';
+import {
+  computed,
+  Directive,
+  effect,
+  inject,
+  model,
+  resource,
+  signal,
+} from '@angular/core';
 import { firstValueFrom, catchError, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
@@ -8,7 +16,7 @@ import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
  * Common directive for containers/images components
  */
 @Directive({
-  selector: '[withHostsList]',
+  selector: '[appWithHostsList]',
 })
 export class WithHostsListDirective {
   protected readonly hostsApiService = inject(HostsApiService);
@@ -32,7 +40,7 @@ export class WithHostsListDirective {
   /**
    * Hosts list
    */
-  protected readonly hosts = resource<IHostInfo[], {}>({
+  protected readonly hosts = resource<IHostInfo[], unknown>({
     loader: () =>
       firstValueFrom(
         this.hostsApiService.list().pipe(
@@ -46,7 +54,9 @@ export class WithHostsListDirective {
   /**
    * Accordion items value
    */
-  protected readonly accordionValue = signal<string | number | string[] | number[]>(undefined);
+  protected readonly accordionValue = signal<
+    string | number | string[] | number[]
+  >(undefined);
 
   constructor() {
     // Save accordion value to storage
@@ -61,7 +71,9 @@ export class WithHostsListDirective {
     effect(() => {
       const accordionValueStorageKey = this.accordionValueStorageKey();
       if (accordionValueStorageKey) {
-        this.accordionValue.set(localStorage.getItemJson(accordionValueStorageKey));
+        this.accordionValue.set(
+          localStorage.getItemJson(accordionValueStorageKey),
+        );
       }
     });
     // Set accordion value if nothing in storage
@@ -72,7 +84,9 @@ export class WithHostsListDirective {
         if (hostsHasValue) {
           if (!accordionValue) {
             const hosts = this.hosts.value();
-            this.accordionValue.set(hosts.filter((h) => h.enabled).map((h) => h.id));
+            this.accordionValue.set(
+              hosts.filter((h) => h.enabled).map((h) => h.id),
+            );
           }
           initAccordionValue.destroy();
         }
@@ -92,7 +106,9 @@ export class WithHostsListDirective {
     if (accordionValue.length) {
       this.accordionValue.set([]);
     } else {
-      this.accordionValue.set(hosts.filter((item) => item.enabled).map((item) => item.id));
+      this.accordionValue.set(
+        hosts.filter((item) => item.enabled).map((item) => item.id),
+      );
     }
   }
 }

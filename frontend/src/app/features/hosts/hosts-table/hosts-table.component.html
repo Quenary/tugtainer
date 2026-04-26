@@ -10,14 +10,12 @@
         pInputText
         type="text"
         (input)="dt2.filterGlobal($event.target.value, 'contains')"
-        [placeholder]="'HOSTS.TABLE.SEARCH_PLACEHOLDER' | translate"
-      />
+        [placeholder]="'HOSTS.TABLE.SEARCH_PLACEHOLDER' | translate" />
       <p-button
         icon="pi pi-refresh"
         text
         [loading]="list.isLoading()"
-        (onClick)="list.reload()"
-      ></p-button>
+        (onClick)="list.reload()"></p-button>
     </p-iconfield>
   </ng-template>
   <ng-template #end>
@@ -25,8 +23,7 @@
       icon="pi pi-plus"
       severity="success"
       routerLink="/hosts/new"
-      [label]="'HOSTS.TABLE.ADD' | translate"
-    ></p-button>
+      [label]="'HOSTS.TABLE.ADD' | translate"></p-button>
   </ng-template>
 </p-toolbar>
 
@@ -38,8 +35,7 @@
   [scrollable]="true"
   scrollHeight="flex"
   [value]="list.value()"
-  selectionMode="single"
->
+  selectionMode="single">
   <ng-template #header>
     <tr>
       <th pSortableColumn="name">
@@ -52,8 +48,7 @@
       </th>
       <th
         pSortableColumn="status"
-        style="width: 20%"
-      >
+        style="width: 20%">
         {{ 'HOSTS.TABLE.STATUS' | translate }}
         <p-sortIcon field="status"></p-sortIcon>
       </th>
@@ -62,12 +57,10 @@
 
   <ng-template
     #body
-    let-host
-  >
+    let-host>
     <tr
       [routerLink]="'/hosts/' + host.id"
-      style="cursor: pointer"
-    >
+      style="cursor: pointer">
       <td>
         {{ host.name }}
         @if (!host.enabled) {

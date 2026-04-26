@@ -1,0 +1,21 @@
+name: Setup frontend deps
+description: Setup node, dependencies, cache
+
+inputs:
+  path:
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+        cache: 'npm'
+        cache-dependency-path: ${{ inputs.path }}/package-lock.json
+        
+    - name: Install frontend dependencies
+      run: npm ci
+      shell: bash
+      working-directory: ${{ inputs.path }}

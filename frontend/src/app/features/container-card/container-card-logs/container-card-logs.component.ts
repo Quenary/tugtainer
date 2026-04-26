@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, input, resource } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  resource,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -37,7 +43,9 @@ export class ContainerCardLogsComponent {
   public readonly hostId = input.required<number>();
   public readonly containerNameOrId = input.required<string>();
 
-  protected readonly form = new FormGroup<TInterfaceToForm<IGetContainerLogsRequestBody>>({
+  protected readonly form = new FormGroup<
+    TInterfaceToForm<IGetContainerLogsRequestBody>
+  >({
     tail: new FormControl<number>(100),
     since: new FormControl<Date>(null),
     until: new FormControl<Date>(null),

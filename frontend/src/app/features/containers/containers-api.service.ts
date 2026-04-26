@@ -8,7 +8,10 @@ import {
   TControlContainerCommand,
   IGetContainerLogsRequestBody,
 } from './containers.interface';
-import { EActionStatus, IActionProgress } from '../../shared/interfaces/progress.interface';
+import {
+  EActionStatus,
+  IActionProgress,
+} from '../../shared/interfaces/progress.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -17,15 +20,26 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
   protected override readonly prefix = '/containers';
 
   list(host_id: number): Observable<IContainerListItem[]> {
-    return this.httpClient.get<IContainerListItem[]>(`${this.basePath}/${host_id}/list`);
+    return this.httpClient.get<IContainerListItem[]>(
+      `${this.basePath}/${host_id}/list`,
+    );
   }
 
   get(hostId: number, containerNameOrId: string): Observable<IContainerInfo> {
-    return this.httpClient.get<IContainerInfo>(`${this.basePath}/${hostId}/${containerNameOrId}`);
+    return this.httpClient.get<IContainerInfo>(
+      `${this.basePath}/${hostId}/${containerNameOrId}`,
+    );
   }
 
-  patch(host_id: number, name: string, body: IContainerPatchBody): Observable<IContainerListItem> {
-    return this.httpClient.patch<IContainerListItem>(`${this.basePath}/${host_id}/${name}`, body);
+  patch(
+    host_id: number,
+    name: string,
+    body: IContainerPatchBody,
+  ): Observable<IContainerListItem> {
+    return this.httpClient.patch<IContainerListItem>(
+      `${this.basePath}/${host_id}/${name}`,
+      body,
+    );
   }
 
   checkAll(): Observable<string> {
@@ -33,11 +47,17 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
   }
 
   checkHost(host_id: number): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/check/${host_id}`, {});
+    return this.httpClient.post<string>(
+      `${this.basePath}/check/${host_id}`,
+      {},
+    );
   }
 
   checkContainer(host_id: number, name: string): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/check/${host_id}/${name}`, {});
+    return this.httpClient.post<string>(
+      `${this.basePath}/check/${host_id}/${name}`,
+      {},
+    );
   }
 
   updateAll(): Observable<string> {
@@ -45,11 +65,17 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
   }
 
   updateHost(host_id: number): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/update/${host_id}`, {});
+    return this.httpClient.post<string>(
+      `${this.basePath}/update/${host_id}`,
+      {},
+    );
   }
 
   updateContainer(host_id: number, name: string): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/update/${host_id}/${name}`, {});
+    return this.httpClient.post<string>(
+      `${this.basePath}/update/${host_id}/${name}`,
+      {},
+    );
   }
 
   /**
@@ -58,7 +84,9 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
    * @returns
    */
   progress<T extends IActionProgress>(cache_id: string): Observable<T> {
-    return this.httpClient.get<T>(`${this.basePath}/progress`, { params: { cache_id } });
+    return this.httpClient.get<T>(`${this.basePath}/progress`, {
+      params: { cache_id },
+    });
   }
 
   /**
@@ -69,7 +97,11 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
   watchProgress<T extends IActionProgress>(cache_id: string): Observable<T> {
     return this.progress<T>(cache_id).pipe(
       repeat({ delay: 500 }),
-      takeWhile((res) => ![EActionStatus.DONE, EActionStatus.ERROR].includes(res?.status), true),
+      takeWhile(
+        (res) =>
+          ![EActionStatus.DONE, EActionStatus.ERROR].includes(res?.status),
+        true,
+      ),
     );
   }
 

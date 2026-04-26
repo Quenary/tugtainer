@@ -1,5 +1,15 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { FormGroup, FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  output,
+} from '@angular/core';
+import {
+  FormGroup,
+  FormControl,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
 import { ButtonModule } from 'primeng/button';

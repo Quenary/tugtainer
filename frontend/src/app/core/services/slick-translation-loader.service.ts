@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { TranslateLoader } from '@ngx-translate/core';
+import { TranslateLoader, TranslationObject } from '@ngx-translate/core';
 import { catchError, map, Observable, of, shareReplay, switchMap } from 'rxjs';
 import { PublicApiService } from 'src/app/features/public/public-api.service';
 import { parse } from 'yaml';
@@ -15,7 +15,7 @@ export class SlickTranslationLoader implements TranslateLoader {
     shareReplay(),
   );
 
-  getTranslation(lang: string): Observable<any> {
+  getTranslation(lang: string): Observable<TranslationObject> {
     return this.version$.pipe(
       switchMap((version) =>
         this.loadYaml(`i18n/${lang}.yaml`, version).pipe(
@@ -27,7 +27,10 @@ export class SlickTranslationLoader implements TranslateLoader {
     );
   }
 
-  private loadYaml(path: string, version: string): Observable<any> {
+  private loadYaml(
+    path: string,
+    version: string,
+  ): Observable<TranslationObject> {
     return this.httpClient
       .get(path, {
         params: { version },

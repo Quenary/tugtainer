@@ -13,8 +13,18 @@ export const ERegexp = {
 /**
  * Url to tugtainer deploy guideline
  */
-export const DeployGuidelineUrl = 'https://github.com/Quenary/tugtainer?tab=readme-ov-file#deploy';
+export const DeployGuidelineUrl =
+  'https://github.com/Quenary/tugtainer?tab=readme-ov-file#deploy';
 /**
  * List of supported locales
  */
-export const supportedLocales = ['ru', 'de', 'fr', 'ja', 'it', 'es', 'zh', 'en'];
+export const supportedLocales = [
+  'ru',
+  'de',
+  'fr',
+  'ja',
+  'it',
+  'es',
+  'zh',
+  'en',
+];

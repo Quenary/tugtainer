@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  output,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -69,7 +74,9 @@ export class NewPasswordFormComponent {
   );
 
   protected readonly confirmPasswordError = toSignal(
-    this.form.valueChanges.pipe(map(() => !!this.form.errors?.['passwordMatchValidator'])),
+    this.form.valueChanges.pipe(
+      map(() => !!this.form.errors?.['passwordMatchValidator']),
+    ),
   );
 
   protected onSubmit(): void {

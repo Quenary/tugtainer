@@ -31,9 +31,9 @@ export class AuthApiService extends BaseApiService<'/auth'> {
    */
   login(
     provider: TAuthProvider,
-    body: { [K: string]: any } = {},
-    params: { [K: string]: any } = {},
-  ): Observable<any> {
+    body: Record<string, unknown> = {},
+    params: Record<string, string> = {},
+  ): Observable<unknown> {
     return this.httpClient.post(`${this.basePath}/${provider}/login`, body, {
       params,
       withCredentials: true,
@@ -48,16 +48,26 @@ export class AuthApiService extends BaseApiService<'/auth'> {
     window.location.href = `${this.basePath}/${provider}/login`;
   }
 
-  refresh(): Observable<any> {
-    return this.httpClient.post(`${this.basePath}/refresh`, {}, { withCredentials: true });
+  refresh(): Observable<unknown> {
+    return this.httpClient.post(
+      `${this.basePath}/refresh`,
+      {},
+      { withCredentials: true },
+    );
   }
 
-  logout(): Observable<any> {
-    return this.httpClient.post(`${this.basePath}/logout`, {}, { withCredentials: true });
+  logout(): Observable<unknown> {
+    return this.httpClient.post(
+      `${this.basePath}/logout`,
+      {},
+      { withCredentials: true },
+    );
   }
 
-  setPassword(body: ISetPasswordBody): Observable<any> {
-    return this.httpClient.post(`${this.basePath}/set_password`, body, { withCredentials: true });
+  setPassword(body: ISetPasswordBody): Observable<unknown> {
+    return this.httpClient.post(`${this.basePath}/set_password`, body, {
+      withCredentials: true,
+    });
   }
 
   isAuthorized(): Observable<null> {

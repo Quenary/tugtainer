@@ -26,7 +26,10 @@ import { catchError, finalize, firstValueFrom, of } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
 import { ImagesApiService } from 'src/app/features/images/images-api.service';
-import { IImage, IPruneImageRequestBodySchema } from 'src/app/features/images/images.interface';
+import {
+  IImage,
+  IPruneImageRequestBodySchema,
+} from 'src/app/features/images/images.interface';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 

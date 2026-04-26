@@ -7,8 +7,7 @@
       <app-new-password-form
         [isLoading]="isLoading()"
         [fluidButton]="false"
-        (OnSubmit)="onSubmitNewPassword($event)"
-      ></app-new-password-form>
+        (OnSubmit)="onSubmitNewPassword($event)"></app-new-password-form>
     </p-accordion-content>
   </p-accordion-panel>
 
@@ -17,7 +16,8 @@
       {{ 'SETTINGS.SECTIONS.APP_SETTINGS' | translate }}
     </p-accordion-header>
     <p-accordion-content>
-      <app-settings-form (OnSubmit)="onSubmitSettings($event)"></app-settings-form>
+      <app-settings-form
+        (OnSubmit)="onSubmitSettings($event)"></app-settings-form>
     </p-accordion-content>
   </p-accordion-panel>
 </p-accordion>

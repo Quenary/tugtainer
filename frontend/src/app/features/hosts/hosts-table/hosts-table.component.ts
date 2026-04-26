@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, resource } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  resource,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
@@ -38,7 +43,7 @@ export class HostsTableComponent {
   private readonly hostsApiService = inject(HostsApiService);
   private readonly toastService = inject(ToastService);
 
-  public readonly list = resource<ICreateHost[], {}>({
+  public readonly list = resource<ICreateHost[], unknown>({
     loader: () =>
       firstValueFrom(
         this.hostsApiService.list().pipe(
