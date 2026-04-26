@@ -18,6 +18,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 - [custom labels](#custom-labels)
 - [notifications](#notifications)
 - [auth](#auth)
+- [api](#api)
 - [env](#env)
 - [screenshots](#screenshots)
 - [contributing](#contributing)
@@ -242,6 +243,22 @@ The app uses password authorization by default. The password is stored in the fi
 Auth cookies are not domain-specific and not https only, but you can change this using env variables.
 
 Starting with v1.6.0, you can use the OpenID Connect provider instead of password. This can also be configured using env variables.
+
+## API
+
+The backend API is served under the `/api` base path.
+
+- Swagger UI: `/api/docs`
+- Redoc UI: `/api/redoc`
+
+### Public endpoints
+
+- `GET /api/public/health`
+- `GET /api/public/version`
+- `GET /api/public/summary` (requires `ENABLE_PUBLIC_API=true`)
+- `GET /api/public/update_count` (requires `ENABLE_PUBLIC_API=true`)
+- `GET /api/public/is_update_available` (requires `ENABLE_PUBLIC_API=true`)
+
 
 ## Env:
 
