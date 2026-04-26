@@ -13,7 +13,13 @@ export class ImagesApiService extends BaseApiService<'/images'> {
     return this.httpClient.get<IImage[]>(`${this.basePath}/${host_id}/list`);
   }
 
-  prune(host_id: number, body: IPruneImageRequestBodySchema): Observable<string> {
-    return this.httpClient.post<string>(`${this.basePath}/${host_id}/prune`, body);
+  prune(
+    host_id: number,
+    body: IPruneImageRequestBodySchema,
+  ): Observable<string> {
+    return this.httpClient.post<string>(
+      `${this.basePath}/${host_id}/prune`,
+      body,
+    );
   }
 }

@@ -1,7 +1,20 @@
-import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpInterceptorFn,
+  HttpRequest,
+} from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, first, of, switchMap, tap, throwError, timeout } from 'rxjs';
+import {
+  BehaviorSubject,
+  catchError,
+  first,
+  of,
+  switchMap,
+  tap,
+  throwError,
+  timeout,
+} from 'rxjs';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 
 const ignoreList = ['/login', '/refresh'];
@@ -11,7 +24,12 @@ const ignore = (req: HttpRequest<unknown>): boolean => {
 };
 
 const isRefreshable = (req: HttpRequest<unknown>, error: unknown): boolean => {
-  return error instanceof HttpErrorResponse && error.status === 401 && req && !ignore(req);
+  return (
+    error instanceof HttpErrorResponse &&
+    error.status === 401 &&
+    req &&
+    !ignore(req)
+  );
 };
 
 const isRefreshing$ = new BehaviorSubject<boolean>(false);

@@ -1,8 +1,7 @@
 @for (form of formArray.controls; track form) {
   <form
     class="settings-form-group"
-    [formGroup]="form"
-  >
+    [formGroup]="form">
     @if (form.controls.key.value; as key) {
       <ng-container
         [ngTemplateOutlet]="valueInputTemplate"
@@ -10,8 +9,7 @@
           value_type: form.controls.value_type.value,
           key: key,
           control: form.controls.value,
-        }"
-      ></ng-container>
+        }"></ng-container>
 
       @if (keyTranslates[key]?.HINT; as hint) {
         <p-button
@@ -20,8 +18,7 @@
           [pTooltip]="hint"
           tooltipPosition="left"
           rounded="true"
-          (onClick)="onHintClick(keyTranslates[key]?.LINK)"
-        >
+          (onClick)="onHintClick(keyTranslates[key]?.LINK)">
         </p-button>
       }
     }
@@ -31,8 +28,7 @@
 <p-button
   [loading]="isLoading()"
   severity="success"
-  (onClick)="onTestNotification()"
->
+  (onClick)="onTestNotification()">
   <i class="pi pi-send"></i>
   <span pButtonLabel>
     {{ 'SETTINGS.BY_KEY.SEND_TEST_NOTIFICATION' | translate }}
@@ -42,8 +38,7 @@
 <p-button
   [loading]="isLoading()"
   [disabled]="!formArray.dirty"
-  (onClick)="submit()"
->
+  (onClick)="submit()">
   <i class="pi pi-save"></i>
   <span pButtonLabel>
     {{ 'GENERAL.SAVE' | translate }}
@@ -54,8 +49,7 @@
   #valueInputTemplate
   let-key="key"
   let-value_type="value_type"
-  let-control="control"
->
+  let-control="control">
   @switch (key) {
     @case (ESettingKey.TIMEZONE) {
       <p-iftalabel style="width: 100%">
@@ -66,8 +60,7 @@
           [dropdown]="true"
           (completeMethod)="timezonesAutocompleteEvent.set($event)"
           [formControl]="control"
-          appendTo="body"
-        >
+          appendTo="body">
         </p-autocomplete>
         <label for="value-{{ key }}">
           {{ keyTranslates[key]?.LABEL ?? key }}
@@ -80,8 +73,7 @@
           pTextarea
           rows="3"
           id="value-{{ key }}"
-          [formControl]="control"
-        ></textarea>
+          [formControl]="control"></textarea>
         <label for="value-{{ key }}">
           {{ keyTranslates[key]?.LABEL ?? key }}
         </label>
@@ -93,8 +85,7 @@
           pTextarea
           rows="3"
           id="value-{{ key }}"
-          [formControl]="control"
-        ></textarea>
+          [formControl]="control"></textarea>
         <label for="value-{{ key }}">
           {{ keyTranslates[key]?.LABEL ?? key }}
         </label>
@@ -106,8 +97,7 @@
           pTextarea
           rows="15"
           id="value-{{ key }}"
-          [formControl]="control"
-        ></textarea>
+          [formControl]="control"></textarea>
         <label for="value-{{ key }}">
           {{ keyTranslates[key]?.LABEL ?? key }}
         </label>
@@ -119,8 +109,7 @@
           <app-boolean-field style="flex: 1">
             <p-toggle-switch
               inputId="value-{{ key }}"
-              [formControl]="control"
-            ></p-toggle-switch>
+              [formControl]="control"></p-toggle-switch>
             <label for="value-{{ key }}">
               {{ keyTranslates[key]?.LABEL ?? key }}
             </label>
@@ -133,8 +122,7 @@
               id="value-{{ key }}"
               type="text"
               pInputText
-              [formControl]="control"
-            />
+              [formControl]="control" />
             <label for="value-{{ key }}">
               {{ keyTranslates[key]?.LABEL ?? key }}
             </label>
@@ -145,8 +133,7 @@
             <p-input-number
               fluid
               inputId="value-{{ key }}"
-              [formControl]="control"
-            ></p-input-number>
+              [formControl]="control"></p-input-number>
             <label for="value-{{ key }}">
               {{ keyTranslates[key]?.LABEL ?? key }}
             </label>

@@ -46,7 +46,10 @@ const importAngularLocale = async (locale: string) => {
 
 export const localeInitializer = async () => {
   const environmentInjector = inject(EnvironmentInjector);
-  const locationInitialized = environmentInjector.get(LOCATION_INITIALIZED, Promise.resolve(null));
+  const locationInitialized = environmentInjector.get(
+    LOCATION_INITIALIZED,
+    Promise.resolve(null),
+  );
   await locationInitialized;
   let locale = navigator.language ? navigator.language.split('-')[0] : 'en';
   locale = supportedLocales.find((l) => l === locale) || 'en';

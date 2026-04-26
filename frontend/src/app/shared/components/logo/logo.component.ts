@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, HostListener, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  inject,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 

@@ -53,9 +53,9 @@ AUTH:
     MEDIUM: Average complexity
     STRONG: Complex password
   PASSWORD_HINTS:
-  - At least one lowercase
-  - At least one uppercase
-  - At least one numeric
+    - At least one lowercase
+    - At least one uppercase
+    - At least one numeric
   SIGNIN_WITH_OIDC: Sign-in with OIDC
 HOSTS:
   NO_HOSTS_FOUND: No hosts found
@@ -96,10 +96,12 @@ HOSTS:
       SSL: SSL
       SSL_HINT: Whether to use SSL verification for backend > agent requests.
       TIMEOUT: Agent timeout
-      TIMEOUT_HINT: Timeout in seconds for typically fast agent requests. It does
+      TIMEOUT_HINT:
+        Timeout in seconds for typically fast agent requests. It does
         not affect potentially long requests such as container create or image pull.
       CONTAINER_HC_TIMEOUT: Container healthcheck timeout
-      CONTAINER_HC_TIMEOUT_HINT: Timeout in seconds for how long the app will wait
+      CONTAINER_HC_TIMEOUT_HINT:
+        Timeout in seconds for how long the app will wait
         for a healthcheck during an update before starting a rollback.
 CONTAINERS:
   SEARCH_PLACEHOLDER: Name or ID
@@ -130,10 +132,12 @@ CONTAINERS:
     PROTECTED: The protected container cannot be updated from the app.
     NOT_RUNNING: The container must be in running state.
   CHECK: Check
-  MAIN_BTN_HINT: If a container is a part of a compose project, all project's containers
+  MAIN_BTN_HINT:
+    If a container is a part of a compose project, all project's containers
     will be involved in the process.
   PROTECTED: Protected
-  PROTECTED_CONTAINER_HINT: This container labeled with dev.quenary.tugtainer.protected
+  PROTECTED_CONTAINER_HINT:
+    This container labeled with dev.quenary.tugtainer.protected
     and cannot be updated from the app.
   GENERAL:
     LABEL: General
@@ -182,15 +186,15 @@ SETTINGS:
       HINT: |-
         Crontab expression for periodic job e.g.
         0 * * * *' for every hour.
-        
+
         Click for more info.
       LINK: https://crontab.guru/
     UPDATE_CRONTAB_EXPR:
       LABEL: Update Crontab expression
-      HINT:  |-
+      HINT: |-
         Crontab expression for periodic job e.g.
         0 * * * *' for every hour.
-        
+
         Click for more info.
       LINK: https://crontab.guru/
     NOTIFICATION_URLS:

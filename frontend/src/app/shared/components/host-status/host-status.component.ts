@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, input, resource } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  resource,
+} from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
@@ -21,6 +27,7 @@ export class HostStatusComponent {
 
   public readonly status = resource({
     params: () => ({ host: this.host() }),
-    loader: (params) => lastValueFrom(this.hostsApiService.status(params.params.host.id)),
+    loader: (params) =>
+      lastValueFrom(this.hostsApiService.status(params.params.host.id)),
   });
 }

@@ -2,13 +2,11 @@
   <p-accordion
     [multiple]="true"
     [value]="accordionValue()"
-    (valueChange)="accordionValue.set($event)"
-  >
+    (valueChange)="accordionValue.set($event)">
     @for (h of hosts.value(); track h) {
       <p-accordion-panel
         [value]="h.id"
-        [disabled]="!h.enabled"
-      >
+        [disabled]="!h.enabled">
         <p-accordion-header>
           <span class="host-header">
             {{ h.name }}
@@ -18,8 +16,7 @@
               rounded
               text
               [routerLink]="'/hosts/' + h.id"
-              (click)="$event.stopPropagation()"
-            >
+              (click)="$event.stopPropagation()">
             </p-button>
             @if (!h.enabled) {
               <p-tag severity="danger">

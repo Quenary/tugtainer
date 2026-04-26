@@ -16,7 +16,10 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NoHostsComponent } from '@shared/components/no-hosts/no-hosts.component';
 import { WithHostsListDirective } from '@shared/directives/with-hosts-list.directive';
 import { ToolbarModule } from 'primeng/toolbar';
-import { EActionStatus, IAllActionProgress } from '@shared/interfaces/progress.interface';
+import {
+  EActionStatus,
+  IAllActionProgress,
+} from '@shared/interfaces/progress.interface';
 import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
@@ -52,7 +55,9 @@ export class ContainersComponent extends WithHostsListDirective {
   protected readonly checkAllProgress = signal<IAllActionProgress>(null);
   protected readonly checkAllProgressResults = computed(() => {
     const checkAllProgress = this.checkAllProgress();
-    return checkAllProgress?.result ? Object.values(checkAllProgress.result) : null;
+    return checkAllProgress?.result
+      ? Object.values(checkAllProgress.result)
+      : null;
   });
   protected readonly checkAllDisabled = computed(() => {
     const hosts = this.hosts.value() ?? [];
@@ -62,7 +67,9 @@ export class ContainersComponent extends WithHostsListDirective {
     const checkAllProgress = this.checkAllProgress();
     return (
       !!checkAllProgress &&
-      ![EActionStatus.DONE, EActionStatus.ERROR].includes(checkAllProgress.status)
+      ![EActionStatus.DONE, EActionStatus.ERROR].includes(
+        checkAllProgress.status,
+      )
     );
   });
   protected readonly checkAllDialogVisible = signal<boolean>(false);
@@ -97,7 +104,9 @@ export class ContainersComponent extends WithHostsListDirective {
   protected checkAllHosts(): void {
     this.containersApiService.checkAll().subscribe({
       next: (cache_id: string) => {
-        this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
+        this.toastService.success(
+          this.translateService.instant('GENERAL.IN_PROGRESS'),
+        );
         this.containersApiService
           .watchProgress<IAllActionProgress>(cache_id)
           .pipe(takeUntilDestroyed(this.destroyRef))

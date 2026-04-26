@@ -10,7 +10,10 @@ export class ToastService {
   private readonly messageService = inject(MessageService);
   private readonly translateService = inject(TranslateService);
 
-  error(error: unknown, summary: string = this.translateService.instant('GENERAL.ERROR')): void {
+  error(
+    error: unknown,
+    summary: string = this.translateService.instant('GENERAL.ERROR'),
+  ): void {
     this.messageService.add({
       severity: 'error',
       summary,

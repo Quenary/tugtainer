@@ -46,9 +46,9 @@ AUTH:
     MEDIUM: 中等复杂度
     STRONG: 复杂密码
   PASSWORD_HINTS:
-  - 至少一个小写字母
-  - 至少一个大写字母
-  - 至少一个数字
+    - 至少一个小写字母
+    - 至少一个大写字母
+    - 至少一个数字
   SIGNIN_WITH_OIDC: 使用 OIDC 登录
 HOSTS:
   NO_HOSTS_FOUND: 未找到主机
@@ -143,7 +143,7 @@ SETTINGS:
       LINK: https://crontab.guru/
     UPDATE_CRONTAB_EXPR:
       LABEL: Update Crontab 表达式
-      HINT:  |-
+      HINT: |-
         用于定期检查的 Crontab 表达式，例如
         0 * * * * 表示每小时一次
         点击了解更多信息。

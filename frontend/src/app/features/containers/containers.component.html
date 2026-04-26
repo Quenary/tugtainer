@@ -4,20 +4,17 @@
       icon="pi pi-refresh"
       text
       [loading]="hosts.isLoading()"
-      (onClick)="hosts.reload()"
-    ></p-button>
+      (onClick)="hosts.reload()"></p-button>
     <p-button
       [icon]="collapseAllIcon()"
       text
-      (onClick)="toggleCollapseAll()"
-    ></p-button>
+      (onClick)="toggleCollapseAll()"></p-button>
     <p-button
       icon="pi pi-check-circle"
       [label]="'CONTAINERS.ONLY_AVAILABLE' | translate"
       text
       [severity]="onlyAvailable() ? 'success' : 'secondary'"
-      (onClick)="onlyAvailable.set(!onlyAvailable())"
-    ></p-button>
+      (onClick)="onlyAvailable.set(!onlyAvailable())"></p-button>
   </ng-template>
   <ng-template #end>
     <p-button
@@ -25,8 +22,7 @@
       [disabled]="checkAllDisabled()"
       [loading]="checkAllActive()"
       [label]="'CONTAINERS.CHECK_ALL_HOSTS' | translate"
-      (onClick)="checkAllHosts()"
-    ></p-button>
+      (onClick)="checkAllHosts()"></p-button>
   </ng-template>
 </p-toolbar>
 
@@ -34,13 +30,11 @@
   <p-accordion
     [multiple]="true"
     [value]="accordionValue()"
-    (valueChange)="accordionValue.set($event)"
-  >
+    (valueChange)="accordionValue.set($event)">
     @for (h of filteredHosts(); track h) {
       <p-accordion-panel
         [value]="h.id"
-        [disabled]="!h.enabled"
-      >
+        [disabled]="!h.enabled">
         <p-accordion-header>
           <span class="host-header">
             {{ h.name }}
@@ -50,8 +44,7 @@
               rounded
               text
               [routerLink]="'/hosts/' + h.id"
-              (click)="$event.stopPropagation()"
-            >
+              (click)="$event.stopPropagation()">
             </p-button>
             @if (!h.enabled) {
               <p-tag severity="danger">
@@ -64,8 +57,7 @@
           @if (h.enabled) {
             <app-containers-table
               [host]="h"
-              [onlyAvailable]="onlyAvailable()"
-            >
+              [onlyAvailable]="onlyAvailable()">
             </app-containers-table>
           }
         </p-accordion-content>
@@ -81,8 +73,7 @@
   [modal]="true"
   [draggable]="false"
   [visible]="checkAllDialogVisible()"
-  (visibleChange)="checkAllDialogVisible.set(false)"
->
+  (visibleChange)="checkAllDialogVisible.set(false)">
   @if (checkAllProgressResults(); as res) {
     @for (r of res; track r) {
       <app-host-check-result [result]="r"></app-host-check-result>
