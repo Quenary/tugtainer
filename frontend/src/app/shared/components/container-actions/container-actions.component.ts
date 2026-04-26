@@ -55,15 +55,15 @@ export class ContainerActionsComponent {
   /**
    * Continuos progress events
    */
-  public readonly onProgress = output<IGroupActionProgress>();
+  public readonly OnProgress = output<IGroupActionProgress>();
   /**
    * Last progress event
    */
-  public readonly onDone = output<void>();
+  public readonly OnDone = output<void>();
   /**
    * Container control result event
    */
-  public readonly onControlDone = output<IContainerInfo>();
+  public readonly OnControlDone = output<IContainerInfo>();
 
   /**
    * Loading flag
@@ -83,8 +83,8 @@ export class ContainerActionsComponent {
   protected readonly updateOnlyRunning = computed<boolean>(() => {
     const settings = this.settingsService.settings();
     return (
-      (settings?.find((item) => item.key == ESettingKey.UPDATE_ONLY_RUNNING)?.value as boolean) ??
-      true
+      (settings?.find((item) => item.key == ESettingKey.UPDATE_ONLY_RUNNING)
+        ?.value as boolean) ?? true
     );
   });
   /**
@@ -95,7 +95,9 @@ export class ContainerActionsComponent {
     const updateOnlyRunning = this.updateOnlyRunning();
     if (!item) return true;
     return (
-      !item.update_available || item.protected || (item.status != 'running' && updateOnlyRunning)
+      !item.update_available ||
+      item.protected ||
+      (item.status != 'running' && updateOnlyRunning)
     );
   });
   /**
@@ -106,7 +108,8 @@ export class ContainerActionsComponent {
     const updateOnlyRunning = this.updateOnlyRunning();
     if (!item) return false;
     return (
-      item.update_available && ((item.status != 'running' && updateOnlyRunning) || item.protected)
+      item.update_available &&
+      ((item.status != 'running' && updateOnlyRunning) || item.protected)
     );
   });
 
@@ -126,7 +129,9 @@ export class ContainerActionsComponent {
       : this.containersApiService.checkContainer(item.host_id, item.name);
     req$.subscribe({
       next: (cache_id) => {
-        this.toastService.success(this.translateService.instant('GENERAL.IN_PROGRESS'));
+        this.toastService.success(
+          this.translateService.instant('GENERAL.IN_PROGRESS'),
+        );
         this.containersApiService
           .watchProgress(cache_id)
           .pipe(
@@ -137,10 +142,10 @@ export class ContainerActionsComponent {
           )
           .subscribe({
             next: (res) => {
-              this.onProgress.emit(res);
+              this.OnProgress.emit(res);
             },
             complete: () => {
-              this.onDone.emit();
+              this.OnDone.emit();
             },
           });
       },
@@ -155,10 +160,13 @@ export class ContainerActionsComponent {
       .pipe(finalize(() => this.loading.set(null)))
       .subscribe({
         next: (result) => {
-          this.onControlDone.emit(result);
+          this.OnControlDone.emit(result);
         },
         error: (error) => {
-          this.toastService.error(error, this.translateService.instant('GENERAL.ERROR'));
+          this.toastService.error(
+            error,
+            this.translateService.instant('GENERAL.ERROR'),
+          );
         },
       });
   }

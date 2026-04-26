@@ -37,7 +37,10 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TooltipModule } from 'primeng/tooltip';
 import { FluidModule } from 'primeng/fluid';
 import { NgTemplateOutlet } from '@angular/common';
-import { AutoCompleteCompleteEvent, AutoCompleteModule } from 'primeng/autocomplete';
+import {
+  AutoCompleteCompleteEvent,
+  AutoCompleteModule,
+} from 'primeng/autocomplete';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { TextareaModule } from 'primeng/textarea';
@@ -74,9 +77,12 @@ export class SettingsFormComponent {
   public readonly OnSubmit = output<ISettingUpdate[]>();
 
   protected readonly ESettingKey = ESettingKey;
-  protected readonly keyTranslates = this.translateService.instant('SETTINGS.BY_KEY');
+  protected readonly keyTranslates =
+    this.translateService.instant('SETTINGS.BY_KEY');
   protected readonly isLoading = signal<boolean>(false);
-  protected readonly formArray = new FormArray<FormGroup<TInterfaceToForm<ISetting>>>([]);
+  protected readonly formArray = new FormArray<
+    FormGroup<TInterfaceToForm<ISetting>>
+  >([]);
 
   private readonly timezones = resource({
     loader: () =>
@@ -96,7 +102,11 @@ export class SettingsFormComponent {
     loader: () =>
       firstValueFrom(
         this.settingsApiService.list().pipe(
-          map((res) => res.sort((a, b) => ESettingSortIndex[a.key] - ESettingSortIndex[b.key])),
+          map((res) =>
+            res.sort(
+              (a, b) => ESettingSortIndex[a.key] - ESettingSortIndex[b.key],
+            ),
+          ),
           catchError((error) => {
             this.toastService.error(error);
             return of([]);
@@ -112,7 +122,8 @@ export class SettingsFormComponent {
    * This should be an object to "update" list
    * even if query not changed (on autocomplete arrow click).
    */
-  protected readonly timezonesAutocompleteEvent = signal<AutoCompleteCompleteEvent | null>(null);
+  protected readonly timezonesAutocompleteEvent =
+    signal<AutoCompleteCompleteEvent | null>(null);
   /**
    * Timezones autocomplete list
    */
@@ -129,16 +140,18 @@ export class SettingsFormComponent {
 
   private cronValidator: ValidatorFn = (control: AbstractControl<string>) => {
     const value = control.value;
-    if (!!value) {
+    if (value) {
       const cv = cronValidate(value);
       return cv.isValid() ? null : { cronValidator: true };
     }
     return null;
   };
 
-  private timezoneValidator: ValidatorFn = (control: AbstractControl<string>) => {
+  private timezoneValidator: ValidatorFn = (
+    control: AbstractControl<string>,
+  ) => {
     const value = control.value;
-    if (!!value) {
+    if (value) {
       const timezones = this.timezones.value();
       const valid = !timezones.length || timezones.includes(value);
       return valid ? null : { timezoneValidator: true };
@@ -161,9 +174,15 @@ export class SettingsFormComponent {
   private getFormGroup(data: ISetting): FormGroup<TInterfaceToForm<ISetting>> {
     const form = new FormGroup<TInterfaceToForm<ISetting>>({
       key: new FormControl<ESettingKey>(data.key),
-      value: new FormControl<any>(data.value, this.getValueValidators(data.key)),
+      value: new FormControl<string | number | boolean>(
+        data.value,
+        this.getValueValidators(data.key),
+      ),
       value_type: new FormControl<ESettingValueType>(data.value_type),
-      modified_at: new FormControl<string>({ value: data.modified_at, disabled: true }),
+      modified_at: new FormControl<string>({
+        value: data.modified_at,
+        disabled: true,
+      }),
     });
     return form;
   }
@@ -191,9 +210,12 @@ export class SettingsFormComponent {
     const title_template = values.find(
       (item) => item.key == ESettingKey.NOTIFICATION_TITLE_TEMPLATE,
     ).value as string;
-    const body_template = values.find((item) => item.key == ESettingKey.NOTIFICATION_BODY_TEMPLATE)
-      .value as string;
-    const urls = values.find((item) => item.key == ESettingKey.NOTIFICATION_URLS).value as string;
+    const body_template = values.find(
+      (item) => item.key == ESettingKey.NOTIFICATION_BODY_TEMPLATE,
+    ).value as string;
+    const urls = values.find(
+      (item) => item.key == ESettingKey.NOTIFICATION_URLS,
+    ).value as string;
     const body: ITestNotificationRequestBody = {
       title_template,
       body_template,

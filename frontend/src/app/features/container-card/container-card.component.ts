@@ -68,7 +68,9 @@ export class ContainerCardComponent {
   private readonly location = inject(Location);
 
   protected readonly hostId = toSignal(
-    this.activatedRoute.params.pipe(map((params) => Number(params.hostId) || null)),
+    this.activatedRoute.params.pipe(
+      map((params) => Number(params.hostId) || null),
+    ),
   );
   protected readonly containerNameOrId = toSignal(
     this.activatedRoute.params.pipe(map((params) => params.containerNameOrId)),
@@ -94,7 +96,9 @@ export class ContainerCardComponent {
   /**
    * Value of opened accordion items
    */
-  protected readonly accordionValue = signal<string | number | string[] | number[]>('general');
+  protected readonly accordionValue = signal<
+    string | number | string[] | number[]
+  >('general');
   /**
    * General info
    */
@@ -110,7 +114,7 @@ export class ContainerCardComponent {
    */
   protected readonly itemPorts = computed(() => {
     const item = this.item();
-    let ports: string = '';
+    let ports = '';
     if (item.ports) {
       for (const [key, binds] of Object.entries(item.ports)) {
         for (const bind of binds) {

@@ -15,8 +15,8 @@
     <app-container-actions
       withControl
       [item]="info.value()?.item"
-      (onDone)="info.reload()"
-      (onControlDone)="onControlDone($event)"></app-container-actions>
+      (OnDone)="info.reload()"
+      (OnControlDone)="onControlDone($event)"></app-container-actions>
   </ng-template>
 </p-toolbar>
 
@@ -71,7 +71,7 @@
               class="general-content-state-tag"
               [severity]="EContainerStatusSeverity[_item.status]"
               [value]="
-                _item.status == 'exited' ? _item.status + ' ' + _item.exit_code : _item.status
+                _item.status === 'exited' ? _item.status + ' ' + _item.exit_code : _item.status
               "></p-tag>
             <p-tag
               class="general-content-state-tag"
@@ -172,7 +172,7 @@
       {{ 'CONTAINERS.LOGS.LABEL' | translate }}
     </p-accordion-header>
     <p-accordion-content>
-      @defer (when accordionValue() == 'logs') {
+      @defer (when accordionValue() === 'logs') {
         <app-container-card-logs
           [hostId]="hostId()"
           [containerNameOrId]="containerNameOrId()"></app-container-card-logs>

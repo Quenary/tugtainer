@@ -10,7 +10,7 @@ dayjs.extend(dayjsLocaleData);
   pure: true,
 })
 export class DayjsPipe implements PipeTransform {
-  transform(value: ConfigType, format: string = 'L LTS') {
+  transform(value: ConfigType, format = 'L LTS') {
     try {
       const djs = dayjs(value);
       if (djs.isValid()) {

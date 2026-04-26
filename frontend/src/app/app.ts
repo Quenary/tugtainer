@@ -98,10 +98,10 @@ export class App {
         this.publicApiService.isUpdateAvailable().pipe(
           retry({ count: 1, delay: 500 }),
           catchError(() =>
-            of(<IsUpdateAvailableResponseBody>{
+            of({
               is_available: false,
               release_url: null,
-            }),
+            } satisfies IsUpdateAvailableResponseBody),
           ),
         ),
       ),
@@ -111,7 +111,7 @@ export class App {
     .pipe(
       map(
         (t) =>
-          <MenuItem[]>[
+          [
             {
               label: t.HOSTS,
               routerLink: '/hosts',
@@ -138,7 +138,7 @@ export class App {
               target: '_blank',
               icon: 'pi pi-github',
             },
-          ],
+          ] satisfies MenuItem[],
       ),
     );
   protected readonly menuOpened = signal<boolean>(false);

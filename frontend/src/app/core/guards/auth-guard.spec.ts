@@ -1,5 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  Router,
+  RouterStateSnapshot,
+} from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { authGuard } from './auth-guard';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
@@ -10,7 +14,9 @@ describe('authGuard', () => {
   let routerMock: jasmine.SpyObj<Router>;
 
   beforeEach(() => {
-    authApiServiceMock = jasmine.createSpyObj('AuthApiService', ['isAuthorized']);
+    authApiServiceMock = jasmine.createSpyObj('AuthApiService', [
+      'isAuthorized',
+    ]);
     routerMock = jasmine.createSpyObj('Router', ['navigate']);
 
     TestBed.configureTestingModule({
@@ -23,7 +29,13 @@ describe('authGuard', () => {
   });
 
   function runGuard() {
-    return TestBed.runInInjectionContext(() => authGuard({} as any, {} as any) as Observable<any>);
+    return TestBed.runInInjectionContext(
+      () =>
+        authGuard(
+          {} as ActivatedRouteSnapshot,
+          {} as RouterStateSnapshot,
+        ) as Observable<boolean>,
+    );
   }
 
   it('should return true when user is authorized', (done) => {
@@ -37,7 +49,9 @@ describe('authGuard', () => {
   });
 
   it('should return false and redirect when unauthorized (error)', (done) => {
-    authApiServiceMock.isAuthorized.and.returnValue(throwError(() => new Error('Unauthorized')));
+    authApiServiceMock.isAuthorized.and.returnValue(
+      throwError(() => new Error('Unauthorized')),
+    );
 
     runGuard().subscribe((result) => {
       expect(result).toBeFalse();

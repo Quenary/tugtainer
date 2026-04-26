@@ -31,7 +31,7 @@ export interface ITestNotificationRequestBody {
   body_template: string;
   urls: string;
 }
-export const ESettingSortIndex: { [K in ESettingKey]: number } = {
+export const ESettingSortIndex: Record<ESettingKey, number> = {
   [ESettingKey.CHECK_CRONTAB_EXPR]: 0,
   [ESettingKey.UPDATE_CRONTAB_EXPR]: 1,
   [ESettingKey.TIMEZONE]: 2,

@@ -5,7 +5,7 @@
  * @default localStorage
  * @returns
  */
-export const storageGetItemJson = <T extends unknown = unknown>(
+export const storageGetItemJson = <T = unknown>(
   key: string,
   storage: Storage = localStorage,
 ): T | null => {
@@ -30,7 +30,7 @@ export const storageGetItemJson = <T extends unknown = unknown>(
  * @param storage storage
  * @default localStorage
  */
-export const storageSetItemJson = <T extends unknown = unknown>(
+export const storageSetItemJson = <T = unknown>(
   key: string,
   value: T,
   storage: Storage = localStorage,

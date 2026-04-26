@@ -91,7 +91,9 @@ export class HostsCardComponent implements OnInit {
       : this.translateService.instant('GENERAL.ADD');
   });
   public readonly isLoading = signal<boolean>(false);
-  public readonly accordionValue = signal<string | number | string[] | number[]>(['help', 'main']);
+  public readonly accordionValue = signal<
+    string | number | string[] | number[]
+  >(['help', 'main']);
 
   private get defaultFormValues(): Partial<ICreateHost> {
     return {
@@ -111,7 +113,7 @@ export class HostsCardComponent implements OnInit {
     try {
       new URL(control.value);
       return null;
-    } catch (error) {
+    } catch {
       return { urlValidator: true };
     }
   };
@@ -191,7 +193,9 @@ export class HostsCardComponent implements OnInit {
     }
     const id = this.id();
     const body = this.form.getRawValue();
-    const req$ = id ? this.hostsApiService.update(id, body) : this.hostsApiService.create(body);
+    const req$ = id
+      ? this.hostsApiService.update(id, body)
+      : this.hostsApiService.create(body);
     this.isLoading.set(true);
     req$
       .pipe(

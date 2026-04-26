@@ -3,7 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of, tap } from 'rxjs';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 
-export const authGuard: CanActivateFn = (route, state) => {
+export const authGuard: CanActivateFn = () => {
   const authApiService = inject(AuthApiService);
   const router = inject(Router);
 

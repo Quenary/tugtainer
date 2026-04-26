@@ -1,5 +1,4 @@
 import { TagSeverity } from '@shared/types/tag-severity.type';
-import { TIncomplete } from '../../shared/types/incomplete.type';
 
 /**
  * Container data
@@ -35,7 +34,7 @@ export interface IContainerInspectResult {
   Created: string;
   Path: string;
   Args: string[];
-  State: TIncomplete;
+  State: Record<string, unknown>;
   Image: string;
   Pod: string;
   ResolvConfPath: string;
@@ -51,13 +50,13 @@ export interface IContainerInspectResult {
   ProcessLabel: string;
   AppArmorProfile: string;
   ExecIDs: string[];
-  HostConfig: TIncomplete;
-  GraphDriver: TIncomplete;
+  HostConfig: Record<string, unknown>;
+  GraphDriver: Record<string, unknown>;
   SizeRw: number;
   SizeRootFs: number;
-  Mounts: TIncomplete[];
-  Config: TIncomplete;
-  NetworkSettings: TIncomplete;
+  Mounts: Record<string, unknown>[];
+  Config: Record<string, unknown>;
+  NetworkSettings: Record<string, unknown>;
   Namespace: string;
   IsInfra: boolean;
 }
@@ -107,7 +106,13 @@ export const EContainerHealthSeverity: Record<string, TagSeverity> = {
   unhealthy: 'danger',
 };
 
-export type TControlContainerCommand = 'start' | 'stop' | 'restart' | 'kill' | 'pause' | 'unpause';
+export type TControlContainerCommand =
+  | 'start'
+  | 'stop'
+  | 'restart'
+  | 'kill'
+  | 'pause'
+  | 'unpause';
 
 export interface IGetContainerLogsRequestBody {
   details?: boolean;

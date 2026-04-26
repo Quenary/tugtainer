@@ -125,7 +125,7 @@
         <p-tag
           [severity]="EContainerStatusSeverity[container.status]"
           [value]="
-            container.status == 'exited'
+            container.status === 'exited'
               ? container.status + ' ' + container.exit_code
               : container.status
           "></p-tag>
@@ -160,7 +160,7 @@
       <td style="padding-right: 0">
         <app-container-actions
           [item]="container"
-          (onDone)="onContainerProgressDone()"></app-container-actions>
+          (OnDone)="onContainerProgressDone()"></app-container-actions>
       </td>
     </tr>
   </ng-template>

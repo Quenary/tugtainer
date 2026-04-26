@@ -1,5 +1,3 @@
-import { TIncomplete } from '../../shared/types/incomplete.type';
-
 export interface IImage {
   repository: string;
   id: string;
@@ -14,7 +12,7 @@ export interface IPruneImageRequestBodySchema {
 }
 
 export interface IImagePruneResult {
-  ImagesDeleted: { [K: string]: string }[];
+  ImagesDeleted: Record<string, string>[];
   SpaceReclaimed: number;
 }
 
@@ -26,17 +24,17 @@ export interface IImageInspectResult {
   Comment: string;
   Created: string;
   Container: string;
-  ContainerConfig: TIncomplete;
+  ContainerConfig: Record<string, unknown>;
   DockerVersion: string;
   Author: string;
-  Config: TIncomplete;
+  Config: Record<string, unknown>;
   Architecture: string;
   Os: string;
   OsVersion: string;
   Variant: string;
   Size: number;
   VirtualSize: number;
-  GraphDriver: TIncomplete;
-  RootFS: TIncomplete;
-  Metadata: TIncomplete;
+  GraphDriver: Record<string, unknown>;
+  RootFS: Record<string, unknown>;
+  Metadata: Record<string, unknown>;
 }

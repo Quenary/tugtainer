@@ -17,16 +17,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-
-      - name: Install frontend dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-frontend-deps
 
       - name: Run tests
         run: npm run test:ci
+
+  frontend-lint:
+    name: Run Frontend Lint
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup-frontend-deps
+
+      - name: Run lint
+        run: npm run lint
 
   backend-tests:
     name: Run Backend Tests

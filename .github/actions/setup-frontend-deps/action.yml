@@ -1,0 +1,14 @@
+name: Setup frontend deps
+description: Setup node, dependencies, cache
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+        cache: 'npm'
+        
+    - name: Install frontend dependencies
+      run: npm ci

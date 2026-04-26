@@ -1,4 +1,7 @@
-import { storageGetItemJson, storageSetItemJson } from '../app/shared/functions/storage.function';
+import {
+  storageGetItemJson,
+  storageSetItemJson,
+} from '../app/shared/functions/storage.function';
 
 declare global {
   interface Storage {
@@ -6,17 +9,18 @@ declare global {
      * Get from storage (deserialized)
      * @param key key
      */
-    getItemJson<T extends unknown = unknown>(key: string): T | null;
+    getItemJson<T = unknown>(key: string): T | null;
     /**
      * Save to storage (serialize)
      * @param key key
      * @param value value
      */
-    setItemJson<T extends unknown = unknown>(key: string, value: T): void;
+    setItemJson<T = unknown>(key: string, value: T): void;
   }
 }
 
 export const storageJson = () => {
   Storage.prototype.getItemJson = (key) => storageGetItemJson(key, this);
-  Storage.prototype.setItemJson = (key, value) => storageSetItemJson(key, value, this);
+  Storage.prototype.setItemJson = (key, value) =>
+    storageSetItemJson(key, value, this);
 };
