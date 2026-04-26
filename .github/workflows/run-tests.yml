@@ -51,7 +51,7 @@ jobs:
 
       - uses: ./.github/actions/setup-python-env
 
-      - name: Run pytest
+      - name: Run Ruff
         run: ruff check agent backend shared
 
   backend-typechecks:
@@ -64,5 +64,5 @@ jobs:
 
       - uses: ./.github/actions/setup-python-env
 
-      - name: Run pytest
+      - name: Run Mypy
         run: mypy agent backend shared

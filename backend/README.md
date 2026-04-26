@@ -13,11 +13,20 @@ This repository uses [uv package manager](https://docs.astral.sh/uv/getting-star
     DB_URL=sqlite+aiosqlite:///./tugtainer.db
     PASSWORD_FILE=password_hash
     ```
-- Run the backend with `python -m backend.dev` or agent with `python -m agent.dev`
+- Run the app
+  - Whole app with Ctrl + Shift + B (VS Code default task)
+  - Backend with `python -m backend.dev`
+  - Agent with `python -m agent.dev`
+
+### Tests, lint, typechecks
+
+- `python -m pytest` or `python -m pytest -k "for_specific_test"`
+- `ruff check agent backend shared`
+- `mypy agent backend shared`
 
 ### Migrations
 
-Do not forget to create new migrations on models change with `alembic -c backend/alembic.ini revision --autogenerate -m "..."`
+Do not forget to create new migrations on models change with `python -m alembic -c backend/alembic.ini revision --autogenerate -m "comment"`
 
 ### Useful things
 

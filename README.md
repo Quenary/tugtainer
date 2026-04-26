@@ -271,6 +271,7 @@ Contributions are welcome. Please follow these guidelines to keep the project co
   - All new features must include unit tests
   - If you modify existing functionality, update or add/extend the related tests
   - Ensure all tests pass before submitting changes
+  - Ensure lint and typechecks pass before submitting changes (see backend/frontend readme for details)
 - ### Pull Requests:
   - Provide a clear description of what was changed and why
   - Reference related issues if applicable
