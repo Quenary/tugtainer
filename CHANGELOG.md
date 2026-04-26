@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.29.1 (2026-04-26)
+
+### Bug Fixes
+
+- **frontend**: Hosts table overflow/scroll
+  ([`19116d2`](https://github.com/Quenary/tugtainer/commit/19116d232c63dfd4b2a3e317e81fa1625bde92dc))
+
+
 ## v1.29.0 (2026-04-23)
 
 ### Documentation
