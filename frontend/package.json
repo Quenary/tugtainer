@@ -8,7 +8,20 @@
     "watch": "ng build --watch --configuration=development",
     "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "prettier-check": "prettier --check ."
+  },
+  "prettier": {
+    "htmlWhitespaceSensitivity": "strict",
+    "bracketSameLine": true,
+    "singleAttributePerLine": true,
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "embeddedLanguageFormatting": "off",
+    "semi": true,
+    "quoteProps": "preserve",
+    "trailingComma": "all"
   },
   "private": true,
   "dependencies": {
