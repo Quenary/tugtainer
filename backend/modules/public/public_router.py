@@ -1,9 +1,10 @@
+import asyncio
 import logging
 from typing import cast
 
 from cachetools import TTLCache
 from cachetools_async import cached as cached_async
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from packaging import version
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,15 +14,13 @@ from backend.core.agent_client import AgentClientManager
 from backend.core.cron_manager import CronManager
 from backend.db.session import get_async_session
 from backend.enums.cron_jobs_enum import ECronJob
+from backend.modules.auth.auth_util import is_authorized
 from backend.modules.containers.containers_model import (
     ContainersModel,
 )
-from backend.modules.containers.containers_util import (
-    map_container_schema,
-)
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostSummary
-from backend.modules.public.public_util import fetch_latest_release
+from backend.modules.public.public_util import fetch_latest_release, get_host_summary
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
@@ -62,124 +61,18 @@ async def health(session: AsyncSession = Depends(get_async_session)):
     response_model=list[HostSummary],
 )
 async def get_summary(
+    request: Request,
     session: AsyncSession = Depends(get_async_session),
 ) -> list[HostSummary]:
-    if not Config.ENABLE_PUBLIC_API:
-        raise HTTPException(404, "Not Found")
+    try:
+        await is_authorized(request)
+    except Exception:
+        if not Config.ENABLE_PUBLIC_API:
+            raise HTTPException(403, "Public api disabled") from None
 
-    stmt = select(HostsModel)
-    result = await session.execute(stmt)
-    hosts = result.scalars().all()
+    hosts = (await session.execute(select(HostsModel))).scalars().all()
 
-    summaries = []
-    for host in hosts:
-        if not host.enabled:
-            summaries.append(
-                HostSummary(
-                    host_id=host.id,
-                    host_name=host.name,
-                    total_containers=0,
-                    by_status={},
-                    by_health={},
-                    by_protected={"true": 0, "false": 0},
-                    by_check_enabled={"true": 0, "false": 0},
-                    by_update_enabled={"true": 0, "false": 0},
-                    by_update_available={"true": 0, "false": 0},
-                )
-            )
-            continue
-
-        client = AgentClientManager.get_host_client(host)
-        containers = await client.container.list(
-            GetContainerListBodySchema(all=True)
-        )
-
-        db_result = await session.execute(
-            select(ContainersModel).where(
-                ContainersModel.host_id == host.id
-            )
-        )
-        containers_db = db_result.scalars().all()
-
-        mapped_containers = []
-        for c in containers:
-            db_item = next(
-                (
-                    item
-                    for item in containers_db
-                    if item.name == c.name
-                ),
-                None,
-            )
-            mapped_containers.append(
-                map_container_schema(host.id, c, db_item)
-            )
-
-        by_status = {
-            "created": 0,
-            "running": 0,
-            "paused": 0,
-            "restarting": 0,
-            "removing": 0,
-            "exited": 0,
-            "dead": 0,
-        }
-        by_health = {
-            "unknown": 0,
-            "healthy": 0,
-            "unhealthy": 0,
-            "starting": 0,
-        }
-        by_protected = {"true": 0, "false": 0}
-        by_check_enabled = {"true": 0, "false": 0}
-        by_update_enabled = {"true": 0, "false": 0}
-        by_update_available = {"true": 0, "false": 0}
-
-        for container in mapped_containers:
-            if container.status:
-                by_status[container.status] = (
-                    by_status.get(container.status, 0) + 1
-                )
-
-            health_key = container.health or "none"
-            by_health[health_key] = by_health.get(health_key, 0) + 1
-
-            protected_key = "true" if container.protected else "false"
-            by_protected[protected_key] += 1
-
-            if container.check_enabled is not None:
-                check_key = (
-                    "true" if container.check_enabled else "false"
-                )
-                by_check_enabled[check_key] += 1
-
-            if container.update_enabled is not None:
-                update_key = (
-                    "true" if container.update_enabled else "false"
-                )
-                by_update_enabled[update_key] += 1
-
-            if container.update_available is not None:
-                avail_key = (
-                    "true" if container.update_available else "false"
-                )
-                by_update_available[avail_key] += 1
-
-        summaries.append(
-            HostSummary(
-                host_id=host.id,
-                host_name=host.name,
-                total_containers=len(mapped_containers),
-                by_status=by_status,
-                by_health=by_health,
-                by_protected=by_protected,
-                by_check_enabled=by_check_enabled,
-                by_update_enabled=by_update_enabled,
-                by_update_available=by_update_available,
-            )
-        )
-
-    return summaries
+    return await asyncio.gather(*(get_host_summary(host, session) for host in hosts))
 
 
 @public_router.get(
@@ -188,10 +81,14 @@ async def get_summary(
     response_model=TotalUpdateCountResponseBodySchema,
 )
 async def get_update_count(
+    request: Request,
     session: AsyncSession = Depends(get_async_session),
 ) -> TotalUpdateCountResponseBodySchema:
-    if not Config.ENABLE_PUBLIC_API:
-        raise HTTPException(404, "Not Found")
+    try:
+        await is_authorized(request)
+    except Exception:
+        if not Config.ENABLE_PUBLIC_API:
+            raise HTTPException(403, "Public api disabled") from None
 
     stmt = select(HostsModel).where(HostsModel.enabled)
     result = await session.execute(stmt)
@@ -200,18 +97,12 @@ async def get_update_count(
     total_updates = 0
     for host in hosts:
         client = AgentClientManager.get_host_client(host)
-        containers = await client.container.list(
-            GetContainerListBodySchema(all=True)
-        )
+        containers = await client.container.list(GetContainerListBodySchema(all=True))
         db_result = await session.execute(
-            select(ContainersModel).where(
-                ContainersModel.host_id == host.id
-            )
+            select(ContainersModel).where(ContainersModel.host_id == host.id)
         )
         containers_db = db_result.scalars().all()
-        containers_db_map = {
-            item.name: item for item in containers_db
-        }
+        containers_db_map = {item.name: item for item in containers_db}
 
         for container in containers:
             db_item = containers_db_map.get(cast(str, container.name))
@@ -244,9 +135,7 @@ async def is_update_available():
         logging.exception(message)
         raise HTTPException(500, message) from e
     try:
-        is_available = version.parse(remote_version) > version.parse(
-            local_version
-        )
+        is_available = version.parse(remote_version) > version.parse(local_version)
     except version.InvalidVersion as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
     return {
