@@ -11,6 +11,7 @@ from backend.modules.containers.containers_util import map_container_schema
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostSummary
 from shared.schemas.container_schemas import GetContainerListBodySchema
+from shared.schemas.image_schemas import GetImageListBodySchema
 
 
 async def fetch_latest_release() -> dict[str, Any]:
@@ -44,6 +45,9 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
             by_check_enabled={"true": 0, "false": 0},
             by_update_enabled={"true": 0, "false": 0},
             by_update_available={"true": 0, "false": 0},
+            total_images=0,
+            unused_images=0,
+            dangling_images=0,
         )
 
     client: Final = AgentClientManager.get_host_client(host)
@@ -109,6 +113,19 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
             avail_key = "true" if container.update_available else "false"
             by_update_available[avail_key] += 1
 
+    images: Final = await client.image.list(GetImageListBodySchema(all=True))
+    used_images: Final[set[str]] = {c.image for c in containers if c.image}
+
+    total_images: Final = len(images)
+    unused_images: int = 0
+    dangling_images: int = 0
+
+    for image in images:
+        if not image.repo_tags and image.id not in used_images:
+            dangling_images += 1
+        if image.id not in used_images:
+            unused_images += 1
+
     return HostSummary(
         host_id=host.id,
         host_name=host.name,
@@ -120,4 +137,7 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
         by_check_enabled=by_check_enabled,
         by_update_enabled=by_update_enabled,
         by_update_available=by_update_available,
+        total_images=total_images,
+        unused_images=unused_images,
+        dangling_images=dangling_images,
     )

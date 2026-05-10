@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, ConfigDict
 
 
@@ -29,6 +28,7 @@ class HostStatusResponseBody(BaseModel):
 class HostSummary(BaseModel):
     host_id: int
     host_name: str
+    host_enabled: bool
     total_containers: int
     by_status: dict[str, int]
     by_health: dict[str, int]
@@ -36,3 +36,6 @@ class HostSummary(BaseModel):
     by_check_enabled: dict[str, int]
     by_update_enabled: dict[str, int]
     by_update_available: dict[str, int]
+    total_images: int
+    unused_images: int
+    dangling_images: int
