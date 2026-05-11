@@ -1,56 +1,56 @@
 :host {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
   padding: 0.75rem;
   width: 100%;
   height: 100%;
-
-  p-drawer {
-    --p-drawer-content-padding: 0;
-
-    p-menu {
-      --p-menu-border-color: transparent;
-      --p-menu-item-padding: 0.5rem 1.25rem;
-
-      ::ng-deep .p-menu-item-link-active {
-        --p-menu-item-icon-color: var(--p-button-text-primary-color);
-      }
-    }
-
-    .theme-select-item {
-      display: inline-flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-    }
-  }
-
-  p-toolbar {
-    width: 100%;
-
-    .app-toolbar-end {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      white-space: nowrap;
-      & > * {
-        cursor: pointer;
-      }
-    }
-  }
-
-  .app-content {
-    width: 100%;
-    flex: 1;
-    overflow: hidden;
-    padding-top: 0.75rem;
-  }
+  overflow: hidden;
 
   p-dialog {
     pre {
       text-wrap: auto;
+    }
+  }
+
+  .content {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    gap: 0.5rem;
+
+    &-left {
+      height: 100%;
+    }
+
+    &-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 1rem;
+      overflow: hidden;
+
+      &-head {
+        display: inline-flex;
+        align-items: center;
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: space-between;
+
+        &-right {
+          display: inline-flex;
+          align-items: center;
+          gap: 1rem;
+        }
+      }
+
+      &-route {
+        flex: 1;
+        width: 100%;
+        overflow: hidden;
+      }
     }
   }
 }

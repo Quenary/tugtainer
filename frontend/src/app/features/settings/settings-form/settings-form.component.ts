@@ -1,12 +1,9 @@
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   computed,
   effect,
   inject,
-  output,
-  resource,
   signal,
 } from '@angular/core';
 import {
@@ -19,14 +16,10 @@ import {
   Validators,
 } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { catchError, finalize, firstValueFrom, map, of } from 'rxjs';
-import { SettingsApiService } from '../settings-api.service';
 import {
   ESettingKey,
-  ESettingSortIndex,
   ESettingValueType,
   ISetting,
-  ISettingUpdate,
   ITestNotificationRequestBody,
 } from '../settings.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
@@ -41,11 +34,11 @@ import {
   AutoCompleteCompleteEvent,
   AutoCompleteModule,
 } from 'primeng/autocomplete';
-import { ToastService } from 'src/app/core/services/toast.service';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { TextareaModule } from 'primeng/textarea';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
+import { SettingsStore } from '../settings.store';
 
 @Component({
   selector: 'app-settings-form',
@@ -69,52 +62,15 @@ import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsFormComponent {
-  private readonly settingsApiService = inject(SettingsApiService);
   private readonly translateService = inject(TranslateService);
-  private readonly toastService = inject(ToastService);
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
-
-  public readonly OnSubmit = output<ISettingUpdate[]>();
+  protected readonly settingsStore = inject(SettingsStore);
 
   protected readonly ESettingKey = ESettingKey;
   protected readonly keyTranslates =
     this.translateService.instant('SETTINGS.BY_KEY');
-  protected readonly isLoading = signal<boolean>(false);
   protected readonly formArray = new FormArray<
     FormGroup<TInterfaceToForm<ISetting>>
   >([]);
-
-  private readonly timezones = resource({
-    loader: () =>
-      firstValueFrom(
-        this.settingsApiService.getAvailableTimezones().pipe(
-          map((list) => list.sort((a, b) => a.localeCompare(b))),
-          catchError((error) => {
-            this.toastService.error(error);
-            return of([]);
-          }),
-        ),
-      ),
-    defaultValue: [],
-  });
-
-  private readonly settings = resource({
-    loader: () =>
-      firstValueFrom(
-        this.settingsApiService.list().pipe(
-          map((res) =>
-            res.sort(
-              (a, b) => ESettingSortIndex[a.key] - ESettingSortIndex[b.key],
-            ),
-          ),
-          catchError((error) => {
-            this.toastService.error(error);
-            return of([]);
-          }),
-        ),
-      ),
-    defaultValue: [],
-  });
 
   /**
    * Timezones autocomplete query.
@@ -128,7 +84,7 @@ export class SettingsFormComponent {
    * Timezones autocomplete list
    */
   protected readonly displayedTimezones = computed<string[]>(() => {
-    const timezones = this.timezones.value();
+    const timezones = this.settingsStore.timezones();
     const timezonesAutocompleteEvent = this.timezonesAutocompleteEvent();
     let query: string = timezonesAutocompleteEvent?.query ?? '';
     if (!query) {
@@ -152,7 +108,7 @@ export class SettingsFormComponent {
   ) => {
     const value = control.value;
     if (value) {
-      const timezones = this.timezones.value();
+      const timezones = this.settingsStore.timezones();
       const valid = !timezones.length || timezones.includes(value);
       return valid ? null : { timezoneValidator: true };
     }
@@ -161,13 +117,13 @@ export class SettingsFormComponent {
 
   constructor() {
     effect(() => {
-      const list = this.settings.value();
+      const list = this.settingsStore.entities();
       this.formArray.clear();
+      this.formArray.reset();
       for (const item of list) {
         const form = this.getFormGroup(item);
         this.formArray.push(form);
       }
-      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -206,7 +162,7 @@ export class SettingsFormComponent {
   }
 
   protected onTestNotification(): void {
-    const values = this.getSettingsValues();
+    const values = this.formArray.getRawValue();
     const title_template = values.find(
       (item) => item.key == ESettingKey.NOTIFICATION_TITLE_TEMPLATE,
     ).value as string;
@@ -221,40 +177,19 @@ export class SettingsFormComponent {
       body_template,
       urls,
     };
-    this.isLoading.set(true);
-    this.settingsApiService
-      .test_notification(body)
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: () => {
-          this.toastService.success();
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
-  }
-
-  protected getSettingsValues(): ISettingUpdate[] {
-    return this.formArray.getRawValue().map((item) => ({
-      key: item.key,
-      value: item.value,
-    }));
+    this.settingsStore.testNotification(body);
   }
 
   protected submit(): void {
     if (this.formArray.invalid) {
-      this.formArray.controls.forEach((c) => {
-        if (c.invalid) {
-          const vc = c.controls.value;
-          vc.markAsTouched();
-          vc.markAsDirty();
-        }
-      });
       return;
     }
-    this.formArray.markAsPristine();
-    const values = this.getSettingsValues();
-    this.OnSubmit.emit(values);
+    const entities = this.formArray.controls
+      .filter((f) => f.dirty)
+      .map((f) => ({
+        key: f.value.key,
+        value: f.value.value,
+      }));
+    this.settingsStore.change({ entities });
   }
 }

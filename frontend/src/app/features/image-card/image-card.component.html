@@ -1,0 +1,46 @@
+<p-toolbar>
+  <ng-template #start>
+    <p-button
+      icon="pi pi-refresh"
+      text
+      [loading]="imagesStore.loading() === 'loading'"
+      (onClick)="imagesStore.loadSelected()"></p-button>
+  </ng-template>
+
+  <ng-template #end>
+    @if (imagesStore.selected(); as image) {
+      @if (image.dangling) {
+        <p-tag severity="warn">
+          {{ 'IMAGES.DANGLING' | translate }}
+        </p-tag>
+      }
+      @if (image.unused) {
+        <p-tag severity="danger">
+          {{ 'IMAGES.UNUSED' | translate }}
+        </p-tag>
+      }
+    }
+  </ng-template>
+</p-toolbar>
+
+<p-accordion
+  [value]="accordionValue()"
+  (valueChange)="accordionValue.set($event)">
+  <p-accordion-panel value="general">
+    <p-accordion-header>
+      {{ 'CONTAINERS.GENERAL.LABEL' | translate }}
+    </p-accordion-header>
+    <p-accordion-content>
+      <app-image-card-general></app-image-card-general>
+    </p-accordion-content>
+  </p-accordion-panel>
+
+  <p-accordion-panel value="inspect">
+    <p-accordion-header>
+      {{ 'INSPECT.LABEL' | translate }}
+    </p-accordion-header>
+    <p-accordion-content class="inspect-content">
+      <app-inspect [inspect]="imagesStore.selectedInfo()"> </app-inspect>
+    </p-accordion-content>
+  </p-accordion-panel>
+</p-accordion>

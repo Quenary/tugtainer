@@ -1,7 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable } from 'rxjs';
-import { IsUpdateAvailableResponseBody, IVersion } from './public-interface';
+import {
+  IHostSummary,
+  IsUpdateAvailableResponseBody,
+  IVersion,
+} from './public-interface';
 
 @Injectable({
   providedIn: 'root',
@@ -21,5 +25,9 @@ export class PublicApiService extends BaseApiService<'/public'> {
     return this.httpClient.get<IsUpdateAvailableResponseBody>(
       `${this.basePath}/is_update_available`,
     );
+  }
+
+  public getSummary(): Observable<IHostSummary[]> {
+    return this.httpClient.get<IHostSummary[]>(`${this.basePath}/summary`);
   }
 }

@@ -1,0 +1,59 @@
+@if (imagesStore.selected(); as image) {
+  <section class="tags">
+    @for (t of image.tags; track t) {
+      <p-tag
+        [value]="t"
+        severity="info">
+      </p-tag>
+    }
+  </section>
+
+  <p-ifta-label style="width: 100%">
+    <textarea
+      fluid
+      style="resize: none"
+      id="image-id"
+      pTextarea
+      readonly
+      rows="2"
+      [value]="image.id"></textarea>
+    <label for="image-id">
+      {{ 'IMAGES.ID' | translate }}
+    </label>
+  </p-ifta-label>
+
+  <p-ifta-label>
+    <input
+      id="image-repository"
+      pInputText
+      readonly
+      [value]="image.repository" />
+    <label for="image-repository">
+      {{ 'IMAGES.REPOSITORY' | translate }}
+    </label>
+  </p-ifta-label>
+
+  <p-ifta-label>
+    @let size =
+      (image.size / 1024 / 1024 | number: '1.0-2') + ' ' + ('IMAGES.SIZE_UNIT' | translate);
+    <input
+      id="image-size"
+      pInputText
+      readonly
+      [value]="size" />
+    <label for="image-size">
+      {{ 'IMAGES.SIZE' | translate }}
+    </label>
+  </p-ifta-label>
+
+  <p-ifta-label>
+    <input
+      id="image-created"
+      pInputText
+      readonly
+      [value]="image.created | dayjs" />
+    <label for="image-created">
+      {{ 'IMAGES.CREATED' | translate }}
+    </label>
+  </p-ifta-label>
+}

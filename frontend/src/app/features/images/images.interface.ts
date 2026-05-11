@@ -5,6 +5,7 @@ export interface IImage {
   unused: boolean;
   tags: string[];
   size: number;
+  created: string;
 }
 
 export interface IPruneImageRequestBodySchema {

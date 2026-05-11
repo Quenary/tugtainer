@@ -1,0 +1,95 @@
+@if (!childActive()) {
+  @if (hostsStore.selected(); as h) {
+    <div class="header">
+      <span>{{h.name}}</span>
+      <app-host-status [host]="h"></app-host-status>
+
+      <p-button
+        [style.margin-left]="'auto'"
+        text
+        icon="pi pi-pen-to-square"
+        routerLink="edit">
+      </p-button>
+    </div>
+  }
+
+  <section class="dashboard">
+    <p-card
+      class="dashboard-item"
+      routerLink="containers">
+      <div class="dashboard-item-content">
+        <i class="dashboard-item-content-icon pi pi-box"></i>
+        <span class="dashboard-item-content-text">
+          {{'HOSTS.DASHBOARD.CONTAINERS' | translate}}
+        </span>
+
+        @if (hostsStore.selected()?.summary; as sum) {
+          <span class="dashboard-item-content-text">
+            {{sum.total_containers}}
+          </span>
+
+          @if (sum.by_update_available.true; as available) {
+            <p-tag severity="success">
+              <i class="pi pi-check-circle"></i>
+              {{'HOSTS.DASHBOARD.AVAILABLE' | translate}}
+              {{available}}
+            </p-tag>
+          }
+
+          <span class="dashboard-item-content-state">
+            <p-tag severity="success">
+              {{'HOSTS.DASHBOARD.RUNNING' | translate}}
+              {{sum.by_status.running}}
+            </p-tag>
+            <p-tag severity="danger">
+              {{'HOSTS.DASHBOARD.EXITED' | translate}}
+              {{sum.by_status.exited}}
+            </p-tag>
+            <p-tag severity="success">
+              {{'HOSTS.DASHBOARD.HEALTHY' | translate}}
+              {{sum.by_health.healthy}}
+            </p-tag>
+            <p-tag severity="danger">
+              {{'HOSTS.DASHBOARD.UNHEALTHY' | translate}}
+              {{sum.by_health.unhealthy}}
+            </p-tag>
+          </span>
+        }
+      </div>
+    </p-card>
+
+    <p-card
+      class="dashboard-item"
+      routerLink="images">
+      <div class="dashboard-item-content">
+        <i class="dashboard-item-content-icon pi pi-list"></i>
+        <span class="dashboard-item-content-text">
+          {{'HOSTS.DASHBOARD.IMAGES' | translate}}
+        </span>
+
+        @if (hostsStore.selected()?.summary; as sum) {
+          <span class="dashboard-item-content-text">
+            {{sum.total_images}}
+          </span>
+
+          <span class="dashboard-item-content-state">
+            <p-tag severity="danger">
+              {{'HOSTS.DASHBOARD.UNUSED' | translate}}
+              {{sum.unused_images}}
+            </p-tag>
+
+            <p-tag severity="warn">
+              {{'HOSTS.DASHBOARD.DANGLING' | translate}}
+              {{sum.dangling_images}}
+            </p-tag>
+          </span>
+        }
+      </div>
+    </p-card>
+  </section>
+}
+
+<router-outlet
+  (activate)="childActive.set(true)"
+  (deactivate)="childActive.set(false)">
+</router-outlet>

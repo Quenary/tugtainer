@@ -1,12 +1,17 @@
+@use 'mixins' as m;
+
 :host {
   width: 100%;
-  height: auto;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
 
   p-toolbar {
     border-color: transparent;
-    padding-left: 0;
-    padding-right: 0;
+  }
+
+  p-table {
+    @include m.p-table;
   }
 
   th:first-child,

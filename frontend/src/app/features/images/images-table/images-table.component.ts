@@ -3,10 +3,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
-  input,
+  linkedSignal,
   model,
-  resource,
-  signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -22,16 +20,10 @@ import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
-import { catchError, finalize, firstValueFrom, of } from 'rxjs';
-import { ToastService } from 'src/app/core/services/toast.service';
-import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
-import { ImagesApiService } from 'src/app/features/images/images-api.service';
-import {
-  IImage,
-  IPruneImageRequestBodySchema,
-} from 'src/app/features/images/images.interface';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
+import { ImagesStore } from '../images.store';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-images-table',
@@ -53,6 +45,7 @@ import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
     NgStyle,
     ToolbarModule,
     BooleanFieldComponent,
+    RouterLink,
   ],
   providers: [ConfirmationService],
   templateUrl: './images-table.component.html',
@@ -60,56 +53,29 @@ import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImagesTableComponent {
-  private readonly imagesApiService = inject(ImagesApiService);
-  private readonly toastService = inject(ToastService);
   private readonly translateService = inject(TranslateService);
   private readonly confirmationService = inject(ConfirmationService);
+  protected readonly imagesStore = inject(ImagesStore);
 
-  /**
-   * Host info
-   */
-  public readonly host = input.required<IHostInfo>();
-
-  /**
-   * List of images
-   */
-  protected readonly list = resource<IImage[], { host: IHostInfo }>({
-    params: () => ({
-      host: this.host(),
-    }),
-    loader: (params) => {
-      const host = params.params.host;
-      if (!host || !host.enabled) {
-        return Promise.resolve([]);
-      }
-      return firstValueFrom(
-        this.imagesApiService.list(host.id).pipe(
-          catchError((error) => {
-            this.toastService.error(error);
-            return of([]);
-          }),
-        ),
-      );
-    },
-    defaultValue: [],
-  });
-  /**
-   * Prune in progress flag
-   */
-  protected readonly pruneInProgress = signal<boolean>(false);
-  /**
-   * Prune result
-   */
-  protected readonly pruneResult = signal<string>(null);
   /**
    * Prune all flag for confirmation popup toggle
    */
   protected readonly pruneAll = model<boolean>(false);
+  /**
+   * If prune results dialog visible
+   */
+  protected readonly pruneDialogVisible = linkedSignal<boolean>(
+    () => !!this.imagesStore.pruneResult(),
+  );
 
-  protected confirmPrune($event: Event) {
+  constructor() {
+    this.imagesStore.loadList();
+  }
+
+  protected confirmPrune($event: Event): void {
     this.confirmationService.confirm({
       target: $event.currentTarget,
-      message: this.translateService.instant('IMAGES.TABLE.PRUNE_CONFIRM'),
+      message: this.translateService.instant('IMAGES.PRUNE_CONFIRM'),
       rejectButtonProps: {
         label: this.translateService.instant('GENERAL.CANCEL'),
         severity: 'secondary',
@@ -120,33 +86,12 @@ export class ImagesTableComponent {
         severity: 'danger',
       },
       accept: () => {
-        this.prune();
+        this.imagesStore.prune({
+          body: {
+            all: this.pruneAll(),
+          },
+        });
       },
     });
-  }
-
-  private prune(): void {
-    this.pruneInProgress.set(true);
-    const host = this.host();
-    const body: IPruneImageRequestBodySchema = {
-      all: this.pruneAll(),
-    };
-    this.imagesApiService
-      .prune(host.id, body)
-      .pipe(
-        finalize(() => {
-          this.pruneInProgress.set(false);
-        }),
-      )
-      .subscribe({
-        next: (res) => {
-          this.pruneResult.set(res);
-          this.list.reload();
-        },
-        error: (error) => {
-          this.toastService.error(error);
-          this.list.reload();
-        },
-      });
   }
 }

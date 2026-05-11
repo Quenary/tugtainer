@@ -1,4 +1,7 @@
-@if ('LOGO' | translate; as t) {
-  <span class="first">{{t["0"]}}</span>
-  <span class="second">{{t["1"]}}</span>
+@if (short()) {
+  <span class="first">T</span>
+  <span class="second">t</span>
+} @else {
+  <span class="first">Tug</span>
+  <span class="second">tainer</span>
 }

@@ -1,6 +1,6 @@
+@use 'mixins' as m;
+
 :host {
-  display: block;
-  max-height: 100%;
-  overflow: hidden;
+  @include m.main-component;
   overflow-y: auto;
 }

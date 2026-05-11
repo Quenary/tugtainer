@@ -166,13 +166,13 @@
       <p-button
         type="submit"
         [label]="saveTitle()"
-        [loading]="isLoading()"
+        [loading]="hostsStore.loading()"
         severity="success"
         [disabled]="!form.dirty"
         icon="pi pi-save"></p-button>
     </p-button-group>
 
-    @if (id()) {
+    @if (hostsStore.selectedId()) {
       <p-button
         icon="pi pi-trash"
         severity="danger"

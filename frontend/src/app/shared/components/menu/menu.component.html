@@ -1,0 +1,114 @@
+<app-logo [short]="narrow()"></app-logo>
+
+<p-button
+  class="toggle"
+  [icon]="narrow() ? 'pi pi-arrow-right' : 'pi pi-arrow-left'"
+  text
+  severity="contrast"
+  (onClick)="narrow.update(v => !v)">
+</p-button>
+
+@if (narrow()) {
+  <button
+    class="menu-item"
+    routerLink="/hosts"
+    routerLinkActive="router-link-active">
+    <i class="pi pi-server"></i>
+  </button>
+
+  <button
+    class="menu-item"
+    routerLink="/settings"
+    routerLinkActive="router-link-active">
+    <i class="pi pi-cog"></i>
+  </button>
+
+  <button
+    [style.margin-top]="'auto'"
+    class="menu-item"
+    (click)="openRepo()">
+    <i class="pi pi-github"></i>
+  </button>
+
+  <button
+    class="menu-item"
+    (click)="menu.toggle($event)">
+    <i class="pi pi-palette"></i>
+  </button>
+
+  <button
+    class="menu-item"
+    [style.color]="'var(--p-button-text-danger-color)'"
+    (click)="logout()">
+    <i class="pi pi-sign-out"></i>
+  </button>
+} @else {
+  <button
+    class="menu-item"
+    routerLink="/hosts"
+    routerLinkActive="router-link-active">
+    <i class="pi pi-server"></i>
+    <span>{{'MENU.HOSTS' | translate}}</span>
+  </button>
+
+  <div class="submenu">
+    @for (h of hostsStore.entities(); track h.id) {
+      @if (h.enabled) {
+        @let upd = h.available_updates_count;
+
+        <button
+          class="menu-item"
+          routerLink="/hosts/{{h.id}}"
+          routerLinkActive="router-link-active">
+          <!-- <i class="pi pi-server"></i> -->
+          <span>{{h.name}}</span>
+          @if (upd) {
+            <p-badge
+              size="small"
+              [value]="upd.toString()"
+              severity="success">
+            </p-badge>
+          }
+        </button>
+      }
+    }
+  </div>
+
+  <button
+    class="menu-item"
+    routerLink="/settings"
+    routerLinkActive="router-link-active">
+    <i class="pi pi-cog"></i>
+    <span>{{'MENU.SETTINGS' | translate}}</span>
+  </button>
+
+  <button
+    [style.margin-top]="'auto'"
+    class="menu-item"
+    (click)="openRepo()">
+    <i class="pi pi-github"></i>
+    <span>{{'MENU.GITHUB' | translate}}</span>
+  </button>
+
+  <button
+    class="menu-item"
+    (click)="menu.toggle($event)">
+    <i class="pi pi-palette"></i>
+    <span>{{selectedThemeLabel()}}</span>
+  </button>
+
+  <button
+    class="menu-item"
+    [style.color]="'var(--p-button-text-danger-color)'"
+    (click)="logout()">
+    <i class="pi pi-sign-out"></i>
+    <span>{{'MENU.SIGNOUT' | translate}}</span>
+  </button>
+}
+
+<p-menu
+  #menu
+  [model]="themes()"
+  [popup]="true"
+  appendTo="body">
+</p-menu>

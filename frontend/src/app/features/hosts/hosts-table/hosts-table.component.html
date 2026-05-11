@@ -4,6 +4,7 @@
       <p-inputicon>
         <i class="pi pi-search"></i>
       </p-inputicon>
+
       <input
         #searchInput
         id="host-search"
@@ -11,19 +12,49 @@
         type="text"
         (input)="dt2.filterGlobal($event.target.value, 'contains')"
         [placeholder]="'HOSTS.TABLE.SEARCH_PLACEHOLDER' | translate" />
-      <p-button
-        icon="pi pi-refresh"
-        text
-        [loading]="list.isLoading()"
-        (onClick)="list.reload()"></p-button>
     </p-iconfield>
+
+    <p-button
+      icon="pi pi-refresh"
+      text
+      [loading]="hostsStore.loading() === 'loading'"
+      [disabled]="hostsStore.loading()"
+      (onClick)="hostsStore.loadList()">
+    </p-button>
+
+    <p-button
+      icon="pi pi-check-circle"
+      [label]="'HOSTS.TABLE.ONLY_AVAILABLE' | translate"
+      text
+      [severity]="onlyAvailable() ? 'success' : 'secondary'"
+      (onClick)="onlyAvailable.set(!onlyAvailable())">
+    </p-button>
   </ng-template>
   <ng-template #end>
+    <p-button-group style="margin-right: 1rem;">
+      <p-button
+        severity="primary"
+        [loading]="hostsStore.loading() === 'check'"
+        [label]="'HOSTS.TABLE.CHECK_ALL' | translate"
+        [disabled]="hostsStore.loading()"
+        (onClick)="hostsStore.checkAll()">
+      </p-button>
+
+      <p-button
+        severity="success"
+        [loading]="hostsStore.loading() === 'update'"
+        [label]="'HOSTS.TABLE.UPDATE_ALL' | translate"
+        [disabled]="hostsStore.loading() || !hostsStore.anyForUpdate()"
+        (onClick)="hostsStore.updateAll()">
+      </p-button>
+    </p-button-group>
+
     <p-button
       icon="pi pi-plus"
       severity="success"
-      routerLink="/hosts/new"
-      [label]="'HOSTS.TABLE.ADD' | translate"></p-button>
+      routerLink="/hosts/new/edit"
+      [label]="'HOSTS.TABLE.ADD' | translate">
+    </p-button>
   </ng-template>
 </p-toolbar>
 
@@ -34,8 +65,14 @@
   sortField="id"
   [scrollable]="true"
   scrollHeight="flex"
-  [value]="list.value()"
-  selectionMode="single">
+  [value]="filteredList()"
+  [rowTrackBy]="item => item.id"
+  selectionMode="single"
+  sortMode="multiple"
+  [multiSortMeta]="[
+    {field: 'available_updates_count', order: -1},
+    {field: 'name', order: 1}
+  ]">
   <ng-template #header>
     <tr>
       <th pSortableColumn="name">
@@ -52,14 +89,28 @@
         {{ 'HOSTS.TABLE.STATUS' | translate }}
         <p-sortIcon field="status"></p-sortIcon>
       </th>
+      <th
+        pSortableColumn="available_updates_count"
+        style="width: 20%">
+        {{'HOSTS.TABLE.AVAILABLE' | translate}}
+        <i
+          class="pi pi-question-circle"
+          style="margin: 0 0.5rem"
+          [pTooltip]="'HOSTS.TABLE.AVAILABLE_HINT' | translate"
+          tooltipPosition="left"></i>
+        <p-sortIcon field="available_updates_count"></p-sortIcon>
+      </th>
+      <th></th>
     </tr>
   </ng-template>
 
   <ng-template
     #body
     let-host>
+    @let rl =
+      host.enabled ? ('/hosts/' + host.id) : ('/hosts/' + host.id + '/edit');
     <tr
-      [routerLink]="'/hosts/' + host.id"
+      [routerLink]="rl"
       style="cursor: pointer">
       <td>
         {{ host.name }}
@@ -75,6 +126,33 @@
       <td>
         <app-host-status [host]="host"></app-host-status>
       </td>
+      <td>
+        <p-badge
+          [value]="host.available_updates_count"
+          [severity]="host.available_updates_count > 0 ?'success' : 'secondary'">
+        </p-badge>
+      </td>
+      <td>
+        <a
+          routerLink="/hosts/{{ host.id }}/edit"
+          (click)="$event.stopPropagation()">
+          <p-button
+            text
+            icon="pi pi-pen-to-square">
+          </p-button>
+        </a>
+      </td>
     </tr>
   </ng-template>
 </p-table>
+
+<p-dialog
+  [header]="'HOSTS.TABLE.ACTION_COMPLETED' | translate"
+  [modal]="true"
+  [draggable]="false"
+  [visible]="globalActionDialogVisible()"
+  (visibleChange)="globalActionDialogVisible.set(false)">
+  @for (r of globalActionResultList(); track r) {
+    <app-host-check-result [result]="r"></app-host-check-result>
+  }
+</p-dialog>

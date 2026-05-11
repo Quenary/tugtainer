@@ -1,87 +1,14 @@
 <p-toast position="bottom-right" />
 
-<p-drawer
-  [visible]="menuOpened()"
-  (visibleChange)="menuOpened.set($event)">
-  <ng-template #header>
-    <app-logo></app-logo>
-  </ng-template>
-
-  <p-menu
-    [model]="menuItems$ | async"
-    (click)="menuOpened.set(false)">
-  </p-menu>
-
-  <ng-template #footer>
-    <p-select
-      fluid
-      [options]="themes$ | async"
-      optionValue="value"
-      optionLabel="label"
-      [ngModel]="theme$ | async"
-      (ngModelChange)="selectTheme($event)">
-      <ng-template #dropdownicon>
-        <i class="pi pi-palette"></i>
-      </ng-template>
-      <ng-template
-        #item
-        let-item>
-        <span class="theme-select-item">
-          {{ item.label }}
-          <i [class]="item.icon"></i>
-        </span>
-      </ng-template>
-    </p-select>
-  </ng-template>
-</p-drawer>
-
-@if (isToolbarVisible()) {
-<p-toolbar>
-  <ng-template #start>
-    <p-button
-      icon="pi pi-bars"
-      text
-      severity="contrast"
-      (onClick)="menuOpened.set(true)"></p-button>
-    <app-logo></app-logo>
-  </ng-template>
-
-  <ng-template #end>
-    <section class="app-toolbar-end">
-      <span> </span>
-      @if (version.value(); as data) {
-      <p-tag severity="contrast"> {{ data.image_version }} </p-tag>
-      } @if (isUpdateAvailable.value()?.is_available) {
-      <p-tag
-        severity="success"
-        (click)="showNewVersionDialog.set(true)">
-        {{ 'MENU.UPDATE' | translate }}
-      </p-tag>
-      } @if (!isAuthDisabled.value()) {
-      <p-button
-        severity="contrast"
-        icon="pi pi-sign-out"
-        text
-        (onClick)="logout()"></p-button>
-      }
-    </section>
-  </ng-template>
-</p-toolbar>
-}
-
-<section class="app-content">
-  <router-outlet></router-outlet>
-</section>
-
-@defer {
+@defer (when showNewVersionDialog()) {
 <p-dialog
-  [header]="'MENU.UPDATE' | translate"
+  [header]="'UPDATE_DIALOGUE.UPDATE' | translate"
   [modal]="true"
   [draggable]="false"
   [style]="{ width: '35rem' }"
   [visible]="showNewVersionDialog()"
   (visibleChange)="showNewVersionDialog.set($event)">
-  <span> {{ 'MENU.UPDATE_NOTES' | translate }} </span>
+  <span> {{ 'UPDATE_DIALOGUE.UPDATE_NOTES' | translate }} </span>
   <ng-template #footer>
     <p-button
       icon="pi pi-link"
@@ -96,3 +23,39 @@
   </ng-template>
 </p-dialog>
 }
+
+<div class="content">
+  @if (isToolbarVisible()) {
+  <div class="left">
+    <app-menu></app-menu>
+  </div>
+  }
+
+  <div class="content-right">
+    @if (isToolbarVisible()) {
+    <div class="content-right-head">
+      <p-breadcrumb
+        [style]="{'--p-breadcrumb-background': 'transparent'}"
+        [model]="breadcrumbs$ | async"
+        [home]="{icon:'pi pi-home', routerLink:'/'}">
+      </p-breadcrumb>
+
+      <div class="content-right-head-right">
+        @if (appStore.version(); as data) {
+        <p-tag severity="contrast"> {{ data.image_version }} </p-tag>
+        } @if (appStore.update()?.is_available) {
+        <p-tag
+          severity="success"
+          (click)="showNewVersionDialog.set(true)">
+          {{ 'UPDATE_DIALOGUE.UPDATE' | translate }}
+        </p-tag>
+        } @if (!appStore.isAuthDisabled()) { }
+      </div>
+    </div>
+    }
+
+    <div class="content-right-route">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

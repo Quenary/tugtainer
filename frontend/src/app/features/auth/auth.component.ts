@@ -117,7 +117,7 @@ export class AuthComponent {
     effect(() => {
       const isDisabled = this.isAuthDisabled.value();
       if (isDisabled) {
-        this.router.navigate(['/containers']);
+        this.router.navigate(['/']);
       }
     });
   }
@@ -145,7 +145,7 @@ export class AuthComponent {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
-          this.router.navigate(['/containers']);
+          this.router.navigate(['/']);
         },
         error: (error) => {
           this.toastService.error(error);

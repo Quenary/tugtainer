@@ -1,3 +1,5 @@
+@use 'mixins' as m;
+
 :host {
   width: 100%;
   display: flex;
@@ -5,13 +7,10 @@
   overflow: hidden;
 
   p-toolbar {
-    margin-bottom: 1rem;
+    border-color: transparent;
   }
 
   p-table {
-    width: 100%;
-    flex: 1;
-    overflow: hidden;
-    overflow-y: auto;
+    @include m.p-table;
   }
 }
