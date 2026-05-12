@@ -10,6 +10,7 @@ import { of } from 'rxjs';
 import { IsUpdateAvailableResponseBody } from './features/public/public-interface';
 import { MessageService } from 'primeng/api';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { storageJson } from '../extensions/local-storage-json';
 
 @Component({
   selector: 'app-test-comp',
@@ -54,6 +55,8 @@ describe('App', () => {
       'success',
       'error',
     ]);
+
+    storageJson();
 
     await TestBed.configureTestingModule({
       imports: [App],

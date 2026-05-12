@@ -11,6 +11,9 @@
     "lint": "ng lint",
     "prettier-check": "prettier --check ."
   },
+  "engine": {
+    "node": "^22.12.0 || ^24.0.0"
+  },
   "prettier": {
     "htmlWhitespaceSensitivity": "strict",
     "bracketSameLine": true,
@@ -21,7 +24,8 @@
     "embeddedLanguageFormatting": "off",
     "semi": true,
     "quoteProps": "preserve",
-    "trailingComma": "all"
+    "trailingComma": "all",
+    "endOfLine": "auto"
   },
   "private": true,
   "dependencies": {

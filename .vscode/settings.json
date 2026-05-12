@@ -1,4 +1,6 @@
 {
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.tsdk.path": "frontend/node_modules/typescript/lib",
   "python.terminal.activateEnvironment": true,
   "python.venvPath": ".venv",
   "python.languageServer": "None",

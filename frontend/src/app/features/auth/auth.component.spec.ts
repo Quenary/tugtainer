@@ -66,7 +66,7 @@ describe('AuthComponent', () => {
     authApiServiceMock.isDisabled.and.returnValue(of(true));
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/containers']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('should not navigate if auth enabled', async () => {
@@ -108,7 +108,7 @@ describe('AuthComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     component['onSubmitLogin']('test');
-    expect(routerMock.navigate).toHaveBeenCalledOnceWith(['/containers']);
+    expect(routerMock.navigate).toHaveBeenCalledOnceWith(['/']);
   });
 
   it('should not navigate after failure login', async () => {

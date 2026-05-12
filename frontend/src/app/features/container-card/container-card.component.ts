@@ -2,12 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   OnDestroy,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import {
   EContainerHealthSeverity,
@@ -32,7 +31,6 @@ import { ContainerCardLogsComponent } from './container-card-logs/container-card
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 import { ContainersStore } from '../containers/containers.store';
-import { map } from 'rxjs';
 import { InspectComponent } from '@shared/components/inspect/inspect.component';
 
 @Component({
@@ -67,12 +65,6 @@ export class ContainerCardComponent implements OnDestroy {
   protected readonly EContainerStatusSeverity = EContainerStatusSeverity;
   protected readonly EContainerHealthSeverity = EContainerHealthSeverity;
 
-  /**
-   * Path parameter
-   */
-  protected readonly containerNameOrId = toSignal<string>(
-    this.activatedRoute.params.pipe(map((params) => params.containerNameOrId)),
-  );
   /**
    * Value of opened accordion items
    */
@@ -113,11 +105,12 @@ export class ContainerCardComponent implements OnDestroy {
   );
 
   constructor() {
-    effect(() => {
-      const containerNameOrId = this.containerNameOrId();
-      this.containersStore.select(containerNameOrId);
-      this.containersStore.loadSelected();
-    });
+    this.activatedRoute.params
+      .pipe(takeUntilDestroyed())
+      .subscribe((params) => {
+        this.containersStore.select(params['containerNameOrId']);
+        this.containersStore.loadSelected();
+      });
   }
 
   ngOnDestroy(): void {

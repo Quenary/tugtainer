@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ImagesStore } from '../../images/images.store';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { TagModule } from 'primeng/tag';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { TextareaModule } from 'primeng/textarea';
@@ -24,12 +24,5 @@ import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageCardGeneralComponent {
-  private readonly translateService = inject(TranslateService);
   protected readonly imagesStore = inject(ImagesStore);
-
-  // protected readonly imageSize = computed(() => {
-  //   const selected = this.imagesStore.selected()
-  //   if  (!selected) return null;
-  //   return `${selected.size / 1024 / 1024}`
-  // })
 }

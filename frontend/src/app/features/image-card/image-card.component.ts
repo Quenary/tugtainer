@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  effect,
   inject,
   OnDestroy,
   signal,
@@ -9,8 +8,7 @@ import {
 import { InspectComponent } from '@shared/components/inspect/inspect.component';
 import { ImagesStore } from '../images/images.store';
 import { ActivatedRoute } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AccordionModule } from 'primeng/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ToolbarModule } from 'primeng/toolbar';
@@ -44,12 +42,6 @@ export class ImageCardComponent implements OnDestroy {
   protected readonly imagesStore = inject(ImagesStore);
 
   /**
-   * Path parameter
-   */
-  protected readonly imageId = toSignal<string>(
-    this.activatedRoute.params.pipe(map((params) => params.imageId)),
-  );
-  /**
    * Value of opened accordion items
    */
   protected readonly accordionValue = signal<
@@ -57,11 +49,12 @@ export class ImageCardComponent implements OnDestroy {
   >('general');
 
   constructor() {
-    effect(() => {
-      const imageId = this.imageId();
-      this.imagesStore.select(imageId);
-      this.imagesStore.loadSelected();
-    });
+    this.activatedRoute.params
+      .pipe(takeUntilDestroyed())
+      .subscribe((params) => {
+        this.imagesStore.select(params['imageId']);
+        this.imagesStore.loadSelected();
+      });
   }
 
   ngOnDestroy(): void {
