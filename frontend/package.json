@@ -27,6 +27,14 @@
     "trailingComma": "all",
     "endOfLine": "auto"
   },
+  "lint-staged": {
+    "*.{ts,js,html,css,scss,json,md}": [
+      "prettier --write"
+    ],
+    "*.{ts,js,html}": [
+      "eslint --fix"
+    ]
+  },
   "private": true,
   "dependencies": {
     "@angular/common": "^21.2.6",
@@ -64,6 +72,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "lint-staged": "^17.0.4",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.56.1"
