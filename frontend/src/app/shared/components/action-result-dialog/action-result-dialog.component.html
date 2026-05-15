@@ -1,0 +1,6 @@
+@for (r of dynamicDialogConfig.data.results; track r.host_id) {
+  <app-host-check-result [result]="r"></app-host-check-result>
+}
+@if (dynamicDialogConfig.data.pruneResult; as r) {
+  <pre>{{r}}</pre>
+}

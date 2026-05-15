@@ -24,24 +24,44 @@ import { tapResponse } from '@ngrx/operators';
 import {
   EActionStatus,
   IAllActionProgress,
+  IHostActionProgress,
 } from '@shared/interfaces/progress.interface';
 import { ContainersApiService } from '../containers/containers-api.service';
 import { IHostSummary } from '../public/public-interface';
 import { PublicApiService } from '../public/public-api.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { IHostActionResult } from '@shared/interfaces/check-result.interface';
+import { IPruneImageRequestBodySchema } from '../images/images.interface';
+import { ImagesApiService } from '../images/images-api.service';
+import { DialogService } from 'primeng/dynamicdialog';
+import {
+  ActionResultDialogComponent,
+  IActionResultDialogData,
+} from '@shared/components/action-result-dialog/action-result-dialog.component';
 
 interface IHostsStore {
   loading: THostsLoading;
   selectedId: number | null;
   globalActionProgress: IAllActionProgress | null;
+  /**
+   * Update containers list signal
+   */
+  updateContainersList: Date | null;
+  /**
+   * Update images list signal
+   */
+  updateImagesList: Date | null;
 }
 
 export interface IHostEntity extends IHostInfo {
   summary: IHostSummary | null;
   status: IHostStatus | null;
+  progress: IHostActionProgress | null;
+  pruneResult: string | null;
+  loading: THostsLoading;
 }
 
-export type THostsLoading = 'loading' | 'check' | 'update' | null;
+export type THostsLoading = 'loading' | 'check' | 'update' | 'prune' | null;
 
 export const HostsStore = signalStore(
   { providedIn: 'root' },
@@ -50,6 +70,8 @@ export const HostsStore = signalStore(
     loading: null,
     selectedId: null,
     globalActionProgress: null,
+    updateContainersList: null,
+    updateImagesList: null,
   })),
   withComputed((store) => ({
     /**
@@ -87,6 +109,13 @@ export const HostsStore = signalStore(
     const translateService = inject(TranslateService);
     const containersApiService = inject(ContainersApiService);
     const publicApiService = inject(PublicApiService);
+    const imageApiService = inject(ImagesApiService);
+    const dialogService = inject(DialogService);
+
+    const _updateContainersList = () =>
+      patchState(store, { updateContainersList: new Date() });
+    const _updateImagesList = () =>
+      patchState(store, { updateImagesList: new Date() });
 
     const loadList = rxMethod<void>(
       pipe(
@@ -95,10 +124,17 @@ export const HostsStore = signalStore(
           hostsApiService.list().pipe(
             tapResponse({
               next: (list) => {
+                const oldEntities = store.entityMap();
                 const entities = list.map<IHostEntity>((item) => ({
+                  // Preserve extra data from old entity
+                  ...(oldEntities[item.id] ?? {
+                    summary: null,
+                    status: null,
+                    progress: null,
+                    pruneResult: null,
+                    loading: null,
+                  }),
                   ...item,
-                  summary: null,
-                  status: null,
                 }));
                 patchState(store, upsertEntities(entities));
                 loadSummary();
@@ -212,6 +248,12 @@ export const HostsStore = signalStore(
               tapResponse({
                 next: (globalActionProgress) => {
                   patchState(store, { globalActionProgress });
+                  if (globalActionProgress.result) {
+                    openActionResultDialog(
+                      Object.values(globalActionProgress.result),
+                      null,
+                    );
+                  }
                 },
                 error: (error) => {
                   toastService.error(error);
@@ -219,6 +261,8 @@ export const HostsStore = signalStore(
                 finalize: () => {
                   patchState(store, { loading: null });
                   loadList();
+                  _updateContainersList();
+                  _updateImagesList();
                 },
               }),
             ),
@@ -226,6 +270,89 @@ export const HostsStore = signalStore(
         ),
       );
     }
+
+    function createHostActionMethod(
+      apiCall: (hostId: number) => Observable<string>,
+      loading: Extract<THostsLoading, 'check' | 'update'>,
+    ) {
+      return rxMethod<{ id: number }>(
+        pipe(
+          tap(({ id }) =>
+            patchState(
+              store,
+              updateEntity({
+                id,
+                changes: {
+                  progress: null,
+                  loading,
+                },
+              }),
+            ),
+          ),
+          switchMap(({ id }) =>
+            apiCall(id).pipe(
+              tap(() =>
+                toastService.success(
+                  translateService.instant('GENERAL.IN_PROGRESS'),
+                ),
+              ),
+              switchMap((cacheId) =>
+                containersApiService.watchProgress<IHostActionProgress>(
+                  cacheId,
+                ),
+              ),
+              tapResponse({
+                next: (progress) => {
+                  patchState(
+                    store,
+                    updateEntity({
+                      id,
+                      changes: { progress },
+                    }),
+                  );
+                  if (progress.result) {
+                    openActionResultDialog([progress.result], null);
+                  }
+                },
+                error: (error) => {
+                  toastService.error(error);
+                },
+                finalize: () => {
+                  patchState(
+                    store,
+                    updateEntity({
+                      id,
+                      changes: { loading: null },
+                    }),
+                  );
+                  loadList();
+                  _updateContainersList();
+                  _updateImagesList();
+                },
+              }),
+            ),
+          ),
+        ),
+      );
+    }
+
+    const openActionResultDialog = (
+      results: IHostActionResult[],
+      pruneResult: string | null,
+    ) => {
+      dialogService.open<ActionResultDialogComponent, IActionResultDialogData>(
+        ActionResultDialogComponent,
+        {
+          closeOnEscape: true,
+          closable: true,
+          header: translateService.instant('ACTIONS.ACTION_COMPLETED'),
+          data: {
+            results,
+            pruneResult,
+          },
+        },
+      );
+    };
 
     return {
       select: (selectedId: number | null) => patchState(store, { selectedId }),
@@ -245,6 +372,9 @@ export const HostsStore = signalStore(
                       ...info,
                       summary: null,
                       status: null,
+                      progress: null,
+                      pruneResult: null,
+                      loading: null,
                     }),
                     { selectedId: info.id },
                   );
@@ -305,14 +435,84 @@ export const HostsStore = signalStore(
           ),
         ),
       ),
+      /**
+       * Check all containers of all hosts
+       */
       checkAll: createActionMethod(
         () => containersApiService.checkAll(),
         'check',
       ),
+      /**
+       * Update all containers of all hosts
+       */
       updateAll: createActionMethod(
         () => containersApiService.updateAll(),
         'update',
       ),
+      /**
+       * Check all containers of host
+       */
+      checkHost: createHostActionMethod(
+        (id) => containersApiService.checkHost(id),
+        'check',
+      ),
+      /**
+       * Update all containers of host
+       */
+      updateHost: createHostActionMethod(
+        (id) => containersApiService.updateHost(id),
+        'update',
+      ),
+      /**
+       * Prune images of host
+       */
+      pruneHost: rxMethod<{ id: number; body: IPruneImageRequestBodySchema }>(
+        pipe(
+          tap(({ id }) =>
+            patchState(
+              store,
+              updateEntity({
+                id,
+                changes: {
+                  pruneResult: null,
+                  loading: 'prune',
+                },
+              }),
+            ),
+          ),
+          switchMap(({ id, body }) =>
+            imageApiService.prune(id, body).pipe(
+              tapResponse({
+                next: (pruneResult) => {
+                  patchState(
+                    store,
+                    updateEntity({
+                      id,
+                      changes: {
+                        pruneResult,
+                      },
+                    }),
+                  );
+                  openActionResultDialog([], pruneResult);
+                },
+                error: (error) => toastService.error(error),
+                finalize: () => {
+                  patchState(
+                    store,
+                    updateEntity({ id, changes: { loading: null } }),
+                  );
+                  _updateImagesList();
+                },
+              }),
+            ),
+          ),
+        ),
+      ),
+      /**
+       * Open action results dialog
+       * @param results
+       */
+      openActionResultDialog,
     };
   }),
 );

@@ -63,6 +63,16 @@ AUTH:
     - At least one uppercase
     - At least one numeric
   SIGNIN_WITH_OIDC: Sign-in with OIDC
+ACTIONS:
+  RESULT: Result
+  CHECK_ALL: Check all
+  UPDATE_ALL: Update all
+  ACTION_COMPLETED: Action completed
+  PRUNE: Prune
+  PRUNE_CONFIRM: Do you want to prune images?
+  PRUNE_ALL: Prune all
+  PRUNE_ALL_HINT: This toggle stands for --all flag of 'docker image prune' command.
+  PRUNE_RESULT: Prune result
 HOSTS:
   NO_HOSTS_FOUND: No hosts found
   TABLE:
@@ -76,9 +86,6 @@ HOSTS:
     AVAILABLE: Available
     AVAILABLE_HINT: Number of available updates
     ONLY_AVAILABLE: Only available
-    CHECK_ALL: Check all
-    UPDATE_ALL: Update all
-    ACTION_COMPLETED: Action completed
   DASHBOARD:
     CONTAINERS: Containers
     AVAILABLE: Available
@@ -128,15 +135,6 @@ HOSTS:
 CONTAINERS:
   SEARCH_PLACEHOLDER: Name or ID
   ONLY_AVAILABLE: Only available
-  RESULT: Result
-  CHECK_ALL: Check all
-  UPDATE_ALL: Update all
-  ACTION_COMPLETED: Action completed
-  HEADER_PROGRESS:
-    UPDATED: Updated
-    AVAILABLE: Available
-    ROLLED_BACK: Rolled back
-    FAILED: Failed
   NAME: Name
   CONTAINER_ID: ID
   IMAGE: Image
@@ -144,10 +142,14 @@ CONTAINERS:
   STATUS: Status
   PORTS: Ports
   HEALTH: Health
-  CHECK_ENABLED: Check
-  CHECK_HINT: Automatically check for update on scheduled job.
-  UPDATE_ENABLED: Update
-  UPDATE_HINT: Automatically update (if available) on scheduled job.
+  CHECK_ENABLED: Auto-check
+  CHECK_HINT: |-
+    Check automatically.
+    This setting only affects scheduled task.
+  UPDATE_ENABLED: Auto-update
+  UPDATE_HINT: |-
+    Update automatically.
+    This setting only affects scheduled task.
   CHECKED_AT: Last check
   UPDATED_AT: Last update
   UPDATE: Update
@@ -179,11 +181,6 @@ CONTAINERS:
     PAUSE: Pause
     UNPAUSE: Unpause
 IMAGES:
-  PRUNE: Prune
-  PRUNE_CONFIRM: Do you want to prune images?
-  PRUNE_ALL: Prune all
-  PRUNE_ALL_HINT: This toggle stands for --all flag of 'docker image prune' command.
-  PRUNE_RESULT: Prune result
   SEARCH_PLACEHOLDER: ID, repo, tags
   REPOSITORY: Repository
   ID: ID

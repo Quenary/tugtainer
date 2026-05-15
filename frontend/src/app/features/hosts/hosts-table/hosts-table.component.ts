@@ -4,7 +4,6 @@ import {
   computed,
   effect,
   inject,
-  linkedSignal,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -21,8 +20,6 @@ import { HostStatusComponent } from '@shared/components/host-status/host-status.
 import { HostsStore, IHostEntity } from '../hosts.store';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
-import { IHostActionResult } from '@shared/interfaces/check-result.interface';
-import { HostCheckResultComponent } from '@shared/components/host-check-result/host-check-result.component';
 import { BadgeModule } from 'primeng/badge';
 
 const onlyAvailableStorageKey = 'tugtainer-hosts-only-available';
@@ -44,7 +41,6 @@ const onlyAvailableStorageKey = 'tugtainer-hosts-only-available';
     TooltipModule,
     RouterLink,
     DialogModule,
-    HostCheckResultComponent,
     BadgeModule,
   ],
   templateUrl: './hosts-table.component.html',
@@ -71,25 +67,6 @@ export class HostsTableComponent {
       ? hosts.filter((h) => h.available_updates_count > 0)
       : hosts;
   });
-  /**
-   * Global action dialog visibility
-   */
-  protected readonly globalActionDialogVisible = linkedSignal<boolean>(() => {
-    const globalActionProgress = this.hostsStore.globalActionProgress();
-    const globalActionActive = this.hostsStore.globalActionActive();
-    return globalActionProgress && !globalActionActive;
-  });
-  /**
-   * List of global action results
-   */
-  protected readonly globalActionResultList = computed<IHostActionResult[]>(
-    () => {
-      const globalActionProgress = this.hostsStore.globalActionProgress();
-      return globalActionProgress?.result
-        ? Object.values(globalActionProgress.result)
-        : [];
-    },
-  );
 
   constructor() {
     effect(() => {

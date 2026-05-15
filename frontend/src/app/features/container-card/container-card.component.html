@@ -11,6 +11,7 @@
     <app-container-actions
       withControl
       [item]="containersStore.selected()"
+      [host]="containersStore.host()"
       (OnCheck)="onCheck()"
       (OnUpdate)="onUpdate()"
       (OnCommand)="onCommand($event)">
@@ -172,7 +173,7 @@
       @defer (when accordionValue() === 'logs') {
         <app-container-card-logs
           [hostId]="containersStore.hostId()"
-          [containerNameOrId]="containerNameOrId()"></app-container-card-logs>
+          [containerNameOrId]="containersStore.selectedNameOrId()"></app-container-card-logs>
       }
     </p-accordion-content>
   </p-accordion-panel>

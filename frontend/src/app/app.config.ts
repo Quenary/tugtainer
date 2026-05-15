@@ -20,6 +20,7 @@ import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
 import { supportedLocales } from './app.consts';
+import { DialogService } from 'primeng/dynamicdialog';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -67,7 +68,8 @@ export const appConfig: ApplicationConfig = {
         },
       },
     }),
-    provideAppInitializer(() => localeInitializer()),
     MessageService,
+    DialogService,
+    provideAppInitializer(() => localeInitializer()),
   ],
 };

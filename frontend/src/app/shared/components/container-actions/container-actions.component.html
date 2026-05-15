@@ -8,7 +8,7 @@
       [label]="'CONTAINERS.COMMANDS.START' | translate"
       icon="pi pi-play"
       severity="contrast"
-      [disabled]="_loading || !['created', 'exited'].includes(_item.status)"
+      [disabled]="hostActionLoading() || _loading || !['created', 'exited'].includes(_item.status)"
       (onClick)="OnCommand.emit('start')">
     </p-button>
     <p-button
@@ -16,7 +16,7 @@
       [label]="'CONTAINERS.COMMANDS.STOP' | translate"
       icon="pi pi-stop"
       severity="contrast"
-      [disabled]="_loading || ['created', 'exited', 'dead', 'removing'].includes(_item.status)"
+      [disabled]="hostActionLoading() || _loading || ['created', 'exited', 'dead', 'removing'].includes(_item.status)"
       (onClick)="OnCommand.emit('stop')">
     </p-button>
     <p-button
@@ -24,7 +24,7 @@
       [label]="'CONTAINERS.COMMANDS.RESTART' | translate"
       icon="pi pi-sync"
       severity="contrast"
-      [disabled]="_loading || ['created', 'removing'].includes(_item.status)"
+      [disabled]="hostActionLoading() || _loading || ['created', 'removing'].includes(_item.status)"
       (onClick)="OnCommand.emit('restart')">
     </p-button>
     <p-button
@@ -32,7 +32,7 @@
       [label]="'CONTAINERS.COMMANDS.KILL' | translate"
       icon="pi pi-ban"
       severity="contrast"
-      [disabled]="_loading || ['created', 'exited', 'dead', 'removing'].includes(_item.status)"
+      [disabled]="hostActionLoading() || _loading || ['created', 'exited', 'dead', 'removing'].includes(_item.status)"
       (onClick)="OnCommand.emit('kill')">
     </p-button>
     <p-button
@@ -40,7 +40,7 @@
       [label]="'CONTAINERS.COMMANDS.PAUSE' | translate"
       icon="pi pi-pause"
       severity="contrast"
-      [disabled]="_loading || _item.status !== 'running'"
+      [disabled]="hostActionLoading() || _loading || _item.status !== 'running'"
       (onClick)="OnCommand.emit('pause')">
     </p-button>
     <p-button
@@ -48,7 +48,7 @@
       [label]="'CONTAINERS.COMMANDS.UNPAUSE' | translate"
       icon="pi pi-forward"
       severity="contrast"
-      [disabled]="_loading || _item.status !== 'paused'"
+      [disabled]="hostActionLoading() || _loading || _item.status !== 'paused'"
       (onClick)="OnCommand.emit('unpause')">
     </p-button>
   </section>
@@ -57,12 +57,12 @@
 <p-button-group>
   <p-button
     [loading]="_loading === 'check'"
-    [disabled]="_loading"
+    [disabled]="hostActionLoading() || _loading"
     [label]="'CONTAINERS.CHECK' | translate"
     (onClick)="OnCheck.emit()"></p-button>
   <p-button
     [loading]="_loading === 'update'"
-    [disabled]="_loading || cantUpdate()"
+    [disabled]="hostActionLoading() || _loading || cantUpdate()"
     [pTooltip]="updateButtonTooltip"
     [tooltipDisabled]="!showUpdateTooltip()"
     [label]="'CONTAINERS.UPDATE' | translate"

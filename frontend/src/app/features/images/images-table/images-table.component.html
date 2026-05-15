@@ -1,31 +1,3 @@
-<p-confirmpopup #pruneConfirmPopup>
-  <ng-template
-    #content
-    let-message>
-    <section
-      [ngStyle]="{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-      }">
-      <span>{{ message.message }}</span>
-      <app-boolean-field>
-        <p-toggle-switch
-          [(ngModel)]="pruneAll"
-          inputId="prune-all-confirm-toggle"></p-toggle-switch>
-        <label for="prune-all-confirm-toggle">
-          {{ 'IMAGES.PRUNE_ALL' | translate }}
-          <i
-            class="pi pi-question-circle"
-            style="margin: 0 0.5rem"
-            [pTooltip]="'IMAGES.PRUNE_ALL_HINT' | translate"
-            tooltipPosition="left"></i>
-        </label>
-      </app-boolean-field>
-    </section>
-  </ng-template>
-</p-confirmpopup>
-
 <p-toolbar>
   <ng-template #start>
     <p-iconfield iconPosition="left">
@@ -41,22 +13,13 @@
         [placeholder]="'IMAGES.SEARCH_PLACEHOLDER' | translate" />
       <p-button
         icon="pi pi-refresh"
-        [loading]="imagesStore.loading() === 'loading'"
+        [loading]="imagesStore.loading()"
         [disabled]="imagesStore.loading()"
         text
         (onClick)="imagesStore.loadList()"></p-button>
     </p-iconfield>
   </ng-template>
-  <ng-template #end>
-    <p-button
-      [loading]="imagesStore.loading() === 'prune'"
-      [disabled]="imagesStore.loading()"
-      severity="warn"
-      [label]="'IMAGES.PRUNE' | translate"
-      icon="pi pi-eraser"
-      (onClick)="confirmPrune($event)">
-    </p-button>
-  </ng-template>
+  <ng-template #end> </ng-template>
 </p-toolbar>
 
 <p-table
@@ -147,14 +110,3 @@
     </tr>
   </ng-template>
 </p-table>
-
-<p-dialog
-  [header]="'IMAGES.PRUNE_RESULT' | translate"
-  [modal]="true"
-  [draggable]="false"
-  [visible]="pruneDialogVisible()"
-  (visibleChange)="pruneDialogVisible.set(null)">
-  <pre style="max-width: 75vw; max-height: 75vh">
-      {{ imagesStore.pruneResult() }}
-  </pre>
-</p-dialog>

@@ -51,6 +51,15 @@ AUTH:
     - 至少一个大写字母
     - 至少一个数字
   SIGNIN_WITH_OIDC: 使用 OIDC 登录
+ACTIONS:
+  CHECK_ALL: 全部检查
+  UPDATE_ALL: 全部更新
+  ACTION_COMPLETED: 操作完成
+  PRUNE: 清理
+  PRUNE_CONFIRM: 确定清理镜像吗？
+  PRUNE_ALL: 全部清理
+  PRUNE_ALL_HINT: 此开关对应 'docker image prune' 命令的 --all 参数。
+  PRUNE_RESULT: 清理结果
 HOSTS:
   NO_HOSTS_FOUND: 未找到主机
   TABLE:
@@ -91,14 +100,6 @@ HOSTS:
       TIMEOUT_HINT: 设置常规短耗时 Agent 请求的超时时间（秒）。此设置不影响创建容器或拉取镜像等长耗时的请求。
 CONTAINERS:
   SEARCH_PLACEHOLDER: 名称或 ID
-  CHECK_ALL: 全部检查
-  UPDATE_ALL: 全部更新
-  ACTION_COMPLETED: 操作完成
-  HEADER_PROGRESS:
-    UPDATED: 已更新
-    AVAILABLE: 可更新
-    ROLLED_BACK: 已回滚
-    FAILED: 失败
   NAME: 名称
   CONTAINER_ID: ID
   IMAGE: 镜像
@@ -118,11 +119,6 @@ CONTAINERS:
   PROTECTED: 受保护
   PROTECTED_CONTAINER_HINT: 此容器标记为 dev.quenary.tugtainer.protected，无法从此应用更新。
 IMAGES:
-  PRUNE: 清理
-  PRUNE_CONFIRM: 确定清理镜像吗？
-  PRUNE_ALL: 全部清理
-  PRUNE_ALL_HINT: 此开关对应 'docker image prune' 命令的 --all 参数。
-  PRUNE_RESULT: 清理结果
   SEARCH_PLACEHOLDER: ID、仓库、标签
   REPOSITORY: 仓库
   ID: ID

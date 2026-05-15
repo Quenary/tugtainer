@@ -35,7 +35,7 @@
       <p-button
         severity="primary"
         [loading]="hostsStore.loading() === 'check'"
-        [label]="'HOSTS.TABLE.CHECK_ALL' | translate"
+        [label]="'ACTIONS.CHECK_ALL' | translate"
         [disabled]="hostsStore.loading()"
         (onClick)="hostsStore.checkAll()">
       </p-button>
@@ -43,7 +43,7 @@
       <p-button
         severity="success"
         [loading]="hostsStore.loading() === 'update'"
-        [label]="'HOSTS.TABLE.UPDATE_ALL' | translate"
+        [label]="'ACTIONS.UPDATE_ALL' | translate"
         [disabled]="hostsStore.loading() || !hostsStore.anyForUpdate()"
         (onClick)="hostsStore.updateAll()">
       </p-button>
@@ -145,14 +145,3 @@
     </tr>
   </ng-template>
 </p-table>
-
-<p-dialog
-  [header]="'HOSTS.TABLE.ACTION_COMPLETED' | translate"
-  [modal]="true"
-  [draggable]="false"
-  [visible]="globalActionDialogVisible()"
-  (visibleChange)="globalActionDialogVisible.set(false)">
-  @for (r of globalActionResultList(); track r) {
-    <app-host-check-result [result]="r"></app-host-check-result>
-  }
-</p-dialog>

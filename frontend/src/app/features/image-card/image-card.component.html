@@ -3,7 +3,7 @@
     <p-button
       icon="pi pi-refresh"
       text
-      [loading]="imagesStore.loading() === 'loading'"
+      [loading]="imagesStore.loading()"
       (onClick)="imagesStore.loadSelected()"></p-button>
   </ng-template>
 

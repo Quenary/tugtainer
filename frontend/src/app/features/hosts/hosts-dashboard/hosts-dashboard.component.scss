@@ -11,6 +11,13 @@
     align-items: center;
     gap: 0.5rem;
     padding-left: 1rem;
+
+    &-actions {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
   }
 
   .dashboard {
@@ -51,4 +58,10 @@
       }
     }
   }
+}
+
+.prune-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }

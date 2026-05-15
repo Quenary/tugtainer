@@ -4,7 +4,6 @@ import {
   type,
   withComputed,
   withHooks,
-  withLinkedState,
   withMethods,
   withState,
 } from '@ngrx/signals';
@@ -21,25 +20,20 @@ import {
   IContainerPatchBody,
   TControlContainerCommand,
 } from './containers.interface';
-import { computed, effect, inject, linkedSignal } from '@angular/core';
+import { computed, effect, inject, untracked } from '@angular/core';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { EMPTY, Observable, pipe, switchMap, tap } from 'rxjs';
 import { ContainersApiService } from './containers-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsStore } from '../hosts/hosts.store';
 import { tapResponse } from '@ngrx/operators';
-import {
-  EActionStatus,
-  IContainerActionProgress,
-  IHostActionProgress,
-} from '@shared/interfaces/progress.interface';
+import { IContainerActionProgress } from '@shared/interfaces/progress.interface';
 import { TranslateService } from '@ngx-translate/core';
 
 interface IContainersStore {
   loading: boolean;
   selectedNameOrId: string | null;
   selectedInfo: IContainerInfo | null;
-  hostActionProgress: IHostActionProgress | null;
 }
 
 /**
@@ -105,18 +99,6 @@ export const ContainersStore = signalStore(
        */
       host: computed(() => hostsStore.selected()),
       /**
-       * Is host check/update action in progress
-       */
-      hostActionActive: computed(() => {
-        const hostActionProgress = store.hostActionProgress();
-        return (
-          hostActionProgress &&
-          ![EActionStatus.DONE, EActionStatus.ERROR].includes(
-            hostActionProgress.status,
-          )
-        );
-      }),
-      /**
        * Is any container update available
        */
       anyForUpdate: computed(() => {
@@ -125,17 +107,6 @@ export const ContainersStore = signalStore(
       }),
     };
   }),
-  withLinkedState((store) => ({
-    /**
-     * Whether to show host action result dialog,
-     * linked signal that may be changed programatically
-     */
-    hostActionDialogOpened: linkedSignal(() => {
-      const hostActionProgress = store.hostActionProgress();
-      const hostActionActive = store.hostActionActive();
-      return hostActionProgress && !hostActionActive;
-    }),
-  })),
   withMethods((store) => {
     const containersApiService = inject(ContainersApiService);
     const toastService = inject(ToastService);
@@ -193,47 +164,6 @@ export const ContainersStore = signalStore(
         }),
       ),
     );
-
-    function createHostActionMethod(
-      apiCall: (hostId: number) => Observable<string>,
-    ) {
-      return rxMethod<void>(
-        pipe(
-          tap(() => patchState(store, { hostActionProgress: null })),
-          switchMap(() => {
-            const hostId = store.hostId();
-            if (!hostId) {
-              return EMPTY;
-            }
-            patchState(store, { loading: true });
-            return apiCall(hostId).pipe(
-              tap(() =>
-                toastService.success(
-                  translateService.instant('GENERAL.IN_PROGRESS'),
-                ),
-              ),
-              switchMap((cacheId) =>
-                containersApiService.watchProgress<IHostActionProgress>(
-                  cacheId,
-                ),
-              ),
-              tapResponse({
-                next: (hostActionProgress) => {
-                  patchState(store, { hostActionProgress });
-                },
-                error: (error) => {
-                  toastService.error(error);
-                },
-                finalize: () => {
-                  patchState(store, { loading: false });
-                  loadList();
-                },
-              }),
-            );
-          }),
-        ),
-      );
-    }
 
     function createContainerActionMethod(
       apiCall: (hostId: number, name: string) => Observable<string>,
@@ -467,18 +397,6 @@ export const ContainersStore = signalStore(
        */
       reloadEntity,
       /**
-       * Check all containers of host
-       */
-      checkAll: createHostActionMethod((hostId) =>
-        containersApiService.checkHost(hostId),
-      ),
-      /**
-       * Update all containers of host
-       */
-      updateAll: createHostActionMethod((hostId) =>
-        containersApiService.updateHost(hostId),
-      ),
-      /**
        * Check specified container
        */
       checkContainer: createContainerActionMethod(
@@ -500,25 +418,30 @@ export const ContainersStore = signalStore(
        * Control specified container
        */
       controlContainer,
-      /**
-       * Set value of hostActionDialogOpened flag
-       * @param hostActionDialog
-       * @returns
-       */
-      setHostActionDialogOpened: (hostActionDialogOpened: boolean) =>
-        patchState(store, { hostActionDialogOpened }),
     };
   }),
   withHooks({
     onInit: (store) => {
+      const hostsStore = inject(HostsStore);
+
       effect(() => {
         store.hostId();
-        patchState(store, { hostActionProgress: null }, removeAllEntities());
+        patchState(store, removeAllEntities());
       });
 
       effect(() => {
         store.selectedNameOrId();
         patchState(store, { selectedInfo: null });
+      });
+
+      effect(() => {
+        const u = hostsStore.updateContainersList();
+        console.log(u);
+        if (u) {
+          untracked(() => {
+            store.loadList();
+          });
+        }
       });
     },
   }),

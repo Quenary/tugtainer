@@ -18,6 +18,7 @@ import {
   TContainerEntityLoading,
 } from 'src/app/features/containers/containers.store';
 import { SettingsStore } from 'src/app/features/settings/settings.store';
+import { IHostEntity } from 'src/app/features/hosts/hosts.store';
 
 /**
  * Container action buttons and common logic
@@ -36,6 +37,10 @@ export class ContainerActionsComponent {
    * Container item
    */
   public readonly item = input.required<IContainerEntity>();
+  /**
+   * Current host
+   */
+  public readonly host = input.required<IHostEntity>();
   /**
    * Whether to show container control buttons
    * @default false
@@ -65,6 +70,10 @@ export class ContainerActionsComponent {
   protected loading = computed<TContainerEntityLoading>(() => {
     const item = this.item();
     return item?.loading ?? null;
+  });
+  protected readonly hostActionLoading = computed<boolean>(() => {
+    const host = this.host();
+    return ['check', 'update', 'prune'].includes(host?.loading);
   });
   /**
    * Whether to update only running containers

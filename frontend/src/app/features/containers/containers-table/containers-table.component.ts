@@ -27,7 +27,6 @@ import { DialogModule } from 'primeng/dialog';
 import { RouterLink } from '@angular/router';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
-import { HostCheckResultComponent } from '@shared/components/host-check-result/host-check-result.component';
 import { ContainersStore, IContainerEntity } from '../containers.store';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 
@@ -51,7 +50,6 @@ const onlyAvailableStorageKey = 'tugtainer-containers-only-available';
     RouterLink,
     ToolbarModule,
     ContainerActionsComponent,
-    HostCheckResultComponent,
     ButtonGroupModule,
   ],
   templateUrl: './containers-table.component.html',

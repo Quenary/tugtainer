@@ -99,7 +99,8 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
       repeat({ delay: 500 }),
       takeWhile(
         (res) =>
-          ![EActionStatus.DONE, EActionStatus.ERROR].includes(res?.status),
+          res &&
+          ![EActionStatus.DONE, EActionStatus.ERROR].includes(res.status),
         true,
       ),
     );

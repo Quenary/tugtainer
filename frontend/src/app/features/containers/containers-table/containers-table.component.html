@@ -28,33 +28,6 @@
       (onClick)="onlyAvailable.set(!onlyAvailable())">
     </p-button>
   </ng-template>
-  <ng-template #end>
-    @if (containersStore.hostActionProgress()?.result; as result) {
-      <p-button
-        severity="success"
-        text
-        [label]="'CONTAINERS.RESULT' | translate"
-        (onClick)="containersStore.setHostActionDialogOpened(true)">
-      </p-button>
-    }
-
-    <p-button-group>
-      <p-button
-        severity="primary"
-        [loading]="containersStore.hostActionActive()"
-        [label]="'CONTAINERS.CHECK_ALL' | translate"
-        (onClick)="containersStore.checkAll()">
-      </p-button>
-
-      <p-button
-        severity="success"
-        [loading]="containersStore.hostActionActive()"
-        [label]="'CONTAINERS.UPDATE_ALL' | translate"
-        [disabled]="!containersStore.anyForUpdate()"
-        (onClick)="containersStore.updateAll()">
-      </p-button>
-    </p-button-group>
-  </ng-template>
 </p-toolbar>
 
 <p-table
@@ -190,6 +163,7 @@
       <td style="padding-right: 0">
         <app-container-actions
           [item]="container"
+          [host]="containersStore.host()"
           (OnCheck)="onCheck(container)"
           (OnUpdate)="onUpdate(container)"
           (OnCommand)="onCommand($event, container)">
@@ -198,14 +172,3 @@
     </tr>
   </ng-template>
 </p-table>
-
-<p-dialog
-  [header]="'CONTAINERS.ACTION_COMPLETED' | translate"
-  [modal]="true"
-  [draggable]="false"
-  [visible]="containersStore.hostActionDialogOpened()"
-  (visibleChange)="containersStore.setHostActionDialogOpened(false)">
-  @if (containersStore.hostActionProgress()?.result; as res) {
-    <app-host-check-result [result]="res"></app-host-check-result>
-  }
-</p-dialog>

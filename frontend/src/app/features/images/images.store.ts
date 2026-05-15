@@ -13,26 +13,19 @@ import {
   setEntities,
   withEntities,
 } from '@ngrx/signals/entities';
-import {
-  IImage,
-  IImageInspectResult,
-  IPruneImageRequestBodySchema,
-} from './images.interface';
-import { computed, effect, inject } from '@angular/core';
+import { IImage, IImageInspectResult } from './images.interface';
+import { computed, effect, inject, untracked } from '@angular/core';
 import { ImagesApiService } from './images-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { EMPTY, pipe, switchMap, tap } from 'rxjs';
+import { EMPTY, pipe, switchMap } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { HostsStore } from '../hosts/hosts.store';
 
-export type TImagesLoading = 'loading' | 'prune' | null;
-
 interface ImagesState {
-  loading: TImagesLoading;
+  loading: boolean;
   selectedId: string | null;
   selectedInfo: IImageInspectResult | null;
-  pruneResult: string | null;
 }
 
 export interface IImageEntity extends IImage {} // eslint-disable-line
@@ -45,7 +38,7 @@ export const ImagesStore = signalStore(
     }),
   ),
   withState<ImagesState>(() => ({
-    loading: null,
+    loading: false,
     selectedId: null,
     selectedInfo: null,
     pruneResult: null,
@@ -83,12 +76,12 @@ export const ImagesStore = signalStore(
           if (!hostId) {
             return EMPTY;
           }
-          patchState(store, { loading: 'loading' });
+          patchState(store, { loading: true });
           return imagesApiService.list(hostId).pipe(
             tapResponse({
               next: (list) => patchState(store, setEntities(list)),
               error: (error) => toastService.error(error),
-              finalize: () => patchState(store, { loading: null }),
+              finalize: () => patchState(store, { loading: false }),
             }),
           );
         }),
@@ -117,7 +110,7 @@ export const ImagesStore = signalStore(
             if (!hostId || !selectedId) {
               return EMPTY;
             }
-            patchState(store, { loading: 'loading' });
+            patchState(store, { loading: true });
             return imagesApiService.inspect(hostId, selectedId).pipe(
               tapResponse({
                 next: (selectedInfo) => patchState(store, { selectedInfo }),
@@ -125,48 +118,36 @@ export const ImagesStore = signalStore(
                   toastService.error(error);
                 },
                 finalize: () => {
-                  patchState(store, { loading: null });
+                  patchState(store, { loading: false });
                 },
               }),
             );
           }),
         ),
       ),
-      /**
-       * Prune images of selected host
-       */
-      prune: rxMethod<{ body: IPruneImageRequestBodySchema }>(
-        pipe(
-          tap(() => patchState(store, { loading: 'prune', pruneResult: null })),
-          switchMap(({ body }) =>
-            imagesApiService.prune(store.hostId(), body).pipe(
-              tapResponse({
-                next: (pruneResult) => {
-                  patchState(store, { pruneResult });
-                },
-                finalize: () => {
-                  patchState(store, { loading: null });
-                  loadList();
-                },
-                error: (error) => {
-                  toastService.error(error);
-                },
-              }),
-            ),
-          ),
-        ),
-      ),
     };
   }),
   withHooks({
     onInit: (store) => {
+      const hostsStore = inject(HostsStore);
+
       effect(() => {
         store.hostId();
-        patchState(store, { pruneResult: null }, removeAllEntities());
+        patchState(store, removeAllEntities());
       });
+
       effect(() => {
         store.selectedId();
         patchState(store, { selectedInfo: null });
+      });
+
+      effect(() => {
+        const u = hostsStore.updateImagesList();
+        if (u) {
+          untracked(() => {
+            store.loadList();
+          });
+        }
       });
     },
   }),

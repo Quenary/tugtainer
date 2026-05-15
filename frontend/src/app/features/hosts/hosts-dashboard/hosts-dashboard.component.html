@@ -1,18 +1,85 @@
-@if (!childActive()) {
-  @if (hostsStore.selected(); as h) {
-    <div class="header">
-      <span>{{h.name}}</span>
-      <app-host-status [host]="h"></app-host-status>
+<p-confirmpopup #pruneConfirmPopup>
+  <ng-template
+    #content
+    let-message>
+    <section class="prune-confirm">
+      <span>{{ 'ACTIONS.PRUNE_CONFIRM' | translate }}</span>
+      <app-boolean-field>
+        <p-toggle-switch
+          [(ngModel)]="pruneAll"
+          inputId="prune-all-confirm-toggle"></p-toggle-switch>
+        <label for="prune-all-confirm-toggle">
+          {{ 'ACTIONS.PRUNE_ALL' | translate }}
+          <i
+            class="pi pi-question-circle"
+            style="margin: 0 0.5rem"
+            [pTooltip]="'ACTIONS.PRUNE_ALL_HINT' | translate"
+            tooltipPosition="left"></i>
+        </label>
+      </app-boolean-field>
+    </section>
+  </ng-template>
+</p-confirmpopup>
+
+@if (hostsStore.selected(); as h) {
+  <div class="header">
+    <span
+      style="cursor: pointer"
+      routerLink="."
+      >{{h.name}}</span
+    >
+
+    <app-host-status [host]="h"></app-host-status>
+
+    <p-button
+      text
+      icon="pi pi-pen-to-square"
+      routerLink="edit">
+    </p-button>
+
+    <section class="header-actions">
+      @let res = h.progress?.result;
+      @let pruneRes = h.pruneResult;
+      @if (res || pruneRes) {
+        <p-button
+          severity="success"
+          text
+          [label]="'ACTIONS.RESULT' | translate"
+          (onClick)="hostsStore.openActionResultDialog(res ? [ res] : [],pruneRes)">
+        </p-button>
+      }
+
+      <p-button-group>
+        <p-button
+          severity="primary"
+          [loading]="h.loading === 'check'"
+          [disabled]="h.loading"
+          [label]="'ACTIONS.CHECK_ALL' | translate"
+          (onClick)="hostsStore.checkHost({id: h.id})">
+        </p-button>
+
+        <p-button
+          severity="success"
+          [loading]="h.loading === 'update'"
+          [disabled]="h.loading"
+          [label]="'ACTIONS.UPDATE_ALL' | translate"
+          (onClick)="hostsStore.updateHost({id: h.id})">
+        </p-button>
+      </p-button-group>
 
       <p-button
-        [style.margin-left]="'auto'"
-        text
-        icon="pi pi-pen-to-square"
-        routerLink="edit">
+        [loading]="h.loading === 'prune'"
+        [disabled]="h.loading"
+        severity="warn"
+        [label]="'ACTIONS.PRUNE' | translate"
+        icon="pi pi-eraser"
+        (onClick)="confirmPrune($event)">
       </p-button>
-    </div>
-  }
+    </section>
+  </div>
+}
 
+@if (!childActive()) {
   <section class="dashboard">
     <p-card
       class="dashboard-item"
