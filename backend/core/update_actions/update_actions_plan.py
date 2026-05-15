@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import cast
+from typing import Final, cast
 
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
@@ -38,9 +38,9 @@ async def build_update_plan(
     :param containers: containers to process
     :param manual_for: override updatable containers (for manual runs)
     """
-    update_only_running = SettingsStorage.get(ESettingKey.UPDATE_ONLY_RUNNING)
+    update_only_running: Final = SettingsStorage.get(ESettingKey.UPDATE_ONLY_RUNNING)
     async with async_session_maker() as session:
-        containers_db = {
+        containers_db: Final = {
             c.name: c
             for c in (
                 await session.execute(
@@ -53,6 +53,12 @@ async def build_update_plan(
 
     # Filter potentially updatable/affected
     containers = [
+        c
+        for c in containers
+        if not is_protected_container(c)
+        and (is_running_container(c) or not update_only_running)
+    ]
+    manual_for = [
         c
         for c in containers
         if not is_protected_container(c)

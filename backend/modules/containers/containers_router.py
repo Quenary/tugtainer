@@ -244,7 +244,7 @@ async def update_host(
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
     asyncio.create_task(
-        update_host_containers(host, client),
+        update_host_containers(host, client, True),
     )
     return get_host_cache_key(host)
 
