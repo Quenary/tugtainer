@@ -6,6 +6,7 @@ import { MessageService } from 'primeng/api';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ContainerCardComponent } from './container-card.component';
 import { ContainersStore } from '../containers/containers.store';
+import { DialogService } from 'primeng/dynamicdialog';
 
 describe('ContainerCardComponent', () => {
   let component: ContainerCardComponent;
@@ -32,6 +33,7 @@ describe('ContainerCardComponent', () => {
         ContainersStore,
         MessageService,
         provideTranslateService(),
+        DialogService,
       ],
     }).compileComponents();
 

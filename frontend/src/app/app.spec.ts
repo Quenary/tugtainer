@@ -11,6 +11,7 @@ import { IsUpdateAvailableResponseBody } from './features/public/public-interfac
 import { MessageService } from 'primeng/api';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { storageJson } from '../extensions/local-storage-json';
+import { DialogService } from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-test-comp',
@@ -82,6 +83,7 @@ describe('App', () => {
           },
         ]),
         MessageService,
+        DialogService,
       ],
     }).compileComponents();
 

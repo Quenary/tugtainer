@@ -69,25 +69,6 @@ export const ImagesStore = signalStore(
     const imagesApiService = inject(ImagesApiService);
     const toastService = inject(ToastService);
 
-    const loadList = rxMethod<void>(
-      pipe(
-        switchMap(() => {
-          const hostId = store.hostId();
-          if (!hostId) {
-            return EMPTY;
-          }
-          patchState(store, { loading: true });
-          return imagesApiService.list(hostId).pipe(
-            tapResponse({
-              next: (list) => patchState(store, setEntities(list)),
-              error: (error) => toastService.error(error),
-              finalize: () => patchState(store, { loading: false }),
-            }),
-          );
-        }),
-      ),
-    );
-
     return {
       /**
        * Select image
@@ -98,7 +79,24 @@ export const ImagesStore = signalStore(
       /**
        * Load list of images
        */
-      loadList,
+      loadList: rxMethod<void>(
+        pipe(
+          switchMap(() => {
+            const hostId = store.hostId();
+            if (!hostId) {
+              return EMPTY;
+            }
+            patchState(store, { loading: true });
+            return imagesApiService.list(hostId).pipe(
+              tapResponse({
+                next: (list) => patchState(store, setEntities(list)),
+                error: (error) => toastService.error(error),
+                finalize: () => patchState(store, { loading: false }),
+              }),
+            );
+          }),
+        ),
+      ),
       /**
        * Load selected image inspect info
        */

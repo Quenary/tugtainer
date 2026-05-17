@@ -94,11 +94,11 @@ export const HostsStore = signalStore(
      */
     globalActionActive: computed<boolean>(() => {
       const globalACtionProgress = store.globalActionProgress();
-      return (
+      return Boolean(
         globalACtionProgress &&
         ![EActionStatus.DONE, EActionStatus.ERROR].includes(
           globalACtionProgress.status,
-        )
+        ),
       );
     }),
   })),

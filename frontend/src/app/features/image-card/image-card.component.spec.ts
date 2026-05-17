@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { ImageCardComponent } from './image-card.component';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -7,6 +6,7 @@ import { HostsStore } from '../hosts/hosts.store';
 import { ImagesStore } from '../images/images.store';
 import { MessageService } from 'primeng/api';
 import { provideTranslateService } from '@ngx-translate/core';
+import { DialogService } from 'primeng/dynamicdialog';
 
 describe('ImageCardComponent', () => {
   let component: ImageCardComponent;
@@ -33,6 +33,7 @@ describe('ImageCardComponent', () => {
         ImagesStore,
         MessageService,
         provideTranslateService(),
+        DialogService,
       ],
     }).compileComponents();
 

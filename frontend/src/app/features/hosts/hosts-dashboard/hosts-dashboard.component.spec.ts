@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { HostsStore } from '../hosts.store';
 import { MessageService } from 'primeng/api';
 import { provideTranslateService } from '@ngx-translate/core';
+import { DialogService } from 'primeng/dynamicdialog';
 
 describe('HostsDashboardComponent', () => {
   let component: HostsDashboardComponent;
@@ -30,6 +31,7 @@ describe('HostsDashboardComponent', () => {
         HostsStore,
         MessageService,
         provideTranslateService(),
+        DialogService,
       ],
     }).compileComponents();
 

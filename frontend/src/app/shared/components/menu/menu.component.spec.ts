@@ -9,6 +9,7 @@ import { MessageService } from 'primeng/api';
 import { HostsStore } from 'src/app/features/hosts/hosts.store';
 import { signal } from '@angular/core';
 import { of, Subject } from 'rxjs';
+import { DialogService } from 'primeng/dynamicdialog';
 
 describe('MenuComponent', () => {
   let component: MenuComponent;
@@ -47,6 +48,7 @@ describe('MenuComponent', () => {
         provideRouter([]),
         MessageService,
         HostsStore,
+        DialogService,
       ],
     }).compileComponents();
 
