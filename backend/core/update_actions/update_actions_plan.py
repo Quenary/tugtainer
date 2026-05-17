@@ -60,7 +60,7 @@ async def build_update_plan(
     ]
     manual_for = [
         c
-        for c in containers
+        for c in manual_for
         if not is_protected_container(c)
         and (is_running_container(c) or not update_only_running)
     ]
