@@ -16,7 +16,7 @@ import { ICreateHost, IHostInfo, IHostStatus } from './hosts.interface';
 import { computed, inject } from '@angular/core';
 import { HostsApiService } from './hosts-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { Observable, pipe, switchMap, tap } from 'rxjs';
+import { mergeMap, Observable, pipe, switchMap, tap } from 'rxjs';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
@@ -193,7 +193,7 @@ export const HostsStore = signalStore(
             }),
           ),
         ),
-        switchMap(({ hostId }) =>
+        mergeMap(({ hostId }) =>
           hostsApiService.status(hostId).pipe(
             tapResponse({
               next: (status) =>
@@ -289,7 +289,7 @@ export const HostsStore = signalStore(
               }),
             ),
           ),
-          switchMap(({ id }) =>
+          mergeMap(({ id }) =>
             apiCall(id).pipe(
               tap(() =>
                 toastService.success(
@@ -480,7 +480,7 @@ export const HostsStore = signalStore(
               }),
             ),
           ),
-          switchMap(({ id, body }) =>
+          mergeMap(({ id, body }) =>
             imageApiService.prune(id, body).pipe(
               tapResponse({
                 next: (pruneResult) => {

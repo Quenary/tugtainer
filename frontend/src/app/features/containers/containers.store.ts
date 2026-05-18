@@ -22,7 +22,7 @@ import {
 } from './containers.interface';
 import { computed, effect, inject, untracked } from '@angular/core';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { EMPTY, Observable, pipe, switchMap, tap } from 'rxjs';
+import { EMPTY, mergeMap, Observable, pipe, switchMap, tap } from 'rxjs';
 import { ContainersApiService } from './containers-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsStore } from '../hosts/hosts.store';
@@ -182,7 +182,7 @@ export const ContainersStore = signalStore(
               }),
             ),
           ),
-          switchMap(({ id }) => {
+          mergeMap(({ id }) => {
             const hostId = store.hostId();
             const entity = store.entityMap()[id];
             if (!hostId || !entity) {
@@ -242,7 +242,7 @@ export const ContainersStore = signalStore(
 
     const reloadEntity = rxMethod<{ id: number }>(
       pipe(
-        switchMap(({ id }) => {
+        mergeMap(({ id }) => {
           const hostId = store.hostId();
           const entity = store.entityMap()[id];
           if (!entity || !hostId) {
