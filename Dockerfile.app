@@ -1,5 +1,6 @@
 # Stage 1 - Frontend build
-FROM node:24 AS frontend-builder
+# 22 is the last version with support of linux/arm/v7
+FROM node:22 AS frontend-builder
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
