@@ -1,6 +1,53 @@
 # CHANGELOG
 
 
+## v1.30.0 (2026-05-19)
+
+### Bug Fixes
+
+- **backend**: Manual update of all hosts containers
+  ([`e4fbe79`](https://github.com/Quenary/tugtainer/commit/e4fbe79ee2ad34e99f0e028f83165a146782f7d6))
+
+- **backend**: Update_actions_plan with manula override
+  ([`218c9f4`](https://github.com/Quenary/tugtainer/commit/218c9f46db345e8eb915ffd7a680753b1e4f927b))
+
+- **frontend**: Concurrent requests
+  ([`f2c7b74`](https://github.com/Quenary/tugtainer/commit/f2c7b746615d88e8a257e4091b282f803e4b2df7))
+
+- **frontend**: Redirect to / if no matching routes
+  ([`172c776`](https://github.com/Quenary/tugtainer/commit/172c776e94545bf8a1e8e611d8def23ec73bd2dc))
+
+- **frontend**: Settings order in form
+  ([`5ed7dbe`](https://github.com/Quenary/tugtainer/commit/5ed7dbe95043e6aa3aa0ed81ea69c498bd989953))
+
+- **frontend**: Update containers/images tables after host action
+  ([`00e1d33`](https://github.com/Quenary/tugtainer/commit/00e1d330cb1662de2e91797042eb22cd29b37393))
+
+### Documentation
+
+- Add API section with public endpoints to README
+  ([`0ad40c2`](https://github.com/Quenary/tugtainer/commit/0ad40c27840e1d03a32590738a69c63676e2d226))
+
+- Readme update
+  ([`eb25e97`](https://github.com/Quenary/tugtainer/commit/eb25e978e73a1b69bbd1752c0e9487fd6c94664d))
+
+### Features
+
+- **backend**: Added image summary and host_enabled to /public/summary
+  ([`e57ba2d`](https://github.com/Quenary/tugtainer/commit/e57ba2dd0837760eae8975aeb10d8f660da8330a))
+
+- **backend**: Image inspect api
+  ([`fcac1fb`](https://github.com/Quenary/tugtainer/commit/fcac1fbc745eebfce17e71654225dfa01697e806))
+
+- **frontend**: Redefined ui (menu, breadcrumbs, dashboard, ngrx state)
+  ([`7d67092`](https://github.com/Quenary/tugtainer/commit/7d67092cba64c420f2360f3259a2188fb6a1b018))
+
+### Performance Improvements
+
+- **backend**: Optimize image list request
+  ([`c0fe4a7`](https://github.com/Quenary/tugtainer/commit/c0fe4a70d7f09976041cb8effa460273f1a7140b))
+
+
 ## v1.29.1 (2026-04-26)
 
 ### Bug Fixes
