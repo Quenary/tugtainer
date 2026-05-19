@@ -16,21 +16,22 @@ GENERAL:
   ERROR: 错误
   IN_PROGRESS: 进行中
   REFRESH: 刷新
-LOGO:
-  '0': Tug
-  '1': tainer
 NAV:
   AUTH: Tugtainer. 授权
   HOSTS: Tugtainer. 主机
   CONTAINERS: Tugtainer. 容器
   IMAGES: Tugtainer. 镜像
   SETTINGS: Tugtainer. 设置
-MENU:
+BREADCRUMBS:
   HOSTS: 主机
   CONTAINERS: 容器
   IMAGES: 镜像
   SETTINGS: 设置
+MENU:
+  HOSTS: 主机
+  SETTINGS: 设置
   GITHUB: GitHub
+UPDATE_DIALOGUE:
   UPDATE: 有可用更新
   UPDATE_NOTES: |-
     受限于容器机制，无法进行自我更新。
@@ -50,6 +51,15 @@ AUTH:
     - 至少一个大写字母
     - 至少一个数字
   SIGNIN_WITH_OIDC: 使用 OIDC 登录
+ACTIONS:
+  CHECK_ALL: 全部检查
+  UPDATE_ALL: 全部更新
+  ACTION_COMPLETED: 操作完成
+  PRUNE: 清理
+  PRUNE_CONFIRM: 确定清理镜像吗？
+  PRUNE_ALL: 全部清理
+  PRUNE_ALL_HINT: 此开关对应 'docker image prune' 命令的 --all 参数。
+  PRUNE_RESULT: 清理结果
 HOSTS:
   NO_HOSTS_FOUND: 未找到主机
   TABLE:
@@ -60,6 +70,9 @@ HOSTS:
     STATUS: 状态
     STATUS_OK: 正常
     STATUS_ERROR: 错误
+  DASHBOARD:
+    CONTAINERS: 容器
+    IMAGES: 镜像
   CARD:
     DELETE_CONFIRM: 确定删除这个主机吗？
     HELP:
@@ -87,13 +100,6 @@ HOSTS:
       TIMEOUT_HINT: 设置常规短耗时 Agent 请求的超时时间（秒）。此设置不影响创建容器或拉取镜像等长耗时的请求。
 CONTAINERS:
   SEARCH_PLACEHOLDER: 名称或 ID
-  CHECK_ALL: 全部检查
-  CHECK_ALL_COMPLETED: 检查完成
-  HEADER_PROGRESS:
-    UPDATED: 已更新
-    AVAILABLE: 可更新
-    ROLLED_BACK: 已回滚
-    FAILED: 失败
   NAME: 名称
   CONTAINER_ID: ID
   IMAGE: 镜像
@@ -113,21 +119,15 @@ CONTAINERS:
   PROTECTED: 受保护
   PROTECTED_CONTAINER_HINT: 此容器标记为 dev.quenary.tugtainer.protected，无法从此应用更新。
 IMAGES:
-  TABLE:
-    PRUNE: 清理
-    PRUNE_CONFIRM: 确定清理镜像吗？
-    PRUNE_ALL: 全部清理
-    PRUNE_ALL_HINT: 此开关对应 'docker image prune' 命令的 --all 参数。
-    PRUNE_RESULT: 清理结果
-    SEARCH_PLACEHOLDER: ID、仓库、标签
-    REPOSITORY: 仓库
-    ID: ID
-    DANGLING: 悬空
-    UNUSED: 未使用
-    TAGS: 标签
-    SIZE: 大小
-    SIZE_UNIT: MB
-    CREATED: 创建时间
+  SEARCH_PLACEHOLDER: ID、仓库、标签
+  REPOSITORY: 仓库
+  ID: ID
+  DANGLING: 悬空
+  UNUSED: 未使用
+  TAGS: 标签
+  SIZE: 大小
+  SIZE_UNIT: MB
+  CREATED: 创建时间
 SETTINGS:
   VALUE: 值
   SECTIONS:

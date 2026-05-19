@@ -5,24 +5,23 @@ import {
   input,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { isPremitive } from '@shared/functions/is-premitive.function';
 import { TreeNode } from 'primeng/api';
 import { TabsModule } from 'primeng/tabs';
 import { TreeModule } from 'primeng/tree';
-import { IContainerInspectResult } from 'src/app/features/containers/containers.interface';
-import { isPremitive } from '@shared/functions/is-premitive.function';
 
 @Component({
-  selector: 'app-container-card-inspect',
+  selector: 'app-inspect',
   imports: [TabsModule, TranslatePipe, TreeModule],
-  templateUrl: './container-card-inspect.component.html',
-  styleUrl: './container-card-inspect.component.scss',
+  templateUrl: './inspect.component.html',
+  styleUrl: './inspect.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ContainerCardInspectComponent {
+export class InspectComponent {
   /**
-   * Container info
+   * Inspect data
    */
-  public readonly inspect = input.required<IContainerInspectResult>();
+  public readonly inspect = input.required<object>();
 
   /**
    * Inspect json value

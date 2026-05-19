@@ -1,6 +1,12 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
 import { HostsTableComponent } from './hosts-table/hosts-table.component';
 import { RouterOutlet } from '@angular/router';
+import { HostsStore } from './hosts.store';
 
 @Component({
   selector: 'app-hosts',
@@ -10,5 +16,10 @@ import { RouterOutlet } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HostsComponent {
-  public readonly showTable = signal<boolean>(true);
+  protected readonly hostsStore = inject(HostsStore);
+  protected readonly showTable = signal<boolean>(true);
+
+  constructor() {
+    this.hostsStore.loadList();
+  }
 }

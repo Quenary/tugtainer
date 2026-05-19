@@ -8,10 +8,6 @@ from backend.core.update_actions.update_actions_plan import (
     build_update_plan,
 )
 
-# Предполагаем, что функция импортирована
-# from your_module import build_update_plan
-
-
 base_module = "backend.core.update_actions.update_actions_plan"
 
 
@@ -22,9 +18,7 @@ class DummyContainer:
 
 
 class DummyDB:
-    def __init__(
-        self, name, update_available=True, update_enabled=True
-    ):
+    def __init__(self, name, update_available=True, update_enabled=True):
         self.name = name
         self.update_available = update_available
         self.update_enabled = update_enabled

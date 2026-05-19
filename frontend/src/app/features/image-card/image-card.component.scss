@@ -1,0 +1,27 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-y: auto;
+  flex: 1;
+
+  p-toolbar {
+    margin-bottom: 1rem;
+  }
+
+  .general-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    &-state {
+      flex-basis: 100%;
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+  }
+}

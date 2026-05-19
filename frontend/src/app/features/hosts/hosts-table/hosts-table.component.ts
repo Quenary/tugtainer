@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
+  effect,
   inject,
-  resource,
+  signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -14,11 +16,13 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToolbarModule } from 'primeng/toolbar';
-import { catchError, firstValueFrom, of } from 'rxjs';
-import { ToastService } from 'src/app/core/services/toast.service';
-import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
-import { ICreateHost } from 'src/app/features/hosts/hosts.interface';
 import { HostStatusComponent } from '@shared/components/host-status/host-status.component';
+import { HostsStore, IHostEntity } from '../hosts.store';
+import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { BadgeModule } from 'primeng/badge';
+
+const onlyAvailableStorageKey = 'tugtainer-hosts-only-available';
 
 @Component({
   selector: 'app-hosts-table',
@@ -34,25 +38,40 @@ import { HostStatusComponent } from '@shared/components/host-status/host-status.
     TagModule,
     HostStatusComponent,
     ToolbarModule,
+    TooltipModule,
+    RouterLink,
+    DialogModule,
+    BadgeModule,
   ],
   templateUrl: './hosts-table.component.html',
   styleUrl: './hosts-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HostsTableComponent {
-  private readonly hostsApiService = inject(HostsApiService);
-  private readonly toastService = inject(ToastService);
+  protected readonly hostsStore = inject(HostsStore);
 
-  public readonly list = resource<ICreateHost[], unknown>({
-    loader: () =>
-      firstValueFrom(
-        this.hostsApiService.list().pipe(
-          catchError((error) => {
-            this.toastService.error(error);
-            return of([]);
-          }),
-        ),
-      ),
-    defaultValue: [],
+  /**
+   * Show only available filter
+   */
+  protected readonly onlyAvailable = signal<boolean>(
+    localStorage.getItemJson(onlyAvailableStorageKey) ?? false,
+  );
+  /**
+   * Hosts displayed in the table. When {@link onlyAvailable} is true,
+   * hosts whose containers all have no update available are hidden.
+   */
+  protected readonly filteredList = computed<IHostEntity[]>(() => {
+    const onlyAvailable = this.onlyAvailable();
+    const hosts = this.hostsStore.entities();
+    return onlyAvailable
+      ? hosts.filter((h) => h.available_updates_count > 0)
+      : hosts;
   });
+
+  constructor() {
+    effect(() => {
+      const onlyAvailable = this.onlyAvailable();
+      localStorage.setItemJson(onlyAvailableStorageKey, onlyAvailable);
+    });
+  }
 }

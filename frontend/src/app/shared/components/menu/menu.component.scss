@@ -1,0 +1,59 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+  position: relative;
+
+  app-logo {
+    margin: 0.25rem 0 1rem 0;
+  }
+
+  .toggle {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%);
+    z-index: 1;
+    display: none;
+  }
+  &:hover .toggle {
+    display: initial;
+  }
+  &:has(.toggle:hover) {
+    background-color: var(--p-content-background);
+  }
+
+  .menu-item {
+    outline: unset;
+    border: unset;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--p-content-color);
+    background-color: transparent;
+    padding: var(--p-button-padding-y) var(--p-button-padding-x);
+    border-radius: var(--p-button-border-radius);
+    cursor: pointer;
+
+    &:hover,
+    &:focus,
+    &:active {
+      background-color: var(--p-button-text-contrast-hover-background);
+    }
+    &.router-link-active {
+      color: var(--p-primary-color);
+    }
+  }
+
+  .submenu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+    padding-left: 0.5rem;
+  }
+}

@@ -1,6 +1,5 @@
 import {
   ApplicationConfig,
-  inject,
   LOCALE_ID,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
@@ -21,7 +20,7 @@ import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
 import { supportedLocales } from './app.consts';
-import { AppThemeService } from './core/services/theme.service';
+import { DialogService } from 'primeng/dynamicdialog';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -65,15 +64,12 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: themePreset,
         options: {
-          darkModeSelector: '.app-dark',
+          darkModeSelector: '.DARK',
         },
       },
     }),
-    provideAppInitializer(() => localeInitializer()),
-    provideAppInitializer(() => {
-      const themeService = inject(AppThemeService);
-      themeService.init();
-    }),
     MessageService,
+    DialogService,
+    provideAppInitializer(() => localeInitializer()),
   ],
 };

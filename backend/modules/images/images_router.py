@@ -1,7 +1,7 @@
+from typing import Final
+
 from fastapi import APIRouter, Depends
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
+from python_on_whales.components.image.models import ImageInspectResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.agent_client import AgentClientManager
@@ -14,6 +14,7 @@ from shared.schemas.container_schemas import (
 )
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
+    InspectImageRequestBodySchema,
     PruneImagesRequestBodySchema,
 )
 
@@ -26,34 +27,44 @@ images_router = APIRouter(
 )
 
 
-@images_router.get(
-    path="/{host_id}/list", response_model=list[ImageGetResponseBody]
-)
+@images_router.get(path="/{host_id}/list", response_model=list[ImageGetResponseBody])
 async def get_list(
     host_id: int, session: AsyncSession = Depends(get_async_session)
 ) -> list[ImageGetResponseBody]:
-    host = await get_host(host_id, session)
-    client = AgentClientManager.get_host_client(host)
-    containers: list[ContainerInspectResult] = (
-        await client.container.list(
-            GetContainerListBodySchema(all=True)
-        )
+    host: Final = await get_host(host_id, session)
+    client: Final = AgentClientManager.get_host_client(host)
+
+    containers: Final = await client.container.list(
+        GetContainerListBodySchema(all=True)
     )
-    used_images: list[str] = [c.image for c in containers if c.image]
-    dangling_images: list[str] = [
-        str(i.id)
-        for i in await client.image.list(
-            GetImageListBodySchema(filters={"dangling": "true"})
+    used_images: Final[set[str]] = {c.image for c in containers if c.image}
+    images: Final = await client.image.list(GetImageListBodySchema(all=True))
+
+    return [
+        map_image_schema(
+            image,
+            dangling=bool(not image.repo_tags and image.id not in used_images),
+            unused=bool(image.id not in used_images),
         )
+        for image in images
     ]
-    res: list[ImageGetResponseBody] = []
-    for image in await client.image.list(
-        GetImageListBodySchema(all=True)
-    ):
-        dangling = image.id in dangling_images
-        unused = image.id not in used_images
-        res.append(map_image_schema(image, dangling, unused))
-    return res
+
+
+@images_router.get(
+    path="/{host_id}/{image_spec_or_id}",
+    description="Get image info (inspect)",
+    response_model=ImageInspectResult,
+)
+async def inspect(
+    host_id: int,
+    image_spec_or_id: str,
+    session: AsyncSession = Depends(get_async_session),
+) -> ImageInspectResult:
+    host: Final = await get_host(host_id, session)
+    client: Final = AgentClientManager.get_host_client(host)
+    return await client.image.inspect(
+        InspectImageRequestBodySchema(spec_or_id=image_spec_or_id)
+    )
 
 
 @images_router.post(path="/{host_id}/prune", response_model=str)

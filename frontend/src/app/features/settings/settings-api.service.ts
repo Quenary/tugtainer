@@ -1,24 +1,20 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { BaseApiService } from '../../shared/types/base-api.service';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   ISetting,
   ISettingUpdate,
   ITestNotificationRequestBody,
 } from './settings.interface';
-import { SettingsService } from './settings.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SettingsApiService extends BaseApiService<'/settings'> {
   protected override readonly prefix = '/settings';
-  protected readonly settingsService = inject(SettingsService);
 
   list(): Observable<ISetting[]> {
-    return this.httpClient
-      .get<ISetting[]>(`${this.basePath}/list`)
-      .pipe(tap((res) => this.settingsService.settings.set(res)));
+    return this.httpClient.get<ISetting[]>(`${this.basePath}/list`);
   }
 
   change(settings: ISettingUpdate[]): Observable<unknown> {

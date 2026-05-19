@@ -1,13 +1,5 @@
-:host {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  overflow: hidden;
-  max-height: 100%;
-  height: 100%;
-  overflow-y: auto;
+@use 'mixins' as m;
 
-  p-toolbar {
-    margin-bottom: 1rem;
-  }
+:host {
+  @include m.main-component;
 }

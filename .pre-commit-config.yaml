@@ -1,0 +1,27 @@
+repos:
+  - repo: local
+    hooks:
+      - id: frontend-lint-staged
+        name: frontend lint-staged
+        language: system
+        pass_filenames: false
+        entry: bash -c 'cd frontend && npx lint-staged'
+
+      - id: ruff
+        name: ruff
+        language: system
+        types: [python]
+        entry: uv run ruff check --fix
+
+      - id: ruff-format
+        name: ruff format
+        language: system
+        types: [python]
+        entry: uv run ruff format
+
+      - id: mypy
+        name: mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+        entry: uv run mypy agent backend shared

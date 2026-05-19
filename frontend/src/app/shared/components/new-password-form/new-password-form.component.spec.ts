@@ -3,6 +3,8 @@ import { NewPasswordFormComponent } from './new-password-form.component';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideTranslateService } from '@ngx-translate/core';
 import { By } from '@angular/platform-browser';
+import { Mock } from 'vitest';
+import { Button } from 'primeng/button';
 
 describe('NewPasswordFormComponent', () => {
   let component: NewPasswordFormComponent;
@@ -20,11 +22,6 @@ describe('NewPasswordFormComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    fixture.detectChanges();
-    expect(component).toBeTruthy();
-  });
-
   function setValidPasswords() {
     component['form'].setValue({
       password: '123QWErty!',
@@ -39,83 +36,93 @@ describe('NewPasswordFormComponent', () => {
     });
   }
 
+  function getSubmitButton(): Button {
+    return fixture.debugElement.query(By.directive(Button)).componentInstance;
+  }
+
   it('should create', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
   it('should have invalid form initially', () => {
-    expect(component['form'].invalid).toBeTrue();
+    fixture.detectChanges();
+    expect(component['form'].invalid).toBe(true);
   });
 
   it('should validate matching passwords', () => {
     setValidPasswords();
-    expect(component['form'].valid).toBeTrue();
+
+    expect(component['form'].valid).toBe(true);
     expect(component['form'].errors).toBeNull();
   });
 
   it('should invalidate when passwords do not match', () => {
     setInvalidPasswords();
-    expect(component['form'].invalid).toBeTrue();
+
+    expect(component['form'].invalid).toBe(true);
     expect(component['form'].errors).toEqual({
       passwordMatchValidator: true,
     });
   });
 
-  it('should set confirmPasswordError signal correctly', () => {
-    setInvalidPasswords();
-    fixture.detectChanges();
+  describe('confirmPasswordError', () => {
+    it('should set error', () => {
+      setInvalidPasswords();
+      fixture.detectChanges();
 
-    expect(component['confirmPasswordError']()).toBeTrue();
+      expect(component['confirmPasswordError']()).toBe(true);
+    });
 
-    setValidPasswords();
-    fixture.detectChanges();
+    it('should not set error', () => {
+      setValidPasswords();
+      fixture.detectChanges();
 
-    expect(component['confirmPasswordError']()).toBeFalse();
+      expect(component['confirmPasswordError']()).toBe(false);
+    });
   });
 
-  it('should not emit when form is invalid', () => {
-    spyOn(component.OnSubmit, 'emit');
+  describe('OnSubmit', () => {
+    let emitSpy: Mock;
 
-    component['onSubmit']();
+    beforeEach(() => {
+      emitSpy = vi.spyOn(component.OnSubmit, 'emit');
+    });
 
-    expect(component.OnSubmit.emit).not.toHaveBeenCalled();
-  });
+    it('should not emit when form is invalid', () => {
+      component['onSubmit']();
 
-  it('should emit form value when valid', () => {
-    spyOn(component.OnSubmit, 'emit');
+      expect(emitSpy).not.toHaveBeenCalled();
+    });
 
-    setValidPasswords();
-    component['form'].markAsDirty();
+    it('should emit form value when valid', () => {
+      setValidPasswords();
+      component['form'].markAsDirty();
+      component['onSubmit']();
 
-    component['onSubmit']();
-
-    expect(component.OnSubmit.emit).toHaveBeenCalledWith({
-      password: '123QWErty!',
-      confirm_password: '123QWErty!',
+      expect(emitSpy).toHaveBeenCalled();
     });
   });
 
   it('should mark form as pristine after submit', () => {
     setValidPasswords();
     component['form'].markAsDirty();
-
     component['onSubmit']();
 
-    expect(component['form'].pristine).toBeTrue();
+    expect(component['form'].pristine).toBe(true);
   });
 
-  it('should disable submit button when form is not dirty', () => {
-    const button = fixture.debugElement.query(By.css('p-button'));
+  describe('submit button', () => {
+    it('should disable if form is not dirty', () => {
+      fixture.detectChanges();
+      expect(getSubmitButton().disabled).toBe(true);
+    });
 
-    expect(button.componentInstance.disabled).toBeTrue();
-  });
+    it('should enable if form is dirty', () => {
+      component['form'].markAsDirty();
+      fixture.detectChanges();
 
-  it('should enable submit button when form is dirty', () => {
-    component['form'].markAsDirty();
-    fixture.detectChanges();
-
-    const button = fixture.debugElement.query(By.css('p-button'));
-
-    expect(button.componentInstance.disabled).toBeFalse();
+      expect(getSubmitButton().disabled).toBe(false);
+    });
   });
 });

@@ -1,3 +1,4 @@
+import { TagSeverity } from '@shared/types/tag-severity.type';
 import { IContainerInspectResult } from '../../features/containers/containers.interface';
 import { IImageInspectResult } from '../../features/images/images.interface';
 
@@ -32,3 +33,15 @@ export interface IUpdatePlanResult {
 export interface IHostActionResult extends IUpdatePlanResult {
   prune_result: string | null;
 }
+
+export const ContainerCheckResultSeverity: Record<
+  TContainerCheckResult,
+  TagSeverity
+> = {
+  'available': 'success',
+  'available(notified)': 'success',
+  'updated': 'info',
+  'not_available': 'contrast',
+  'rolled_back': 'warn',
+  'failed': 'danger',
+};

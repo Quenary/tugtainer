@@ -1,17 +1,9 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  resource,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { lastValueFrom } from 'rxjs';
-import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
-import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
+import { IHostEntity } from 'src/app/features/hosts/hosts.store';
 
 @Component({
   selector: 'app-host-status',
@@ -21,13 +13,5 @@ import { IHostInfo } from 'src/app/features/hosts/hosts.interface';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HostStatusComponent {
-  private readonly hostsApiService = inject(HostsApiService);
-
-  public readonly host = input<IHostInfo>();
-
-  public readonly status = resource({
-    params: () => ({ host: this.host() }),
-    loader: (params) =>
-      lastValueFrom(this.hostsApiService.status(params.params.host.id)),
-  });
+  public readonly host = input.required<IHostEntity>();
 }

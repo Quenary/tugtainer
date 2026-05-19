@@ -3,19 +3,21 @@ import {
   Component,
   HostListener,
   inject,
+  input,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-logo',
-  imports: [TranslatePipe],
+  imports: [],
   templateUrl: './logo.component.html',
   styleUrl: './logo.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LogoComponent {
   private readonly router = inject(Router);
+
+  public readonly short = input<boolean>(false);
 
   @HostListener('click')
   onClick(): void {

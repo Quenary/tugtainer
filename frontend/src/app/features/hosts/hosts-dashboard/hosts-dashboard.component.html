@@ -1,0 +1,162 @@
+<p-confirmpopup #pruneConfirmPopup>
+  <ng-template
+    #content
+    let-message>
+    <section class="prune-confirm">
+      <span>{{ 'ACTIONS.PRUNE_CONFIRM' | translate }}</span>
+      <app-boolean-field>
+        <p-toggle-switch
+          [(ngModel)]="pruneAll"
+          inputId="prune-all-confirm-toggle"></p-toggle-switch>
+        <label for="prune-all-confirm-toggle">
+          {{ 'ACTIONS.PRUNE_ALL' | translate }}
+          <i
+            class="pi pi-question-circle"
+            style="margin: 0 0.5rem"
+            [pTooltip]="'ACTIONS.PRUNE_ALL_HINT' | translate"
+            tooltipPosition="left"></i>
+        </label>
+      </app-boolean-field>
+    </section>
+  </ng-template>
+</p-confirmpopup>
+
+@if (hostsStore.selected(); as h) {
+  <div class="header">
+    <span
+      style="cursor: pointer"
+      routerLink="."
+      >{{h.name}}</span
+    >
+
+    <app-host-status [host]="h"></app-host-status>
+
+    <p-button
+      text
+      icon="pi pi-pen-to-square"
+      routerLink="edit">
+    </p-button>
+
+    <section class="header-actions">
+      @let res = h.progress?.result;
+      @let pruneRes = h.pruneResult;
+      @if (res || pruneRes) {
+        <p-button
+          severity="success"
+          text
+          [label]="'ACTIONS.RESULT' | translate"
+          (onClick)="hostsStore.openActionResultDialog(res ? [ res] : [],pruneRes)">
+        </p-button>
+      }
+
+      <p-button-group>
+        <p-button
+          severity="primary"
+          [loading]="h.loading === 'check'"
+          [disabled]="h.loading"
+          [label]="'ACTIONS.CHECK_ALL' | translate"
+          (onClick)="hostsStore.checkHost({id: h.id})">
+        </p-button>
+
+        <p-button
+          severity="success"
+          [loading]="h.loading === 'update'"
+          [disabled]="h.loading"
+          [label]="'ACTIONS.UPDATE_ALL' | translate"
+          (onClick)="hostsStore.updateHost({id: h.id})">
+        </p-button>
+      </p-button-group>
+
+      <p-button
+        [loading]="h.loading === 'prune'"
+        [disabled]="h.loading"
+        severity="warn"
+        [label]="'ACTIONS.PRUNE' | translate"
+        icon="pi pi-eraser"
+        (onClick)="confirmPrune($event)">
+      </p-button>
+    </section>
+  </div>
+}
+
+@if (!childActive()) {
+  <section class="dashboard">
+    <p-card
+      class="dashboard-item"
+      routerLink="containers">
+      <div class="dashboard-item-content">
+        <i class="dashboard-item-content-icon pi pi-box"></i>
+        <span class="dashboard-item-content-text">
+          {{'HOSTS.DASHBOARD.CONTAINERS' | translate}}
+        </span>
+
+        @if (hostsStore.selected()?.summary; as sum) {
+          <span class="dashboard-item-content-text">
+            {{sum.total_containers}}
+          </span>
+
+          @if (sum.by_update_available.true; as available) {
+            <p-tag severity="success">
+              <i class="pi pi-check-circle"></i>
+              {{'HOSTS.DASHBOARD.AVAILABLE' | translate}}
+              {{available}}
+            </p-tag>
+          }
+
+          <span class="dashboard-item-content-state">
+            <p-tag severity="success">
+              {{'HOSTS.DASHBOARD.RUNNING' | translate}}
+              {{sum.by_status.running}}
+            </p-tag>
+            <p-tag severity="danger">
+              {{'HOSTS.DASHBOARD.EXITED' | translate}}
+              {{sum.by_status.exited}}
+            </p-tag>
+            <p-tag severity="success">
+              {{'HOSTS.DASHBOARD.HEALTHY' | translate}}
+              {{sum.by_health.healthy}}
+            </p-tag>
+            <p-tag severity="danger">
+              {{'HOSTS.DASHBOARD.UNHEALTHY' | translate}}
+              {{sum.by_health.unhealthy}}
+            </p-tag>
+          </span>
+        }
+      </div>
+    </p-card>
+
+    <p-card
+      class="dashboard-item"
+      routerLink="images">
+      <div class="dashboard-item-content">
+        <i class="dashboard-item-content-icon pi pi-list"></i>
+        <span class="dashboard-item-content-text">
+          {{'HOSTS.DASHBOARD.IMAGES' | translate}}
+        </span>
+
+        @if (hostsStore.selected()?.summary; as sum) {
+          <span class="dashboard-item-content-text">
+            {{sum.total_images}}
+          </span>
+
+          <span class="dashboard-item-content-state">
+            <p-tag severity="danger">
+              {{'HOSTS.DASHBOARD.UNUSED' | translate}}
+              {{sum.unused_images}}
+            </p-tag>
+
+            <p-tag severity="warn">
+              {{'HOSTS.DASHBOARD.DANGLING' | translate}}
+              {{sum.dangling_images}}
+            </p-tag>
+          </span>
+        }
+      </div>
+    </p-card>
+  </section>
+}
+
+<router-outlet
+  (activate)="childActive.set(true)"
+  (deactivate)="childActive.set(false)">
+</router-outlet>

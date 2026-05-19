@@ -8,6 +8,7 @@ This repository uses [uv package manager](https://docs.astral.sh/uv/getting-star
 - Create venv with `uv venv`
 - Activate venv with `source .venv/bin/activate` or `.venv/scripts/activate`
 - Install all deps with `uv sync --locked`
+- Install pre-commit hooks `pre-commit install`
 - In the root of the workspace, create an .env file with at least these variables
     ```bash
     DB_URL=sqlite+aiosqlite:///./tugtainer.db

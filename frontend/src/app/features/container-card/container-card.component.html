@@ -1,22 +1,21 @@
 <p-toolbar>
   <ng-template #start>
     <p-button
-      icon="pi pi-arrow-left"
-      text
-      (onClick)="goBack()"></p-button>
-    <p-button
       icon="pi pi-refresh"
       text
-      [loading]="info.isLoading()"
-      (onClick)="info.reload()"></p-button>
+      [loading]="containersStore.loading()"
+      (onClick)="containersStore.loadSelected()"></p-button>
   </ng-template>
 
   <ng-template #end>
     <app-container-actions
       withControl
-      [item]="info.value()?.item"
-      (OnDone)="info.reload()"
-      (OnControlDone)="onControlDone($event)"></app-container-actions>
+      [item]="containersStore.selected()"
+      [host]="containersStore.host()"
+      (OnCheck)="onCheck()"
+      (OnUpdate)="onUpdate()"
+      (OnCommand)="onCommand($event)">
+    </app-container-actions>
   </ng-template>
 </p-toolbar>
 
@@ -28,7 +27,7 @@
       {{ 'CONTAINERS.GENERAL.LABEL' | translate }}
     </p-accordion-header>
     <p-accordion-content>
-      @if (item(); as _item) {
+      @if (containersStore.selected(); as _item) {
         <section class="general-content">
           <app-boolean-field>
             <p-toggle-switch
@@ -157,12 +156,11 @@
 
   <p-accordion-panel value="inspect">
     <p-accordion-header>
-      {{ 'CONTAINERS.INSPECT.LABEL' | translate }}
+      {{ 'INSPECT.LABEL' | translate }}
     </p-accordion-header>
     <p-accordion-content class="inspect-content">
-      @defer (when info.hasValue()) {
-        <app-container-card-inspect [inspect]="info.value()?.inspect">
-        </app-container-card-inspect>
+      @defer (when inspect()) {
+        <app-inspect [inspect]="inspect()"> </app-inspect>
       }
     </p-accordion-content>
   </p-accordion-panel>
@@ -174,8 +172,8 @@
     <p-accordion-content>
       @defer (when accordionValue() === 'logs') {
         <app-container-card-logs
-          [hostId]="hostId()"
-          [containerNameOrId]="containerNameOrId()"></app-container-card-logs>
+          [hostId]="containersStore.hostId()"
+          [containerNameOrId]="containersStore.selectedNameOrId()"></app-container-card-logs>
       }
     </p-accordion-content>
   </p-accordion-panel>

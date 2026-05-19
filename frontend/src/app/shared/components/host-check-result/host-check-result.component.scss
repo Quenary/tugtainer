@@ -7,6 +7,19 @@
   h3 {
     margin: 0;
   }
+
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    &-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+  }
+
   pre {
     margin: 0;
     white-space: pre-line;

@@ -1,31 +1,3 @@
-<p-confirmpopup #pruneConfirmPopup>
-  <ng-template
-    #content
-    let-message>
-    <section
-      [ngStyle]="{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-      }">
-      <span>{{ message.message }}</span>
-      <app-boolean-field>
-        <p-toggle-switch
-          [(ngModel)]="pruneAll"
-          inputId="prune-all-confirm-toggle"></p-toggle-switch>
-        <label for="prune-all-confirm-toggle">
-          {{ 'IMAGES.TABLE.PRUNE_ALL' | translate }}
-          <i
-            class="pi pi-question-circle"
-            style="margin: 0 0.5rem"
-            [pTooltip]="'IMAGES.TABLE.PRUNE_ALL_HINT' | translate"
-            tooltipPosition="left"></i>
-        </label>
-      </app-boolean-field>
-    </section>
-  </ng-template>
-</p-confirmpopup>
-
 <p-toolbar>
   <ng-template #start>
     <p-iconfield iconPosition="left">
@@ -38,23 +10,16 @@
         pInputText
         type="text"
         (input)="dt2.filterGlobal($event.target.value, 'contains')"
-        [placeholder]="'IMAGES.TABLE.SEARCH_PLACEHOLDER' | translate" />
+        [placeholder]="'IMAGES.SEARCH_PLACEHOLDER' | translate" />
       <p-button
         icon="pi pi-refresh"
-        [loading]="list.isLoading()"
+        [loading]="imagesStore.loading()"
+        [disabled]="imagesStore.loading()"
         text
-        (onClick)="list.reload()"></p-button>
+        (onClick)="imagesStore.loadList()"></p-button>
     </p-iconfield>
   </ng-template>
-  <ng-template #end>
-    <p-button
-      [loading]="pruneInProgress()"
-      severity="warn"
-      [label]="'IMAGES.TABLE.PRUNE' | translate"
-      icon="pi pi-eraser"
-      (onClick)="confirmPrune($event)">
-    </p-button>
-  </ng-template>
+  <ng-template #end> </ng-template>
 </p-toolbar>
 
 <p-table
@@ -65,31 +30,32 @@
   [sortOrder]="-1"
   [scrollable]="true"
   scrollHeight="flex"
-  [value]="list.value()">
+  [value]="imagesStore.entities()"
+  [rowTrackBy]="item => item.id">
   <ng-template #header>
     <tr>
       <th pSortableColumn="id">
-        {{ 'IMAGES.TABLE.ID' | translate }}
+        {{ 'IMAGES.ID' | translate }}
         <p-sortIcon field="id"></p-sortIcon>
       </th>
       <th pSortableColumn="repository">
-        {{ 'IMAGES.TABLE.REPOSITORY' | translate }}
+        {{ 'IMAGES.REPOSITORY' | translate }}
         <p-sortIcon field="repository"></p-sortIcon>
       </th>
       <th pSortableColumn="tags">
-        {{ 'IMAGES.TABLE.TAGS' | translate }}
+        {{ 'IMAGES.TAGS' | translate }}
         <p-sortIcon field="tags"></p-sortIcon>
       </th>
       <th
         pSortableColumn="size"
         style="width: 10%">
-        {{ 'IMAGES.TABLE.SIZE' | translate }}
+        {{ 'IMAGES.SIZE' | translate }}
         <p-sortIcon field="size"></p-sortIcon>
       </th>
       <th
         pSortableColumn="created"
         style="width: 20%">
-        {{ 'IMAGES.TABLE.CREATED' | translate }}
+        {{ 'IMAGES.CREATED' | translate }}
         <p-sortIcon field="created"></p-sortIcon>
       </th>
     </tr>
@@ -103,16 +69,22 @@
         <div
           class="image-id"
           [pTooltip]="image.id">
-          {{ image.id }}
+          <a [routerLink]="image.id">
+            <p-button
+              text
+              icon="pi pi-external-link"
+              rounded></p-button>
+            {{ image.id }}
+          </a>
         </div>
         @if (image.dangling) {
           <p-tag severity="warn">
-            {{ 'IMAGES.TABLE.DANGLING' | translate }}
+            {{ 'IMAGES.DANGLING' | translate }}
           </p-tag>
         }
         @if (image.unused) {
           <p-tag severity="danger">
-            {{ 'IMAGES.TABLE.UNUSED' | translate }}
+            {{ 'IMAGES.UNUSED' | translate }}
           </p-tag>
         }
       </td>
@@ -130,7 +102,7 @@
       </td>
       <td>
         {{ image.size / 1024 / 1024 | number: '1.0-2' }}
-        {{ 'IMAGES.TABLE.SIZE_UNIT' | translate }}
+        {{ 'IMAGES.SIZE_UNIT' | translate }}
       </td>
       <td>
         {{ image.created | dayjs }}
@@ -138,14 +110,3 @@
     </tr>
   </ng-template>
 </p-table>
-
-<p-dialog
-  [header]="'IMAGES.TABLE.PRUNE_RESULT' | translate"
-  [modal]="true"
-  [draggable]="false"
-  [visible]="!!pruneResult()"
-  (visibleChange)="pruneResult.set(null)">
-  <pre style="max-width: 75vw; max-height: 75vh">
-      {{ pruneResult() }}
-  </pre>
-</p-dialog>

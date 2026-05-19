@@ -2,12 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
+  effect,
   inject,
-  OnInit,
+  OnDestroy,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormControl,
@@ -16,7 +16,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AccordionModule } from 'primeng/accordion';
 import { AutoCompleteModule } from 'primeng/autocomplete';
@@ -26,9 +26,6 @@ import { FluidModule } from 'primeng/fluid';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { finalize, map } from 'rxjs';
-import { ToastService } from 'src/app/core/services/toast.service';
-import { HostsApiService } from 'src/app/features/hosts/hosts-api.service';
 import { ICreateHost, IHostInfo } from 'src/app/features/hosts/hosts.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import { RouterLink } from '@angular/router';
@@ -42,6 +39,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
+import { HostsStore } from '../hosts.store';
 
 @Component({
   selector: 'app-host-card',
@@ -72,26 +70,19 @@ import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-
   styleUrl: './hosts-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HostsCardComponent implements OnInit {
+export class HostsCardComponent implements OnDestroy {
   private readonly activatedRoute = inject(ActivatedRoute);
-  private readonly toastService = inject(ToastService);
-  private readonly hostsApiService = inject(HostsApiService);
   private readonly translateService = inject(TranslateService);
-  private readonly router = inject(Router);
   private readonly confirmationService = inject(ConfirmationService);
-  private readonly destroyRef = inject(DestroyRef);
+  protected readonly hostsStore = inject(HostsStore);
 
-  public readonly id = toSignal(
-    this.activatedRoute.params.pipe(map((params) => Number(params.id) || null)),
-  );
-  public readonly saveTitle = computed(() => {
-    const id = this.id();
+  protected readonly saveTitle = computed(() => {
+    const id = this.hostsStore.selectedId();
     return id
       ? this.translateService.instant('GENERAL.SAVE')
       : this.translateService.instant('GENERAL.ADD');
   });
-  public readonly isLoading = signal<boolean>(false);
-  public readonly accordionValue = signal<
+  protected readonly accordionValue = signal<
     string | number | string[] | number[]
   >(['help', 'main']);
 
@@ -118,7 +109,7 @@ export class HostsCardComponent implements OnInit {
     }
   };
 
-  public readonly form = new FormGroup<TInterfaceToForm<ICreateHost>>({
+  protected readonly form = new FormGroup<TInterfaceToForm<ICreateHost>>({
     name: new FormControl<string>(null, [Validators.required]),
     enabled: new FormControl<boolean>(null, [Validators.required]),
     prune: new FormControl<boolean>(null, [Validators.required]),
@@ -134,11 +125,21 @@ export class HostsCardComponent implements OnInit {
     container_hc_timeout: new FormControl(null, [Validators.required]),
   });
 
-  ngOnInit(): void {
-    const id = this.id();
-    this.getInfo(id);
+  constructor() {
+    this.activatedRoute.params
+      .pipe(takeUntilDestroyed())
+      .subscribe((params) => {
+        const id = Number(params['id']) || null;
+        this.hostsStore.select(id);
+      });
+
+    effect(() => {
+      const info = this.hostsStore.selected();
+      this.prepareForm(info);
+    });
+
     this.form.controls.prune.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntilDestroyed())
       .subscribe((value) => {
         const prune_all = this.form.controls.prune_all;
         if (!value) {
@@ -150,30 +151,11 @@ export class HostsCardComponent implements OnInit {
       });
   }
 
-  private getInfo(id: number): void {
-    if (!id) {
-      this.prepareForm(null);
-      return;
-    }
-    this.isLoading.set(true);
-    this.hostsApiService
-      .read(id)
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (info) => {
-          this.prepareForm(info);
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
+  ngOnDestroy(): void {
+    this.hostsStore.select(null);
   }
 
-  private prepareForm(info: IHostInfo): void {
+  private prepareForm(info: IHostInfo | null): void {
     this.form.reset(this.defaultFormValues);
     if (info) {
       this.form.patchValue(info);
@@ -191,29 +173,13 @@ export class HostsCardComponent implements OnInit {
       }
       return;
     }
-    const id = this.id();
+    const id = this.hostsStore.selectedId();
     const body = this.form.getRawValue();
-    const req$ = id
-      ? this.hostsApiService.update(id, body)
-      : this.hostsApiService.create(body);
-    this.isLoading.set(true);
-    req$
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (info) => {
-          if (!id) {
-            this.router.navigate([`/hosts/${info.id}`], { replaceUrl: true });
-          }
-          this.prepareForm(info);
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
+    if (id) {
+      this.hostsStore.update({ id, body });
+    } else {
+      this.hostsStore.create({ body });
+    }
   }
 
   confirmDelete($event: Event): void {
@@ -230,26 +196,11 @@ export class HostsCardComponent implements OnInit {
         severity: 'warn',
       },
       accept: () => {
-        this.deleteHost();
+        this.hostsStore.delete({
+          id: this.hostsStore.selectedId(),
+        });
       },
     });
-  }
-
-  private deleteHost(): void {
-    const id = this.id();
-    this.isLoading.set(true);
-    this.hostsApiService
-      .delete(id)
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: () => {
-          this.toastService.success(this.translateService.instant('SUCCESS'));
-          this.router.navigate(['/hosts'], { replaceUrl: true });
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
   }
 
   public openHelp(): void {

@@ -2,12 +2,23 @@
   <h3>
     {{ res.host_name }}
   </h3>
-  <pre>
-    @for (item of res.items; track item) {
-        {{ item.container.Name }} {{ item.result }}
+
+  <section class="results">
+    @for (item of res.items; track item.container.Id) {
+      <div class="results-item">
+        <span>{{ item.container.Name }}</span>
+        <p-tag
+          [severity]="ContainerCheckResultSeverity[item.result] ?? 'contrast'">
+          {{ item.result }}
+        </p-tag>
+      </div>
     }
-    @if (res.prune_result) {
-        {{ res.prune_result }}
-    }
-   </pre>
+  </section>
+
+  @if (res.prune_result) {
+    <pre>
+    {{ res.prune_result }}
+   </pre
+    >
+  }
 }
