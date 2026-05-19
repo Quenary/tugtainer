@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.30.1 (2026-05-19)
+
+### Bug Fixes
+
+- **build**: Node22 in dockerfile for linux/arm/v7 support
+  ([`c15389e`](https://github.com/Quenary/tugtainer/commit/c15389ecb2d49be29b9d06b719f250820abd54f3))
+
+
 ## v1.30.0 (2026-05-19)
 
 ### Bug Fixes
