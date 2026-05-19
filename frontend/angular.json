@@ -91,24 +91,10 @@
           },
           "defaultConfiguration": "development"
         },
-        "extract-i18n": {
-          "builder": "@angular/build:extract-i18n"
-        },
         "test": {
-          "builder": "@angular/build:karma",
+          "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "tsconfig.spec.json",
-            "inlineStyleLanguage": "scss",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
-            ],
-            "stylePreprocessorOptions": {
-              "includePaths": ["src"]
-            },
-            "styles": ["src/styles.scss"]
+            "setupFiles": ["src/testing/setup-file.ts"]
           }
         },
         "lint": {

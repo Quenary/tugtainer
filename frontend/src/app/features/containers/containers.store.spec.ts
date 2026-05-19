@@ -5,7 +5,7 @@ import { ContainersStore, IContainerEntity } from './containers.store';
 import { ContainersApiService } from './containers-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsStore, IHostEntity } from '../hosts/hosts.store';
-import { TranslateService } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import {
   EContainerStatus,
   IContainerInfo,
@@ -13,14 +13,16 @@ import {
 } from './containers.interface';
 import dayjs from 'dayjs';
 import { EActionStatus } from '@shared/interfaces/progress.interface';
+import { Mocked } from 'vitest';
+import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
+import { getContainersApiServiceMock } from '@testing/mocks/containers-api.service.mock';
 
 describe('ContainersStore', () => {
   let store: InstanceType<typeof ContainersStore>;
 
-  let containersApiService: jasmine.SpyObj<ContainersApiService>;
-  let toastService: jasmine.SpyObj<ToastService>;
-  let translateService: jasmine.SpyObj<TranslateService>;
-  let hostsStore: jasmine.SpyObj<InstanceType<typeof HostsStore>>;
+  let containersApiServiceMock: Mocked<ContainersApiService>;
+  let toastServiceMock: Mocked<ToastService>;
+  let hostsStoreMock: Partial<InstanceType<typeof HostsStore>>;
 
   let hostSelectedIdSignal: WritableSignal<number | null>;
   let hostSelectedSignal: WritableSignal<IHostEntity>;
@@ -50,67 +52,36 @@ describe('ContainersStore', () => {
   } as IContainerInfo;
 
   beforeEach(() => {
+    containersApiServiceMock = getContainersApiServiceMock();
+    containersApiServiceMock.list.mockReturnValue(of([mockContainerItem]));
+    containersApiServiceMock.get.mockReturnValue(of(mockContainerInfo));
+
+    toastServiceMock = getToastServiceMock();
+
     hostSelectedIdSignal = signal(1);
-
     hostSelectedSignal = signal(mockHost);
-
     updateContainersListSignal = signal<Date | null>(null);
-
-    containersApiService = jasmine.createSpyObj<ContainersApiService>(
-      'ContainersApiService',
-      [
-        'list',
-        'get',
-        'checkContainer',
-        'updateContainer',
-        'watchProgress',
-        'patch',
-        'controlContainer',
-      ],
-    );
-
-    toastService = jasmine.createSpyObj<ToastService>('ToastService', [
-      'error',
-      'success',
-    ]);
-
-    translateService = jasmine.createSpyObj<TranslateService>(
-      'TranslateService',
-      ['instant'],
-    );
-
-    hostsStore = jasmine.createSpyObj<InstanceType<typeof HostsStore>>(
-      'HostsStore',
-      [],
-      {
-        selectedId: hostSelectedIdSignal,
-        selected: hostSelectedSignal,
-        updateContainersList: updateContainersListSignal,
-      },
-    );
-
-    translateService.instant.and.callFake((v: string) => v);
-    containersApiService.list.and.returnValue(of([mockContainerItem]));
-    containersApiService.get.and.returnValue(of(mockContainerInfo));
+    hostsStoreMock = {
+      selectedId: hostSelectedIdSignal,
+      selected: hostSelectedSignal,
+      updateContainersList: updateContainersListSignal,
+    };
 
     TestBed.configureTestingModule({
       providers: [
         ContainersStore,
         {
           provide: ContainersApiService,
-          useValue: containersApiService,
+          useValue: containersApiServiceMock,
         },
         {
           provide: ToastService,
-          useValue: toastService,
+          useValue: toastServiceMock,
         },
-        {
-          provide: TranslateService,
-          useValue: translateService,
-        },
+        provideTranslateService(),
         {
           provide: HostsStore,
-          useValue: hostsStore,
+          useValue: hostsStoreMock,
         },
       ],
     });
@@ -119,7 +90,7 @@ describe('ContainersStore', () => {
   });
 
   it('should initialize', () => {
-    expect(store.loading()).toBeFalse();
+    expect(store.loading()).toBe(false);
     expect(store.selectedNameOrId()).toBeNull();
     expect(store.selectedInfo()).toBeNull();
     expect(store.entities()).toEqual([]);
@@ -139,11 +110,11 @@ describe('ContainersStore', () => {
       it('should be true', () => {
         store.loadList();
 
-        expect(store.anyForUpdate()).toBeTrue();
+        expect(store.anyForUpdate()).toBe(true);
       });
 
       it('should be false', () => {
-        containersApiService.list.and.returnValue(
+        containersApiServiceMock.list.mockReturnValue(
           of([
             {
               ...mockContainerItem,
@@ -154,7 +125,7 @@ describe('ContainersStore', () => {
 
         store.loadList();
 
-        expect(store.anyForUpdate()).toBeFalse();
+        expect(store.anyForUpdate()).toBe(false);
       });
     });
 
@@ -214,17 +185,17 @@ describe('ContainersStore', () => {
     it('should load containers list', () => {
       store.loadList();
 
-      expect(containersApiService.list).toHaveBeenCalledWith(1);
+      expect(containersApiServiceMock.list).toHaveBeenCalledWith(1);
       expect(store.entities()).toEqual([mockContainerItem]);
     });
 
     it('should show error on load failure', () => {
       const error = new Error('Load failed');
-      containersApiService.list.and.returnValue(throwError(() => error));
+      containersApiServiceMock.list.mockReturnValue(throwError(() => error));
 
       store.loadList();
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
 
     it('should not load if hostId is null', () => {
@@ -232,7 +203,7 @@ describe('ContainersStore', () => {
 
       store.loadList();
 
-      expect(containersApiService.list).not.toHaveBeenCalled();
+      expect(containersApiServiceMock.list).not.toHaveBeenCalled();
     });
 
     it('should clear entities on host change', () => {
@@ -256,31 +227,31 @@ describe('ContainersStore', () => {
     it('should load', () => {
       store.loadSelected();
 
-      expect(containersApiService.get).toHaveBeenCalledWith(1, 'nginx');
+      expect(containersApiServiceMock.get).toHaveBeenCalledWith(1, 'nginx');
       expect(store.selectedInfo()).toEqual(mockContainerInfo);
     });
 
     it('should show error on loadSelected failure', () => {
       const error = new Error('Inspect failed');
-      containersApiService.get.and.returnValue(throwError(() => error));
+      containersApiServiceMock.get.mockReturnValue(throwError(() => error));
 
       store.loadSelected();
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
 
     it('should not load if hostId is null', () => {
       hostSelectedIdSignal.set(null);
       store.loadSelected();
 
-      expect(containersApiService.get).not.toHaveBeenCalled();
+      expect(containersApiServiceMock.get).not.toHaveBeenCalled();
     });
 
     it('should not load if selectedNameOrId is null', () => {
       store.select(null);
       store.loadSelected();
 
-      expect(containersApiService.get).not.toHaveBeenCalled();
+      expect(containersApiServiceMock.get).not.toHaveBeenCalled();
     });
   });
 
@@ -292,11 +263,11 @@ describe('ContainersStore', () => {
     it('should reload entity', () => {
       store.reloadEntity({ id: 1 });
 
-      expect(containersApiService.get).toHaveBeenCalledWith(1, 'nginx');
+      expect(containersApiServiceMock.get).toHaveBeenCalledWith(1, 'nginx');
     });
 
     it('should update entity after reload', () => {
-      containersApiService.get.and.returnValue(
+      containersApiServiceMock.get.mockReturnValue(
         of({
           item: {
             ...mockContainerItem,
@@ -313,17 +284,17 @@ describe('ContainersStore', () => {
 
     it('should show error on reload failure', () => {
       const error = new Error('Reload failed');
-      containersApiService.get.and.returnValue(throwError(() => error));
+      containersApiServiceMock.get.mockReturnValue(throwError(() => error));
 
       store.reloadEntity({ id: 1 });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
 
     it('should not reload if entity not found', () => {
       store.reloadEntity({ id: 999 });
 
-      expect(containersApiService.get).not.toHaveBeenCalled();
+      expect(containersApiServiceMock.get).not.toHaveBeenCalled();
     });
   });
 
@@ -333,7 +304,7 @@ describe('ContainersStore', () => {
     });
 
     it('should patch container', () => {
-      containersApiService.patch.and.returnValue(
+      containersApiServiceMock.patch.mockReturnValue(
         of({
           ...mockContainerItem,
           update_available: false,
@@ -348,23 +319,23 @@ describe('ContainersStore', () => {
         },
       });
 
-      expect(containersApiService.patch).toHaveBeenCalledWith(1, 'nginx', {
+      expect(containersApiServiceMock.patch).toHaveBeenCalledWith(1, 'nginx', {
         update_enabled: false,
       });
-      expect(store.entityMap()[1].update_available).toBeFalse();
-      expect(store.entityMap()[1].update_enabled).toBeFalse();
+      expect(store.entityMap()[1].update_available).toBe(false);
+      expect(store.entityMap()[1].update_enabled).toBe(false);
     });
 
     it('should show error on patch failure', () => {
       const error = new Error('Patch failed');
-      containersApiService.patch.and.returnValue(throwError(() => error));
+      containersApiServiceMock.patch.mockReturnValue(throwError(() => error));
 
       store.patchContainer({
         id: 1,
         body: {},
       });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -378,7 +349,7 @@ describe('ContainersStore', () => {
         ...mockContainerItem,
         status: EContainerStatus.exited,
       };
-      containersApiService.controlContainer.and.returnValue(
+      containersApiServiceMock.controlContainer.mockReturnValue(
         of({
           item: updated,
           inspect: mockContainerInspect,
@@ -390,7 +361,7 @@ describe('ContainersStore', () => {
         command: 'stop',
       });
 
-      expect(containersApiService.controlContainer).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.controlContainer).toHaveBeenCalledWith(
         1,
         'stop',
         'container-1',
@@ -400,7 +371,7 @@ describe('ContainersStore', () => {
 
     it('should show error on control failure', () => {
       const error = new Error('Control failed');
-      containersApiService.controlContainer.and.returnValue(
+      containersApiServiceMock.controlContainer.mockReturnValue(
         throwError(() => error),
       );
 
@@ -409,7 +380,7 @@ describe('ContainersStore', () => {
         command: 'restart',
       });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -419,8 +390,8 @@ describe('ContainersStore', () => {
     });
 
     it('should check container', () => {
-      containersApiService.checkContainer.and.returnValue(of('cache-id'));
-      containersApiService.watchProgress.and.returnValue(
+      containersApiServiceMock.checkContainer.mockReturnValue(of('cache-id'));
+      containersApiServiceMock.watchProgress.mockReturnValue(
         of({
           status: EActionStatus.DONE,
         }),
@@ -428,24 +399,24 @@ describe('ContainersStore', () => {
 
       store.checkContainer({ id: 1 });
 
-      expect(containersApiService.checkContainer).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.checkContainer).toHaveBeenCalledWith(
         1,
         'nginx',
       );
-      expect(containersApiService.watchProgress).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.watchProgress).toHaveBeenCalledWith(
         'cache-id',
       );
     });
 
     it('should show error on check failure', () => {
       const error = new Error('Check failed');
-      containersApiService.checkContainer.and.returnValue(
+      containersApiServiceMock.checkContainer.mockReturnValue(
         throwError(() => error),
       );
 
       store.checkContainer({ id: 1 });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -455,9 +426,9 @@ describe('ContainersStore', () => {
     });
 
     it('should update container', () => {
-      containersApiService.updateContainer.and.returnValue(of('cache-id'));
+      containersApiServiceMock.updateContainer.mockReturnValue(of('cache-id'));
 
-      containersApiService.watchProgress.and.returnValue(
+      containersApiServiceMock.watchProgress.mockReturnValue(
         of({
           status: EActionStatus.DONE,
         }),
@@ -465,24 +436,24 @@ describe('ContainersStore', () => {
 
       store.updateContainer({ id: 1 });
 
-      expect(containersApiService.updateContainer).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.updateContainer).toHaveBeenCalledWith(
         1,
         'nginx',
       );
-      expect(containersApiService.watchProgress).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.watchProgress).toHaveBeenCalledWith(
         'cache-id',
       );
     });
 
     it('should show error on update failure', () => {
       const error = new Error('Update failed');
-      containersApiService.updateContainer.and.returnValue(
+      containersApiServiceMock.updateContainer.mockReturnValue(
         throwError(() => error),
       );
 
       store.updateContainer({ id: 1 });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -491,14 +462,14 @@ describe('ContainersStore', () => {
       updateContainersListSignal.set(new Date());
       TestBed.tick();
 
-      expect(containersApiService.list).toHaveBeenCalledTimes(1);
+      expect(containersApiServiceMock.list).toHaveBeenCalledTimes(1);
     });
 
     it('should not reload if updateContainersList is null', () => {
       updateContainersListSignal.set(null);
       TestBed.tick();
 
-      expect(containersApiService.list).not.toHaveBeenCalled();
+      expect(containersApiServiceMock.list).not.toHaveBeenCalled();
     });
   });
 });

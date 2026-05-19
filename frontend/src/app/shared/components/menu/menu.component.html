@@ -36,12 +36,14 @@
     <i class="pi pi-palette"></i>
   </button>
 
-  <button
-    class="menu-item"
-    [style.color]="'var(--p-button-text-danger-color)'"
-    (click)="logout()">
-    <i class="pi pi-sign-out"></i>
-  </button>
+  @if (!appStore.isAuthDisabled()) {
+    <button
+      class="menu-item"
+      [style.color]="'var(--p-button-text-danger-color)'"
+      (click)="logout()">
+      <i class="pi pi-sign-out"></i>
+    </button>
+  }
 } @else {
   <button
     class="menu-item"
@@ -97,13 +99,15 @@
     <span>{{selectedThemeLabel()}}</span>
   </button>
 
-  <button
-    class="menu-item"
-    [style.color]="'var(--p-button-text-danger-color)'"
-    (click)="logout()">
-    <i class="pi pi-sign-out"></i>
-    <span>{{'MENU.SIGNOUT' | translate}}</span>
-  </button>
+  @if (!appStore.isAuthDisabled()) {
+    <button
+      class="menu-item"
+      [style.color]="'var(--p-button-text-danger-color)'"
+      (click)="logout()">
+      <i class="pi pi-sign-out"></i>
+      <span>{{'MENU.SIGNOUT' | translate}}</span>
+    </button>
+  }
 }
 
 <p-menu

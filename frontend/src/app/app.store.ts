@@ -66,7 +66,7 @@ export const AppStore = signalStore(
             publicApiService.getVersion().pipe(
               tapResponse({
                 next: (version) => patchState(store, { version }),
-                error: (error) => console.log(error),
+                error: (error) => console.error(error),
                 finalize: () => patchState(store, { loading: false }),
               }),
             ),
@@ -80,7 +80,7 @@ export const AppStore = signalStore(
             publicApiService.isUpdateAvailable().pipe(
               tapResponse({
                 next: (update) => patchState(store, { update }),
-                error: (error) => console.log(error),
+                error: (error) => console.error(error),
                 finalize: () => patchState(store, { loading: false }),
               }),
             ),

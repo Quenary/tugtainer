@@ -3,6 +3,7 @@ import { InspectComponent } from './inspect.component';
 import { ComponentRef } from '@angular/core';
 import { provideTranslateService } from '@ngx-translate/core';
 import { TreeNode } from 'primeng/api';
+import { ResizeObserverMock } from '@testing/mocks/resize-observer.mock';
 
 describe('InspectComponent', () => {
   let component: InspectComponent;
@@ -22,6 +23,8 @@ describe('InspectComponent', () => {
   };
 
   beforeEach(async () => {
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+
     await TestBed.configureTestingModule({
       imports: [InspectComponent],
       providers: [provideTranslateService()],
@@ -31,10 +34,10 @@ describe('InspectComponent', () => {
     component = fixture.componentInstance;
     componentRef = fixture.componentRef;
     componentRef.setInput('inspect', inspect);
-    await fixture.whenStable();
   });
 
   it('should create', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
@@ -99,7 +102,7 @@ describe('InspectComponent', () => {
     const res = component['inspectTree']();
     expect(expected.length).toEqual(res.length);
     expected.forEach((expected, index) => {
-      expect(res[index]).toEqual(jasmine.objectContaining(expected));
+      expect(res[index]).toEqual(expect.objectContaining(expected));
     });
   });
 });

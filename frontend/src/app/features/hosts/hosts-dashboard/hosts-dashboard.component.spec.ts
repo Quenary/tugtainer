@@ -6,6 +6,7 @@ import { HostsStore } from '../hosts.store';
 import { MessageService } from 'primeng/api';
 import { provideTranslateService } from '@ngx-translate/core';
 import { DialogService } from 'primeng/dynamicdialog';
+import { Mocked } from 'vitest';
 
 describe('HostsDashboardComponent', () => {
   let component: HostsDashboardComponent;
@@ -13,16 +14,13 @@ describe('HostsDashboardComponent', () => {
   let hostsStore: InstanceType<typeof HostsStore>;
 
   const activatedRouteParams = new Subject<object>();
-  let activatedRouteMock: jasmine.SpyObj<ActivatedRoute>;
+  let activatedRouteMock: Partial<Mocked<ActivatedRoute>>;
 
   beforeEach(async () => {
-    activatedRouteMock = jasmine.createSpyObj<ActivatedRoute>(
-      'ActivatedRoute',
-      [],
-      {
-        params: activatedRouteParams,
-      },
-    );
+    activatedRouteMock = {
+      params: activatedRouteParams,
+      toString: vi.fn(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [HostsDashboardComponent],
@@ -41,18 +39,23 @@ describe('HostsDashboardComponent', () => {
   });
 
   it('should create', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
   it('should select host', () => {
-    const selectSpy = spyOn(hostsStore, 'select');
+    const selectSpy = vi.spyOn(hostsStore, 'select');
     activatedRouteParams.next({ id: 123 });
-    expect(selectSpy).toHaveBeenCalledOnceWith(123);
+
+    expect(selectSpy).toHaveBeenCalledWith(123);
+    expect(selectSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should de-select host', () => {
-    const selectSpy = spyOn(hostsStore, 'select');
-    component.ngOnDestroy();
-    expect(selectSpy).toHaveBeenCalledOnceWith(null);
+    const selectSpy = vi.spyOn(hostsStore, 'select');
+    fixture.destroy();
+
+    expect(selectSpy).toHaveBeenCalledWith(null);
+    expect(selectSpy).toHaveBeenCalledTimes(1);
   });
 });

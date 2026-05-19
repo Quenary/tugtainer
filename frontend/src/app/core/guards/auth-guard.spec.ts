@@ -4,20 +4,22 @@ import {
   Router,
   RouterStateSnapshot,
 } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { firstValueFrom, Observable, of, throwError } from 'rxjs';
 import { authGuard } from './auth-guard';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { Mocked } from 'vitest';
+import { getAuthApiServiceMock } from '@testing/mocks/auth-api.service.mock';
 
 describe('authGuard', () => {
-  let authApiServiceMock: jasmine.SpyObj<AuthApiService>;
-  let routerMock: jasmine.SpyObj<Router>;
+  let authApiServiceMock: Mocked<AuthApiService>;
+  let routerMock: Partial<Mocked<Router>>;
 
   beforeEach(() => {
-    authApiServiceMock = jasmine.createSpyObj('AuthApiService', [
-      'isAuthorized',
-    ]);
-    routerMock = jasmine.createSpyObj('Router', ['navigate']);
+    authApiServiceMock = getAuthApiServiceMock();
+    routerMock = {
+      navigate: vi.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -38,25 +40,23 @@ describe('authGuard', () => {
     );
   }
 
-  it('should return true when user is authorized', (done) => {
-    authApiServiceMock.isAuthorized.and.returnValue(of(null));
+  it('should return true when user is authorized', async () => {
+    authApiServiceMock.isAuthorized.mockReturnValue(of(null));
 
-    runGuard().subscribe((result) => {
-      expect(result).toBeTrue();
-      expect(routerMock.navigate).not.toHaveBeenCalled();
-      done();
-    });
+    const result = await firstValueFrom(runGuard());
+
+    expect(result).toBe(true);
+    expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
-  it('should return false and redirect when unauthorized (error)', (done) => {
-    authApiServiceMock.isAuthorized.and.returnValue(
+  it('should return false and redirect when unauthorized (error)', async () => {
+    authApiServiceMock.isAuthorized.mockReturnValue(
       throwError(() => new Error('Unauthorized')),
     );
 
-    runGuard().subscribe((result) => {
-      expect(result).toBeFalse();
-      expect(routerMock.navigate).toHaveBeenCalledWith(['/auth']);
-      done();
-    });
+    const result = await firstValueFrom(runGuard());
+
+    expect(result).toBe(false);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/auth']);
   });
 });

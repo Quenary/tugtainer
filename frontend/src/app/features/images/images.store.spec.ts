@@ -6,16 +6,19 @@ import { ImagesApiService } from './images-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsStore, IHostEntity } from '../hosts/hosts.store';
 import { IImage, IImageInspectResult } from './images.interface';
+import { Mocked } from 'vitest';
+import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
+import { getImagesApiServiceMock } from '@testing/mocks/images-api.service.mock';
 
 describe('ImagesStore', () => {
   let store: InstanceType<typeof ImagesStore>;
 
-  let imagesApiService: jasmine.SpyObj<ImagesApiService>;
-  let toastService: jasmine.SpyObj<ToastService>;
-  let hostsStore: jasmine.SpyObj<InstanceType<typeof HostsStore>>;
+  let imagesApiServiceMock: Mocked<ImagesApiService>;
+  let toastServiceMock: Mocked<ToastService>;
+  let hostsStoreMock: Partial<InstanceType<typeof HostsStore>>;
 
-  let selectedIdSignal: WritableSignal<number | null>;
-  let selectedSignal: WritableSignal<IHostEntity>;
+  let hostSelectedIdSignal: WritableSignal<number | null>;
+  let hostSelectedSignal: WritableSignal<IHostEntity>;
   let updateImagesListSignal: WritableSignal<Date | null>;
 
   const mockHost = {
@@ -35,46 +38,35 @@ describe('ImagesStore', () => {
   } as IImageInspectResult;
 
   beforeEach(() => {
-    selectedIdSignal = signal(1);
-    selectedSignal = signal(mockHost);
+    imagesApiServiceMock = getImagesApiServiceMock();
+    imagesApiServiceMock.list.mockReturnValue(of([mockImage]));
+    imagesApiServiceMock.inspect.mockReturnValue(of(mockInspectResult));
+
+    toastServiceMock = getToastServiceMock();
+
+    hostSelectedIdSignal = signal(1);
+    hostSelectedSignal = signal(mockHost);
     updateImagesListSignal = signal<Date | null>(null);
-
-    imagesApiService = jasmine.createSpyObj<ImagesApiService>(
-      'ImagesApiService',
-      ['list', 'inspect'],
-    );
-
-    toastService = jasmine.createSpyObj<ToastService>('ToastService', [
-      'error',
-    ]);
-
-    hostsStore = jasmine.createSpyObj<InstanceType<typeof HostsStore>>(
-      'HostsStore',
-      [],
-      {
-        selectedId: selectedIdSignal,
-        selected: selectedSignal,
-        updateImagesList: updateImagesListSignal,
-      },
-    );
-
-    imagesApiService.list.and.returnValue(of([mockImage]));
-    imagesApiService.inspect.and.returnValue(of(mockInspectResult));
+    hostsStoreMock = {
+      selectedId: hostSelectedIdSignal,
+      selected: hostSelectedSignal,
+      updateImagesList: updateImagesListSignal,
+    };
 
     TestBed.configureTestingModule({
       providers: [
         ImagesStore,
         {
           provide: ImagesApiService,
-          useValue: imagesApiService,
+          useValue: imagesApiServiceMock,
         },
         {
           provide: ToastService,
-          useValue: toastService,
+          useValue: toastServiceMock,
         },
         {
           provide: HostsStore,
-          useValue: hostsStore,
+          useValue: hostsStoreMock,
         },
       ],
     });
@@ -83,7 +75,7 @@ describe('ImagesStore', () => {
   });
 
   it('should initialize', () => {
-    expect(store.loading()).toBeFalse();
+    expect(store.loading()).toBe(false);
     expect(store.selectedId()).toBeNull();
     expect(store.selectedInfo()).toBeNull();
     expect(store.entities()).toEqual([]);
@@ -146,25 +138,25 @@ describe('ImagesStore', () => {
     it('should load', () => {
       store.loadList();
 
-      expect(imagesApiService.list).toHaveBeenCalledWith(1);
+      expect(imagesApiServiceMock.list).toHaveBeenCalledWith(1);
       expect(store.entities().length).toBe(1);
       expect(store.entities()[0].id).toBe('img-1');
     });
 
     it('should show error on load failure', () => {
       const error = new Error('Load failed');
-      imagesApiService.list.and.returnValue(throwError(() => error));
+      imagesApiServiceMock.list.mockReturnValue(throwError(() => error));
 
       store.loadList();
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
 
     it('should not load if hostId is null', () => {
-      selectedIdSignal.set(null);
+      hostSelectedIdSignal.set(null);
       store.loadList();
 
-      expect(imagesApiService.list).not.toHaveBeenCalled();
+      expect(imagesApiServiceMock.list).not.toHaveBeenCalled();
     });
 
     it('should clear entities when host changes', () => {
@@ -172,7 +164,7 @@ describe('ImagesStore', () => {
 
       expect(store.entities().length).toBe(1);
 
-      selectedIdSignal.set(2);
+      hostSelectedIdSignal.set(2);
       TestBed.tick();
 
       expect(store.entities().length).toBe(0);
@@ -186,37 +178,37 @@ describe('ImagesStore', () => {
     });
 
     it('should load', () => {
-      imagesApiService.inspect.and.returnValue(of(mockInspectResult));
+      imagesApiServiceMock.inspect.mockReturnValue(of(mockInspectResult));
 
       store.loadSelected();
 
-      expect(imagesApiService.inspect).toHaveBeenCalledWith(1, 'img-1');
+      expect(imagesApiServiceMock.inspect).toHaveBeenCalledWith(1, 'img-1');
       expect(store.selectedInfo()).toEqual(mockInspectResult);
     });
 
     it('should show error on inspect failure', () => {
       const error = new Error('Inspect failed');
-      imagesApiService.inspect.and.returnValue(throwError(() => error));
+      imagesApiServiceMock.inspect.mockReturnValue(throwError(() => error));
 
       store.loadSelected();
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
 
     it('should not call inspect if selectedId is null', () => {
-      selectedIdSignal.set(1);
+      hostSelectedIdSignal.set(1);
       store.select(null);
       store.loadSelected();
 
-      expect(imagesApiService.inspect).not.toHaveBeenCalled();
+      expect(imagesApiServiceMock.inspect).not.toHaveBeenCalled();
     });
 
     it('should not call inspect if hostId is null', () => {
       store.select('img-1');
-      selectedIdSignal.set(null);
+      hostSelectedIdSignal.set(null);
       store.loadSelected();
 
-      expect(imagesApiService.inspect).not.toHaveBeenCalled();
+      expect(imagesApiServiceMock.inspect).not.toHaveBeenCalled();
     });
   });
 
@@ -224,13 +216,13 @@ describe('ImagesStore', () => {
     it('should reload list when updateImagesList changes', () => {
       updateImagesListSignal.set(new Date());
       TestBed.tick();
-      expect(imagesApiService.list).toHaveBeenCalledWith(1);
+      expect(imagesApiServiceMock.list).toHaveBeenCalledWith(1);
     });
 
     it('should not reload if updateImagesList is null', () => {
       updateImagesListSignal.set(null);
       TestBed.tick();
-      expect(imagesApiService.list).not.toHaveBeenCalled();
+      expect(imagesApiServiceMock.list).not.toHaveBeenCalled();
     });
   });
 });

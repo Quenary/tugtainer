@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { PendingTasks } from '@angular/core';
+import { of, throwError } from 'rxjs';
+import { Mocked } from 'vitest';
 import { AppStore } from './app.store';
 import { AuthApiService } from './features/auth/auth-api.service';
 import { PublicApiService } from './features/public/public-api.service';
@@ -8,42 +11,28 @@ import {
   IsUpdateAvailableResponseBody,
   IVersion,
 } from './features/public/public-interface';
-import { PendingTasks } from '@angular/core';
-import { storageJson } from 'src/extensions/local-storage-json';
-import { tick } from '@testing/test-utils';
+import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
+import { getPublicApiServiceMock } from '@testing/mocks/public-api.service.mock';
+import { getAuthApiServiceMock } from '@testing/mocks/auth-api.service.mock';
 
 describe('AppStore', () => {
   let store: InstanceType<typeof AppStore>;
 
-  let authApiService: jasmine.SpyObj<AuthApiService>;
-  let publicApiService: jasmine.SpyObj<PublicApiService>;
-  let toastService: jasmine.SpyObj<ToastService>;
+  let authApiServiceMock: Mocked<AuthApiService>;
+  let publicApiServiceMock: Mocked<PublicApiService>;
+  let toastServiceMock: Mocked<ToastService>;
 
   beforeEach(() => {
-    authApiService = jasmine.createSpyObj<AuthApiService>(
-      'AuthApiService',
-      [],
-      {
-        isDisabled: jasmine.createSpy('isDisabled').and.returnValue(of(false)),
-      },
+    authApiServiceMock = getAuthApiServiceMock();
+    authApiServiceMock.isDisabled.mockReturnValue(of(false));
+
+    publicApiServiceMock = getPublicApiServiceMock();
+    publicApiServiceMock.getVersion.mockReturnValue(of({} as IVersion));
+    publicApiServiceMock.isUpdateAvailable.mockReturnValue(
+      of({} as IsUpdateAvailableResponseBody),
     );
 
-    publicApiService = jasmine.createSpyObj<PublicApiService>(
-      'PublicApiService',
-      [],
-      {
-        getVersion: jasmine.createSpy('getVersion').and.returnValue(of({})),
-        isUpdateAvailable: jasmine
-          .createSpy('isUpdateAvailable')
-          .and.returnValue(of({})),
-      },
-    );
-
-    toastService = jasmine.createSpyObj<ToastService>('ToastService', [
-      'error',
-    ]);
-
-    storageJson();
+    toastServiceMock = getToastServiceMock();
 
     TestBed.configureTestingModule({
       providers: [
@@ -51,15 +40,15 @@ describe('AppStore', () => {
         PendingTasks,
         {
           provide: AuthApiService,
-          useValue: authApiService,
+          useValue: authApiServiceMock,
         },
         {
           provide: PublicApiService,
-          useValue: publicApiService,
+          useValue: publicApiServiceMock,
         },
         {
           provide: ToastService,
-          useValue: toastService,
+          useValue: toastServiceMock,
         },
       ],
     });
@@ -71,56 +60,106 @@ describe('AppStore', () => {
     expect(store).toBeTruthy();
   });
 
-  it('should load auth disabled flag', async () => {
-    authApiService.isDisabled.and.returnValue(of(true));
-    store.loadIsAuthDisabled();
-    await tick();
-    expect(store.isAuthDisabled()).toBeTrue();
-    expect(store.loading()).toBeFalse();
+  describe('loadIsAuthDisabled', () => {
+    it('should load', () => {
+      authApiServiceMock.isDisabled.mockReturnValue(of(true));
+
+      store.loadIsAuthDisabled();
+
+      expect(store.isAuthDisabled()).toBe(true);
+    });
+
+    it('should show error', () => {
+      const error = new Error('Test');
+      authApiServiceMock.isDisabled.mockReturnValue(throwError(() => error));
+
+      store.loadIsAuthDisabled();
+
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
+    });
   });
 
-  it('should load version', async () => {
-    const version: IVersion = {
-      image_version: '1.0.0',
-    };
-    publicApiService.getVersion.and.returnValue(of(version));
-    store.loadVersion();
-    await tick();
-    expect(store.version()).toEqual(version);
-    expect(store.loading()).toBeFalse();
+  describe('loadVersion', () => {
+    it('should load', () => {
+      const version: IVersion = {
+        image_version: '1.0.0',
+      };
+      publicApiServiceMock.getVersion.mockReturnValue(of(version));
+
+      store.loadVersion();
+
+      expect(store.version()).toEqual(version);
+    });
+
+    it('should show error', () => {
+      const error = new Error('Test');
+      publicApiServiceMock.getVersion.mockReturnValue(throwError(() => error));
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
+      store.loadVersion();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    });
   });
 
-  it('should load update', async () => {
-    const update: IsUpdateAvailableResponseBody = {
-      is_available: true,
-      release_url: 'test',
-    };
-    publicApiService.isUpdateAvailable.and.returnValue(of(update));
-    store.loadUpdate();
-    await tick();
-    expect(store.update()).toEqual(update);
-    expect(store.loading()).toBeFalse();
+  describe('loadUpdate', () => {
+    it('should load', () => {
+      const update: IsUpdateAvailableResponseBody = {
+        is_available: true,
+        release_url: 'test',
+      };
+      publicApiServiceMock.isUpdateAvailable.mockReturnValue(of(update));
+
+      store.loadUpdate();
+
+      expect(store.update()).toEqual(update);
+    });
+
+    it('should show error', () => {
+      const error = new Error('Test');
+      publicApiServiceMock.isUpdateAvailable.mockReturnValue(
+        throwError(() => error),
+      );
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
+      store.loadUpdate();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    });
   });
 
-  it('should set theme', () => {
-    store.setTheme('DARK');
-    expect(store.theme()).toBe('DARK');
-    expect(document.documentElement.className).toBe('DARK');
-  });
+  describe('setTheme', () => {
+    it('should set theme', () => {
+      store.setTheme('DARK');
 
-  it('should resolve AUTO theme to DARK', () => {
-    spyOn(window, 'matchMedia').and.returnValue({
-      matches: true,
-    } as MediaQueryList);
-    store.setTheme('AUTO');
-    expect(document.documentElement.className).toBe('DARK');
-  });
+      expect(store.theme()).toBe('DARK');
+      expect(document.documentElement.className).toBe('DARK');
+    });
 
-  it('should resolve AUTO theme to LIGHT', () => {
-    spyOn(window, 'matchMedia').and.returnValue({
-      matches: false,
-    } as MediaQueryList);
-    store.setTheme('AUTO');
-    expect(document.documentElement.className).toBe('LIGHT');
+    it('should resolve AUTO to DARK', () => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockReturnValue({ matches: true } as MediaQueryList),
+      );
+
+      store.setTheme('AUTO');
+
+      expect(document.documentElement.className).toBe('DARK');
+    });
+
+    it('should resolve AUTO to LIGHT', () => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockReturnValue({ matches: false } as MediaQueryList),
+      );
+
+      store.setTheme('AUTO');
+
+      expect(document.documentElement.className).toBe('LIGHT');
+    });
   });
 });

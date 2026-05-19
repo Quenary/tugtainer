@@ -9,37 +9,31 @@ import { of, throwError } from 'rxjs';
 import { By } from '@angular/platform-browser';
 import { NewPasswordFormComponent } from '@shared/components/new-password-form/new-password-form.component';
 import { AuthFormComponent } from './auth-form/auth-form.component';
+import { Mocked } from 'vitest';
+import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
+import { getAuthApiServiceMock } from '@testing/mocks/auth-api.service.mock';
 
 describe('AuthComponent', () => {
   let component: AuthComponent;
   let fixture: ComponentFixture<AuthComponent>;
   let de: DebugElement;
 
-  let authApiServiceMock: jasmine.SpyObj<AuthApiService>;
-  let routerMock: jasmine.SpyObj<Router>;
-  let toastServiceMock: jasmine.SpyObj<ToastService>;
+  let authApiServiceMock: Mocked<AuthApiService>;
+  let routerMock: Partial<Mocked<Router>>;
+  let toastServiceMock: Mocked<ToastService>;
 
   beforeEach(async () => {
-    authApiServiceMock = jasmine.createSpyObj(
-      'AuthApiService',
-      ['initiateLogin'],
-      {
-        isDisabled: jasmine.createSpy('isDisabled').and.returnValue(of(false)),
-        isPasswordSet: jasmine
-          .createSpy('isPasswordSet')
-          .and.returnValue(of(true)),
-        isAuthProviderEnabled: jasmine
-          .createSpy('isAuthProviderEnabled')
-          .and.returnValue(of(true)),
-        setPassword: jasmine.createSpy('setPassword').and.returnValue(of({})),
-        login: jasmine.createSpy('login').and.returnValue(of({})),
-      },
-    );
-    routerMock = jasmine.createSpyObj('Router', ['navigate']);
-    toastServiceMock = jasmine.createSpyObj('ToastService', [
-      'success',
-      'error',
-    ]);
+    authApiServiceMock = getAuthApiServiceMock();
+    authApiServiceMock.isDisabled.mockReturnValue(of(false));
+    authApiServiceMock.isPasswordSet.mockReturnValue(of(true));
+    authApiServiceMock.isAuthProviderEnabled.mockReturnValue(of(true));
+    authApiServiceMock.setPassword.mockReturnValue(of({}));
+    authApiServiceMock.login.mockReturnValue(of({}));
+
+    routerMock = {
+      navigate: vi.fn(),
+    };
+    toastServiceMock = getToastServiceMock();
 
     await TestBed.configureTestingModule({
       imports: [AuthComponent],
@@ -63,21 +57,21 @@ describe('AuthComponent', () => {
   });
 
   it('should navigate if auth disabled', async () => {
-    authApiServiceMock.isDisabled.and.returnValue(of(true));
+    authApiServiceMock.isDisabled.mockReturnValue(of(true));
     fixture.detectChanges();
     await fixture.whenStable();
     expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('should not navigate if auth enabled', async () => {
-    authApiServiceMock.isDisabled.and.returnValue(of(false));
+    authApiServiceMock.isDisabled.mockReturnValue(of(false));
     fixture.detectChanges();
     await fixture.whenStable();
     expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
   it('should display new password form if not set', async () => {
-    authApiServiceMock.isPasswordSet.and.returnValue(of(false));
+    authApiServiceMock.isPasswordSet.mockReturnValue(of(false));
     fixture.detectChanges();
     await fixture.whenStable();
     const newPasswordForm = de.query(By.directive(NewPasswordFormComponent));
@@ -85,7 +79,7 @@ describe('AuthComponent', () => {
   });
 
   it('should display oidc button if enabled', async () => {
-    authApiServiceMock.isAuthProviderEnabled.and.callFake((provider) =>
+    authApiServiceMock.isAuthProviderEnabled.mockImplementation((provider) =>
       provider == 'oidc' ? of(true) : of(false),
     );
     fixture.detectChanges();
@@ -95,7 +89,7 @@ describe('AuthComponent', () => {
   });
 
   it('should display auth form if enabled', async () => {
-    authApiServiceMock.isAuthProviderEnabled.and.callFake((provider) =>
+    authApiServiceMock.isAuthProviderEnabled.mockImplementation((provider) =>
       provider == 'password' ? of(true) : of(false),
     );
     fixture.detectChanges();
@@ -108,11 +102,13 @@ describe('AuthComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     component['onSubmitLogin']('test');
-    expect(routerMock.navigate).toHaveBeenCalledOnceWith(['/']);
+
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
+    expect(routerMock.navigate).toHaveBeenCalledTimes(1);
   });
 
   it('should not navigate after failure login', async () => {
-    authApiServiceMock.login.and.returnValue(
+    authApiServiceMock.login.mockReturnValue(
       throwError(() => new Error('test')),
     );
     fixture.detectChanges();

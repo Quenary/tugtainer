@@ -7,6 +7,8 @@ import { ImagesStore } from '../images/images.store';
 import { MessageService } from 'primeng/api';
 import { provideTranslateService } from '@ngx-translate/core';
 import { DialogService } from 'primeng/dynamicdialog';
+import { Mocked } from 'vitest';
+import { ResizeObserverMock } from '@testing/mocks/resize-observer.mock';
 
 describe('ImageCardComponent', () => {
   let component: ImageCardComponent;
@@ -14,16 +16,14 @@ describe('ImageCardComponent', () => {
   let imagesStore: InstanceType<typeof ImagesStore>;
 
   const activatedRouteParams = new Subject<object>();
-  let activatedRouteMock: jasmine.SpyObj<ActivatedRoute>;
+  let activatedRouteMock: Partial<Mocked<ActivatedRoute>>;
 
   beforeEach(async () => {
-    activatedRouteMock = jasmine.createSpyObj<ActivatedRoute>(
-      'ActivatedRoute',
-      [],
-      {
-        params: activatedRouteParams,
-      },
-    );
+    activatedRouteMock = {
+      params: activatedRouteParams,
+      toString: vi.fn(),
+    };
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
     await TestBed.configureTestingModule({
       imports: [ImageCardComponent],
@@ -43,20 +43,25 @@ describe('ImageCardComponent', () => {
   });
 
   it('should create', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
   it('should select image', () => {
-    const selectSpy = spyOn(imagesStore, 'select');
-    const loadSelectedSpy = spyOn(imagesStore, 'loadSelected');
+    const selectSpy = vi.spyOn(imagesStore, 'select');
+    const loadSelectedSpy = vi.spyOn(imagesStore, 'loadSelected');
     activatedRouteParams.next({ imageId: 'test' });
-    expect(selectSpy).toHaveBeenCalledOnceWith('test');
+
+    expect(selectSpy).toHaveBeenCalledWith('test');
+    expect(selectSpy).toHaveBeenCalledTimes(1);
     expect(loadSelectedSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should de-select image', () => {
-    const selectSpy = spyOn(imagesStore, 'select');
-    component.ngOnDestroy();
-    expect(selectSpy).toHaveBeenCalledOnceWith(null);
+    const selectSpy = vi.spyOn(imagesStore, 'select');
+    fixture.destroy();
+
+    expect(selectSpy).toHaveBeenCalledWith(null);
+    expect(selectSpy).toHaveBeenCalledTimes(1);
   });
 });

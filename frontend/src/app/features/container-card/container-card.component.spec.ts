@@ -7,6 +7,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { ContainerCardComponent } from './container-card.component';
 import { ContainersStore } from '../containers/containers.store';
 import { DialogService } from 'primeng/dynamicdialog';
+import { Mocked } from 'vitest';
 
 describe('ContainerCardComponent', () => {
   let component: ContainerCardComponent;
@@ -14,16 +15,13 @@ describe('ContainerCardComponent', () => {
   let containersStore: InstanceType<typeof ContainersStore>;
 
   const activatedRouteParams = new Subject<object>();
-  let activatedRouteMock: jasmine.SpyObj<ActivatedRoute>;
+  let activatedRouteMock: Partial<Mocked<ActivatedRoute>>;
 
   beforeEach(async () => {
-    activatedRouteMock = jasmine.createSpyObj<ActivatedRoute>(
-      'ActivatedRoute',
-      [],
-      {
-        params: activatedRouteParams,
-      },
-    );
+    activatedRouteMock = {
+      params: activatedRouteParams,
+      toString: vi.fn(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [ContainerCardComponent],
@@ -43,20 +41,25 @@ describe('ContainerCardComponent', () => {
   });
 
   it('should create', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
   it('should select container', () => {
-    const selectSpy = spyOn(containersStore, 'select');
-    const loadSelectedSpy = spyOn(containersStore, 'loadSelected');
+    const selectSpy = vi.spyOn(containersStore, 'select');
+    const loadSelectedSpy = vi.spyOn(containersStore, 'loadSelected');
     activatedRouteParams.next({ containerNameOrId: 'test' });
-    expect(selectSpy).toHaveBeenCalledOnceWith('test');
+
+    expect(selectSpy).toHaveBeenCalledWith('test');
+    expect(selectSpy).toHaveBeenCalledTimes(1);
     expect(loadSelectedSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should de-select container', () => {
-    const selectSpy = spyOn(containersStore, 'select');
-    component.ngOnDestroy();
-    expect(selectSpy).toHaveBeenCalledOnceWith(null);
+    const selectSpy = vi.spyOn(containersStore, 'select');
+    fixture.destroy();
+
+    expect(selectSpy).toHaveBeenCalledWith(null);
+    expect(selectSpy).toHaveBeenCalledTimes(1);
   });
 });

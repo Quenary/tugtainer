@@ -1,17 +1,27 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { App } from './app';
 import { AuthApiService } from './features/auth/auth-api.service';
-import { PublicApiService } from './features/public/public-api.service';
 import { provideRouter } from '@angular/router';
 import { ToastService } from './core/services/toast.service';
 import { provideTranslateService } from '@ngx-translate/core';
 import { of } from 'rxjs';
-import { IsUpdateAvailableResponseBody } from './features/public/public-interface';
+import {
+  IsUpdateAvailableResponseBody,
+  IVersion,
+} from './features/public/public-interface';
 import { MessageService } from 'primeng/api';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { storageJson } from '../extensions/local-storage-json';
 import { DialogService } from 'primeng/dynamicdialog';
+import { Mocked } from 'vitest';
+import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
+import { AppStore } from './app.store';
+import { DeepSignal } from '@ngrx/signals';
+import { getAuthApiServiceMock } from '@testing/mocks/auth-api.service.mock';
 
 @Component({
   selector: 'app-test-comp',
@@ -25,39 +35,30 @@ describe('App', () => {
   let component: App;
 
   let harness: RouterTestingHarness;
-  let authApiServiceMock: jasmine.SpyObj<AuthApiService>;
-  let publicApiServiceMock: jasmine.SpyObj<PublicApiService>;
-  let toastServiceMock: jasmine.SpyObj<ToastService>;
+  let authApiServiceMock: Mocked<AuthApiService>;
+  let toastServiceMock: Mocked<ToastService>;
+  let appStoreMock: Partial<InstanceType<typeof AppStore>>;
 
   beforeEach(async () => {
-    authApiServiceMock = jasmine.createSpyObj<AuthApiService>(
-      'AuthApiService',
-      ['initiateLogin'],
-      {
-        isAuthorized: jasmine
-          .createSpy('isAuthorized')
-          .and.returnValue(of(null)),
-        isDisabled: jasmine.createSpy('isDisabled').and.returnValue(of(false)),
-        logout: jasmine.createSpy('isPasswordSet').and.returnValue(of({})),
-      },
-    );
-    publicApiServiceMock = jasmine.createSpyObj('PublicApiService', [], {
-      getVersion: jasmine
-        .createSpy('getVersion')
-        .and.returnValue(of({ image_version: '1.2.3' })),
-      isUpdateAvailable: jasmine.createSpy('isUpdateAvailable').and.returnValue(
-        of({
-          is_available: false,
-          release_url: null,
-        } satisfies IsUpdateAvailableResponseBody),
-      ),
-    });
-    toastServiceMock = jasmine.createSpyObj('ToastService', [
-      'success',
-      'error',
-    ]);
+    authApiServiceMock = getAuthApiServiceMock();
+    authApiServiceMock.isAuthorized.mockReturnValue(of(null));
+    authApiServiceMock.isDisabled.mockReturnValue(of(false));
+    authApiServiceMock.logout.mockReturnValue(of({}));
 
-    storageJson();
+    appStoreMock = {
+      version: signal({
+        image_version: '1.2.3',
+      }) as unknown as DeepSignal<IVersion>,
+      update: signal({
+        is_available: false,
+        release_url: null,
+      }) as unknown as DeepSignal<IsUpdateAvailableResponseBody>,
+      setTheme: vi.fn(),
+      theme: signal('AUTO'),
+      isAuthDisabled: signal(false),
+    };
+
+    toastServiceMock = getToastServiceMock();
 
     await TestBed.configureTestingModule({
       imports: [App],
@@ -65,7 +66,7 @@ describe('App', () => {
         provideZonelessChangeDetection(),
         provideTranslateService(),
         { provide: AuthApiService, useValue: authApiServiceMock },
-        { provide: PublicApiService, useValue: publicApiServiceMock },
+        { provide: AppStore, useValue: appStoreMock },
         { provide: ToastService, useValue: toastServiceMock },
         provideRouter([
           {
@@ -100,13 +101,13 @@ describe('App', () => {
   it('should hide toolbar', async () => {
     fixture.detectChanges();
     await harness.navigateByUrl('/auth');
-    expect(component['isToolbarVisible']()).toBeFalse();
+    expect(component['isToolbarVisible']()).toBe(false);
   });
 
   it('should show toolbar', async () => {
     fixture.detectChanges();
     await harness.navigateByUrl('/containers');
-    expect(component['isToolbarVisible']()).toBeTrue();
+    expect(component['isToolbarVisible']()).toBe(true);
   });
 
   // TODO add more tests

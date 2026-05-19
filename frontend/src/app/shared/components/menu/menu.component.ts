@@ -41,7 +41,7 @@ import { BadgeModule } from 'primeng/badge';
 export class MenuComponent {
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly translateService = inject(TranslateService);
-  private readonly appStore = inject(AppStore);
+  protected readonly appStore = inject(AppStore);
   private readonly authApiService = inject(AuthApiService);
   private readonly router = inject(Router);
   protected readonly hostsStore = inject(HostsStore);

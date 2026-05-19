@@ -436,7 +436,6 @@ export const ContainersStore = signalStore(
 
       effect(() => {
         const u = hostsStore.updateContainersList();
-        console.log(u);
         if (u) {
           untracked(() => {
             store.loadList();

@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { HostsStore } from './hosts.store';
 import { HostsApiService } from './hosts-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { TranslateService } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import { ContainersApiService } from '../containers/containers-api.service';
 import { PublicApiService } from '../public/public-api.service';
 import { ImagesApiService } from '../images/images-api.service';
@@ -13,18 +13,22 @@ import { ICreateHost, IHostInfo, IHostStatus } from './hosts.interface';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { IActionProgress } from '@shared/interfaces/progress.interface';
 import { IPruneImageRequestBodySchema } from '../images/images.interface';
+import { Mocked } from 'vitest';
+import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
+import { getContainersApiServiceMock } from '@testing/mocks/containers-api.service.mock';
+import { getImagesApiServiceMock } from '@testing/mocks/images-api.service.mock';
+import { getPublicApiServiceMock } from '@testing/mocks/public-api.service.mock';
 
 describe('HostsStore', () => {
   let store: InstanceType<typeof HostsStore>;
 
-  let hostsApiService: jasmine.SpyObj<HostsApiService>;
-  let toastService: jasmine.SpyObj<ToastService>;
-  let router: jasmine.SpyObj<Router>;
-  let translateService: jasmine.SpyObj<TranslateService>;
-  let containersApiService: jasmine.SpyObj<ContainersApiService>;
-  let publicApiService: jasmine.SpyObj<PublicApiService>;
-  let imagesApiService: jasmine.SpyObj<ImagesApiService>;
-  let dialogService: jasmine.SpyObj<DialogService>;
+  let hostsApiServiceMock: Partial<Mocked<HostsApiService>>;
+  let toastServiceMock: Mocked<ToastService>;
+  let routerMock: Partial<Mocked<Router>>;
+  let containersApiServiceMock: Mocked<ContainersApiService>;
+  let publicApiServiceMock: Mocked<PublicApiService>;
+  let imagesApiServiceMock: Mocked<ImagesApiService>;
+  let dialogServiceMock: Partial<Mocked<DialogService>>;
 
   const mockHost = {
     id: 1,
@@ -40,49 +44,30 @@ describe('HostsStore', () => {
   };
 
   beforeEach(() => {
-    hostsApiService = jasmine.createSpyObj<HostsApiService>('HostsApiService', [
-      'list',
-      'create',
-      'update',
-      'delete',
-      'status',
-    ]);
+    hostsApiServiceMock = {
+      list: vi.fn().mockReturnValue(of([mockHost])),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      status: vi.fn().mockReturnValue(of(successStatus)),
+    };
 
-    toastService = jasmine.createSpyObj<ToastService>('ToastService', [
-      'success',
-      'error',
-    ]);
+    toastServiceMock = getToastServiceMock();
 
-    router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    routerMock = {
+      navigate: vi.fn(),
+    };
 
-    translateService = jasmine.createSpyObj<TranslateService>(
-      'TranslateService',
-      ['instant'],
-    );
+    containersApiServiceMock = getContainersApiServiceMock();
 
-    containersApiService = jasmine.createSpyObj<ContainersApiService>(
-      'ContainersApiService',
-      ['checkAll', 'updateAll', 'checkHost', 'updateHost', 'watchProgress'],
-    );
+    publicApiServiceMock = getPublicApiServiceMock();
+    publicApiServiceMock.getSummary.mockReturnValue(of([]));
 
-    publicApiService = jasmine.createSpyObj<PublicApiService>(
-      'PublicApiService',
-      ['getSummary'],
-    );
+    imagesApiServiceMock = getImagesApiServiceMock();
 
-    imagesApiService = jasmine.createSpyObj<ImagesApiService>(
-      'ImagesApiService',
-      ['prune'],
-    );
-
-    dialogService = jasmine.createSpyObj<DialogService>('DialogService', [
-      'open',
-    ]);
-
-    translateService.instant.and.callFake((v: string) => v);
-    hostsApiService.list.and.returnValue(of([mockHost]));
-    hostsApiService.status.and.returnValue(of(successStatus));
-    publicApiService.getSummary.and.returnValue(of([]));
+    dialogServiceMock = {
+      open: vi.fn() as Mocked<DialogService>['open'],
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -90,35 +75,32 @@ describe('HostsStore', () => {
         HostsStore,
         {
           provide: HostsApiService,
-          useValue: hostsApiService,
+          useValue: hostsApiServiceMock,
         },
         {
           provide: ToastService,
-          useValue: toastService,
+          useValue: toastServiceMock,
         },
         {
           provide: Router,
-          useValue: router,
+          useValue: routerMock,
         },
-        {
-          provide: TranslateService,
-          useValue: translateService,
-        },
+        provideTranslateService(),
         {
           provide: ContainersApiService,
-          useValue: containersApiService,
+          useValue: containersApiServiceMock,
         },
         {
           provide: PublicApiService,
-          useValue: publicApiService,
+          useValue: publicApiServiceMock,
         },
         {
           provide: ImagesApiService,
-          useValue: imagesApiService,
+          useValue: imagesApiServiceMock,
         },
         {
           provide: DialogService,
-          useValue: dialogService,
+          useValue: dialogServiceMock,
         },
       ],
     });
@@ -137,39 +119,39 @@ describe('HostsStore', () => {
     });
 
     it('should return anyForUpdate=true', () => {
-      expect(store.anyForUpdate()).toBeTrue();
+      expect(store.anyForUpdate()).toBe(true);
     });
 
     it('should return globalActionActive=false initially', () => {
-      expect(store.globalActionActive()).toBeFalse();
+      expect(store.globalActionActive()).toBe(false);
     });
   });
 
   describe('loadList', () => {
     it('should load hosts list', () => {
       store.loadList();
-      expect(hostsApiService.list).toHaveBeenCalled();
+      expect(hostsApiServiceMock.list).toHaveBeenCalled();
       expect(store.entities().length).toBe(1);
       expect(store.entities()[0].id).toBe(1);
     });
 
     it('should call toastService.error on error', () => {
       const error = new Error('Load failed');
-      hostsApiService.list.and.returnValue(throwError(() => error));
+      hostsApiServiceMock.list.mockReturnValue(throwError(() => error));
       store.loadList();
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
 
     it('should call loadStatusOf for enabled hosts', () => {
       store.loadList();
-      expect(hostsApiService.status).toHaveBeenCalledWith(1);
+      expect(hostsApiServiceMock.status).toHaveBeenCalledWith(1);
     });
   });
 
   describe('create', () => {
     it('should create host', () => {
-      hostsApiService.create.and.returnValue(of(mockHost));
-      publicApiService.getSummary.and.returnValue(of([]));
+      hostsApiServiceMock.create.mockReturnValue(of(mockHost));
+      publicApiServiceMock.getSummary.mockReturnValue(of([]));
 
       store.create({
         body: {
@@ -178,22 +160,22 @@ describe('HostsStore', () => {
         } as IHostInfo,
       });
 
-      expect(hostsApiService.create).toHaveBeenCalled();
+      expect(hostsApiServiceMock.create).toHaveBeenCalled();
       expect(store.entities().length).toBe(1);
-      expect(router.navigate).toHaveBeenCalledWith(['/hosts/1'], {
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/hosts/1'], {
         replaceUrl: true,
       });
     });
 
     it('should show error on create failure', () => {
       const error = new Error('Create failed');
-      hostsApiService.create.and.returnValue(throwError(() => error));
+      hostsApiServiceMock.create.mockReturnValue(throwError(() => error));
 
       store.create({
         body: {} as ICreateHost,
       });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -207,30 +189,30 @@ describe('HostsStore', () => {
         ...mockHost,
         name: 'Updated Host',
       };
-      hostsApiService.update.and.returnValue(of(updatedHost));
+      hostsApiServiceMock.update.mockReturnValue(of(updatedHost));
 
       store.update({
         id: 1,
         body: {} as ICreateHost,
       });
 
-      expect(hostsApiService.update).toHaveBeenCalledWith(
+      expect(hostsApiServiceMock.update).toHaveBeenCalledWith(
         1,
-        jasmine.any(Object),
+        expect.any(Object),
       );
       expect(store.entityMap()[1].name).toBe('Updated Host');
     });
 
     it('should show error on update failure', () => {
       const error = new Error('Update failed');
-      hostsApiService.update.and.returnValue(throwError(() => error));
+      hostsApiServiceMock.update.mockReturnValue(throwError(() => error));
 
       store.update({
         id: 1,
         body: {} as ICreateHost,
       });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -240,25 +222,25 @@ describe('HostsStore', () => {
     });
 
     it('should delete host', () => {
-      hostsApiService.delete.and.returnValue(of({ detail: '' }));
+      hostsApiServiceMock.delete.mockReturnValue(of({ detail: '' }));
 
       store.delete({ id: 1 });
 
-      expect(hostsApiService.delete).toHaveBeenCalledWith(1);
+      expect(hostsApiServiceMock.delete).toHaveBeenCalledWith(1);
       expect(store.entities().length).toBe(0);
-      expect(router.navigate).toHaveBeenCalledWith(['/hosts'], {
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/hosts'], {
         replaceUrl: true,
       });
-      expect(toastService.success).toHaveBeenCalled();
+      expect(toastServiceMock.success).toHaveBeenCalled();
     });
 
     it('should show error on delete failure', () => {
       const error = new Error('Delete failed');
-      hostsApiService.delete.and.returnValue(throwError(() => error));
+      hostsApiServiceMock.delete.mockReturnValue(throwError(() => error));
 
       store.delete({ id: 1 });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -270,12 +252,12 @@ describe('HostsStore', () => {
     it('should load host status', () => {
       store.loadStatusOf({ hostId: 1 });
 
-      expect(hostsApiService.status).toHaveBeenCalledWith(1);
+      expect(hostsApiServiceMock.status).toHaveBeenCalledWith(1);
       expect(store.entityMap()[1].status).toEqual(successStatus);
     });
 
     it('should set failed status on error', () => {
-      hostsApiService.status.and.returnValue(
+      hostsApiServiceMock.status.mockReturnValue(
         throwError(() => ({
           message: 'Connection failed',
         })),
@@ -293,8 +275,8 @@ describe('HostsStore', () => {
 
   describe('checkAll', () => {
     it('should check all hosts', () => {
-      containersApiService.checkAll.and.returnValue(of('cache-id'));
-      containersApiService.watchProgress.and.returnValue(
+      containersApiServiceMock.checkAll.mockReturnValue(of('cache-id'));
+      containersApiServiceMock.watchProgress.mockReturnValue(
         of({
           status: 'DONE',
           result: {},
@@ -303,19 +285,21 @@ describe('HostsStore', () => {
 
       store.checkAll();
 
-      expect(containersApiService.checkAll).toHaveBeenCalled();
-      expect(containersApiService.watchProgress).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.checkAll).toHaveBeenCalled();
+      expect(containersApiServiceMock.watchProgress).toHaveBeenCalledWith(
         'cache-id',
       );
     });
 
     it('should show error on checkAll failure', () => {
       const error = new Error('Check failed');
-      containersApiService.checkAll.and.returnValue(throwError(() => error));
+      containersApiServiceMock.checkAll.mockReturnValue(
+        throwError(() => error),
+      );
 
       store.checkAll();
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
@@ -325,8 +309,8 @@ describe('HostsStore', () => {
     });
 
     it('should check host', () => {
-      containersApiService.checkHost.and.returnValue(of('cache-id'));
-      containersApiService.watchProgress.and.returnValue(
+      containersApiServiceMock.checkHost.mockReturnValue(of('cache-id'));
+      containersApiServiceMock.watchProgress.mockReturnValue(
         of({
           status: 'DONE',
           result: {},
@@ -335,7 +319,7 @@ describe('HostsStore', () => {
 
       store.checkHost({ id: 1 });
 
-      expect(containersApiService.checkHost).toHaveBeenCalledWith(1);
+      expect(containersApiServiceMock.checkHost).toHaveBeenCalledWith(1);
     });
   });
 
@@ -345,37 +329,37 @@ describe('HostsStore', () => {
     });
 
     it('should prune host images', () => {
-      imagesApiService.prune.and.returnValue(of('Pruned successfully'));
+      imagesApiServiceMock.prune.mockReturnValue(of('Pruned successfully'));
       store.pruneHost({
         id: 1,
         body: {} as IPruneImageRequestBodySchema,
       });
 
-      expect(imagesApiService.prune).toHaveBeenCalledWith(
+      expect(imagesApiServiceMock.prune).toHaveBeenCalledWith(
         1,
-        jasmine.any(Object),
+        expect.any(Object),
       );
       expect(store.entityMap()[1].pruneResult).toBe('Pruned successfully');
-      expect(dialogService.open).toHaveBeenCalled();
+      expect(dialogServiceMock.open).toHaveBeenCalled();
     });
 
     it('should show error on prune failure', () => {
       const error = new Error('Prune failed');
-      imagesApiService.prune.and.returnValue(throwError(() => error));
+      imagesApiServiceMock.prune.mockReturnValue(throwError(() => error));
 
       store.pruneHost({
         id: 1,
         body: {} as IPruneImageRequestBodySchema,
       });
 
-      expect(toastService.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
   });
 
   describe('openActionResultDialog', () => {
     it('should open dialog', () => {
       store.openActionResultDialog([], null);
-      expect(dialogService.open).toHaveBeenCalled();
+      expect(dialogServiceMock.open).toHaveBeenCalled();
     });
   });
 });
