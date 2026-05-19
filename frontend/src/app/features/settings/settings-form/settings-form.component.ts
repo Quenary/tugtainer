@@ -18,6 +18,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ESettingKey,
+  ESettingSortIndex,
   ESettingValueType,
   ISetting,
   ITestNotificationRequestBody,
@@ -117,7 +118,10 @@ export class SettingsFormComponent {
 
   constructor() {
     effect(() => {
-      const list = this.settingsStore.entities();
+      let list = this.settingsStore.entities();
+      list = [...list].sort(
+        (a, b) => ESettingSortIndex[a.key] - ESettingSortIndex[b.key],
+      );
       this.formArray.clear();
       this.formArray.reset();
       for (const item of list) {
