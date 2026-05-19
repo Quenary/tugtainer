@@ -120,4 +120,8 @@ export const routes: Routes = [
         (c) => c.SettingsComponent,
       ),
   },
+  {
+    path: '**',
+    redirectTo: '/',
+  },
 ];
