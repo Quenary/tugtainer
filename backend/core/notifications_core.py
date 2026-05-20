@@ -4,6 +4,7 @@ from typing import Any, Final, cast
 import jinja2
 from apprise import Apprise, NotifyFormat
 from apprise.exception import AppriseException
+from jinja2.sandbox import SandboxedEnvironment
 
 from backend.config import Config
 from backend.core.action_result import (
@@ -63,7 +64,7 @@ async def send_check_notification(
             )
         _urls = [line.strip() for line in urls.splitlines() if line.strip()]
 
-        jinja2_env: Final = jinja2.Environment(
+        jinja2_env: Final = SandboxedEnvironment(
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=False,
