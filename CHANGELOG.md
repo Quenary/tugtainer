@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.30.2 (2026-05-20)
+
+### Bug Fixes
+
+- **security**: RCE via notification template injection by @reatva
+  ([`619d48f`](https://github.com/Quenary/tugtainer/commit/619d48f045f5abe31d8331c8f3a52dd0cec3656e))
+
+
 ## v1.30.1 (2026-05-19)
 
 ### Bug Fixes
