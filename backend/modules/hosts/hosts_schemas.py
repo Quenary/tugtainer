@@ -36,6 +36,8 @@ class HostSummary(BaseModel):
     by_check_enabled: dict[str, int]
     by_update_enabled: dict[str, int]
     by_update_available: dict[str, int]
+    # 👇 下面是你新增的模型声明
+    by_update_available_filtered: dict[str, int]
     total_images: int
     unused_images: int
     dangling_images: int

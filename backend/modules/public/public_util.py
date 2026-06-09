@@ -45,6 +45,8 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
             by_check_enabled={"true": 0, "false": 0},
             by_update_enabled={"true": 0, "false": 0},
             by_update_available={"true": 0, "false": 0},
+            # 👇 下面是你新增的初始化
+            by_update_available_filtered={"true": 0, "false": 0},
             total_images=0,
             unused_images=0,
             dangling_images=0,
@@ -90,6 +92,7 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
     by_check_enabled = {"true": 0, "false": 0}
     by_update_enabled = {"true": 0, "false": 0}
     by_update_available = {"true": 0, "false": 0}
+    by_update_available_filtered = {"true": 0, "false": 0}
 
     for container in mapped_containers:
         if container.status:
@@ -112,6 +115,12 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
         if container.update_available is not None:
             avail_key = "true" if container.update_available else "false"
             by_update_available[avail_key] += 1
+
+            # 👇 下面是你新增的计算逻辑：只有当 check_enabled 为真时，才给你的专属变量 +1
+            if container.check_enabled:
+                by_update_available_filtered[avail_key] = (
+                    by_update_available_filtered.get(avail_key, 0) + 1
+                )
 
     images: Final = await client.image.list(GetImageListBodySchema(all=True))
     used_images: Final[set[str]] = {c.image for c in containers if c.image}
@@ -137,6 +146,8 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
         by_check_enabled=by_check_enabled,
         by_update_enabled=by_update_enabled,
         by_update_available=by_update_available,
+        # 👇 下面是你新增的返回字段
+        by_update_available_filtered=by_update_available_filtered,
         total_images=total_images,
         unused_images=unused_images,
         dangling_images=dangling_images,
