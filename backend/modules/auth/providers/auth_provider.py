@@ -81,3 +81,40 @@ class AuthProvider(ABC):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token is invalid or expired",
             ) from e
+
+    def _set_cookies(
+        self,
+        response: Response,
+        access_token: str,
+        refresh_token: str,
+    ) -> None:
+        """Set cookies for the access and refresh tokens."""
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            samesite="strict",
+            secure=Config.HTTPS,
+            domain=Config.DOMAIN,
+            max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            samesite="strict",
+            secure=Config.HTTPS,
+            domain=Config.DOMAIN,
+            max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
+        )
+
+    def _delete_cookies(self, response: Response) -> None:
+        """Delete cookies for the access and refresh tokens."""
+        response.delete_cookie(
+            key="access_token",
+            domain=Config.DOMAIN,
+        )
+        response.delete_cookie(
+            key="refresh_token",
+            domain=Config.DOMAIN,
+        )

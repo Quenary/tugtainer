@@ -68,27 +68,73 @@ class AuthOidcProvider(AuthProvider):
             ) from e
 
     async def logout(self, request: Request, response: Response) -> Response:
-        # TODO add logout call
-        response.delete_cookie("access_token")
-        response.delete_cookie("refresh_token")
+        self._delete_cookies(response)
         response.status_code = status.HTTP_200_OK
         return response
 
-    async def refresh(self, request: Request, response: Response) -> Any:
-        # TODO add refresh call
+    async def refresh(self, request: Request, response: Response) -> Response:
         await self.raise_of_disabled()
-        raise NotImplementedError()
 
-    async def is_authorized(self, request: Request):
-        # TODO add check call
+        refresh_token = request.cookies.get("refresh_token")
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token missing",
+            )
+
+        payload: dict[str, Any] = self._verify_token(refresh_token)
+        if payload.get("type") != "refresh" or payload.get("auth_provider") != "oidc":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token type or provider",
+            )
+
+        # preserve oidc user info
+        user_id = payload.get("user_id", "unknown_user")
+        user_info = payload.get("user_info", {})
+
+        new_access_token = self._create_token(
+            data={
+                "type": "access",
+                "auth_provider": "oidc",
+                "oidc": True,
+                "user_id": user_id,
+                "user_info": user_info,
+            },
+            expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN),
+        )
+
+        new_refresh_token = self._create_token(
+            data={
+                "type": "refresh",
+                "auth_provider": "oidc",
+                "oidc": True,
+                "user_id": user_id,
+                "user_info": user_info,
+            },
+            expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
+        )
+
+        self._set_cookies(response, new_access_token, new_refresh_token)
+        response.status_code = status.HTTP_200_OK
+        return response
+
+    async def is_authorized(self, request: Request) -> Literal[True]:
         token = request.cookies.get("access_token")
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Unauthorized",
             )
-        res = self._verify_token(token)
-        return cast(Literal[True], bool(res))
+
+        payload: dict[str, Any] = self._verify_token(token)
+        if payload.get("type") != "access" or payload.get("auth_provider") != "oidc":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type or provider",
+            )
+
+        return cast(Literal[True], True)
 
     async def callback(
         self,
@@ -144,23 +190,10 @@ class AuthOidcProvider(AuthProvider):
             )
 
             # Set authentication cookies
-            response.set_cookie(
-                key="access_token",
-                value=tokens["access_token"],
-                httponly=True,
-                samesite="strict",
-                secure=Config.HTTPS,
-                domain=Config.DOMAIN if Config.DOMAIN else None,
-                max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
-            )
-            response.set_cookie(
-                key="refresh_token",
-                value=tokens["refresh_token"],
-                httponly=True,
-                samesite="strict",
-                secure=Config.HTTPS,
-                domain=Config.DOMAIN if Config.DOMAIN else None,
-                max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
+            self._set_cookies(
+                response,
+                tokens["access_token"],
+                tokens["refresh_token"],
             )
 
             # Clear the state cookie
@@ -332,6 +365,7 @@ class AuthOidcProvider(AuthProvider):
                 "auth_provider": "oidc",
                 "oidc": True,
                 "user_id": user_id,
+                "user_info": user_claims,
             },
             expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
         )
