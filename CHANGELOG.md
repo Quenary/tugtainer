@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.30.3 (2026-06-11)
+
+### Bug Fixes
+
+- **backend**: OIDC refresh tokens
+  ([`91bc17b`](https://github.com/Quenary/tugtainer/commit/91bc17b3c28a40f32da122751e9541c432a272b0))
+
+- **security**: Check OIDC/password auth providers is enabled before trying to login by @finderer
+  ([`76371db`](https://github.com/Quenary/tugtainer/commit/76371db679334b002d4af544b0f3b8587ad86f52))
+
+
 ## v1.30.2 (2026-05-20)
 
 ### Bug Fixes
