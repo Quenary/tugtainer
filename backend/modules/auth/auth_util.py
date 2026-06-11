@@ -69,12 +69,12 @@ async def is_authorized(request: Request):
     Returns True if auth disabled.
     Returns True if there is active provider, and user is authorized.
     Raises 401 if none is authorized.
+    Raises 403 if active provider (in token) is disabled.
     """
     if Config.DISABLE_AUTH:
         return True
     provider = active_auth_provider(request)
     if not provider:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "Unauthorized"
-        )
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unauthorized")
+    await provider.raise_of_disabled()
     return await provider.is_authorized(request)

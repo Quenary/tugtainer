@@ -17,6 +17,8 @@ class AuthPasswordProvider(AuthProvider):
         return not Config.DISABLE_AUTH and not Config.DISABLE_PASSWORD
 
     async def login(self, request: Request, response: Response):
+        await self.raise_of_disabled()
+
         try:
             body = await request.json()
             password = body.get("password", "")
@@ -42,18 +44,14 @@ class AuthPasswordProvider(AuthProvider):
                 "type": "access",
                 "auth_provider": "password",
             },
-            expires_delta=timedelta(
-                minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
-            ),
+            expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN),
         )
         refresh_token: str = self._create_token(
             data={
                 "type": "refresh",
                 "auth_provider": "password",
             },
-            expires_delta=timedelta(
-                minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
-            ),
+            expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
         )
         response.set_cookie(
             key="access_token",
@@ -83,9 +81,9 @@ class AuthPasswordProvider(AuthProvider):
         return response
 
     async def refresh(self, request: Request, response: Response):
-        refresh_token: str | None = request.cookies.get(
-            "refresh_token"
-        )
+        await self.raise_of_disabled()
+
+        refresh_token: str | None = request.cookies.get("refresh_token")
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -104,18 +102,14 @@ class AuthPasswordProvider(AuthProvider):
                 "type": "access",
                 "auth_provider": "password",
             },
-            expires_delta=timedelta(
-                minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
-            ),
+            expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN),
         )
         new_refresh_token: str = self._create_token(
             data={
                 "type": "refresh",
                 "auth_provider": "password",
             },
-            expires_delta=timedelta(
-                minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
-            ),
+            expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
         )
         response.set_cookie(
             key="access_token",
@@ -148,26 +142,18 @@ class AuthPasswordProvider(AuthProvider):
         res = self._verify_token(token)
         return cast(Literal[True], bool(res))
 
-    async def callback(
-        self, request: Request, response: Response
-    ) -> Any:
+    async def callback(self, request: Request, response: Response) -> Any:
         raise NotImplementedError()
 
-    async def set_password(
-        self, request: Request, payload: PasswordSetRequestBody
-    ):
+    async def set_password(self, request: Request, payload: PasswordSetRequestBody):
         """
         Set new password if there is no password yet or if user authorized.
         """
 
         def write_and_return():
-            password_hash: str = self._get_password_hash(
-                payload.password
-            )
+            password_hash: str = self._get_password_hash(payload.password)
             self._write_password_hash(password_hash)
-            return PlainTextResponse(
-                status_code=status.HTTP_201_CREATED
-            )
+            return PlainTextResponse(status_code=status.HTTP_201_CREATED)
 
         if not self._read_password_hash():
             return write_and_return()
@@ -192,9 +178,7 @@ class AuthPasswordProvider(AuthProvider):
         """Hash password"""
         pwd_bytes: bytes = password.encode("utf-8")
         salt: bytes = bcrypt.gensalt()
-        hashed_password: bytes = bcrypt.hashpw(
-            password=pwd_bytes, salt=salt
-        )
+        hashed_password: bytes = bcrypt.hashpw(password=pwd_bytes, salt=salt)
         return hashed_password.decode("utf-8")
 
     def _read_password_hash(self) -> str | None:
