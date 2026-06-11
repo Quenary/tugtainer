@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Any, Literal, NotRequired, TypedDict
+
 from pydantic import BaseModel, field_validator
 
 from .auth_validators import password_validator
@@ -11,3 +14,17 @@ class PasswordSetRequestBody(BaseModel):
     @classmethod
     def validate_password(cls, v: str) -> str:
         return password_validator(v)
+
+
+TokenType = Literal["access", "refresh"]
+AuthProviderType = Literal["password", "oidc"]
+
+
+class TokenPayload(TypedDict):
+    """Access/refresh token payload"""
+
+    type: TokenType
+    auth_provider: AuthProviderType
+    exp: NotRequired[datetime]
+    user_id: NotRequired[str]
+    user_info: NotRequired[dict[str, Any]]

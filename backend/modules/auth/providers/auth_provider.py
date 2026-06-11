@@ -1,12 +1,13 @@
 import textwrap
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastapi import HTTPException, Request, Response, status
 from jose import JWTError, jwt
 
 from backend.config import Config
+from backend.modules.auth.auth_schemas import TokenPayload
 from backend.util.now import now
 
 
@@ -51,31 +52,33 @@ class AuthProvider(ABC):
         """Provider callback endpoint handler"""
         pass
 
-    def _create_token(self, data: dict[str, Any], expires_delta: timedelta) -> str:
+    def _create_token(self, data: TokenPayload, expires_delta: timedelta) -> str:
         """
         Create access or refresh token
         """
-        to_encode: dict[str, Any] = data.copy()
+        to_encode = data.copy()
         expire: datetime = now() + expires_delta
         to_encode.update({"exp": expire})
         return jwt.encode(
-            claims=to_encode,
+            claims=dict(to_encode),
             key=Config.JWT_SECRET_KEY,
             algorithm=Config.JWT_ALGORITHM,
         )
 
-    def _verify_token(self, token: str) -> dict[str, Any]:
+    def _verify_token(self, token: str) -> TokenPayload:
         """
         Verify token validity and return its payload.
         Raise 401 error if not valid.
         """
         try:
-            payload: dict[str, Any] = jwt.decode(
-                token,
-                key=Config.JWT_SECRET_KEY,
-                algorithms=[Config.JWT_ALGORITHM],
+            return cast(
+                TokenPayload,
+                jwt.decode(
+                    token,
+                    key=Config.JWT_SECRET_KEY,
+                    algorithms=[Config.JWT_ALGORITHM],
+                ),
             )
-            return payload
         except JWTError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

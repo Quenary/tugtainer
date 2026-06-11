@@ -1,9 +1,10 @@
-from typing import Any
+from typing import cast
 
 from fastapi import HTTPException, Request, status
 from jose import jwt
 
 from backend.config import Config
+from backend.modules.auth.auth_schemas import AuthProviderType, TokenPayload
 
 from .providers.auth_oidc_provider import AuthOidcProvider
 from .providers.auth_password_provider import (
@@ -13,26 +14,28 @@ from .providers.auth_provider import AuthProvider
 
 AUTH_PASSWORD_PROVIDER = AuthPasswordProvider()
 AUTH_OIDC_PROVIDER = AuthOidcProvider()
-AUTH_PROVIDERS: dict[str, AuthProvider] = {
+AUTH_PROVIDERS: dict[AuthProviderType, AuthProvider] = {
     "password": AUTH_PASSWORD_PROVIDER,
     "oidc": AUTH_OIDC_PROVIDER,
 }
 
 
-def _decode_token(token: str) -> dict[str, Any] | None:
+def _decode_token(token: str) -> TokenPayload | None:
     try:
-        data: dict[str, Any] = jwt.decode(
-            token,
-            key=Config.JWT_SECRET_KEY,
-            algorithms=[Config.JWT_ALGORITHM],
+        return cast(
+            TokenPayload,
+            jwt.decode(
+                token,
+                key=Config.JWT_SECRET_KEY,
+                algorithms=[Config.JWT_ALGORITHM],
+            ),
         )
-        return data
     except Exception:
         return None
 
 
 def auth_provider_by_name(
-    provider: str,
+    provider: AuthProviderType,
 ) -> AuthProvider | None:
     """
     Get auth provider by name.
@@ -51,15 +54,13 @@ def active_auth_provider(
         request.cookies.get("access_token"),
         request.cookies.get("refresh_token"),
     ]
-    data: dict[str, Any] | None = None
+    data: TokenPayload | None = None
     for t in tokens:
         if t and not data:
             data = _decode_token(t)
     if not data:
         return None
-    provider: str | None = data.get("auth_provider", None)
-    if not provider:
-        return None
+    provider = data.get("auth_provider")
     return auth_provider_by_name(provider)
 
 

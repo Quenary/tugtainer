@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 import bcrypt
 from fastapi import HTTPException, Request, Response, status
@@ -76,7 +76,7 @@ class AuthPasswordProvider(AuthProvider):
                 detail="Refresh token missing",
             )
 
-        payload: dict[str, Any] = self._verify_token(refresh_token)
+        payload = self._verify_token(refresh_token)
         if (
             payload.get("type") != "refresh"
             or payload.get("auth_provider") != "password"
@@ -115,7 +115,7 @@ class AuthPasswordProvider(AuthProvider):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Unauthorized",
             )
-        payload: dict[str, Any] = self._verify_token(token)
+        payload = self._verify_token(token)
         if (
             payload.get("type") != "access"
             or payload.get("auth_provider") != "password"

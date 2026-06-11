@@ -82,7 +82,7 @@ class AuthOidcProvider(AuthProvider):
                 detail="Refresh token missing",
             )
 
-        payload: dict[str, Any] = self._verify_token(refresh_token)
+        payload = self._verify_token(refresh_token)
         if payload.get("type") != "refresh" or payload.get("auth_provider") != "oidc":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -97,7 +97,6 @@ class AuthOidcProvider(AuthProvider):
             data={
                 "type": "access",
                 "auth_provider": "oidc",
-                "oidc": True,
                 "user_id": user_id,
                 "user_info": user_info,
             },
@@ -108,7 +107,6 @@ class AuthOidcProvider(AuthProvider):
             data={
                 "type": "refresh",
                 "auth_provider": "oidc",
-                "oidc": True,
                 "user_id": user_id,
                 "user_info": user_info,
             },
@@ -127,7 +125,7 @@ class AuthOidcProvider(AuthProvider):
                 detail="Unauthorized",
             )
 
-        payload: dict[str, Any] = self._verify_token(token)
+        payload = self._verify_token(token)
         if payload.get("type") != "access" or payload.get("auth_provider") != "oidc":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -352,7 +350,6 @@ class AuthOidcProvider(AuthProvider):
             data={
                 "type": "access",
                 "auth_provider": "oidc",
-                "oidc": True,
                 "user_id": user_id,
                 "user_info": user_claims,
             },
@@ -363,7 +360,6 @@ class AuthOidcProvider(AuthProvider):
             data={
                 "type": "refresh",
                 "auth_provider": "oidc",
-                "oidc": True,
                 "user_id": user_id,
                 "user_info": user_claims,
             },
