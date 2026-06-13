@@ -92,7 +92,7 @@ export class ContainersTableComponent {
     container: IContainerListItem,
   ): void {
     this.containersStore.patchContainer({
-      id: container.id,
+      containerName: container.name,
       body: {
         check_enabled,
       },
@@ -104,7 +104,7 @@ export class ContainersTableComponent {
     container: IContainerListItem,
   ): void {
     this.containersStore.patchContainer({
-      id: container.id,
+      containerName: container.name,
       body: {
         update_enabled,
       },
@@ -112,17 +112,20 @@ export class ContainersTableComponent {
   }
 
   protected onCheck(container: IContainerEntity): void {
-    this.containersStore.checkContainer({ id: container.id });
+    this.containersStore.checkContainer({ containerName: container.name });
   }
 
   protected onUpdate(container: IContainerEntity): void {
-    this.containersStore.updateContainer({ id: container.id });
+    this.containersStore.updateContainer({ containerName: container.name });
   }
 
   protected onCommand(
     command: TControlContainerCommand,
     container: IContainerEntity,
   ): void {
-    this.containersStore.controlContainer({ id: container.id, command });
+    this.containersStore.controlContainer({
+      containerName: container.name,
+      command,
+    });
   }
 }
