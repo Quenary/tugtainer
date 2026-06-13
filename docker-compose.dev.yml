@@ -32,7 +32,7 @@ services:
       args:
         VERSION: dev build
     environment:
-      AGENT_SECRET: testsecret
+      ALLOW_UNAUTHENTICATED_AGENT: "true"
       ENABLE_PUBLIC_API: "true"
       LOG_LEVEL: info
       DOCKER_HOST: tcp://socket-proxy:2375
