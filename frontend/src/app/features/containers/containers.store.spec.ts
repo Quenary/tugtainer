@@ -261,7 +261,7 @@ describe('ContainersStore', () => {
     });
 
     it('should reload entity', () => {
-      store.reloadEntity({ id: 1 });
+      store.reloadEntity({ containerName: 'nginx' });
 
       expect(containersApiServiceMock.get).toHaveBeenCalledWith(1, 'nginx');
     });
@@ -277,24 +277,18 @@ describe('ContainersStore', () => {
         }),
       );
 
-      store.reloadEntity({ id: 1 });
+      store.reloadEntity({ containerName: 'nginx' });
 
-      expect(store.entityMap()[1].status).toBe(EContainerStatus.exited);
+      expect(store.entityMap()['nginx'].status).toBe(EContainerStatus.exited);
     });
 
     it('should show error on reload failure', () => {
       const error = new Error('Reload failed');
       containersApiServiceMock.get.mockReturnValue(throwError(() => error));
 
-      store.reloadEntity({ id: 1 });
+      store.reloadEntity({ containerName: 'nginx' });
 
       expect(toastServiceMock.error).toHaveBeenCalledWith(error);
-    });
-
-    it('should not reload if entity not found', () => {
-      store.reloadEntity({ id: 999 });
-
-      expect(containersApiServiceMock.get).not.toHaveBeenCalled();
     });
   });
 
@@ -313,7 +307,7 @@ describe('ContainersStore', () => {
       );
 
       store.patchContainer({
-        id: 1,
+        containerName: 'nginx',
         body: {
           update_enabled: false,
         },
@@ -322,8 +316,8 @@ describe('ContainersStore', () => {
       expect(containersApiServiceMock.patch).toHaveBeenCalledWith(1, 'nginx', {
         update_enabled: false,
       });
-      expect(store.entityMap()[1].update_available).toBe(false);
-      expect(store.entityMap()[1].update_enabled).toBe(false);
+      expect(store.entityMap()['nginx'].update_available).toBe(false);
+      expect(store.entityMap()['nginx'].update_enabled).toBe(false);
     });
 
     it('should show error on patch failure', () => {
@@ -331,7 +325,7 @@ describe('ContainersStore', () => {
       containersApiServiceMock.patch.mockReturnValue(throwError(() => error));
 
       store.patchContainer({
-        id: 1,
+        containerName: 'nginx',
         body: {},
       });
 
@@ -357,16 +351,16 @@ describe('ContainersStore', () => {
       );
 
       store.controlContainer({
-        id: 1,
+        containerName: 'nginx',
         command: 'stop',
       });
 
       expect(containersApiServiceMock.controlContainer).toHaveBeenCalledWith(
         1,
         'stop',
-        'container-1',
+        'nginx',
       );
-      expect(store.entityMap()[1].status).toBe(EContainerStatus.exited);
+      expect(store.entityMap()['nginx'].status).toBe(EContainerStatus.exited);
     });
 
     it('should show error on control failure', () => {
@@ -376,7 +370,7 @@ describe('ContainersStore', () => {
       );
 
       store.controlContainer({
-        id: 1,
+        containerName: 'nginx',
         command: 'restart',
       });
 
@@ -397,7 +391,7 @@ describe('ContainersStore', () => {
         }),
       );
 
-      store.checkContainer({ id: 1 });
+      store.checkContainer({ containerName: 'nginx' });
 
       expect(containersApiServiceMock.checkContainer).toHaveBeenCalledWith(
         1,
@@ -414,7 +408,7 @@ describe('ContainersStore', () => {
         throwError(() => error),
       );
 
-      store.checkContainer({ id: 1 });
+      store.checkContainer({ containerName: 'nginx' });
 
       expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });
@@ -434,7 +428,7 @@ describe('ContainersStore', () => {
         }),
       );
 
-      store.updateContainer({ id: 1 });
+      store.updateContainer({ containerName: 'nginx' });
 
       expect(containersApiServiceMock.updateContainer).toHaveBeenCalledWith(
         1,
@@ -451,7 +445,7 @@ describe('ContainersStore', () => {
         throwError(() => error),
       );
 
-      store.updateContainer({ id: 1 });
+      store.updateContainer({ containerName: 'nginx' });
 
       expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });

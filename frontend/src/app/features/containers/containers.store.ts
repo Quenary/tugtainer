@@ -51,13 +51,13 @@ export type TContainerEntityLoading =
   | TControlContainerCommand
   | null;
 
+const containersEntityConfig = entityConfig<IContainerEntity>({
+  entity: type<IContainerEntity>(),
+  selectId: (item) => item.name,
+});
+
 export const ContainersStore = signalStore(
-  withEntities<IContainerEntity>(
-    entityConfig({
-      entity: type<IContainerEntity>(),
-      selectId: (item) => item.name,
-    }),
-  ),
+  withEntities(containersEntityConfig),
   withState<IContainersStore>(() => ({
     loading: false,
     selectedNameOrId: null,
@@ -156,7 +156,9 @@ export const ContainersStore = signalStore(
           patchState(store, { loading: true });
           return containersApiService.list(hostId).pipe(
             tapResponse({
-              next: (list) => patchState(store, setEntities(list)),
+              next: (list) => {
+                patchState(store, setEntities(list, containersEntityConfig));
+              },
               error: (error) => toastService.error(error),
               finalize: () => patchState(store, { loading: false }),
             }),
@@ -169,35 +171,41 @@ export const ContainersStore = signalStore(
       apiCall: (hostId: number, name: string) => Observable<string>,
       loading: Extract<TContainerEntityLoading, 'check' | 'update'>,
     ) {
-      return rxMethod<{ id: number }>(
+      return rxMethod<{ containerName: string }>(
         pipe(
-          tap(({ id }) =>
+          tap(({ containerName }) =>
             patchState(
               store,
-              updateEntity({
-                id,
-                changes: {
-                  progress: null,
+              updateEntity(
+                {
+                  id: containerName,
+                  changes: {
+                    progress: null,
+                  },
                 },
-              }),
+                containersEntityConfig,
+              ),
             ),
           ),
-          mergeMap(({ id }) => {
+          mergeMap(({ containerName }) => {
             const hostId = store.hostId();
-            const entity = store.entityMap()[id];
-            if (!hostId || !entity) {
+            if (!hostId) {
               return EMPTY;
             }
+
             patchState(
               store,
-              updateEntity({
-                id,
-                changes: {
-                  loading,
+              updateEntity(
+                {
+                  id: containerName,
+                  changes: {
+                    loading,
+                  },
                 },
-              }),
+                containersEntityConfig,
+              ),
             );
-            return apiCall(hostId, entity.name).pipe(
+            return apiCall(hostId, containerName).pipe(
               tap(() =>
                 toastService.success(
                   translateService.instant('GENERAL.IN_PROGRESS'),
@@ -212,10 +220,13 @@ export const ContainersStore = signalStore(
                 next: (progress) => {
                   patchState(
                     store,
-                    updateEntity({
-                      id,
-                      changes: { progress },
-                    }),
+                    updateEntity(
+                      {
+                        id: containerName,
+                        changes: { progress },
+                      },
+                      containersEntityConfig,
+                    ),
                   );
                 },
                 error: (error) => {
@@ -224,14 +235,17 @@ export const ContainersStore = signalStore(
                 finalize: () => {
                   patchState(
                     store,
-                    updateEntity({
-                      id,
-                      changes: {
-                        loading: null,
+                    updateEntity(
+                      {
+                        id: containerName,
+                        changes: {
+                          loading: null,
+                        },
                       },
-                    }),
+                      containersEntityConfig,
+                    ),
                   );
-                  reloadEntity({ id });
+                  reloadEntity({ containerName });
                 },
               }),
             );
@@ -240,41 +254,50 @@ export const ContainersStore = signalStore(
       );
     }
 
-    const reloadEntity = rxMethod<{ id: number }>(
+    const reloadEntity = rxMethod<{ containerName: string }>(
       pipe(
-        mergeMap(({ id }) => {
+        mergeMap(({ containerName }) => {
           const hostId = store.hostId();
-          const entity = store.entityMap()[id];
-          if (!entity || !hostId) {
+          if (!hostId) {
             return EMPTY;
           }
+
           patchState(
             store,
-            updateEntity({
-              id,
-              changes: { loading: 'loading' },
-            }),
+            updateEntity(
+              {
+                id: containerName,
+                changes: { loading: 'loading' },
+              },
+              containersEntityConfig,
+            ),
           );
-          return containersApiService.get(hostId, entity.name).pipe(
+          return containersApiService.get(hostId, containerName).pipe(
             tapResponse({
               next: (info) =>
                 patchState(
                   store,
-                  updateEntity({
-                    id,
-                    changes: info.item,
-                  }),
+                  updateEntity(
+                    {
+                      id: containerName,
+                      changes: info.item,
+                    },
+                    containersEntityConfig,
+                  ),
                 ),
               error: (error) => toastService.error(error),
               finalize: () =>
                 patchState(
                   store,
-                  updateEntity({
-                    id,
-                    changes: {
-                      loading: null,
+                  updateEntity(
+                    {
+                      id: containerName,
+                      changes: {
+                        loading: null,
+                      },
                     },
-                  }),
+                    containersEntityConfig,
+                  ),
                 ),
             }),
           );
@@ -283,45 +306,54 @@ export const ContainersStore = signalStore(
     );
 
     const patchContainer = rxMethod<{
-      id: number;
+      containerName: string;
       body: IContainerPatchBody;
     }>(
       pipe(
-        switchMap(({ id, body }) => {
+        switchMap(({ containerName, body }) => {
           const hostId = store.hostId();
-          const entity = store.entityMap()[id];
-          if (!hostId || !entity) {
+          if (!hostId) {
             return EMPTY;
           }
+
           patchState(
             store,
-            updateEntity({
-              id: entity.id,
-              changes: {
-                loading: 'loading',
+            updateEntity(
+              {
+                id: containerName,
+                changes: {
+                  loading: 'loading',
+                },
               },
-            }),
+              containersEntityConfig,
+            ),
           );
-          return containersApiService.patch(hostId, entity.name, body).pipe(
+          return containersApiService.patch(hostId, containerName, body).pipe(
             tapResponse({
               next: (info) =>
                 patchState(
                   store,
-                  updateEntity({
-                    id: info.id,
-                    changes: info,
-                  }),
+                  updateEntity(
+                    {
+                      id: containerName,
+                      changes: info,
+                    },
+                    containersEntityConfig,
+                  ),
                 ),
               error: (error) => toastService.error(error),
               finalize: () =>
                 patchState(
                   store,
-                  updateEntity({
-                    id: entity.id,
-                    changes: {
-                      loading: null,
+                  updateEntity(
+                    {
+                      id: containerName,
+                      changes: {
+                        loading: null,
+                      },
                     },
-                  }),
+                    containersEntityConfig,
+                  ),
                 ),
             }),
           );
@@ -330,36 +362,42 @@ export const ContainersStore = signalStore(
     );
 
     const controlContainer = rxMethod<{
-      id: number;
+      containerName: string;
       command: TControlContainerCommand;
     }>(
       pipe(
-        switchMap(({ id, command }) => {
+        switchMap(({ containerName, command }) => {
           const hostId = store.hostId();
-          const entity = store.entityMap()[id];
-          if (!hostId || !entity) {
+          if (!hostId) {
             return EMPTY;
           }
+
           patchState(
             store,
-            updateEntity({
-              id: entity.id,
-              changes: {
-                loading: command,
+            updateEntity(
+              {
+                id: containerName,
+                changes: {
+                  loading: command,
+                },
               },
-            }),
+              containersEntityConfig,
+            ),
           );
           return containersApiService
-            .controlContainer(hostId, command, entity.container_id)
+            .controlContainer(hostId, command, containerName)
             .pipe(
               tapResponse({
                 next: (info) => {
                   patchState(
                     store,
-                    updateEntity({
-                      id: entity.id,
-                      changes: info.item,
-                    }),
+                    updateEntity(
+                      {
+                        id: containerName,
+                        changes: info.item,
+                      },
+                      containersEntityConfig,
+                    ),
                   );
                 },
                 error: (error) => {
@@ -368,12 +406,15 @@ export const ContainersStore = signalStore(
                 finalize: () => {
                   patchState(
                     store,
-                    updateEntity({
-                      id: entity.id,
-                      changes: {
-                        loading: null,
+                    updateEntity(
+                      {
+                        id: containerName,
+                        changes: {
+                          loading: null,
+                        },
                       },
-                    }),
+                      containersEntityConfig,
+                    ),
                   );
                 },
               }),

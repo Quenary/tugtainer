@@ -8,8 +8,8 @@ import {
 } from '@ngrx/signals';
 import {
   entityConfig,
+  setEntities,
   updateEntity,
-  upsertEntities,
   withEntities,
 } from '@ngrx/signals/entities';
 import {
@@ -29,14 +29,14 @@ interface ISettingsStore {
   timezones: string[];
 }
 
+const settingsEntityConfig = entityConfig({
+  entity: type<ISetting>(),
+  selectId: (item) => item.key,
+});
+
 export const SettingsStore = signalStore(
   { providedIn: 'root' },
-  withEntities<ISetting>(
-    entityConfig({
-      entity: type<ISetting>(),
-      selectId: (item) => item.key,
-    }),
-  ),
+  withEntities(settingsEntityConfig),
   withState<ISettingsStore>({
     loading: false,
     timezones: [],
@@ -53,10 +53,7 @@ export const SettingsStore = signalStore(
             settingsApiService.list().pipe(
               tapResponse({
                 next: (list) =>
-                  patchState(
-                    store,
-                    upsertEntities(list, { selectId: (item) => item.key }),
-                  ),
+                  patchState(store, setEntities(list, settingsEntityConfig)),
                 error: (error) => toastService.error(error),
                 finalize: () => patchState(store, { loading: false }),
               }),
@@ -107,7 +104,7 @@ export const SettingsStore = signalStore(
                           id: key,
                           changes: { value },
                         },
-                        { selectId: (item) => item.key },
+                        settingsEntityConfig,
                       ),
                     ),
                   ),
