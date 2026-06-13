@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.30.4 (2026-06-13)
+
+### Bug Fixes
+
+- **frontend**: Show newly added containers without id property
+  ([`89797b7`](https://github.com/Quenary/tugtainer/commit/89797b7f3b8c6e867082a142df8c33dd8ed3c232))
+
+- **security**: Make AGENT_SECRET mandatory
+  ([`0052a55`](https://github.com/Quenary/tugtainer/commit/0052a5544e187a4d12f771838a8a23ca4afb61cd))
+
+
 ## v1.30.3 (2026-06-11)
 
 ### Bug Fixes
