@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.config import Config
 from backend.core.agent_client import AgentClientManager
 from backend.modules.containers.containers_model import ContainersModel
-from backend.modules.containers.containers_util import map_container_schema
+from backend.modules.containers.containers_schemas import ContainersListItem
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostSummary
 from shared.schemas.container_schemas import GetContainerListBodySchema
@@ -67,7 +67,9 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
     containers_db_map: Final = {c.name: c for c in containers_db}
 
     mapped_containers: Final = [
-        map_container_schema(host.id, c, containers_db_map.get(cast(str, c.name)))
+        ContainersListItem.from_sources(
+            host.id, c, containers_db_map.get(cast(str, c.name))
+        )
         for c in containers
     ]
 

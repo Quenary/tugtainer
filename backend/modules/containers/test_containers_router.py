@@ -43,9 +43,7 @@ async def test_get_container(mocker: MockerFixture):
     )
 
     agent_client_mock = mocker.Mock(spec=AgentClient)
-    agent_client_mock.container = mocker.Mock(
-        spec=AgentClientContainer
-    )
+    agent_client_mock.container = mocker.Mock(spec=AgentClientContainer)
     agent_client_mock.container.inspect = mocker.AsyncMock(
         return_value=ContainerInspectResult(
             id="test-id",
@@ -59,7 +57,7 @@ async def test_get_container(mocker: MockerFixture):
     )
 
     mocker.patch(
-        f"{base_module}.map_container_schema",
+        f"{base_module}.ContainersListItem.from_sources",
         return_value=ContainersListItem(
             host_id=1,
             name="test-container",
@@ -87,9 +85,7 @@ async def test_get_container(mocker: MockerFixture):
     async def override_get_async_session():
         return async_session_mock
 
-    app.dependency_overrides[get_async_session] = (
-        override_get_async_session
-    )
+    app.dependency_overrides[get_async_session] = override_get_async_session
 
     response = client.get("/containers/1/test-container")
 
