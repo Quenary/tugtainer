@@ -1,4 +1,3 @@
-import logging
 from typing import Final
 
 from python_on_whales.components.container.models import (
@@ -17,7 +16,6 @@ from shared.schemas.container_schemas import (
 )
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 
-from .filter_valid_docker_labels import filter_valid_docker_labels
 from .get_container_entrypoint_str import get_container_entrypoint_str
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
@@ -46,18 +44,13 @@ def merge_container_config_with_image(
     cfg = _cfg.model_dump()
     cfg_labels: dict = cfg.get("labels", {})
     image_labels: dict = image.config.labels or {}
-    merged_labels: dict = (
+    merged_labels: dict[str, str] = (
         subtract_dict(
             cfg_labels,
             image_labels,
         )
         or {}
     )
-    merged_labels, invalid_labels = filter_valid_docker_labels(merged_labels)
-    if invalid_labels:
-        logging.warning(
-            f"Invalid labels were dropped while preparing config: {invalid_labels}"
-        )
     if image.config.entrypoint:
         cfg.pop("entrypoint", None)
     if image.config.cmd:
@@ -91,12 +84,6 @@ def get_container_config(
     NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(container, docker_version)
     if NET_COMMANDS:
         commands += NET_COMMANDS
-
-    VALID_LABELS, INVALID_LABELS = filter_valid_docker_labels(config.labels or {})
-    if INVALID_LABELS:
-        logging.warning(
-            f"Invalid labels were dropped while preparing config: {INVALID_LABELS}"
-        )
 
     config_dict = {
         "image": config.image,
@@ -132,7 +119,7 @@ def get_container_config(
         "ipc": host_config.ipc_mode,
         "isolation": host_config.isolation,
         "kernel_memory": host_config.kernel_memory,
-        "labels": VALID_LABELS,
+        "labels": config.labels,
         **map_log_config_to_kwargs(host_config.log_config),
         "memory": host_config.memory,
         "memory_reservation": host_config.memory_reservation,
