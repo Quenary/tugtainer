@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.30.5 (2026-06-15)
+
+### Bug Fixes
+
+- **backend**: Preserve gpu capabilities and options
+  ([`0e1b9f1`](https://github.com/Quenary/tugtainer/commit/0e1b9f151411efd5d8831f8c4fec50979d9ed228))
+
+- **backend**: Rm labels validation
+  ([`f710ff3`](https://github.com/Quenary/tugtainer/commit/f710ff384c82fd502ac7c1e9a3ed6e015cb09983))
+
+
 ## v1.30.4 (2026-06-13)
 
 ### Bug Fixes
