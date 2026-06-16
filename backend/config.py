@@ -1,5 +1,7 @@
+import logging
 import os
 import secrets
+from ipaddress import IPv4Network, IPv6Network, ip_network
 from typing import ClassVar
 
 from dotenv import load_dotenv
@@ -31,6 +33,11 @@ class Config:
     OIDC_CLIENT_SECRET: ClassVar[str]
     OIDC_REDIRECT_URI: ClassVar[str]
     OIDC_SCOPES: ClassVar[str]
+
+    # Network security
+    NOTIFICATION_ALLOW_SCHEMES: ClassVar[set[str]]
+    NOTIFICATION_ALLOW_NETWORKS: ClassVar[set[IPv4Network | IPv6Network]]
+    NOTIFICATION_ALLOW_ENDPOINTS: ClassVar[set[str]]
 
     @classmethod
     def load(cls):
@@ -71,6 +78,35 @@ class Config:
             cls.OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
             cls.OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "")
             cls.OIDC_SCOPES = os.getenv("OIDC_SCOPES", "openid profile email")
+
+            def _parse_env_set(name: str) -> set[str]:
+                return {
+                    item.strip()
+                    for item in os.getenv(name, "").split(",")
+                    if item.strip()
+                }
+
+            def _parse_networks(name: str) -> set[IPv4Network | IPv6Network]:
+                networks = _parse_env_set(name)
+                res: set[IPv4Network | IPv6Network] = set()
+                for net in networks:
+                    try:
+                        res.add(ip_network(net))
+                    except Exception:
+                        logging.warning(
+                            f"{net} is not a valid IP network. Check the {name} environment variable."
+                        )
+                return res
+
+            cls.NOTIFICATION_ALLOW_SCHEMES = _parse_env_set(
+                "NOTIFICATION_ALLOW_SCHEMES"
+            )
+            cls.NOTIFICATION_ALLOW_NETWORKS = _parse_networks(
+                "NOTIFICATION_ALLOW_NETWORKS"
+            )
+            cls.NOTIFICATION_ALLOW_ENDPOINTS = _parse_env_set(
+                "NOTIFICATION_ALLOW_ENDPOINTS"
+            )
 
 
 Config.load()

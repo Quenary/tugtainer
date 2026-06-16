@@ -46,10 +46,21 @@ class TugAgentClientError(TugException):
 
     def __str__(self) -> str:
         res = f"{self.message}\n{self.url}\n{self.method}\n{self.status}\n"
-        if isinstance(self.body, dict) and (
-            _d := self.body.get("detail")
-        ):
+        if isinstance(self.body, dict) and (_d := self.body.get("detail")):
             res += f"\n{_d}"
         elif isinstance(self.body, str):
             res += f"\n{self.body}"
         return res
+
+
+class TugUrlValidationError(TugException):
+    """Tugtainer exception for URL validation"""
+
+
+class TugUrlValidationSSRFError(TugUrlValidationError):
+    """
+    Tugtainer exception of URL validation against SSRF.
+    This exception is raised when URL successfully parsed,
+    successfully resolved to the ip address,
+    but it is not allowed to access such network.
+    """

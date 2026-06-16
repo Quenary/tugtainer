@@ -13,6 +13,7 @@ This repository uses [uv package manager](https://docs.astral.sh/uv/getting-star
     ```bash
     DB_URL=sqlite+aiosqlite:///./tugtainer.db
     PASSWORD_FILE=password_hash
+    AGENT_SECRET=CHANGE_ME!
     ```
 - Run the app
   - Whole app with Ctrl + Shift + B (VS Code default task)
