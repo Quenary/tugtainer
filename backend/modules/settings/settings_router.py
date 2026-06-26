@@ -40,7 +40,10 @@ from .settings_schemas import (
     TestNotificationRequestBody,
 )
 from .settings_storage import SettingsStorage
-from .settings_util import get_setting_typed_value
+from .settings_util import (
+    get_setting_typed_value,
+    validate_notification_urls_against_ssrf,
+)
 
 VALID_TIMEZONES = available_timezones()
 
@@ -89,6 +92,9 @@ async def change_system_settings(
                 f"Invalid type of '{s.key}', expected '{setting.value_type}'",
             )
 
+        if s.key == ESettingKey.NOTIFICATION_URLS:
+            await validate_notification_urls_against_ssrf(cast(str, s.value))
+
         setting.value = str(s.value)
 
     await session.commit()
@@ -124,6 +130,8 @@ async def change_system_settings(
     description="Send test notification to specified url",
 )
 async def test_notification(data: TestNotificationRequestBody):
+    await validate_notification_urls_against_ssrf(data.urls)
+
     try:
         test_container = ContainerInspectResult(
             id="35d6d68589ab16a7b06d26513ecae15a7dee2cdb067be5648074c99a39db9fab",
