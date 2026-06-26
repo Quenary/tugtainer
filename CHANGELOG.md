@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.30.6 (2026-06-26)
+
+### Bug Fixes
+
+- **security**: Backend notification urls validation
+  ([`c0294d0`](https://github.com/Quenary/tugtainer/commit/c0294d0ab64985b135d0c5b566ac30bf8371f9c3))
+
+
 ## v1.30.5 (2026-06-15)
 
 ### Bug Fixes
