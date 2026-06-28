@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.30.7 (2026-06-28)
+
+### Bug Fixes
+
+- **backend**: Preserve entrypoint, command, workdir if overridden
+  ([`3fb2523`](https://github.com/Quenary/tugtainer/commit/3fb2523a5c3b11962fb849db68089de645a67750))
+
+
 ## v1.30.6 (2026-06-26)
 
 ### Bug Fixes
