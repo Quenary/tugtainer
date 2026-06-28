@@ -15,8 +15,8 @@ from backend.core.action_result import (
 )
 from backend.core.agent_client import AgentClient
 from backend.core.container_util.container_config import (
+    diff_container_config_with_images,
     get_container_config,
-    merge_container_config_with_image,
 )
 from backend.core.container_util.get_container_image_spec import (
     get_container_image_spec,
@@ -242,8 +242,8 @@ async def execute_update_plan(
                     await client.container.remove(item.name)
 
                     logger.info("Merging configs")
-                    merged_config = merge_container_config_with_image(
-                        config, remote_image
+                    merged_config = diff_container_config_with_images(
+                        config, remote_image, local_image
                     )
 
                     logger.info("Recreating container...")
