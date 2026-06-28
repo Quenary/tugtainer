@@ -11,7 +11,7 @@ runs:
         python-version: 3.13
 
     - name: Setup uv
-      uses: astral-sh/setup-uv@v8
+      uses: astral-sh/setup-uv@v7
       with:
         python-version: 3.13
         activate-environment: true
