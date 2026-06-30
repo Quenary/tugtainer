@@ -1,5 +1,7 @@
+import logging
 import os
 import secrets
+from ipaddress import IPv4Network, IPv6Network, ip_network
 from typing import ClassVar
 
 from dotenv import load_dotenv
@@ -32,65 +34,78 @@ class Config:
     OIDC_REDIRECT_URI: ClassVar[str]
     OIDC_SCOPES: ClassVar[str]
 
+    # Network security
+    NOTIFICATION_ALLOW_SCHEMES: ClassVar[set[str]]
+    NOTIFICATION_ALLOW_NETWORKS: ClassVar[set[IPv4Network | IPv6Network]]
+    NOTIFICATION_ALLOW_ENDPOINTS: ClassVar[set[str]]
+
     @classmethod
     def load(cls):
         if not cls._loaded:
             load_dotenv()
             cls.HOSTNAME = os.getenv("HOSTNAME", "")
-            cls.LOG_LEVEL = (
-                os.getenv("LOG_LEVEL") or "info"
-            ).upper()
-            cls.DISABLE_AUTH = (
-                os.getenv("DISABLE_AUTH", "false").lower() == "true"
+            cls.LOG_LEVEL = (os.getenv("LOG_LEVEL") or "info").upper()
+            cls.DISABLE_AUTH = os.getenv("DISABLE_AUTH", "false").lower() == "true"
+            cls.JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(
+                32
             )
-            cls.JWT_SECRET_KEY = os.getenv(
-                "JWT_SECRET_KEY"
-            ) or secrets.token_urlsafe(32)
             cls.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
             cls.ACCESS_TOKEN_LIFETIME_MIN = int(
                 os.getenv("ACCESS_TOKEN_LIFETIME_MIN") or 5
             )
             cls.REFRESH_TOKEN_LIFETIME_MIN = int(
-                os.getenv("REFRESH_TOKEN_LIFETIME_MIN")
-                or 60 * 24 * 30
+                os.getenv("REFRESH_TOKEN_LIFETIME_MIN") or 60 * 24 * 30
             )
             cls.DB_URL = (
-                os.getenv("DB_URL")
-                or "sqlite+aiosqlite:////tugtainer/tugtainer.db"
+                os.getenv("DB_URL") or "sqlite+aiosqlite:////tugtainer/tugtainer.db"
             )
             cls.DISABLE_PASSWORD = (
-                os.getenv("DISABLE_PASSWORD", "false").lower()
-                == "true"
+                os.getenv("DISABLE_PASSWORD", "false").lower() == "true"
             )
-            cls.PASSWORD_FILE = (
-                os.getenv("PASSWORD_FILE")
-                or "/tugtainer/password_hash"
-            )
+            cls.PASSWORD_FILE = os.getenv("PASSWORD_FILE") or "/tugtainer/password_hash"
             cls.HTTPS = os.getenv("HTTPS", "false").lower() == "true"
-            cls.DOMAIN = os.getenv("DOMAIN")
+            cls.DOMAIN = os.getenv("DOMAIN") or None
             cls.ENABLE_PUBLIC_API = (
-                os.getenv("ENABLE_PUBLIC_API", "false").lower()
-                == "true"
+                os.getenv("ENABLE_PUBLIC_API", "false").lower() == "true"
             )
             cls.GH_TOKEN = os.getenv("GH_TOKEN", "")
-            cls.DOCKER_CONFIG = os.getenv(
-                "DOCKER_CONFIG", "~/.docker"
-            )
+            cls.DOCKER_CONFIG = os.getenv("DOCKER_CONFIG", "~/.docker")
 
             # OIDC Configuration
-            cls.OIDC_ENABLED = (
-                os.getenv("OIDC_ENABLED", "false").lower() == "true"
-            )
-            cls.OIDC_WELL_KNOWN_URL = os.getenv(
-                "OIDC_WELL_KNOWN_URL", ""
-            )
+            cls.OIDC_ENABLED = os.getenv("OIDC_ENABLED", "false").lower() == "true"
+            cls.OIDC_WELL_KNOWN_URL = os.getenv("OIDC_WELL_KNOWN_URL", "")
             cls.OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID", "")
-            cls.OIDC_CLIENT_SECRET = os.getenv(
-                "OIDC_CLIENT_SECRET", ""
-            )
+            cls.OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
             cls.OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "")
-            cls.OIDC_SCOPES = os.getenv(
-                "OIDC_SCOPES", "openid profile email"
+            cls.OIDC_SCOPES = os.getenv("OIDC_SCOPES", "openid profile email")
+
+            def _parse_env_set(name: str) -> set[str]:
+                return {
+                    item.strip()
+                    for item in os.getenv(name, "").split(",")
+                    if item.strip()
+                }
+
+            def _parse_networks(name: str) -> set[IPv4Network | IPv6Network]:
+                networks = _parse_env_set(name)
+                res: set[IPv4Network | IPv6Network] = set()
+                for net in networks:
+                    try:
+                        res.add(ip_network(net))
+                    except Exception:
+                        logging.warning(
+                            f"{net} is not a valid IP network. Check the {name} environment variable."
+                        )
+                return res
+
+            cls.NOTIFICATION_ALLOW_SCHEMES = _parse_env_set(
+                "NOTIFICATION_ALLOW_SCHEMES"
+            )
+            cls.NOTIFICATION_ALLOW_NETWORKS = _parse_networks(
+                "NOTIFICATION_ALLOW_NETWORKS"
+            )
+            cls.NOTIFICATION_ALLOW_ENDPOINTS = _parse_env_set(
+                "NOTIFICATION_ALLOW_ENDPOINTS"
             )
 
 

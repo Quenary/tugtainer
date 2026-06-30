@@ -1,6 +1,55 @@
 # CHANGELOG
 
 
+## v1.30.7 (2026-06-28)
+
+### Bug Fixes
+
+- **backend**: Preserve entrypoint, command, workdir if overridden
+  ([`3fb2523`](https://github.com/Quenary/tugtainer/commit/3fb2523a5c3b11962fb849db68089de645a67750))
+
+
+## v1.30.6 (2026-06-26)
+
+### Bug Fixes
+
+- **security**: Backend notification urls validation
+  ([`c0294d0`](https://github.com/Quenary/tugtainer/commit/c0294d0ab64985b135d0c5b566ac30bf8371f9c3))
+
+
+## v1.30.5 (2026-06-15)
+
+### Bug Fixes
+
+- **backend**: Preserve gpu capabilities and options
+  ([`0e1b9f1`](https://github.com/Quenary/tugtainer/commit/0e1b9f151411efd5d8831f8c4fec50979d9ed228))
+
+- **backend**: Rm labels validation
+  ([`f710ff3`](https://github.com/Quenary/tugtainer/commit/f710ff384c82fd502ac7c1e9a3ed6e015cb09983))
+
+
+## v1.30.4 (2026-06-13)
+
+### Bug Fixes
+
+- **frontend**: Show newly added containers without id property
+  ([`89797b7`](https://github.com/Quenary/tugtainer/commit/89797b7f3b8c6e867082a142df8c33dd8ed3c232))
+
+- **security**: Make AGENT_SECRET mandatory
+  ([`0052a55`](https://github.com/Quenary/tugtainer/commit/0052a5544e187a4d12f771838a8a23ca4afb61cd))
+
+
+## v1.30.3 (2026-06-11)
+
+### Bug Fixes
+
+- **backend**: OIDC refresh tokens
+  ([`91bc17b`](https://github.com/Quenary/tugtainer/commit/91bc17b3c28a40f32da122751e9541c432a272b0))
+
+- **security**: Check OIDC/password auth providers is enabled before trying to login by @finderer
+  ([`76371db`](https://github.com/Quenary/tugtainer/commit/76371db679334b002d4af544b0f3b8587ad86f52))
+
+
 ## v1.30.2 (2026-05-20)
 
 ### Bug Fixes

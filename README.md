@@ -57,6 +57,7 @@ Automatic updates are disabled by default. You can choose only what you need.
   docker run -d -p 9412:80 \
       --name=tugtainer \
       --restart=unless-stopped \
+      -e AGENT_SECRET="CHANGE_ME!" \
       -v tugtainer_data:/tugtainer \
       -v /var/run/docker.sock:/var/run/docker.sock:ro \
       ghcr.io/quenary/tugtainer:1

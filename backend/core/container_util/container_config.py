@@ -1,4 +1,3 @@
-import logging
 from typing import Final
 
 from python_on_whales.components.container.models import (
@@ -17,7 +16,6 @@ from shared.schemas.container_schemas import (
 )
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 
-from .filter_valid_docker_labels import filter_valid_docker_labels
 from .get_container_entrypoint_str import get_container_entrypoint_str
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
@@ -34,43 +32,50 @@ from .map_ulimits_to_arg import map_ulimits_to_arg
 from .normalize_path import normalize_path
 
 
-def merge_container_config_with_image(
-    _cfg: CreateContainerRequestBodySchema, image: ImageInspectResult
+def diff_container_config_with_images(
+    cfg: CreateContainerRequestBodySchema,
+    remote_image: ImageInspectResult,
+    local_image: ImageInspectResult,
 ) -> CreateContainerRequestBodySchema:
     """
-    Merge container config with some values from image config.
-    Returns config dict that matches kwargs for create/run.
+    Prepare container config considering remote and local images
     """
-    if not image.config:
-        return _cfg
-    cfg = _cfg.model_dump()
-    cfg_labels: dict = cfg.get("labels", {})
-    image_labels: dict = image.config.labels or {}
-    merged_labels: dict = (
-        subtract_dict(
-            cfg_labels,
-            image_labels,
-        )
-        or {}
-    )
-    merged_labels, invalid_labels = filter_valid_docker_labels(merged_labels)
-    if invalid_labels:
-        logging.warning(
-            f"Invalid labels were dropped while preparing config: {invalid_labels}"
-        )
-    if image.config.entrypoint:
-        cfg.pop("entrypoint", None)
-    if image.config.cmd:
-        cfg.pop("command", None)
-    if image.config.working_dir:
-        cfg.pop("workdir", None)
-    merged_config = {
-        **cfg,
-        "labels": merged_labels,
-    }
-    merged_config = drop_empty_keys(merged_config)
+    if remote_image.config:
+        cfg_dict = cfg.model_dump()
 
-    return CreateContainerRequestBodySchema.model_validate(merged_config)
+        cfg_dict["labels"] = (
+            subtract_dict(
+                cfg_dict.get("labels", {}),
+                remote_image.config.labels or {},
+            )
+            or {}
+        )
+
+        if local_image.config:
+            # Drop values if not explicitly overridden
+            if (
+                local_image.config.entrypoint == cfg_dict.get("entrypoint")
+                and remote_image.config.entrypoint
+            ):
+                cfg_dict.pop("entrypoint", None)
+
+            if (
+                local_image.config.cmd == cfg_dict.get("command")
+                and remote_image.config.cmd
+            ):
+                cfg_dict.pop("command", None)
+
+            if (
+                local_image.config.working_dir == cfg_dict.get("workdir")
+                and remote_image.config.working_dir
+            ):
+                cfg_dict.pop("workdir", None)
+
+        cfg_dict = drop_empty_keys(cfg_dict)
+
+        return CreateContainerRequestBodySchema.model_validate(cfg_dict)
+
+    return cfg
 
 
 def get_container_config(
@@ -78,7 +83,7 @@ def get_container_config(
     docker_version: DockerVersionScheme | None,
 ) -> tuple[CreateContainerRequestBodySchema, list[list[str]]]:
     """
-    Get container config dict that matches kwargs for create/run.
+    Get container config and commands (e.g. network connect)
     :returns 0: config dict
     :returns 1: list of docker commands to be executed after container creation, in list format e.g. ["network", "connect", ...]
     """
@@ -91,12 +96,6 @@ def get_container_config(
     NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(container, docker_version)
     if NET_COMMANDS:
         commands += NET_COMMANDS
-
-    VALID_LABELS, INVALID_LABELS = filter_valid_docker_labels(config.labels or {})
-    if INVALID_LABELS:
-        logging.warning(
-            f"Invalid labels were dropped while preparing config: {INVALID_LABELS}"
-        )
 
     config_dict = {
         "image": config.image,
@@ -132,7 +131,7 @@ def get_container_config(
         "ipc": host_config.ipc_mode,
         "isolation": host_config.isolation,
         "kernel_memory": host_config.kernel_memory,
-        "labels": VALID_LABELS,
+        "labels": config.labels,
         **map_log_config_to_kwargs(host_config.log_config),
         "memory": host_config.memory,
         "memory_reservation": host_config.memory_reservation,

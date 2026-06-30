@@ -118,25 +118,25 @@ export class ContainerCardComponent implements OnDestroy {
   }
 
   protected patchContainer(body: IContainerPatchBody): void {
-    const item = this.containersStore.selected();
+    const c = this.containersStore.selected();
     this.containersStore.patchContainer({
-      id: item.id,
+      containerName: c.name,
       body,
     });
   }
 
   protected onCheck(): void {
     const c = this.containersStore.selected();
-    this.containersStore.checkContainer({ id: c.id });
+    this.containersStore.checkContainer({ containerName: c.name });
   }
 
   protected onUpdate(): void {
     const c = this.containersStore.selected();
-    this.containersStore.updateContainer({ id: c.id });
+    this.containersStore.updateContainer({ containerName: c.name });
   }
 
   protected onCommand(command: TControlContainerCommand): void {
     const c = this.containersStore.selected();
-    this.containersStore.controlContainer({ id: c.id, command });
+    this.containersStore.controlContainer({ containerName: c.name, command });
   }
 }

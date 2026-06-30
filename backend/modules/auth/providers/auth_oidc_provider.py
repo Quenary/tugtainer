@@ -18,14 +18,8 @@ class AuthOidcProvider(AuthProvider):
     async def is_enabled(self) -> bool:
         return not Config.DISABLE_AUTH and Config.OIDC_ENABLED
 
-    async def login(
-        self, request: Request, response: Response
-    ) -> RedirectResponse:
-        if not self.is_enabled():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="OIDC authentication is not enabled",
-            )
+    async def login(self, request: Request, response: Response) -> RedirectResponse:
+        await self.raise_of_disabled()
 
         config = self._get_oidc_config()
 
@@ -48,9 +42,7 @@ class AuthOidcProvider(AuthProvider):
         # For simplicity, we'll use a cookie (in production, consider using a database)
 
         try:
-            discovery_doc = await self._fetch_oidc_discovery(
-                config["well_known_url"]
-            )
+            discovery_doc = await self._fetch_oidc_discovery(config["well_known_url"])
             authorization_url = self._create_oidc_authorization_url(
                 discovery_doc, config, state
             )
@@ -75,37 +67,80 @@ class AuthOidcProvider(AuthProvider):
                 detail=f"Error initiating OIDC login: {str(e)}",
             ) from e
 
-    async def logout(
-        self, request: Request, response: Response
-    ) -> Response:
-        # TODO add logout call
-        response.delete_cookie("access_token")
-        response.delete_cookie("refresh_token")
+    async def logout(self, request: Request, response: Response) -> Response:
+        self._delete_cookies(response)
         response.status_code = status.HTTP_200_OK
         return response
 
-    async def refresh(
-        self, request: Request, response: Response
-    ) -> Any:
-        # TODO add refresh call
-        raise NotImplementedError()
+    async def refresh(self, request: Request, response: Response) -> Response:
+        await self.raise_of_disabled()
 
-    async def is_authorized(self, request: Request):
-        # TODO add check call
+        refresh_token = request.cookies.get("refresh_token")
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token missing",
+            )
+
+        payload = self._verify_token(refresh_token)
+        if payload.get("type") != "refresh" or payload.get("auth_provider") != "oidc":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token type or provider",
+            )
+
+        # preserve oidc user info
+        user_id = payload.get("user_id", "unknown_user")
+        user_info = payload.get("user_info", {})
+
+        new_access_token = self._create_token(
+            data={
+                "type": "access",
+                "auth_provider": "oidc",
+                "user_id": user_id,
+                "user_info": user_info,
+            },
+            expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN),
+        )
+
+        new_refresh_token = self._create_token(
+            data={
+                "type": "refresh",
+                "auth_provider": "oidc",
+                "user_id": user_id,
+                "user_info": user_info,
+            },
+            expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
+        )
+
+        self._set_cookies(response, new_access_token, new_refresh_token)
+        response.status_code = status.HTTP_200_OK
+        return response
+
+    async def is_authorized(self, request: Request) -> Literal[True]:
         token = request.cookies.get("access_token")
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Unauthorized",
             )
-        res = self._verify_token(token)
-        return cast(Literal[True], bool(res))
+
+        payload = self._verify_token(token)
+        if payload.get("type") != "access" or payload.get("auth_provider") != "oidc":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type or provider",
+            )
+
+        return cast(Literal[True], True)
 
     async def callback(
         self,
         request: Request,
         response: Response,
     ) -> RedirectResponse:
+        await self.raise_of_disabled()
+
         code = request.query_params.get("code", "")
         state = request.query_params.get("state", "")
         error = request.query_params.get("error", "")
@@ -127,9 +162,7 @@ class AuthOidcProvider(AuthProvider):
         logging.debug(
             f"OIDC Callback - Received state: {state}, Stored state: {stored_state}"
         )
-        logging.debug(
-            f"OIDC Callback - All cookies: {dict(request.cookies)}"
-        )
+        logging.debug(f"OIDC Callback - All cookies: {dict(request.cookies)}")
         if not stored_state or stored_state != state:
             raise HTTPException(
                 status_code=400,
@@ -139,19 +172,13 @@ class AuthOidcProvider(AuthProvider):
         config = self._get_oidc_config()
 
         try:
-            logging.debug(
-                f"OIDC Callback - Code: {code}, State: {state}"
-            )
-            discovery_doc = await self._fetch_oidc_discovery(
-                config["well_known_url"]
-            )
+            logging.debug(f"OIDC Callback - Code: {code}, State: {state}")
+            discovery_doc = await self._fetch_oidc_discovery(config["well_known_url"])
             logging.debug("OIDC Discovery successful")
             user_data = await self._exchange_oidc_code(
                 code, state, discovery_doc, config
             )
-            logging.debug(
-                f"OIDC Token exchange successful: {user_data}"
-            )  # Debug print
+            logging.debug(f"OIDC Token exchange successful: {user_data}")  # Debug print
             tokens = self._create_oidc_user_session(user_data)
             logging.debug("OIDC Session created")
 
@@ -161,23 +188,10 @@ class AuthOidcProvider(AuthProvider):
             )
 
             # Set authentication cookies
-            response.set_cookie(
-                key="access_token",
-                value=tokens["access_token"],
-                httponly=True,
-                samesite="strict",
-                secure=Config.HTTPS,
-                domain=Config.DOMAIN if Config.DOMAIN else None,
-                max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
-            )
-            response.set_cookie(
-                key="refresh_token",
-                value=tokens["refresh_token"],
-                httponly=True,
-                samesite="strict",
-                secure=Config.HTTPS,
-                domain=Config.DOMAIN if Config.DOMAIN else None,
-                max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
+            self._set_cookies(
+                response,
+                tokens["access_token"],
+                tokens["refresh_token"],
             )
 
             # Clear the state cookie
@@ -201,9 +215,7 @@ class AuthOidcProvider(AuthProvider):
             "scopes": Config.OIDC_SCOPES,
         }
 
-    async def _fetch_oidc_discovery(
-        self, well_known_url: str
-    ) -> dict[str, Any]:
+    async def _fetch_oidc_discovery(self, well_known_url: str) -> dict[str, Any]:
         """Fetch OIDC discovery document from well-known URL"""
         try:
             async with aiohttp.ClientSession(trust_env=True) as session:
@@ -274,9 +286,7 @@ class AuthOidcProvider(AuthProvider):
 
             # Exchange code for token
             async with aiohttp.ClientSession(trust_env=True) as session:
-                async with session.post(
-                    token_endpoint, data=data
-                ) as response:
+                async with session.post(token_endpoint, data=data) as response:
                     if response.status != 200:
                         error_text = await response.text()
                         raise HTTPException(
@@ -289,9 +299,7 @@ class AuthOidcProvider(AuthProvider):
                 # Verify and decode ID token if present
                 if "id_token" in token:
                     # For now, we'll decode without verification (not recommended for production)
-                    id_token_claims = jwt.get_unverified_claims(
-                        token["id_token"]
-                    )
+                    id_token_claims = jwt.get_unverified_claims(token["id_token"])
                     return {
                         "access_token": token.get("access_token"),
                         "id_token_claims": id_token_claims,
@@ -299,9 +307,7 @@ class AuthOidcProvider(AuthProvider):
 
                 # If no ID token, fetch user info from userinfo endpoint
                 if "userinfo_endpoint" in discovery_doc:
-                    headers = {
-                        "Authorization": f"Bearer {token['access_token']}"
-                    }
+                    headers = {"Authorization": f"Bearer {token['access_token']}"}
                     async with session.get(
                         discovery_doc["userinfo_endpoint"],
                         headers=headers,
@@ -309,9 +315,7 @@ class AuthOidcProvider(AuthProvider):
                         if response.status == 200:
                             user_info = await response.json()
                             return {
-                                "access_token": token.get(
-                                    "access_token"
-                                ),
+                                "access_token": token.get("access_token"),
                                 "user_info": user_info,
                             }
 
@@ -332,9 +336,7 @@ class AuthOidcProvider(AuthProvider):
     ) -> dict[str, str]:
         """Create user session tokens after OIDC authentication"""
         # Extract user identifier (email, sub, or preferred_username)
-        user_claims = user_data.get(
-            "id_token_claims", user_data.get("user_info", {})
-        )
+        user_claims = user_data.get("id_token_claims", user_data.get("user_info", {}))
 
         user_id = (
             user_claims.get("email")
@@ -348,25 +350,20 @@ class AuthOidcProvider(AuthProvider):
             data={
                 "type": "access",
                 "auth_provider": "oidc",
-                "oidc": True,
                 "user_id": user_id,
                 "user_info": user_claims,
             },
-            expires_delta=timedelta(
-                minutes=Config.ACCESS_TOKEN_LIFETIME_MIN
-            ),
+            expires_delta=timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME_MIN),
         )
 
         refresh_token = self._create_token(
             data={
                 "type": "refresh",
                 "auth_provider": "oidc",
-                "oidc": True,
                 "user_id": user_id,
+                "user_info": user_claims,
             },
-            expires_delta=timedelta(
-                minutes=Config.REFRESH_TOKEN_LIFETIME_MIN
-            ),
+            expires_delta=timedelta(minutes=Config.REFRESH_TOKEN_LIFETIME_MIN),
         )
 
         return {

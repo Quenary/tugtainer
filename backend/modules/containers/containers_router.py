@@ -64,7 +64,6 @@ from .containers_schemas import (
 from .containers_util import (
     ContainerInsertOrUpdateData,
     insert_or_update_container,
-    map_container_schema,
 )
 
 containers_router = APIRouter(
@@ -112,7 +111,7 @@ async def containers_list(
             (item for item in containers_db if item.name == c.name),
             None,
         )
-        _item = map_container_schema(host_id, c, _db_item)
+        _item = ContainersListItem.from_sources(host_id, c, _db_item)
         _list.append(_item)
     return _list
 
@@ -142,7 +141,7 @@ async def get_container(
     result = await session.execute(stmt)
     db_item = result.scalar_one_or_none()
     return ContainerGetResponseBody(
-        item=map_container_schema(
+        item=ContainersListItem.from_sources(
             host_id,
             inspect,
             db_item,
@@ -174,7 +173,7 @@ async def patch_container_data(
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
     d_cont = await client.container.inspect(db_cont.name)
-    return map_container_schema(host_id, d_cont, db_cont)
+    return ContainersListItem.from_sources(host_id, d_cont, db_cont)
 
 
 @containers_router.post(
@@ -370,7 +369,7 @@ async def control_container(
     result = await session.execute(stmt)
     db_item = result.scalar_one_or_none()
     return ContainerGetResponseBody(
-        item=map_container_schema(
+        item=ContainersListItem.from_sources(
             host_id,
             inspect,
             db_item,

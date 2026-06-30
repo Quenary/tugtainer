@@ -1,14 +1,12 @@
 import {
   patchState,
   signalStore,
-  type,
   withComputed,
   withHooks,
   withMethods,
   withState,
 } from '@ngrx/signals';
 import {
-  entityConfig,
   removeAllEntities,
   setEntities,
   withEntities,
@@ -31,12 +29,7 @@ interface ImagesState {
 export interface IImageEntity extends IImage {} // eslint-disable-line
 
 export const ImagesStore = signalStore(
-  withEntities(
-    entityConfig({
-      entity: type<IImageEntity>(),
-      selectId: (item) => item.id,
-    }),
-  ),
+  withEntities<IImageEntity>(),
   withState<ImagesState>(() => ({
     loading: false,
     selectedId: null,

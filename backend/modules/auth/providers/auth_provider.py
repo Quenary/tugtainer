@@ -1,38 +1,44 @@
+import textwrap
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastapi import HTTPException, Request, Response, status
 from jose import JWTError, jwt
 
 from backend.config import Config
+from backend.modules.auth.auth_schemas import TokenPayload
 from backend.util.now import now
 
 
 class AuthProvider(ABC):
     @abstractmethod
     async def is_enabled(self) -> bool:
-        """Whether provider enabled"""
+        """Whether provider is enabled"""
         pass
 
+    async def raise_of_disabled(self):
+        """Raise 403 if provider disabled"""
+        if not await self.is_enabled():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=textwrap.dedent(f"""\
+                {self.__class__.__name__} is disabled.
+                Try another auth method or verify your configuration."""),
+            )
+
     @abstractmethod
-    async def login(
-        self, request: Request, response: Response
-    ) -> Any:
+    async def login(self, request: Request, response: Response) -> Any:
         """Login with provider"""
         pass
 
     @abstractmethod
-    async def logout(
-        self, request: Request, response: Response
-    ) -> Any:
+    async def logout(self, request: Request, response: Response) -> Any:
         """Logout with provider"""
         pass
 
     @abstractmethod
-    async def refresh(
-        self, request: Request, response: Response
-    ) -> Any:
+    async def refresh(self, request: Request, response: Response) -> Any:
         """Refresh tokens with provider"""
         pass
 
@@ -42,41 +48,76 @@ class AuthProvider(ABC):
         pass
 
     @abstractmethod
-    async def callback(
-        self, request: Request, response: Response
-    ) -> Any:
+    async def callback(self, request: Request, response: Response) -> Any:
         """Provider callback endpoint handler"""
         pass
 
-    def _create_token(
-        self, data: dict[str, Any], expires_delta: timedelta
-    ) -> str:
+    def _create_token(self, data: TokenPayload, expires_delta: timedelta) -> str:
         """
         Create access or refresh token
         """
-        to_encode: dict[str, Any] = data.copy()
+        to_encode = data.copy()
         expire: datetime = now() + expires_delta
         to_encode.update({"exp": expire})
         return jwt.encode(
-            claims=to_encode,
+            claims=dict(to_encode),
             key=Config.JWT_SECRET_KEY,
             algorithm=Config.JWT_ALGORITHM,
         )
 
-    def _verify_token(self, token: str) -> dict[str, Any]:
+    def _verify_token(self, token: str) -> TokenPayload:
         """
         Verify token validity and return its payload.
         Raise 401 error if not valid.
         """
         try:
-            payload: dict[str, Any] = jwt.decode(
-                token,
-                key=Config.JWT_SECRET_KEY,
-                algorithms=[Config.JWT_ALGORITHM],
+            return cast(
+                TokenPayload,
+                jwt.decode(
+                    token,
+                    key=Config.JWT_SECRET_KEY,
+                    algorithms=[Config.JWT_ALGORITHM],
+                ),
             )
-            return payload
         except JWTError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token is invalid or expired",
             ) from e
+
+    def _set_cookies(
+        self,
+        response: Response,
+        access_token: str,
+        refresh_token: str,
+    ) -> None:
+        """Set cookies for the access and refresh tokens."""
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            samesite="strict",
+            secure=Config.HTTPS,
+            domain=Config.DOMAIN,
+            max_age=Config.ACCESS_TOKEN_LIFETIME_MIN * 60,
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            samesite="strict",
+            secure=Config.HTTPS,
+            domain=Config.DOMAIN,
+            max_age=Config.REFRESH_TOKEN_LIFETIME_MIN * 60,
+        )
+
+    def _delete_cookies(self, response: Response) -> None:
+        """Delete cookies for the access and refresh tokens."""
+        response.delete_cookie(
+            key="access_token",
+            domain=Config.DOMAIN,
+        )
+        response.delete_cookie(
+            key="refresh_token",
+            domain=Config.DOMAIN,
+        )

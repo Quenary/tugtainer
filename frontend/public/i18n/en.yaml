@@ -104,9 +104,9 @@ HOSTS:
         If you did not mount docker socket directly to the container, then DOCKER_HOST
         environment variable is required which you can set in docker-compose or docker
         command.
-        For the main Tugtainer instance the agent address is http://127.0.0.1:8001
-        and the secret is undefined by default, which you can change with AGENT_SECRET
-        environment variable.
+        Agent secret (and AGENT_SECRET environment variable) is mandatory unless
+        you've set ALLOW_UNAUTHENTICATED_AGENT=true for development purposes.
+        For the main Tugtainer instance the agent address is http://127.0.0.1:8001.
         For remote hosts you have to deploy Tugtainer Agent (ghcr.io/quenary/tugtainer-agent)
         and use it's address and secret in the corresponding fields.
       HELP_BTN: Deploy guideline

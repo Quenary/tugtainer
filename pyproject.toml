@@ -1,6 +1,6 @@
 [project]
 name = "tugtainer"
-version = "1.30.2"
+version = "1.30.7"
 description = "An application for automating docker containers updates with a web ui"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -13,6 +13,7 @@ dependencies = [
     "bcrypt~=5.0.0",
     "cachetools~=6.2.4",
     "cachetools-async~=0.0.5",
+    "dnspython>=2.8.0",
     "dotenv~=0.9.9",
     "fastapi~=0.128.0",
     "jinja2~=3.1.6",
