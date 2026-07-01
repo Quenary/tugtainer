@@ -24,10 +24,6 @@ def map_device_requests_to_gpus(
 
     parts: Final[list[str]] = []
 
-    # Driver
-    if gpu_req.driver:
-        parts.append(f"driver={gpu_req.driver.lower()}")
-
     # Device / count
     if gpu_req.device_ids:
         parts.append(f"device={','.join(gpu_req.device_ids)}")
@@ -63,7 +59,7 @@ def map_device_requests_to_gpus(
     res = ",".join(parts)
 
     # Optimized generic request without custom caps and options
-    if res in "driver=nvidia,device=all,capabilities=gpu":
+    if res in "device=all,capabilities=gpu":
         return "all"
 
-    return res
+    return f'"{res}"'

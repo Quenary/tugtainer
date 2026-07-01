@@ -33,7 +33,7 @@ from backend.core.container_util.map_device_requests_to_gpus import (
         ([ContainerDeviceRequest(driver="nvidia", count=-1)], "all"),
         (
             [ContainerDeviceRequest(driver="nvidia", device_ids=["0", "1"])],
-            "driver=nvidia,device=0,1",
+            '"device=0,1"',
         ),
         (
             [
@@ -41,7 +41,7 @@ from backend.core.container_util.map_device_requests_to_gpus import (
                     driver="nvidia", count=2, capabilities=[["compute", "utility"]]
                 )
             ],
-            "driver=nvidia,count=2,capabilities=compute,utility",
+            '"count=2,capabilities=compute,utility"',
         ),
         (
             [
@@ -55,7 +55,7 @@ from backend.core.container_util.map_device_requests_to_gpus import (
                     options={"foo": "bar"},
                 )
             ],
-            "driver=nvidia,device=all,capabilities=compute,video,options=foo=bar",
+            '"device=all,capabilities=compute,video,options=foo=bar"',
         ),
     ],
 )
