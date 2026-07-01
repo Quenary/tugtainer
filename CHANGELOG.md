@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.30.8 (2026-07-01)
+
+### Bug Fixes
+
+- **backend**: Double quotes for gpus arg with multiple params
+  ([`14d63a0`](https://github.com/Quenary/tugtainer/commit/14d63a0e96c5cfb47be9d3ab70bbf27d50eae3bf))
+
+
 ## v1.30.7 (2026-06-28)
 
 ### Bug Fixes
