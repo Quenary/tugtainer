@@ -18,6 +18,8 @@ const importDayjsLocale = async (locale: string) => {
       return import('dayjs/locale/es');
     case 'zh':
       return import('dayjs/locale/zh');
+    case 'ko':
+      return import('dayjs/locale/ko');
     default:
       return import('dayjs/locale/en');
   }
@@ -39,6 +41,8 @@ const importAngularLocale = async (locale: string) => {
       return import('@angular/common/locales/es');
     case 'zh':
       return import('@angular/common/locales/zh');
+    case 'ko':
+      return import('@angular/common/locales/ko');
     default:
       return import('@angular/common/locales/en');
   }

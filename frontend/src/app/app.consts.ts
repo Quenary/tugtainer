@@ -26,5 +26,6 @@ export const supportedLocales = [
   'it',
   'es',
   'zh',
+  'ko',
   'en',
 ];

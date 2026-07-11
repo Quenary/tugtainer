@@ -1,0 +1,259 @@
+---
+GENERAL:
+  TITLE: Tugtainer
+  SAVE: 저장
+  ADD: 추가
+  CONFIRM: 확인
+  CANCEL: 취소
+  CLOSE: 닫기
+  GO_BACK: 뒤로 가기
+  DELETE: 삭제
+  ENABLED: 활성화됨
+  DISABLED: 비활성화됨
+  'ON': '켬'
+  'OFF': '끔'
+  SUCCESS: 성공
+  ERROR: 오류
+  IN_PROGRESS: 진행 중
+  REFRESH: 새로고침
+THEMES:
+  AUTO: 자동
+  LIGHT: 라이트
+  DARK: 다크
+NAV:
+  AUTH: Tugtainer. 인증.
+  HOSTS: Tugtainer. 호스트.
+  CONTAINERS: Tugtainer. 컨테이너.
+  IMAGES: Tugtainer. 이미지.
+  SETTINGS: Tugtainer. 설정.
+BREADCRUMBS:
+  HOSTS: 호스트
+  DASHBOARD: 대시보드
+  CONTAINERS: 컨테이너
+  IMAGES: 이미지
+  SETTINGS: 설정
+INSPECT:
+  LABEL: 상세 정보
+  JSON: JSON
+  TREE: 트리
+MENU:
+  HOSTS: 호스트
+  SETTINGS: 설정
+  GITHUB: GitHub
+  SIGNOUT: 로그아웃
+UPDATE_DIALOGUE:
+  UPDATE: 업데이트 가능
+  UPDATE_NOTES: |-
+    컨테이너 특성상 자기 자신을 업데이트할 수 없습니다.
+    수동으로 업데이트하거나, 예를 들어 Portainer를 통해 업데이트할 수 있습니다.
+    자세한 안내는 GitHub에서 확인할 수 있습니다.
+  DEPLOY_GUIDELINE: 배포 가이드
+  RELEASE_NOTES: 릴리스 노트
+AUTH:
+  PASSWORD: 비밀번호
+  CONFIRM_PASSWORD: 비밀번호 확인
+  SIGNIN: 로그인
+  PASSWORD_PROMPT: 비밀번호를 설정하세요
+  PASSWORD_STRENGTH:
+    WEAK: 너무 단순함
+    MEDIUM: 보통 복잡도
+    STRONG: 복잡한 비밀번호
+  PASSWORD_HINTS:
+    - 소문자 최소 1자
+    - 대문자 최소 1자
+    - 숫자 최소 1자
+  SIGNIN_WITH_OIDC: OIDC로 로그인
+ACTIONS:
+  RESULT: 결과
+  CHECK_ALL: 전체 확인
+  UPDATE_ALL: 전체 업데이트
+  ACTION_COMPLETED: 작업 완료
+  PRUNE: 정리
+  PRUNE_CONFIRM: 이미지를 정리하시겠습니까?
+  PRUNE_ALL: 전체 정리
+  PRUNE_ALL_HINT: 이 토글은 'docker image prune' 명령의 --all 플래그에 해당합니다.
+  PRUNE_RESULT: 정리 결과
+HOSTS:
+  NO_HOSTS_FOUND: 호스트를 찾을 수 없습니다
+  TABLE:
+    SEARCH_PLACEHOLDER: ID, 이름, URL
+    ADD: 새로 추가
+    NAME: 이름
+    URL: 에이전트 주소
+    STATUS: 상태
+    STATUS_OK: 정상
+    STATUS_ERROR: 오류
+    AVAILABLE: 사용 가능
+    AVAILABLE_HINT: 사용 가능한 업데이트 수
+    ONLY_AVAILABLE: 사용 가능한 것만
+  DASHBOARD:
+    CONTAINERS: 컨테이너
+    AVAILABLE: 사용 가능
+    RUNNING: 실행 중
+    EXITED: 종료됨
+    HEALTHY: 정상
+    UNHEALTHY: 비정상
+    IMAGES: 이미지
+    UNUSED: 미사용
+    DANGLING: 댕글링
+  CARD:
+    DELETE_CONFIRM: 이 호스트를 삭제하시겠습니까?
+    HELP:
+      LABEL: 도움말
+      TEXT: |-
+        Docker 소켓을 컨테이너에 직접 마운트하지 않은 경우, docker-compose나 docker
+        명령에서 설정할 수 있는 DOCKER_HOST 환경 변수가 필요합니다.
+        개발 목적으로 ALLOW_UNAUTHENTICATED_AGENT=true를 설정하지 않은 이상,
+        에이전트 시크릿(및 AGENT_SECRET 환경 변수)은 필수입니다.
+        메인 Tugtainer 인스턴스의 경우 에이전트 주소는 http://127.0.0.1:8001입니다.
+        원격 호스트의 경우 Tugtainer Agent(ghcr.io/quenary/tugtainer-agent)를 배포한 뒤
+        해당 주소와 시크릿을 각 필드에 입력해야 합니다.
+      HELP_BTN: 배포 가이드
+    GENERAL:
+      LABEL: 일반
+      ID: ID
+      NAME: 이름
+      ENABLED: 활성화
+      PRUNE: 정리
+      PRUNE_HINT: 예약된 작업 실행 후 이미지 자동 정리를 활성화합니다.
+      PRUNE_ALL: 전체 정리
+      PRUNE_ALL_HINT: 이 토글은 'docker image prune' 명령의 --all 플래그에 해당합니다.
+      URL: 에이전트 주소
+      URL_PLACEHOLDER: http://127.0.0.1:8001
+      SECRET: 에이전트 시크릿
+      SSL: SSL
+      SSL_HINT: 백엔드-에이전트 요청에 SSL 검증을 사용할지 여부입니다.
+      TIMEOUT: 에이전트 타임아웃
+      TIMEOUT_HINT:
+        일반적으로 빠르게 처리되는 에이전트 요청의 타임아웃(초)입니다.
+        컨테이너 생성이나 이미지 풀과 같이 오래 걸릴 수 있는 요청에는 영향을 주지 않습니다.
+      CONTAINER_HC_TIMEOUT: 컨테이너 헬스체크 타임아웃
+      CONTAINER_HC_TIMEOUT_HINT:
+        업데이트 중 헬스체크가 롤백을 시작하기 전까지
+        대기할 시간(초)입니다.
+CONTAINERS:
+  SEARCH_PLACEHOLDER: 이름 또는 ID
+  ONLY_AVAILABLE: 사용 가능한 것만
+  NAME: 이름
+  CONTAINER_ID: ID
+  IMAGE: 이미지
+  UPDATE_AVAILABLE: 업데이트 가능
+  STATUS: 상태
+  PORTS: 포트
+  HEALTH: 상태 확인
+  CHECK_ENABLED: 자동 확인
+  CHECK_HINT: |-
+    자동으로 확인합니다.
+    이 설정은 예약된 작업에만 영향을 줍니다.
+  UPDATE_ENABLED: 자동 업데이트
+  UPDATE_HINT: |-
+    자동으로 업데이트합니다.
+    이 설정은 예약된 작업에만 영향을 줍니다.
+  CHECKED_AT: 마지막 확인
+  UPDATED_AT: 마지막 업데이트
+  UPDATE: 업데이트
+  UPDATE_DISABLED_HINTS:
+    PROTECTED: 보호된 컨테이너는 앱에서 업데이트할 수 없습니다.
+    NOT_RUNNING: 컨테이너는 실행 중 상태여야 합니다.
+  CHECK: 확인
+  MAIN_BTN_HINT:
+    컨테이너가 컴포즈 프로젝트의 일부인 경우, 해당 프로젝트의 모든 컨테이너가
+    이 과정에 포함됩니다.
+  PROTECTED: 보호됨
+  PROTECTED_CONTAINER_HINT:
+    이 컨테이너는 dev.quenary.tugtainer.protected로 표시되어 있어
+    앱에서 업데이트할 수 없습니다.
+  GENERAL:
+    LABEL: 일반
+  LOGS:
+    LABEL: 로그
+    SINCE: 시작 시각
+    UNTIL: 종료 시각
+    TAIL: 표시할 줄 수
+    DETAILS: 상세 정보 표시
+    TIMESTAMPS: 타임스탬프 표시
+  COMMANDS:
+    START: 시작
+    STOP: 중지
+    RESTART: 재시작
+    KILL: 강제 종료
+    PAUSE: 일시 정지
+    UNPAUSE: 일시 정지 해제
+IMAGES:
+  SEARCH_PLACEHOLDER: ID, 저장소, 태그
+  REPOSITORY: 저장소
+  ID: ID
+  DANGLING: 댕글링
+  UNUSED: 미사용
+  TAGS: 태그
+  SIZE: 크기
+  SIZE_UNIT: MB
+  CREATED: 생성일
+SETTINGS:
+  VALUE: 값
+  SECTIONS:
+    CHANGE_PASSWORD: 비밀번호 변경
+    APP_SETTINGS: 앱 설정
+  BY_KEY:
+    CHECK_CRONTAB_EXPR:
+      LABEL: 확인 주기 Crontab 표현식
+      HINT: |-
+        예약된 작업을 위한 Crontab 표현식입니다. 예:
+        매시간 실행하려면 '0 * * * *'.
+
+        자세한 내용은 클릭하여 확인하세요.
+      LINK: https://crontab.guru/
+    UPDATE_CRONTAB_EXPR:
+      LABEL: 업데이트 주기 Crontab 표현식
+      HINT: |-
+        예약된 작업을 위한 Crontab 표현식입니다. 예:
+        매시간 실행하려면 '0 * * * *'.
+
+        자세한 내용은 클릭하여 확인하세요.
+      LINK: https://crontab.guru/
+    NOTIFICATION_URLS:
+      LABEL: 알림 URL
+      HINT: |-
+        Apprise를 통한 알림용 URL입니다. 예: tgram://<token>/<chat_id>
+        여러 개를 지정하려면 한 줄에 하나씩 입력하세요.
+
+        자세한 내용은 클릭하여 확인하세요.
+      LINK: https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications
+    TIMEZONE:
+      LABEL: 시간대
+      HINT: "IANA 형식의 시간대입니다. 예: Asia/Seoul"
+    REGISTRY_REQ_DELAY:
+      LABEL: 레지스트리 요청 지연 시간(초)
+      HINT: 요청 제한(rate limit)을 피하기 위한 매니페스트, 풀 등 레지스트리 요청 간의 지연 시간입니다.
+    PULL_BEFORE_CHECK:
+      LABEL: 확인 전 풀(pull) 실행
+      HINT: 풀할 때만 매니페스트를 갱신하는 레지스트리 프록시를 사용하는 경우 유용합니다.
+    UPDATE_ONLY_RUNNING:
+      LABEL: 실행 중인 컨테이너만 업데이트
+      HINT: 실행 중이 아닌 컨테이너를 업데이트할 경우 일부 설정이 유실될 수 있으니 주의하세요.
+    NOTIFICATION_TITLE_TEMPLATE:
+      LABEL: 알림 제목 템플릿
+      HINT: |-
+        알림 제목의 Jinja2 템플릿입니다.
+
+        자세한 내용은 클릭하여 확인하세요.
+      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+    NOTIFICATION_BODY_TEMPLATE:
+      LABEL: 알림 본문 템플릿
+      HINT: |-
+        알림 본문의 Jinja2 템플릿입니다.
+
+        자세한 내용은 클릭하여 확인하세요.
+      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+    INSECURE_REGISTRIES:
+      LABEL: 안전하지 않은 레지스트리
+      HINT: |-
+        한 줄에 하나씩 입력하세요. 예:
+
+        my.registry.local
+        10.0.0.25:5000
+
+        이 설정은 HEAD 요청(업데이트 확인)에만 영향을 줍니다.
+        풀(pull)의 경우 호스트 머신의 /etc/docker/daemon.json을 직접 수정해야 합니다.
+        사용자 지정 레지스트리를 사용할 때 유용할 수 있습니다.
+    SEND_TEST_NOTIFICATION: 테스트 알림 보내기
