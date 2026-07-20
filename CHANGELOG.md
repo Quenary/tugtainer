@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.30.9 (2026-07-20)
+
+### Bug Fixes
+
+- **backend**: Update fails due to flattened entrypoint
+  ([#215](https://github.com/Quenary/tugtainer/pull/215),
+  [`25689f9`](https://github.com/Quenary/tugtainer/commit/25689f98f69d08cb3d70289f029f1014c70715a3))
+
+
 ## v1.30.8 (2026-07-01)
 
 ### Bug Fixes
