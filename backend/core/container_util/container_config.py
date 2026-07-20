@@ -16,7 +16,6 @@ from shared.schemas.container_schemas import (
 )
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 
-from .get_container_entrypoint_str import get_container_entrypoint_str
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
     get_container_restart_policy_str,
@@ -32,13 +31,12 @@ from .map_ulimits_to_arg import map_ulimits_to_arg
 from .normalize_path import normalize_path
 
 
-def diff_container_config_with_images(
+def diff_container_config_with_image(
     cfg: CreateContainerRequestBodySchema,
     remote_image: ImageInspectResult,
-    local_image: ImageInspectResult,
 ) -> CreateContainerRequestBodySchema:
     """
-    Prepare container config considering remote and local images
+    Prepare container config considering remote image
     """
     if remote_image.config:
         cfg_dict = cfg.model_dump()
@@ -51,26 +49,6 @@ def diff_container_config_with_images(
             or {}
         )
 
-        if local_image.config:
-            # Drop values if not explicitly overridden
-            if (
-                local_image.config.entrypoint == cfg_dict.get("entrypoint")
-                and remote_image.config.entrypoint
-            ):
-                cfg_dict.pop("entrypoint", None)
-
-            if (
-                local_image.config.cmd == cfg_dict.get("command")
-                and remote_image.config.cmd
-            ):
-                cfg_dict.pop("command", None)
-
-            if (
-                local_image.config.working_dir == cfg_dict.get("workdir")
-                and remote_image.config.working_dir
-            ):
-                cfg_dict.pop("workdir", None)
-
         cfg_dict = drop_empty_keys(cfg_dict)
 
         return CreateContainerRequestBodySchema.model_validate(cfg_dict)
@@ -80,6 +58,7 @@ def diff_container_config_with_images(
 
 def get_container_config(
     container: ContainerInspectResult,
+    image: ImageInspectResult | None,
     docker_version: DockerVersionScheme | None,
 ) -> tuple[CreateContainerRequestBodySchema, list[list[str]]]:
     """
@@ -97,12 +76,48 @@ def get_container_config(
     if NET_COMMANDS:
         commands += NET_COMMANDS
 
+    # Preserve only values that differ from image defaults.
+    command: list[str] | None = None
+    entrypoint: str | None = None
+
+    def _to_list(val: list[str] | str | None) -> list[str]:
+        if not val:
+            return []
+        return [val] if isinstance(val, str) else list(val)
+
+    current_entrypoint: Final = _to_list(config.entrypoint)
+    current_cmd: Final = _to_list(config.cmd)
+
+    image_entrypoint: Final = (
+        _to_list(image.config.entrypoint) if (image and image.config) else []
+    )
+    image_cmd: Final = _to_list(image.config.cmd) if (image and image.config) else []
+
+    # Compare pair of entrypoint/cmd
+    # CLI supports --entrypoint only as a string,
+    # we should move extra args to the start of cmd.
+    if current_entrypoint != image_entrypoint or current_cmd != image_cmd:
+        if current_entrypoint:
+            # First element of entrypoint is the entrypoint itself
+            entrypoint = current_entrypoint[0]
+            # Other elements of entrypoint (like '--') are passed as extra args
+            command = current_entrypoint[1:] + current_cmd
+        else:
+            # Entrypoint removed or cmd changed.
+            # Docker CLI cannot express an empty entrypoint cleanly,
+            # therefore we only preserve cmd here.
+            command = current_cmd
+
+    workdir: str | None = None
+    if image and image.config and image.config.working_dir != config.working_dir:
+        workdir = normalize_path(config.working_dir)
+
     config_dict = {
         "image": config.image,
         "name": container.name,
         "blkio_weight": host_config.blkio_weight,
         "blkio_weight_device": host_config.blkio_weight_device,
-        "command": config.cmd,
+        "command": command,
         "cap_add": host_config.cap_add,
         "cap_drop": host_config.cap_drop,
         "cgroup_parent": normalize_path(host_config.cgroup_parent),
@@ -123,7 +138,7 @@ def get_container_config(
         "device_write_iops": host_config.blkio_device_write_iops,
         **NET_KWARGS,
         "domainname": config.domainname,
-        "entrypoint": get_container_entrypoint_str(config.entrypoint),
+        "entrypoint": entrypoint,
         "envs": ENVS,
         "gpus": map_device_requests_to_gpus(host_config.device_requests),
         "groups_add": host_config.group_add,
@@ -159,7 +174,7 @@ def get_container_config(
         "uts": host_config.uts_mode,
         "volume_driver": host_config.volume_driver,
         "volumes_from": host_config.volumes_from,
-        "workdir": normalize_path(config.working_dir),
+        "workdir": workdir,
     }
     config_dict = drop_empty_keys(config_dict)
 
