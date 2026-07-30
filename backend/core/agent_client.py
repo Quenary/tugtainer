@@ -23,6 +23,7 @@ from backend.modules.hosts.hosts_schemas import HostInfo
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
+    ExecContainerRequestBodySchema,
     GetContainerListBodySchema,
     GetContainerLogsRequestBody,
 )
@@ -295,6 +296,17 @@ class AgentClientContainer:
             timeout=self._agent_client._long_timeout,
         )
         return str(data)
+
+    async def exec(
+        self, name_or_id: str, body: ExecContainerRequestBodySchema
+    ) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            f"/api/container/exec/{name_or_id}",
+            body,
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data or "")
 
 
 class AgentClientImage:
