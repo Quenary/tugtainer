@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
     PortBinding,
@@ -15,6 +15,22 @@ from backend.modules.containers.containers_model import ContainersModel
 
 if TYPE_CHECKING:
     from .containers_model import ContainersModel
+
+
+class ContainerHooks(BaseModel):
+    """
+    Shell commands to run inside a container at points of the update
+    lifecycle. Each command in a list is a raw shell string, run sequentially
+    via the agent's POST /api/container/exec (i.e. `sh -c "<command>"`).
+    Only takes effect when both backend ALLOW_HOOKS and the target host's
+    agent ALLOW_EXEC are true.
+    """
+
+    pre_update: list[str] = Field(default_factory=list)
+    post_update: list[str] = Field(default_factory=list)
+    pre_stop: list[str] = Field(default_factory=list)
+    pre_rollback: list[str] = Field(default_factory=list)
+    post_rollback: list[str] = Field(default_factory=list)
 
 
 class ContainersListItem(BaseModel):
@@ -38,6 +54,7 @@ class ContainersListItem(BaseModel):
     updated_at: datetime | None = None  # Date of last update
     created_at: datetime | None = None  # Date of creation of db entry
     modified_at: datetime | None = None  # Date ofmodification db entry
+    hooks: ContainerHooks | None = None  # Update lifecycle hooks
 
     @classmethod
     def from_sources(
@@ -70,6 +87,7 @@ class ContainersListItem(BaseModel):
                     "updated_at": db_cont.updated_at,
                     "created_at": db_cont.created_at,
                     "modified_at": db_cont.modified_at,
+                    "hooks": ContainerHooks.model_validate(db_cont.hooks or {}),
                 }
             )
         return cls.model_validate(data)
@@ -83,3 +101,4 @@ class ContainerGetResponseBody(BaseModel):
 class ContainerPatchRequestBody(BaseModel):
     check_enabled: bool | None = None
     update_enabled: bool | None = None
+    hooks: ContainerHooks | None = None
