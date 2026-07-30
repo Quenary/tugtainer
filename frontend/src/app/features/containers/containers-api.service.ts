@@ -42,6 +42,10 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
     );
   }
 
+  hooksEnabled(): Observable<boolean> {
+    return this.httpClient.get<boolean>(`${this.basePath}/hooks_enabled`);
+  }
+
   checkAll(): Observable<string> {
     return this.httpClient.post<string>(`${this.basePath}/check`, {});
   }

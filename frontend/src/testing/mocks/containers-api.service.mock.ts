@@ -14,6 +14,7 @@ export const getContainersApiServiceMock = (): Mocked<ContainersApiService> => {
     updateAll: vi.fn(),
     checkHost: vi.fn(),
     updateHost: vi.fn(),
+    hooksEnabled: vi.fn(),
   };
   return mock as Mocked<ContainersApiService>;
 };

@@ -1,6 +1,16 @@
 import { TagSeverity } from '@shared/types/tag-severity.type';
 
 /**
+ * Update lifecycle hooks for a container
+ */
+export interface IContainerHooks {
+  pre_update: string[];
+  post_update: string[];
+  pre_stop: string[];
+  pre_rollback: string[];
+  post_rollback: string[];
+}
+/**
  * Container data
  */
 export interface IContainerListItem {
@@ -21,6 +31,7 @@ export interface IContainerListItem {
   created_at: string;
   modified_at: string;
   exit_code: number;
+  hooks: IContainerHooks | null;
 }
 export interface IContainerPort {
   HostIp: string;
@@ -73,6 +84,7 @@ export interface IContainerInfo {
 export interface IContainerPatchBody {
   check_enabled?: boolean;
   update_enabled?: boolean;
+  hooks?: IContainerHooks;
 }
 /**
  * Possible docker container statuses
