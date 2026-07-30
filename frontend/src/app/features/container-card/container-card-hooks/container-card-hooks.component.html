@@ -1,0 +1,24 @@
+<form
+  [formGroup]="form"
+  class="hooks-form">
+  @for (field of HOOK_FIELDS; track field) {
+    <p-ifta-label style="width: 100%">
+      <textarea
+        fluid
+        [id]="'container-hooks-' + field"
+        pTextarea
+        rows="3"
+        [formControlName]="field"
+        [placeholder]="'CONTAINERS.HOOKS.PLACEHOLDER' | translate"></textarea>
+      <label [for]="'container-hooks-' + field">
+        {{ 'CONTAINERS.HOOKS.' + field.toUpperCase() | translate }}
+      </label>
+    </p-ifta-label>
+  }
+
+  <p-button
+    class="hooks-form-button"
+    icon="pi pi-save"
+    [label]="'CONTAINERS.HOOKS.SAVE' | translate"
+    (onClick)="onSave()"></p-button>
+</form>
