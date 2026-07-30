@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from python_on_whales.components.container.models import (
@@ -6,10 +6,12 @@ from python_on_whales.components.container.models import (
 )
 
 from agent.auth import verify_signature
+from agent.config import Config
 from agent.docker_client import DOCKER
 from agent.unil.asyncall import asyncall
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
+    ExecContainerRequestBodySchema,
     GetContainerListBodySchema,
     GetContainerLogsRequestBody,
 )
@@ -169,4 +171,33 @@ async def logs(
 ):
     return await asyncall(
         lambda: DOCKER.container.logs(name_or_id, **body.model_dump(exclude_unset=True))
+    )
+
+
+@router.post(
+    "/exec/{name_or_id}",
+    description="Execute a shell command inside a running container. "
+    "Disabled unless ALLOW_EXEC=true on this agent.",
+    response_model=str,
+)
+async def exec_command(
+    name_or_id: str,
+    body: ExecContainerRequestBodySchema,
+    _=Depends(is_exists),
+) -> str:
+    if not Config.ALLOW_EXEC:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Command execution inside containers is disabled on this agent. "
+            "Set ALLOW_EXEC=true to enable it.",
+        )
+    return cast(
+        str,
+        await asyncall(
+            lambda: DOCKER.container.execute(
+                name_or_id,
+                ["sh", "-c", body.command],
+            ),
+            asyncall_timeout=600,
+        ),
     )
