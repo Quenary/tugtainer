@@ -177,4 +177,21 @@
       }
     </p-accordion-content>
   </p-accordion-panel>
+
+  @if (
+    containersStore.hooksEnabled() && !containersStore.selected()?.protected
+  ) {
+    <p-accordion-panel value="hooks">
+      <p-accordion-header>
+        {{ 'CONTAINERS.HOOKS.LABEL' | translate }}
+      </p-accordion-header>
+      <p-accordion-content>
+        @defer (when accordionValue() === 'hooks') {
+          <app-container-card-hooks
+            [hooks]="containersStore.selected()?.hooks ?? null"
+            (save)="onSaveHooks($event)"></app-container-card-hooks>
+        }
+      </p-accordion-content>
+    </p-accordion-panel>
+  }
 </p-accordion>

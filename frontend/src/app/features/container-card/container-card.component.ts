@@ -11,6 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 import {
   EContainerHealthSeverity,
   EContainerStatusSeverity,
+  IContainerHooks,
   IContainerPatchBody,
   TControlContainerCommand,
 } from 'src/app/features/containers/containers.interface';
@@ -28,6 +29,7 @@ import { ContainerActionsComponent } from '@shared/components/container-actions/
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { FormsModule } from '@angular/forms';
 import { ContainerCardLogsComponent } from './container-card-logs/container-card-logs.component';
+import { ContainerCardHooksComponent } from './container-card-hooks/container-card-hooks.component';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 import { ContainersStore } from '../containers/containers.store';
@@ -50,6 +52,7 @@ import { InspectComponent } from '@shared/components/inspect/inspect.component';
     ToggleSwitchModule,
     FormsModule,
     ContainerCardLogsComponent,
+    ContainerCardHooksComponent,
     BooleanFieldComponent,
     DayjsPipe,
     InspectComponent,
@@ -138,5 +141,9 @@ export class ContainerCardComponent implements OnDestroy {
   protected onCommand(command: TControlContainerCommand): void {
     const c = this.containersStore.selected();
     this.containersStore.controlContainer({ containerName: c.name, command });
+  }
+
+  protected onSaveHooks(hooks: IContainerHooks): void {
+    this.patchContainer({ hooks });
   }
 }
