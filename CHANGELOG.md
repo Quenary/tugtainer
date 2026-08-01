@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.31.1 (2026-08-01)
+
+### Bug Fixes
+
+- Update does not work on Podman (On Windows)
+  ([#218](https://github.com/Quenary/tugtainer/pull/218),
+  [`7acf8a6`](https://github.com/Quenary/tugtainer/commit/7acf8a641a46638a77e444e8dd75326b18ad84ac))
+
+
 ## v1.31.0 (2026-08-01)
 
 ### Features
