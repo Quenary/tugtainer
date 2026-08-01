@@ -14,5 +14,10 @@ def map_ulimits_to_arg(
         return res
 
     for lim in ulimits:
-        res.append(f"{lim.name}={lim.soft or 0}:{lim.hard or 0}")
+        name = lim.name or ""
+        # Podman inspect reports names like "RLIMIT_NOFILE",
+        # but the --ulimit flag only accepts the short form ("nofile")
+        if name.upper().startswith("RLIMIT_"):
+            name = name[len("RLIMIT_") :].lower()
+        res.append(f"{name}={lim.soft or 0}:{lim.hard or 0}")
     return res
