@@ -23,6 +23,7 @@ class Config:
     HTTPS: ClassVar[bool]
     DOMAIN: ClassVar[str | None]
     ENABLE_PUBLIC_API: ClassVar[bool]
+    ALLOW_HOOKS: ClassVar[bool]
     GH_TOKEN: ClassVar[str]
     DOCKER_CONFIG: ClassVar[str]
 
@@ -68,6 +69,7 @@ class Config:
             cls.ENABLE_PUBLIC_API = (
                 os.getenv("ENABLE_PUBLIC_API", "false").lower() == "true"
             )
+            cls.ALLOW_HOOKS = os.getenv("ALLOW_HOOKS", "false").lower() == "true"
             cls.GH_TOKEN = os.getenv("GH_TOKEN", "")
             cls.DOCKER_CONFIG = os.getenv("DOCKER_CONFIG", "~/.docker")
 

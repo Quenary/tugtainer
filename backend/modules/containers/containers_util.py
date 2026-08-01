@@ -27,6 +27,7 @@ class ContainerInsertOrUpdateData(TypedDict, total=False):
     local_digests: list[str]
     remote_digests: list[str]
     image_id: str
+    hooks: dict[str, list[str]]
 
 
 async def insert_or_update_container(

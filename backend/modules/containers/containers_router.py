@@ -10,6 +10,7 @@ from python_on_whales.components.container.models import (
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config import Config
 from backend.core.agent_client import AgentClientManager
 from backend.core.check_actions.check_all_containers import (
     check_all_containers,
@@ -161,6 +162,11 @@ async def patch_container_data(
     body: ContainerPatchRequestBody,
     session: AsyncSession = Depends(get_async_session),
 ) -> ContainersListItem:
+    if body.hooks is not None and not Config.ALLOW_HOOKS:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Hooks are disabled. Set ALLOW_HOOKS=true on the backend to enable them.",
+        )
     db_cont = await insert_or_update_container(
         session,
         host_id,
@@ -174,6 +180,15 @@ async def patch_container_data(
     client = AgentClientManager.get_host_client(host)
     d_cont = await client.container.inspect(db_cont.name)
     return ContainersListItem.from_sources(host_id, d_cont, db_cont)
+
+
+@containers_router.get(
+    path="/hooks_enabled",
+    description="Check if container hooks are enabled (ALLOW_HOOKS env var)",
+    response_model=bool,
+)
+async def hooks_enabled() -> bool:
+    return Config.ALLOW_HOOKS
 
 
 @containers_router.post(

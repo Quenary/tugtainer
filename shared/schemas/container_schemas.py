@@ -3,7 +3,7 @@ from typing import (
     Literal,
 )
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from python_on_whales.utils import ValidPath, ValidPortMapping
 
 
@@ -124,3 +124,16 @@ class GetContainerLogsRequestBody(BaseModel):
     tail: int | None = None
     details: bool = False
     timestamps: bool = False
+
+
+class ExecContainerRequestBodySchema(BaseModel):
+    """
+    Request body for POST /api/container/exec/{name_or_id}.
+    `command` is a raw shell command line, executed inside the target
+    container as `sh -c "<command>"`. There is no allowlist here (unlike
+    RunCommandRequestBodySchema/command_validator) — this endpoint is
+    intentionally arbitrary-command by design and is gated by the agent's
+    ALLOW_EXEC config flag instead.
+    """
+
+    command: str = Field(min_length=1)

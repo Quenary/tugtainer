@@ -180,6 +180,15 @@ CONTAINERS:
     KILL: Kill
     PAUSE: Pause
     UNPAUSE: Unpause
+  HOOKS:
+    LABEL: Hooks
+    PRE_UPDATE: Pre-update
+    POST_UPDATE: Post-update
+    PRE_STOP: Pre-stop
+    PRE_ROLLBACK: Pre-rollback
+    POST_ROLLBACK: Post-rollback
+    SAVE: Save
+    PLACEHOLDER: One shell command per line
 IMAGES:
   SEARCH_PLACEHOLDER: ID, repo, tags
   REPOSITORY: Repository

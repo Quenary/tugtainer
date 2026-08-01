@@ -89,6 +89,14 @@ class ContainersModel(BaseModel):
         JSON,
         nullable=True,
     )
+    # Update lifecycle hooks (see ContainerHooks), stored as
+    # {"pre_update": ["cmd1", ...], "post_update": [...], ...}.
+    # Only executed when backend ALLOW_HOOKS and the host's agent ALLOW_EXEC
+    # are both true.
+    hooks: Mapped[dict[str, list[str]] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
 
     host: Mapped["HostsModel"] = relationship(
         "HostsModel", back_populates="containers"

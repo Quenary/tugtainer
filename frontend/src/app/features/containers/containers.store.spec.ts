@@ -55,6 +55,7 @@ describe('ContainersStore', () => {
     containersApiServiceMock = getContainersApiServiceMock();
     containersApiServiceMock.list.mockReturnValue(of([mockContainerItem]));
     containersApiServiceMock.get.mockReturnValue(of(mockContainerInfo));
+    containersApiServiceMock.hooksEnabled.mockReturnValue(of(false));
 
     toastServiceMock = getToastServiceMock();
 
@@ -446,6 +447,32 @@ describe('ContainersStore', () => {
       );
 
       store.updateContainer({ containerName: 'nginx' });
+
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('loadHooksEnabled', () => {
+    it('should load hooksEnabled on store init', () => {
+      expect(containersApiServiceMock.hooksEnabled).toHaveBeenCalledTimes(1);
+      expect(store.hooksEnabled()).toBe(false);
+    });
+
+    it('should update hooksEnabled state on success', () => {
+      containersApiServiceMock.hooksEnabled.mockReturnValue(of(true));
+
+      store.loadHooksEnabled();
+
+      expect(store.hooksEnabled()).toBe(true);
+    });
+
+    it('should show error on failure', () => {
+      const error = new Error('Failed to load hooksEnabled');
+      containersApiServiceMock.hooksEnabled.mockReturnValue(
+        throwError(() => error),
+      );
+
+      store.loadHooksEnabled();
 
       expect(toastServiceMock.error).toHaveBeenCalledWith(error);
     });

@@ -5,7 +5,10 @@ import { HostsStore } from '../hosts/hosts.store';
 import { MessageService } from 'primeng/api';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ContainerCardComponent } from './container-card.component';
-import { ContainersStore } from '../containers/containers.store';
+import {
+  ContainersStore,
+  IContainerEntity,
+} from '../containers/containers.store';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Mocked } from 'vitest';
 
@@ -61,5 +64,26 @@ describe('ContainerCardComponent', () => {
 
     expect(selectSpy).toHaveBeenCalledWith(null);
     expect(selectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should patch hooks for the selected container on save', () => {
+    vi.spyOn(containersStore, 'selected').mockReturnValue({
+      name: 'test-container',
+    } as IContainerEntity);
+    const patchSpy = vi.spyOn(containersStore, 'patchContainer');
+    const hooks = {
+      pre_update: ['echo hi'],
+      post_update: [],
+      pre_stop: [],
+      pre_rollback: [],
+      post_rollback: [],
+    };
+
+    component['onSaveHooks'](hooks);
+
+    expect(patchSpy).toHaveBeenCalledWith({
+      containerName: 'test-container',
+      body: { hooks },
+    });
   });
 });

@@ -11,6 +11,7 @@ class Config:
     LOG_LEVEL: ClassVar[str]
     AGENT_SECRET: ClassVar[str | None]
     ALLOW_UNAUTHENTICATED_AGENT: ClassVar[bool]
+    ALLOW_EXEC: ClassVar[bool]
     AGENT_SIGNATURE_TTL: ClassVar[int]
     DOCKER_TIMEOUT: ClassVar[int]
 
@@ -24,6 +25,7 @@ class Config:
             cls.ALLOW_UNAUTHENTICATED_AGENT = (
                 os.getenv("ALLOW_UNAUTHENTICATED_AGENT", "false").lower() == "true"
             )
+            cls.ALLOW_EXEC = os.getenv("ALLOW_EXEC", "false").lower() == "true"
             cls.AGENT_SIGNATURE_TTL = int(os.getenv("AGENT_SIGNATURE_TTL") or 5)
             cls.DOCKER_TIMEOUT = int(os.getenv("DOCKER_TIMEOUT") or 15)
 

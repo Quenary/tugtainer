@@ -34,6 +34,7 @@ interface IContainersStore {
   loading: boolean;
   selectedNameOrId: string | null;
   selectedInfo: IContainerInfo | null;
+  hooksEnabled: boolean;
 }
 
 /**
@@ -63,6 +64,7 @@ export const ContainersStore = signalStore(
     selectedNameOrId: null,
     selectedInfo: null,
     hostActionProgress: null,
+    hooksEnabled: false,
   })),
   withComputed((store) => {
     const hostsStore = inject(HostsStore);
@@ -164,6 +166,19 @@ export const ContainersStore = signalStore(
             }),
           );
         }),
+      ),
+    );
+
+    const loadHooksEnabled = rxMethod<void>(
+      pipe(
+        switchMap(() =>
+          containersApiService.hooksEnabled().pipe(
+            tapResponse({
+              next: (hooksEnabled) => patchState(store, { hooksEnabled }),
+              error: (error) => toastService.error(error),
+            }),
+          ),
+        ),
       ),
     );
 
@@ -434,6 +449,10 @@ export const ContainersStore = signalStore(
        */
       loadList,
       /**
+       * Load whether container hooks are enabled on the backend
+       */
+      loadHooksEnabled,
+      /**
        * Reload entity by id
        */
       reloadEntity,
@@ -464,6 +483,8 @@ export const ContainersStore = signalStore(
   withHooks({
     onInit: (store) => {
       const hostsStore = inject(HostsStore);
+
+      store.loadHooksEnabled();
 
       effect(() => {
         store.hostId();

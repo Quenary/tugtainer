@@ -9,6 +9,7 @@ from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
 
+from backend.config import Config
 from backend.core.action_result import (
     ContainerActionResult,
     UpdatePlanResult,
@@ -31,6 +32,7 @@ from backend.core.progress.progress_util import (
     get_plan_cache_key,
     is_allowed_start_cache,
 )
+from backend.core.update_actions.hooks_executor import get_hooks_map, run_hooks
 from backend.core.update_actions.update_actions_schema import (
     UpdatePlan,
     UpdatePlanItem,
@@ -40,6 +42,7 @@ from backend.core.update_actions.update_actions_util import (
     update_containers_data_after_execution,
 )
 from backend.enums.action_status_enum import EActionStatus
+from backend.enums.hook_name_enum import EHookName
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
@@ -92,6 +95,12 @@ async def execute_update_plan(
         if c.name in plan.to_update or c.name in plan.affected
     ]
     items_map: Final = {item.name: item for item in items}
+
+    hooks_map: Final = (
+        await get_hooks_map(host.id, list(items_map.keys()))
+        if Config.ALLOW_HOOKS
+        else {}
+    )
 
     # Prepare updatable containers state
     # This part of code should not raise
@@ -159,6 +168,18 @@ async def execute_update_plan(
     for name in reversed(plan.order):
         item = items_map.get(name)
         if item and item.was_running:
+            hooks = hooks_map.get(name)
+            hook_errors = await run_hooks(client, name, hooks, EHookName.PRE_STOP)
+            if not hook_errors and name in plan.to_update:
+                hook_errors = await run_hooks(
+                    client, name, hooks, EHookName.PRE_UPDATE
+                )
+            if hook_errors:
+                item.errors.extend(hook_errors)
+                logger.warning(
+                    f"Skipping stop of {name} due to pre_stop/pre_update hook failure"
+                )
+                continue
             try:
                 logger.info(f"Stopping container {name}")
                 await client.container.stop(name)
@@ -271,9 +292,17 @@ async def execute_update_plan(
                     if healthy:
                         logger.info("Container is healthy!")
                         item.result = "updated"
+                        hook_errors = await run_hooks(
+                            client, item.name, hooks_map.get(item.name), EHookName.POST_UPDATE
+                        )
+                        item.errors.extend(hook_errors)
                         continue
 
                     logger.warning("Container is unhealthy, rolling back...")
+                    hook_errors = await run_hooks(
+                        client, item.name, hooks_map.get(item.name), EHookName.PRE_ROLLBACK
+                    )
+                    item.errors.extend(hook_errors)
                     await client.container.stop(item.name)
                     await disconnect_all_networks(client, item.container, True)
                     await client.container.remove(item.name)
@@ -285,6 +314,15 @@ async def execute_update_plan(
                     # Cleanup after update error
                     try:
                         if await client.container.exists(item.name):
+                            existing = await client.container.inspect(item.name)
+                            if is_running_container(existing):
+                                hook_errors = await run_hooks(
+                                    client,
+                                    item.name,
+                                    hooks_map.get(item.name),
+                                    EHookName.PRE_ROLLBACK,
+                                )
+                                item.errors.extend(hook_errors)
                             logger.warning("Removing failed container")
                             await client.container.stop(item.name)
                             await disconnect_all_networks(client, item.container, True)
@@ -316,6 +354,10 @@ async def execute_update_plan(
                     await _run_commands(item)
                     item.container = await client.container.inspect(item.name)
                     item.result = "rolled_back"
+                    hook_errors = await run_hooks(
+                        client, item.name, hooks_map.get(item.name), EHookName.POST_ROLLBACK
+                    )
+                    item.errors.extend(hook_errors)
 
                     logger.warning("Waiting for healthchecks...")
                     healthy, container = await wait_for_container_healthy(
