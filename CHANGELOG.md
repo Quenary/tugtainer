@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.31.0 (2026-08-01)
+
+### Features
+
+- Container update lifecycle hooks (pre_update, post_update, pre_stop, pre_rollback, post_rollback)
+  ([#217](https://github.com/Quenary/tugtainer/pull/217),
+  [`f807199`](https://github.com/Quenary/tugtainer/commit/f807199255174d54b0e440c58b9c575a5fbaf50a))
+
+
 ## v1.30.9 (2026-07-20)
 
 ### Bug Fixes
