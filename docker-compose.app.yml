@@ -44,7 +44,8 @@ services:
     restart: unless-stopped
     environment:
       # The list of available variables is in env.example
-      AGENT_SECRET: CHANGE_ME!
+      # Required: uncomment and replace with a strong, unique shared secret.
+      # AGENT_SECRET: <your-secret>
       DOCKER_HOST: tcp://socket-proxy:2375
     networks:
       - tugtainer

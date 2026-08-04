@@ -54,10 +54,11 @@ Automatic updates are disabled by default. You can choose only what you need.
   docker pull ghcr.io/quenary/tugtainer:1
 
   # run container
+  # AGENT_SECRET is required. Set a strong, unique shared secret.
   docker run -d -p 9412:80 \
       --name=tugtainer \
       --restart=unless-stopped \
-      -e AGENT_SECRET="CHANGE_ME!" \
+      -e AGENT_SECRET="" \
       -v tugtainer_data:/tugtainer \
       -v /var/run/docker.sock:/var/run/docker.sock:ro \
       ghcr.io/quenary/tugtainer:1
@@ -78,11 +79,7 @@ Automatic updates are disabled by default. You can choose only what you need.
   To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.
   To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or following docker commands.
 
-  After deploying the agent, in the UI follow Menu -> Hosts, and add it with the respective parameters.
-
-  Remember that the machine with the agent must be accessible for the primary instance.
-
-  Don't forget to change **AGENT_SECRET** variable. It is used for backend-agent requests signature.
+  After deploying the agent, in the UI follow Menu -> Hosts, and add it with the respective parameters. The **Agent secret** field should match the **AGENT_SECRET** you've provided for the agent container.
 
   Backend and agent use http to communicate, so you can utilize reverse proxy for https.
 
@@ -91,10 +88,11 @@ Automatic updates are disabled by default. You can choose only what you need.
   docker pull ghcr.io/quenary/tugtainer-agent:1
 
   # run container
+  # AGENT_SECRET is required. Set a strong, unique shared secret.
   docker run -d -p 9413:8001 \
       --name=tugtainer-agent \
       --restart=unless-stopped \
-      -e AGENT_SECRET="CHANGE_ME!" \
+      -e AGENT_SECRET="" \
       -v /var/run/docker.sock:/var/run/docker.sock:ro \
       ghcr.io/quenary/tugtainer-agent:1
   ```
@@ -304,7 +302,7 @@ The backend API is served under the `/api` base path.
 
 ## Env:
 
-Environment variables are not required, but you can still define some. There is [.env.example](/.env.example) containing list of vars with description.
+Most environment variables are optional. **AGENT_SECRET** is required for backend-agent communication. There is [.env.example](/.env.example) containing list of vars with description.
 
 ## Screenshots
 
