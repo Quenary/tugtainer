@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.31.2 (2026-08-04)
+
+### Bug Fixes
+
+- **security**: Add agent URL validation and configuration options
+  ([`69701cc`](https://github.com/Quenary/tugtainer/commit/69701cca4d7edf8577d5ea897688b524ddd24d1f))
+
+### Documentation
+
+- Update README with SSRF protection details for agent host URLs
+  ([`69701cc`](https://github.com/Quenary/tugtainer/commit/69701cca4d7edf8577d5ea897688b524ddd24d1f))
+
+
 ## v1.31.1 (2026-08-01)
 
 ### Bug Fixes
