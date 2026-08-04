@@ -39,6 +39,8 @@ class Config:
     NOTIFICATION_ALLOW_SCHEMES: ClassVar[set[str]]
     NOTIFICATION_ALLOW_NETWORKS: ClassVar[set[IPv4Network | IPv6Network]]
     NOTIFICATION_ALLOW_ENDPOINTS: ClassVar[set[str]]
+    AGENT_ALLOW_NETWORKS: ClassVar[set[IPv4Network | IPv6Network]]
+    AGENT_ALLOW_ENDPOINTS: ClassVar[set[str]]
 
     @classmethod
     def load(cls):
@@ -81,12 +83,11 @@ class Config:
             cls.OIDC_REDIRECT_URI = os.getenv("OIDC_REDIRECT_URI", "")
             cls.OIDC_SCOPES = os.getenv("OIDC_SCOPES", "openid profile email")
 
+            def _parse_set(value: str) -> set[str]:
+                return {item.strip() for item in value.split(",") if item.strip()}
+
             def _parse_env_set(name: str) -> set[str]:
-                return {
-                    item.strip()
-                    for item in os.getenv(name, "").split(",")
-                    if item.strip()
-                }
+                return _parse_set(os.getenv(name, ""))
 
             def _parse_networks(name: str) -> set[IPv4Network | IPv6Network]:
                 networks = _parse_env_set(name)
@@ -109,6 +110,12 @@ class Config:
             cls.NOTIFICATION_ALLOW_ENDPOINTS = _parse_env_set(
                 "NOTIFICATION_ALLOW_ENDPOINTS"
             )
+            cls.AGENT_ALLOW_NETWORKS = _parse_networks("AGENT_ALLOW_NETWORKS")
+            agent_enabled = os.getenv("AGENT_ENABLED", "true").lower() == "true"
+            agent_allow_endpoints = os.getenv("AGENT_ALLOW_ENDPOINTS")
+            if agent_allow_endpoints is None:
+                agent_allow_endpoints = "127.0.0.1:8001" if agent_enabled else ""
+            cls.AGENT_ALLOW_ENDPOINTS = _parse_set(agent_allow_endpoints)
 
 
 Config.load()

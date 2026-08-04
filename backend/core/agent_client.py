@@ -20,6 +20,7 @@ from backend.db.session import async_session_maker
 from backend.exception import TugAgentClientError
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostInfo
+from backend.modules.hosts.hosts_util import validate_agent_url_against_ssrf
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -97,6 +98,7 @@ class AgentClient:
         params: Query | None = None,
         timeout: int | float | None = None,
     ) -> Any | None:
+        await validate_agent_url_against_ssrf(self._url)
         if not timeout:
             timeout = self._timeout
         url = f"{self._url.rstrip('/')}/{path.lstrip('/')}"

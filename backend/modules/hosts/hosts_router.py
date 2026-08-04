@@ -9,6 +9,7 @@ from backend.modules.auth.auth_util import is_authorized
 from backend.modules.hosts.hosts_util import (
     annotate_available_updates_count,
     get_host,
+    validate_agent_url_against_ssrf,
 )
 
 from .hosts_model import HostsModel
@@ -51,6 +52,7 @@ async def create(
     body: HostBase,
     session: AsyncSession = Depends(get_async_session),
 ):
+    await validate_agent_url_against_ssrf(body.url)
     stmt = select(HostsModel).where(HostsModel.name == body.name).limit(1)
     result = await session.execute(stmt)
     host = result.scalar_one_or_none()
@@ -93,6 +95,7 @@ async def update(
     body: HostBase,
     session: AsyncSession = Depends(get_async_session),
 ):
+    await validate_agent_url_against_ssrf(body.url)
     host = await get_host(id, session)
     for key, value in body.model_dump(exclude_unset=True).items():
         if getattr(host, key) != value:
@@ -140,6 +143,8 @@ async def get_status(
         _ = await client.public.health()
         _ = await client.public.access()
         return HostStatusResponseBody(id=id, ok=True)
+    except HTTPException:
+        raise
     except TugAgentClientError as e:
         return HostStatusResponseBody(
             id=id,

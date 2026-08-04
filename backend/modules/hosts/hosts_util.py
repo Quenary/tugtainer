@@ -1,11 +1,40 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config import Config
+from backend.exception import TugUrlValidationError, TugUrlValidationSSRFError
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.hosts.hosts_schemas import HostInfo
+from backend.util.validate_url_against_ssrf import validate_url_against_ssrf
 
 from .hosts_model import HostsModel
+
+
+async def validate_agent_url_against_ssrf(url: str) -> None:
+    """
+    Validate agent host URL against SSRF.
+    Raises HTTPException with a human-readable English message on failure.
+    """
+    try:
+        await validate_url_against_ssrf(
+            url,
+            Config.AGENT_ALLOW_NETWORKS,
+            Config.AGENT_ALLOW_ENDPOINTS,
+        )
+    except TugUrlValidationSSRFError as e:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"{e}"
+            "\nYou can change this behavior through "
+            "AGENT_ALLOW_NETWORKS and AGENT_ALLOW_ENDPOINTS "
+            "environment variables.",
+        ) from e
+    except TugUrlValidationError as e:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            str(e),
+        ) from e
 
 
 async def get_host(host_id: int, session: AsyncSession) -> HostsModel:
