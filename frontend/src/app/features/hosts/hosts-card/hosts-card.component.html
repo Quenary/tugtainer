@@ -106,6 +106,22 @@
             </label>
           </p-iftaLabel>
 
+          @if (hostsStore.selectedId()) {
+            <app-boolean-field>
+              <p-toggle-switch
+                [inputId]="'host-change-secret'"
+                formControlName="is_changing_secret"></p-toggle-switch>
+              <label for="host-change-secret">
+                {{ 'HOSTS.CARD.GENERAL.CHANGE_SECRET' | translate }}
+              </label>
+              @if (hostsStore.selected()?.has_secret) {
+                <p-tag severity="success">
+                  {{ 'HOSTS.CARD.GENERAL.HAS_SECRET' | translate }}
+                </p-tag>
+              }
+            </app-boolean-field>
+          }
+
           <p-iftaLabel style="width: 100%">
             <p-password
               fluid

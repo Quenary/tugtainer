@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-from inspect import signature
 from typing import Any, Final, Literal
 
 import aiohttp
@@ -19,7 +18,6 @@ from sqlalchemy import select
 from backend.db.session import async_session_maker
 from backend.exception import TugAgentClientError
 from backend.modules.hosts.hosts_model import HostsModel
-from backend.modules.hosts.hosts_schemas import HostInfo
 from backend.modules.hosts.hosts_util import validate_agent_url_against_ssrf
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
@@ -299,9 +297,7 @@ class AgentClientContainer:
         )
         return str(data)
 
-    async def exec(
-        self, name_or_id: str, body: ExecContainerRequestBodySchema
-    ) -> str:
+    async def exec(self, name_or_id: str, body: ExecContainerRequestBodySchema) -> str:
         data = await self._agent_client._request(
             "POST",
             f"/api/container/exec/{name_or_id}",
@@ -437,14 +433,13 @@ class AgentClientManager:
 
     @classmethod
     def _create_client(cls, host: HostsModel) -> AgentClient:
-        info = HostInfo.model_validate(host)
-        allowed_keys = signature(AgentClient.__init__).parameters
-        filtered = {
-            k: v
-            for k, v in info.model_dump(exclude_unset=True).items()
-            if k in allowed_keys and v is not None
-        }
-        return AgentClient(**filtered)
+        return AgentClient(
+            id=host.id,
+            url=host.url,
+            secret=host.secret,
+            timeout=host.timeout,
+            ssl=host.ssl,
+        )
 
     @classmethod
     def get_all(cls) -> list[tuple[int, AgentClient]]:

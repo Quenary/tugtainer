@@ -14,9 +14,10 @@ from backend.modules.hosts.hosts_util import (
 
 from .hosts_model import HostsModel
 from .hosts_schemas import (
-    HostBase,
+    HostCreate,
     HostInfo,
     HostStatusResponseBody,
+    HostUpdate,
 )
 
 hosts_router = APIRouter(
@@ -49,7 +50,7 @@ async def get_list(
     description="Create host",
 )
 async def create(
-    body: HostBase,
+    body: HostCreate,
     session: AsyncSession = Depends(get_async_session),
 ):
     await validate_agent_url_against_ssrf(body.url)
@@ -92,12 +93,18 @@ async def read(
 )
 async def update(
     id: int,
-    body: HostBase,
+    body: HostUpdate,
     session: AsyncSession = Depends(get_async_session),
 ):
     await validate_agent_url_against_ssrf(body.url)
     host = await get_host(id, session)
-    for key, value in body.model_dump(exclude_unset=True).items():
+    changes = body.model_dump(
+        exclude={"is_changing_secret", "secret"},
+        exclude_unset=True,
+    )
+    if body.is_changing_secret:
+        changes["secret"] = body.secret
+    for key, value in changes.items():
         if getattr(host, key) != value:
             setattr(host, key, value)
     await session.commit()

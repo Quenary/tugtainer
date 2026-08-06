@@ -26,7 +26,11 @@ import { FluidModule } from 'primeng/fluid';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { ICreateHost, IHostInfo } from 'src/app/features/hosts/hosts.interface';
+import {
+  IHostCreate,
+  IHostInfo,
+  IHostUpdate,
+} from 'src/app/features/hosts/hosts.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import { RouterLink } from '@angular/router';
 import { ButtonGroup } from 'primeng/buttongroup';
@@ -40,6 +44,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { HostsStore } from '../hosts.store';
+import { TagModule } from 'primeng/tag';
 
 @Component({
   selector: 'app-host-card',
@@ -64,6 +69,7 @@ import { HostsStore } from '../hosts.store';
     IconFieldModule,
     InputIconModule,
     BooleanFieldComponent,
+    TagModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './hosts-card.component.html',
@@ -86,7 +92,7 @@ export class HostsCardComponent implements OnDestroy {
     string | number | string[] | number[]
   >(['help', 'main']);
 
-  private get defaultFormValues(): Partial<ICreateHost> {
+  private get defaultFormValues(): Partial<IHostUpdate> {
     return {
       enabled: true,
       prune: false,
@@ -94,6 +100,8 @@ export class HostsCardComponent implements OnDestroy {
       timeout: 5,
       container_hc_timeout: 60,
       ssl: true,
+      is_changing_secret: false,
+      secret: null,
     };
   }
 
@@ -109,7 +117,7 @@ export class HostsCardComponent implements OnDestroy {
     }
   };
 
-  protected readonly form = new FormGroup<TInterfaceToForm<ICreateHost>>({
+  public readonly form = new FormGroup<TInterfaceToForm<IHostUpdate>>({
     name: new FormControl<string>(null, [Validators.required]),
     enabled: new FormControl<boolean>(null, [Validators.required]),
     prune: new FormControl<boolean>(null, [Validators.required]),
@@ -119,6 +127,7 @@ export class HostsCardComponent implements OnDestroy {
       this.urlValidator,
       Validators.pattern(/^(http|https):\/\//),
     ]),
+    is_changing_secret: new FormControl<boolean>(false),
     secret: new FormControl<string>(null),
     ssl: new FormControl<boolean>(true),
     timeout: new FormControl<number>(null, [Validators.required]),
@@ -149,6 +158,18 @@ export class HostsCardComponent implements OnDestroy {
           prune_all.enable();
         }
       });
+
+    this.form.controls.is_changing_secret.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((isChangingSecret) => {
+        const control = this.form.controls.secret;
+        control.setValue(null);
+        if (isChangingSecret) {
+          control.enable();
+        } else {
+          control.disable();
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -159,6 +180,11 @@ export class HostsCardComponent implements OnDestroy {
     this.form.reset(this.defaultFormValues);
     if (info) {
       this.form.patchValue(info);
+    }
+    if (this.hostsStore.selectedId()) {
+      this.form.controls.secret.disable();
+    } else {
+      this.form.controls.secret.enable();
     }
   }
 
@@ -178,7 +204,8 @@ export class HostsCardComponent implements OnDestroy {
     if (id) {
       this.hostsStore.update({ id, body });
     } else {
-      this.hostsStore.create({ body });
+      const { is_changing_secret: _, ...createBody } = body;
+      this.hostsStore.create({ body: createBody as IHostCreate });
     }
   }
 

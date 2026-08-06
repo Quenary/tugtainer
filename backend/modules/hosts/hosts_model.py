@@ -14,12 +14,8 @@ class HostsModel(BaseModel):
 
     __tablename__ = "hosts"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True
-    )
-    name: Mapped[str] = mapped_column(
-        String, nullable=False, unique=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     enabled: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -42,9 +38,12 @@ class HostsModel(BaseModel):
         String,
         nullable=False,
     )
-    secret: Mapped[str | None] = mapped_column(
-        String, nullable=True
-    )
+    secret: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    @property
+    def has_secret(self) -> bool:
+        return bool(self.secret)
+
     ssl: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

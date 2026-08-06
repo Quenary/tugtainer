@@ -9,7 +9,12 @@ import { ContainersApiService } from '../containers/containers-api.service';
 import { PublicApiService } from '../public/public-api.service';
 import { ImagesApiService } from '../images/images-api.service';
 import { DialogService } from 'primeng/dynamicdialog';
-import { ICreateHost, IHostInfo, IHostStatus } from './hosts.interface';
+import {
+  IHostCreate,
+  IHostInfo,
+  IHostStatus,
+  IHostUpdate,
+} from './hosts.interface';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { IActionProgress } from '@shared/interfaces/progress.interface';
 import { IPruneImageRequestBodySchema } from '../images/images.interface';
@@ -155,9 +160,9 @@ describe('HostsStore', () => {
 
       store.create({
         body: {
-          id: 1,
           name: 'Host 1',
-        } as IHostInfo,
+          secret: null,
+        } as IHostCreate,
       });
 
       expect(hostsApiServiceMock.create).toHaveBeenCalled();
@@ -172,7 +177,7 @@ describe('HostsStore', () => {
       hostsApiServiceMock.create.mockReturnValue(throwError(() => error));
 
       store.create({
-        body: {} as ICreateHost,
+        body: {} as IHostCreate,
       });
 
       expect(toastServiceMock.error).toHaveBeenCalledWith(error);
@@ -193,7 +198,7 @@ describe('HostsStore', () => {
 
       store.update({
         id: 1,
-        body: {} as ICreateHost,
+        body: {} as IHostUpdate,
       });
 
       expect(hostsApiServiceMock.update).toHaveBeenCalledWith(
@@ -209,7 +214,7 @@ describe('HostsStore', () => {
 
       store.update({
         id: 1,
-        body: {} as ICreateHost,
+        body: {} as IHostUpdate,
       });
 
       expect(toastServiceMock.error).toHaveBeenCalledWith(error);

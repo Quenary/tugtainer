@@ -1,7 +1,12 @@
 import { Injectable } from '@angular/core';
 import { BaseApiService } from '../../shared/types/base-api.service';
 import { Observable } from 'rxjs';
-import { ICreateHost, IHostInfo, IHostStatus } from './hosts.interface';
+import {
+  IHostCreate,
+  IHostInfo,
+  IHostStatus,
+  IHostUpdate,
+} from './hosts.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -13,7 +18,7 @@ export class HostsApiService extends BaseApiService<'/hosts'> {
     return this.httpClient.get<IHostInfo[]>(`${this.basePath}/list`);
   }
 
-  create(body: ICreateHost): Observable<IHostInfo> {
+  create(body: IHostCreate): Observable<IHostInfo> {
     return this.httpClient.post<IHostInfo>(`${this.basePath}`, body);
   }
 
@@ -21,7 +26,7 @@ export class HostsApiService extends BaseApiService<'/hosts'> {
     return this.httpClient.get<IHostInfo>(`${this.basePath}/${id}`);
   }
 
-  update(id: number, body: ICreateHost): Observable<IHostInfo> {
+  update(id: number, body: IHostUpdate): Observable<IHostInfo> {
     return this.httpClient.put<IHostInfo>(`${this.basePath}/${id}`, body);
   }
 

@@ -7,14 +7,23 @@ class HostBase(BaseModel):
     prune: bool
     prune_all: bool
     url: str
-    secret: str | None = None
     ssl: bool
     timeout: int
     container_hc_timeout: int
 
 
+class HostCreate(HostBase):
+    secret: str | None = None
+
+
+class HostUpdate(HostBase):
+    is_changing_secret: bool = False
+    secret: str | None = None
+
+
 class HostInfo(HostBase):
     id: int
+    has_secret: bool
     available_updates_count: int = 0
     model_config = ConfigDict(from_attributes=True)
 

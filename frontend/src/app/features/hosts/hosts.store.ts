@@ -12,7 +12,12 @@ import {
   upsertEntities,
   withEntities,
 } from '@ngrx/signals/entities';
-import { ICreateHost, IHostInfo, IHostStatus } from './hosts.interface';
+import {
+  IHostCreate,
+  IHostInfo,
+  IHostStatus,
+  IHostUpdate,
+} from './hosts.interface';
 import { computed, inject } from '@angular/core';
 import { HostsApiService } from './hosts-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
@@ -359,7 +364,7 @@ export const HostsStore = signalStore(
       loadList,
       loadSummary,
       loadStatusOf,
-      create: rxMethod<{ body: ICreateHost }>(
+      create: rxMethod<{ body: IHostCreate }>(
         pipe(
           tap(() => patchState(store, { loading: 'loading' })),
           switchMap(({ body }) =>
@@ -391,7 +396,7 @@ export const HostsStore = signalStore(
           ),
         ),
       ),
-      update: rxMethod<{ id: number; body: ICreateHost }>(
+      update: rxMethod<{ id: number; body: IHostUpdate }>(
         pipe(
           tap(() => patchState(store, { loading: 'loading' })),
           switchMap(({ id, body }) =>
