@@ -12,17 +12,15 @@ Automatic updates are disabled by default. You can enable only what you need.
 
 - [main features](#main-features)
 - [deploy](#deploy)
-- [check process](#check-process)
-- [update process](#update-process)
 - [private registries](#private-registries)
 - [custom labels](#custom-labels)
 - [notifications](#notifications)
 - [auth](#auth)
 - [api](#api)
 - [env](#env)
+- [check and update](./docs/CHECK_AND_UPDATE.md)
 - [screenshots](./docs/SCREENSHOTS.md)
 - [contributing](./docs/CONTRIBUTING.md)
-- [todo](#todo)
 
 ## Main features:
 
@@ -106,46 +104,6 @@ Automatic updates are disabled by default. You can enable only what you need.
   - Deploy socket-proxy e.g. https://hub.docker.com/r/linuxserver/socket-proxy
   - Enable at least **CONTAINERS, IMAGES, POST, INFO, PING** for the **check** feature, and **NETWORKS** for the **update** feature;
   - Set the env var DOCKER_HOST="tcp://my-socket-proxy:port" on the Tugtainer(-agent) container(s);
-
-## Check process:
-
-1. Verify that a container is suitable for checking (not a local image);
-2. Pull image (if enabled in the settings, disabled by default), this may be handy if you are using a registry proxy;
-3. Request current digest of an image from a registry;
-4. Compare digests;
-5. If different, the container is **marked as available**.
-
-**Scheduled** process includes all enabled hosts and all containers **selected for auto-check**.
-
-**Manual** process includes all containers despite the auto-check toggle (or a single container if you've clicked one).
-
-## Update process:
-
-- ### Dependency graph
-  - Containers of a host are processed as a single set;
-  - A global dependency graph is constructed for all containers with:
-    - Compose dependencies (**com.docker.compose.depends_on** label for containers with same **com.docker.compose.project** and **com.docker.compose.project.config_files** labels)
-    - Custom dependencies [dev.quenary.tugtainer.depends_on](#custom-labels)
-  - Dependencies are directional: if container A depends on B, B must be started before A and stopped after A;
-  - Containers without dependencies are treated as independent nodes in the graph
-
-- ### Process
-  1. A global dependency graph is built:
-     - [protected](#custom-labels) containers are skipped;
-     - not `running` containers are skipped by default (can be changed in the settings);
-  2. A set of **updatable** containers is calculated:
-     - An updatable container is one that is **marked as available** and **selected for auto-update** or **was clicked for update**;
-  3. A set of **affected** containers is calculated:
-     - includes all containers that depend (directly or transitively) on any updatable container;
-     - excludes the updatable containers themselves;
-  4. A unified topological execution order is built based on the dependency graph;
-  5. **Image pull** is performed for **updatable** containers;
-  6. All involved containers (**updatable** and **affected**) are stopped once, in order from most dependent to least dependent;
-  7. Then, in reverse order (from least dependent to most dependent):
-     - **Updatable** containers are recreated and started;
-     - **Affected** containers are started;
-
-  The **scheduled process** is performed for all enabled hosts.
 
 ## Private registries
 
