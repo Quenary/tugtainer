@@ -20,7 +20,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 - [auth](#auth)
 - [api](#api)
 - [env](#env)
-- [screenshots](#screenshots)
+- [screenshots](./docs/SCREENSHOTS.md)
 - [contributing](#contributing)
 - [development](#develop)
 - [todo](#todo)
@@ -303,15 +303,6 @@ The backend API is served under the `/api` base path.
 ## Env:
 
 Most environment variables are optional. **AGENT_SECRET** is required for backend-agent communication. There is [.env.example](/.env.example) containing list of vars with description.
-
-## Screenshots
-
-<p align="center">
-<img src="resources/tugtainer-hosts-v1.2.3.png" width="48%">
-<img src="resources/tugtainer-containers-v1.2.3.png" width="48%">
-<img src="resources/tugtainer-images-v1.2.3.png" width="48%">
-<img src="resources/tugtainer-settings-v1.2.3.png" width="48%">
-</p>
 
 ## Contributing
 
