@@ -1,6 +1,31 @@
 # CHANGELOG
 
 
+## v1.32.0 (2026-08-06)
+
+### Bug Fixes
+
+- **i18n**: Chinese translation update
+  ([`35f145f`](https://github.com/Quenary/tugtainer/commit/35f145f288542a2a90f23a242c39d92d0a4adcd2))
+
+- **i18n**: Update ko translation
+  ([`61d0b4b`](https://github.com/Quenary/tugtainer/commit/61d0b4b6b4186946facfa7d1dd0642b4374c6b3e))
+
+- **i18n**: Update translation keys for container card
+  ([`cd89276`](https://github.com/Quenary/tugtainer/commit/cd89276c6ef370a754ff7cff281372610c1f8a57))
+
+### Features
+
+- **frontend**: Add Korean (ko) translation ([#213](https://github.com/Quenary/tugtainer/pull/213),
+  [`921c537`](https://github.com/Quenary/tugtainer/commit/921c537444f023b4bffe76f33bd5b64c91344a9b))
+
+- **i18n**: Lang/locale selection in menu
+  ([`9b0477d`](https://github.com/Quenary/tugtainer/commit/9b0477d47e6487a5bdf5b910b43a2c33654ac9e3))
+
+- **i18n**: Russian translation
+  ([`f53a018`](https://github.com/Quenary/tugtainer/commit/f53a01879b75ba6cc1954b53242b9154c84d9cd7))
+
+
 ## v1.31.4 (2026-08-06)
 
 ### Bug Fixes
