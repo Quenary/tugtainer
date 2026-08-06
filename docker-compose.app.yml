@@ -44,9 +44,21 @@ services:
     restart: unless-stopped
     environment:
       # The list of available variables is in env.example
-      # Required: uncomment and replace with a strong, unique shared secret.
-      # AGENT_SECRET: <your-secret>
       DOCKER_HOST: tcp://socket-proxy:2375
+
+      # Required: uncomment and replace with a strong, unique shared secret.
+      # AGENT_SECRET:
+
+      # The app restricts access to local, private and reserved networks.
+      # By default, only the built-in agent endpoint 127.0.0.1:8001 is allowed.
+      # If using remote agents on a LAN or Docker network,
+      # uncomment one (or both) of the following as needed.
+
+      # Example: "192.168.0.0/24,10.0.0.0/16"
+      # AGENT_ALLOW_NETWORKS:
+
+      # Example: "127.0.0.1:8001,10.0.0.5:9000"
+      # AGENT_ALLOW_ENDPOINTS:
     networks:
       - tugtainer
     ports:
