@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v1.31.3 (2026-08-06)
+
+### Bug Fixes
+
+- **security**: Re-validate notification URLs before send
+  ([`4aabbc5`](https://github.com/Quenary/tugtainer/commit/4aabbc5e98851d641de2c96aff38fcdc10b14e89))
+
+- **security**: Verify OIDC ID tokens and add optional identity allowlist
+  ([`b55269b`](https://github.com/Quenary/tugtainer/commit/b55269b6a3bfd43b0f2f5bd5f137ee0c81b7c2e4))
+
+### Documentation
+
+- **security**: Update README and docker-compose to clarify AGENT_SECRET requirements and usage
+  ([`3eac9d7`](https://github.com/Quenary/tugtainer/commit/3eac9d739961e1bc91a2a70c7e6c04c4ca32b35e))
+
+
 ## v1.31.2 (2026-08-04)
 
 ### Bug Fixes
