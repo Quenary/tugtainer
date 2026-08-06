@@ -11,9 +11,14 @@ from backend.core.action_result import (
     ContainerActionResult,
     HostActionResult,
 )
-from backend.exception import TugNotificationException
+from backend.exception import (
+    TugNotificationException,
+    TugUrlValidationError,
+    TugUrlValidationSSRFError,
+)
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+from backend.util.validate_url_against_ssrf import validate_url_against_ssrf
 
 
 def any_worthy(items: list[ContainerActionResult]) -> bool:
@@ -108,6 +113,22 @@ async def send_notification(
 
     if urls:
         try:
+            for url in urls:
+                try:
+                    await validate_url_against_ssrf(
+                        url,
+                        Config.NOTIFICATION_ALLOW_NETWORKS,
+                        Config.NOTIFICATION_ALLOW_ENDPOINTS,
+                    )
+                except TugUrlValidationSSRFError as e:
+                    raise TugNotificationException(
+                        f"Notification URL blocked by SSRF protection: {e}"
+                    ) from e
+                except (TugUrlValidationError, ValueError):
+                    # Apprise URLs are not always standard URLs with a hostname.
+                    # Keep allowing those schemes, as the settings validation does.
+                    pass
+
             logger.info("Sending notification")
             _apprise: Final = Apprise()
             _apprise.add(cast(Any, urls))
