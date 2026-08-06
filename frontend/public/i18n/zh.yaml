@@ -126,12 +126,10 @@ HOSTS:
       SSL: SSL
       SSL_HINT: 是否对后端到 Agent 的请求启用 SSL 验证。
       TIMEOUT: Agent 超时时间
-      TIMEOUT_HINT:
-        常规短耗时 Agent 请求的超时时间（秒）。
+      TIMEOUT_HINT: 常规短耗时 Agent 请求的超时时间（秒）。
         不影响创建容器或拉取镜像等可能较长的请求。
       CONTAINER_HC_TIMEOUT: 容器健康检查超时
-      CONTAINER_HC_TIMEOUT_HINT:
-        更新期间等待健康检查的超时时间（秒），
+      CONTAINER_HC_TIMEOUT_HINT: 更新期间等待健康检查的超时时间（秒），
         超时后将开始回滚。
 CONTAINERS:
   SEARCH_PLACEHOLDER: 名称或 ID
@@ -158,11 +156,9 @@ CONTAINERS:
     PROTECTED: 受保护的容器无法从此应用更新。
     NOT_RUNNING: 容器必须处于运行状态。
   CHECK: 检查
-  MAIN_BTN_HINT:
-    若容器属于 Compose 项目，该项目的所有容器都将参与此过程。
+  MAIN_BTN_HINT: 若容器属于 Compose 项目，该项目的所有容器都将参与此过程。
   PROTECTED: 受保护
-  PROTECTED_CONTAINER_HINT:
-    此容器标记为 dev.quenary.tugtainer.protected，
+  PROTECTED_CONTAINER_HINT: 此容器标记为 dev.quenary.tugtainer.protected，
     无法从此应用更新。
   GENERAL:
     LABEL: 常规
