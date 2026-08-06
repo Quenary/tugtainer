@@ -3,6 +3,12 @@ name: Prod Image
 on:
   repository_dispatch:
     types: [release-event]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Numeric version to publish (e.g. 1.31.4)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -23,7 +29,17 @@ jobs:
       - name: Get Tags
         id: get-tags
         run: |
-          VERSION="${{ github.event.client_payload.version }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${{ github.event.client_payload.version }}"
+          fi
+
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "Invalid version '$VERSION'. Expected numeric format like 1.31.4"
+            exit 1
+          fi
+
           MAJOR=$(echo "$VERSION" | cut -d. -f1)
           PREFIXED=v$VERSION
 
