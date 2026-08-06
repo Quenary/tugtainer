@@ -13,6 +13,18 @@ from backend.config import Config
 
 from .auth_provider import AuthProvider
 
+# Asymmetric-only allowlist for ID token signatures (JWKS public-key verify).
+# Reject HS* to avoid alg confusion / client-secret signing. PS* omitted —
+# python-jose does not support them; add only when the JWT library does.
+OIDC_ASYMMETRIC_SIGNING_ALGORITHMS = {
+    "RS256",
+    "RS384",
+    "RS512",
+    "ES256",
+    "ES384",
+    "ES512",
+}
+
 
 class AuthOidcProvider(AuthProvider):
     async def is_enabled(self) -> bool:
@@ -296,38 +308,117 @@ class AuthOidcProvider(AuthProvider):
 
                     token = await response.json()
 
-                # Verify and decode ID token if present
-                if "id_token" in token:
-                    # For now, we'll decode without verification (not recommended for production)
-                    id_token_claims = jwt.get_unverified_claims(token["id_token"])
-                    return {
-                        "access_token": token.get("access_token"),
-                        "id_token_claims": id_token_claims,
-                    }
+                id_token = token.get("id_token")
+                if not isinstance(id_token, str) or not id_token:
+                    raise ValueError("OIDC provider did not return an ID token")
 
-                # If no ID token, fetch user info from userinfo endpoint
-                if "userinfo_endpoint" in discovery_doc:
-                    headers = {"Authorization": f"Bearer {token['access_token']}"}
-                    async with session.get(
-                        discovery_doc["userinfo_endpoint"],
-                        headers=headers,
-                    ) as response:
-                        if response.status == 200:
-                            user_info = await response.json()
-                            return {
-                                "access_token": token.get("access_token"),
-                                "user_info": user_info,
-                            }
-
-            raise HTTPException(
-                status_code=400,
-                detail="Unable to retrieve user information from OIDC provider",
-            )
+                id_token_claims = await self._verify_oidc_id_token(
+                    id_token,
+                    token.get("access_token"),
+                    discovery_doc,
+                    config["client_id"],
+                )
+                return {
+                    "access_token": token.get("access_token"),
+                    "id_token_claims": id_token_claims,
+                }
 
         except Exception as e:
             raise HTTPException(
                 status_code=400,
                 detail=f"Error exchanging authorization code: {str(e)}",
+            ) from e
+
+    async def _verify_oidc_id_token(
+        self,
+        id_token: str,
+        access_token: str | None,
+        discovery_doc: dict[str, Any],
+        client_id: str,
+    ) -> dict[str, Any]:
+        """Verify an ID token against the provider's advertised signing keys."""
+        issuer = discovery_doc.get("issuer")
+        jwks_uri = discovery_doc.get("jwks_uri")
+        if not isinstance(issuer, str) or not issuer:
+            raise ValueError("OIDC discovery document is missing issuer")
+        if not isinstance(jwks_uri, str) or not jwks_uri:
+            raise ValueError("OIDC discovery document is missing jwks_uri")
+
+        header = jwt.get_unverified_header(id_token)
+        algorithm = header.get("alg")
+        key_id = header.get("kid")
+        if algorithm not in OIDC_ASYMMETRIC_SIGNING_ALGORITHMS:
+            raise ValueError("ID token uses an unsupported signing algorithm")
+
+        advertised_algorithms = discovery_doc.get(
+            "id_token_signing_alg_values_supported"
+        )
+        if (
+            isinstance(advertised_algorithms, list)
+            and algorithm not in advertised_algorithms
+        ):
+            raise ValueError(
+                "ID token signing algorithm is not advertised by the OIDC provider"
+            )
+
+        jwks = await self._fetch_oidc_jwks(jwks_uri)
+        keys = jwks.get("keys")
+        if not isinstance(keys, list):
+            raise ValueError("OIDC JWKS document does not contain a keys list")
+
+        matching_keys = [
+            key
+            for key in keys
+            if isinstance(key, dict)
+            and (key_id is None or key.get("kid") == key_id)
+            and key.get("use", "sig") == "sig"
+            and key.get("alg", algorithm) == algorithm
+        ]
+        if len(matching_keys) != 1:
+            raise ValueError("Unable to resolve a unique OIDC signing key")
+
+        claims = jwt.decode(
+            id_token,
+            key=matching_keys[0],
+            algorithms=[algorithm],
+            audience=client_id,
+            issuer=issuer,
+            access_token=access_token,
+            options={
+                "require_iss": True,
+                "require_sub": True,
+                "require_aud": True,
+                "require_exp": True,
+                "require_iat": True,
+            },
+        )
+        audience = claims["aud"]
+        authorized_party = claims.get("azp")
+        if isinstance(audience, list) and len(audience) > 1:
+            if authorized_party != client_id:
+                raise ValueError(
+                    "ID token with multiple audiences has an invalid authorized party"
+                )
+        elif authorized_party is not None and authorized_party != client_id:
+            raise ValueError("ID token has an invalid authorized party")
+
+        return cast(dict[str, Any], claims)
+
+    async def _fetch_oidc_jwks(self, jwks_uri: str) -> dict[str, Any]:
+        """Fetch the OIDC provider's JSON Web Key Set."""
+        try:
+            async with aiohttp.ClientSession(trust_env=True) as session:
+                async with session.get(jwks_uri) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Failed to fetch OIDC JWKS: {response.status}",
+                    )
+        except aiohttp.ClientError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error fetching OIDC JWKS: {str(e)}",
             ) from e
 
     def _create_oidc_user_session(
@@ -337,6 +428,7 @@ class AuthOidcProvider(AuthProvider):
         """Create user session tokens after OIDC authentication"""
         # Extract user identifier (email, sub, or preferred_username)
         user_claims = user_data.get("id_token_claims", user_data.get("user_info", {}))
+        self._enforce_oidc_identity_allowlist(user_claims)
 
         user_id = (
             user_claims.get("email")
@@ -370,3 +462,23 @@ class AuthOidcProvider(AuthProvider):
             "access_token": access_token,
             "refresh_token": refresh_token,
         }
+
+    def _enforce_oidc_identity_allowlist(
+        self,
+        user_claims: dict[str, Any],
+    ) -> None:
+        """Allow the identity when either its email or subject is allowlisted."""
+        allowed_emails = Config.OIDC_ALLOWED_EMAILS
+        allowed_subjects = Config.OIDC_ALLOWED_SUBJECTS
+        if not allowed_emails and not allowed_subjects:
+            return
+
+        email = user_claims.get("email")
+        subject = user_claims.get("sub")
+        email_allowed = isinstance(email, str) and email.casefold() in allowed_emails
+        subject_allowed = isinstance(subject, str) and subject in allowed_subjects
+        if not email_allowed and not subject_allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="OIDC identity is not allowed",
+            )

@@ -34,6 +34,8 @@ class Config:
     OIDC_CLIENT_SECRET: ClassVar[str]
     OIDC_REDIRECT_URI: ClassVar[str]
     OIDC_SCOPES: ClassVar[str]
+    OIDC_ALLOWED_EMAILS: ClassVar[set[str]]
+    OIDC_ALLOWED_SUBJECTS: ClassVar[set[str]]
 
     # Network security
     NOTIFICATION_ALLOW_SCHEMES: ClassVar[set[str]]
@@ -88,6 +90,11 @@ class Config:
 
             def _parse_env_set(name: str) -> set[str]:
                 return _parse_set(os.getenv(name, ""))
+
+            cls.OIDC_ALLOWED_EMAILS = {
+                email.casefold() for email in _parse_env_set("OIDC_ALLOWED_EMAILS")
+            }
+            cls.OIDC_ALLOWED_SUBJECTS = _parse_env_set("OIDC_ALLOWED_SUBJECTS")
 
             def _parse_networks(name: str) -> set[IPv4Network | IPv6Network]:
                 networks = _parse_env_set(name)
