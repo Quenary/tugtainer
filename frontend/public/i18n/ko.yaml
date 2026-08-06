@@ -121,6 +121,8 @@ HOSTS:
       URL: 에이전트 주소
       URL_PLACEHOLDER: http://127.0.0.1:8001
       SECRET: 에이전트 시크릿
+      CHANGE_SECRET: 시크릿 변경
+      HAS_SECRET: 시크릿이 설정됨
       SSL: SSL
       SSL_HINT: 백엔드-에이전트 요청에 SSL 검증을 사용할지 여부입니다.
       TIMEOUT: 에이전트 타임아웃
@@ -128,8 +130,7 @@ HOSTS:
         일반적으로 빠르게 처리되는 에이전트 요청의 타임아웃(초)입니다.
         컨테이너 생성이나 이미지 풀과 같이 오래 걸릴 수 있는 요청에는 영향을 주지 않습니다.
       CONTAINER_HC_TIMEOUT: 컨테이너 헬스체크 타임아웃
-      CONTAINER_HC_TIMEOUT_HINT:
-        업데이트 중 헬스체크가 롤백을 시작하기 전까지
+      CONTAINER_HC_TIMEOUT_HINT: 업데이트 중 헬스체크가 롤백을 시작하기 전까지
         대기할 시간(초)입니다.
 CONTAINERS:
   SEARCH_PLACEHOLDER: 이름 또는 ID
@@ -179,6 +180,15 @@ CONTAINERS:
     KILL: 강제 종료
     PAUSE: 일시 정지
     UNPAUSE: 일시 정지 해제
+  HOOKS:
+    LABEL: 훅
+    PRE_UPDATE: Pre-update
+    POST_UPDATE: Post-update
+    PRE_STOP: Pre-stop
+    PRE_ROLLBACK: Pre-rollback
+    POST_ROLLBACK: Post-rollback
+    SAVE: 저장
+    PLACEHOLDER: 한 줄에 shell 명령 하나씩
 IMAGES:
   SEARCH_PLACEHOLDER: ID, 저장소, 태그
   REPOSITORY: 저장소
@@ -221,7 +231,7 @@ SETTINGS:
       LINK: https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications
     TIMEZONE:
       LABEL: 시간대
-      HINT: "IANA 형식의 시간대입니다. 예: Asia/Seoul"
+      HINT: 'IANA 형식의 시간대입니다. 예: Asia/Seoul'
     REGISTRY_REQ_DELAY:
       LABEL: 레지스트리 요청 지연 시간(초)
       HINT: 요청 제한(rate limit)을 피하기 위한 매니페스트, 풀 등 레지스트리 요청 간의 지연 시간입니다.
