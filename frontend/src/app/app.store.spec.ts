@@ -14,6 +14,10 @@ import {
 import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
 import { getPublicApiServiceMock } from '@testing/mocks/public-api.service.mock';
 import { getAuthApiServiceMock } from '@testing/mocks/auth-api.service.mock';
+import { getLocaleServiceMock } from '@testing/mocks/locale-service.mock';
+import { provideTranslateService, TranslateService } from '@ngx-translate/core';
+import { LocaleService } from './core/services/locale.service';
+import { EStorageKey } from './app.enums';
 
 describe('AppStore', () => {
   let store: InstanceType<typeof AppStore>;
@@ -21,8 +25,10 @@ describe('AppStore', () => {
   let authApiServiceMock: Mocked<AuthApiService>;
   let publicApiServiceMock: Mocked<PublicApiService>;
   let toastServiceMock: Mocked<ToastService>;
+  let localeServiceMock: Mocked<LocaleService>;
 
   beforeEach(() => {
+    localStorage.clear();
     authApiServiceMock = getAuthApiServiceMock();
     authApiServiceMock.isDisabled.mockReturnValue(of(false));
 
@@ -33,11 +39,13 @@ describe('AppStore', () => {
     );
 
     toastServiceMock = getToastServiceMock();
+    localeServiceMock = getLocaleServiceMock();
 
     TestBed.configureTestingModule({
       providers: [
         AppStore,
         PendingTasks,
+        provideTranslateService(),
         {
           provide: AuthApiService,
           useValue: authApiServiceMock,
@@ -49,6 +57,10 @@ describe('AppStore', () => {
         {
           provide: ToastService,
           useValue: toastServiceMock,
+        },
+        {
+          provide: LocaleService,
+          useValue: localeServiceMock,
         },
       ],
     });
@@ -160,6 +172,29 @@ describe('AppStore', () => {
       store.setTheme('AUTO');
 
       expect(document.documentElement.className).toBe('LIGHT');
+    });
+  });
+
+  describe('setLang', () => {
+    it('should set lang and apply its locale', () => {
+      const translateService = TestBed.inject(TranslateService);
+      const useSpy = vi.spyOn(translateService, 'use');
+
+      store.setLang('ru');
+
+      expect(store.lang()).toBe('ru');
+      expect(localStorage.getItem(EStorageKey.LANG)).toBe('"ru"');
+      expect(useSpy).toHaveBeenCalledWith('ru');
+      expect(localeServiceMock.apply).toHaveBeenCalledWith('ru');
+    });
+
+    it('should resolve AUTO to the browser locale', () => {
+      vi.spyOn(navigator, 'language', 'get').mockReturnValue('ru-RU');
+
+      store.setLang('AUTO');
+
+      expect(store.lang()).toBe('AUTO');
+      expect(localeServiceMock.apply).toHaveBeenCalledWith('ru');
     });
   });
 });

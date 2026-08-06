@@ -17,6 +17,14 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { EStorageKey } from './app.enums';
+import {
+  getStoredLang,
+  LocaleService,
+  resolveLocale,
+  setStoredLang,
+  TAppLang,
+} from './core/services/locale.service';
+import { TranslateService } from '@ngx-translate/core';
 
 interface IAppStore {
   loading: boolean;
@@ -24,6 +32,7 @@ interface IAppStore {
   version: IVersion;
   update: IsUpdateAvailableResponseBody | null;
   theme: TAppTheme;
+  lang: TAppLang;
 }
 
 export type TAppTheme = 'AUTO' | 'LIGHT' | 'DARK' | null | undefined;
@@ -36,11 +45,14 @@ export const AppStore = signalStore(
     version: { image_version: 'unknown' },
     update: null,
     theme: null,
+    lang: 'AUTO',
   }),
   withMethods((store) => {
     const authApiService = inject(AuthApiService);
     const publicApiService = inject(PublicApiService);
     const toastService = inject(ToastService);
+    const translateService = inject(TranslateService);
+    const localeService = inject(LocaleService);
 
     return {
       loadIsAuthDisabled: rxMethod<void>(
@@ -98,6 +110,13 @@ export const AppStore = signalStore(
         }
         document.documentElement.className = theme;
       },
+      setLang: (lang: TAppLang) => {
+        patchState(store, { lang });
+        setStoredLang(lang);
+        const locale = resolveLocale(lang);
+        translateService.use(locale);
+        void localeService.apply(locale);
+      },
     };
   }),
   withHooks({
@@ -106,6 +125,7 @@ export const AppStore = signalStore(
       store.loadUpdate();
       store.loadVersion();
       store.setTheme(localStorage.getItemJson(EStorageKey.THEME) || 'AUTO');
+      store.setLang(getStoredLang());
     },
   }),
 );

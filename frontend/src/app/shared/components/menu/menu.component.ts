@@ -19,6 +19,8 @@ import { AppStore } from 'src/app/app.store';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 import { HostsStore } from 'src/app/features/hosts/hosts.store';
 import { BadgeModule } from 'primeng/badge';
+import { supportedLocales } from 'src/app/app.consts';
+import { localeLabels, TAppLang } from 'src/app/core/services/locale.service';
 
 @Component({
   selector: 'app-menu',
@@ -53,15 +55,19 @@ export class MenuComponent {
   );
   protected readonly narrow = linkedSignal(this._narrow);
 
+  private readonly generalTranslation = toSignal(
+    this.translateService.stream('GENERAL'),
+  );
   private readonly themesTranslation = toSignal(
-    this.translateService.getStreamOnTranslationChange('THEMES'),
+    this.translateService.stream('THEMES'),
   );
   protected readonly themes = computed(() => {
+    const general = this.generalTranslation();
     const t = this.themesTranslation();
     return [
       {
         value: 'AUTO',
-        label: t['AUTO'],
+        label: general['AUTO'],
         icon: 'pi pi-heart',
         command: () => {
           this.appStore.setTheme('AUTO');
@@ -86,9 +92,44 @@ export class MenuComponent {
     ];
   });
   protected readonly selectedThemeLabel = computed(() => {
-    const t = this.themesTranslation();
     const theme = this.appStore.theme();
-    return t[theme];
+    const general = this.generalTranslation();
+    const themes = this.themesTranslation();
+    if (theme === 'AUTO') {
+      return general?.['AUTO'];
+    }
+    return themes?.[theme];
+  });
+
+  protected readonly languages = computed(() => {
+    const general = this.generalTranslation();
+    return [
+      {
+        value: 'AUTO' as TAppLang,
+        label: general['AUTO'],
+        icon: 'pi pi-globe',
+        command: () => {
+          this.appStore.setLang('AUTO');
+        },
+      },
+      ...supportedLocales
+        .map((code) => ({
+          value: code,
+          label: localeLabels[code],
+          command: () => {
+            this.appStore.setLang(code);
+          },
+        }))
+        .sort((a, b) => a.value.localeCompare(b.value)),
+    ];
+  });
+  protected readonly selectedLangLabel = computed(() => {
+    const lang = this.appStore.lang();
+    const general = this.generalTranslation();
+    if (lang === 'AUTO') {
+      return general?.['AUTO'];
+    }
+    return localeLabels[lang];
   });
 
   protected openRepo(): void {

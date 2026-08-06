@@ -35,7 +35,7 @@
               [ngModel]="_item.check_enabled"
               (ngModelChange)="patchContainer({ check_enabled: $event })"></p-toggle-switch>
             <label for="container-check-enabled">
-              {{ 'CONTAINERS.CHECK' | translate }}
+              {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
             </label>
           </app-boolean-field>
           @if (!_item.protected) {
@@ -45,7 +45,7 @@
                 [ngModel]="_item.update_enabled"
                 (ngModelChange)="patchContainer({ update_enabled: $event })"></p-toggle-switch>
               <label for="container-update-enabled">
-                {{ 'CONTAINERS.UPDATE' | translate }}
+                {{ 'CONTAINERS.UPDATE_ENABLED' | translate }}
               </label>
             </app-boolean-field>
           }
