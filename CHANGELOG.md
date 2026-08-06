@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v1.31.4 (2026-08-06)
+
+### Bug Fixes
+
+- **security**: Stop returning host agent secrets in API responses
+  ([`003146f`](https://github.com/Quenary/tugtainer/commit/003146f280368836fbe36b71c1fb72e3c7a31214))
+
+### Documentation
+
+- Check and update in separate md
+  ([`6ef3173`](https://github.com/Quenary/tugtainer/commit/6ef317318ee8c711b1e482d34e20b5e699036d50))
+
+- Contributing in separate md
+  ([`bddd54b`](https://github.com/Quenary/tugtainer/commit/bddd54b1562e43caffb4a1c25e14de6a78ee43d8))
+
+- Readme typos and style
+  ([`71db878`](https://github.com/Quenary/tugtainer/commit/71db8782bb8030609e22f5680d7d80215b086323))
+
+- Rm todo list from readme
+  ([`22ceb5d`](https://github.com/Quenary/tugtainer/commit/22ceb5d545251b10529ab257135afd2e2fd7db05))
+
+- Update screenshots, separate md for screenshots
+  ([`ec91efb`](https://github.com/Quenary/tugtainer/commit/ec91efb8654c31848ca6514b15f408e4cad5c8b0))
+
+- **docker-compose**: Clarify AGENT_SECRET and network configuration options
+  ([`cb2f66d`](https://github.com/Quenary/tugtainer/commit/cb2f66ddca75c35467caf3e2b202dfca8a09b2c2))
+
+
 ## v1.31.3 (2026-08-06)
 
 ### Bug Fixes
