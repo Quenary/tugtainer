@@ -19,7 +19,7 @@ import Aura from '@primeuix/themes/aura';
 import { MessageService } from 'primeng/api';
 import { definePreset } from '@primeuix/themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
-import { supportedLocales } from './app.consts';
+import { getStoredLang, resolveLocale } from './core/services/locale.service';
 import { DialogService } from 'primeng/dynamicdialog';
 
 const themePreset = definePreset(Aura, {
@@ -49,16 +49,11 @@ export const appConfig: ApplicationConfig = {
     provideTranslateService({
       loader: provideTranslateLoader(SlickTranslationLoader),
       fallbackLang: 'en',
-      lang: navigator.language,
+      lang: resolveLocale(getStoredLang()),
     }),
     {
       provide: LOCALE_ID,
-      useFactory: () => {
-        const locale = navigator.language
-          ? navigator.language.split('-')[0]
-          : 'en';
-        return supportedLocales.find((l) => l === locale) || 'en';
-      },
+      useFactory: () => resolveLocale(getStoredLang()),
     },
     providePrimeNG({
       theme: {

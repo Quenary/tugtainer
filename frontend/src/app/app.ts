@@ -60,7 +60,7 @@ export class App {
       map(() => this.activatedRoute),
       startWith(this.activatedRoute),
     ),
-    this.translateService.getStreamOnTranslationChange('BREADCRUMBS'),
+    this.translateService.stream('BREADCRUMBS'),
   ]).pipe(
     map(([ar, t]) => {
       const breadcrumbs: MenuItem[] = [];

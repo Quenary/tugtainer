@@ -19,6 +19,7 @@ export const DeployGuidelineUrl =
  * List of supported locales
  */
 export const supportedLocales = [
+  'en',
   'ru',
   'de',
   'fr',
@@ -27,5 +28,4 @@ export const supportedLocales = [
   'es',
   'zh',
   'ko',
-  'en',
-];
+] as const;

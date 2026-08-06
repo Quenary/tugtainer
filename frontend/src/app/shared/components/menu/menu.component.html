@@ -32,8 +32,14 @@
 
   <button
     class="menu-item"
-    (click)="menu.toggle($event)">
+    (click)="themeMenu.toggle($event)">
     <i class="pi pi-palette"></i>
+  </button>
+
+  <button
+    class="menu-item"
+    (click)="langMenu.toggle($event)">
+    <i class="pi pi-language"></i>
   </button>
 
   @if (!appStore.isAuthDisabled()) {
@@ -94,9 +100,16 @@
 
   <button
     class="menu-item"
-    (click)="menu.toggle($event)">
+    (click)="themeMenu.toggle($event)">
     <i class="pi pi-palette"></i>
     <span>{{selectedThemeLabel()}}</span>
+  </button>
+
+  <button
+    class="menu-item"
+    (click)="langMenu.toggle($event)">
+    <i class="pi pi-language"></i>
+    <span>{{selectedLangLabel()}}</span>
   </button>
 
   @if (!appStore.isAuthDisabled()) {
@@ -111,8 +124,15 @@
 }
 
 <p-menu
-  #menu
+  #themeMenu
   [model]="themes()"
+  [popup]="true"
+  appendTo="body">
+</p-menu>
+
+<p-menu
+  #langMenu
+  [model]="languages()"
   [popup]="true"
   appendTo="body">
 </p-menu>

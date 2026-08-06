@@ -25,7 +25,9 @@ describe('MenuComponent', () => {
   beforeEach(async () => {
     appStoreMock = {
       setTheme: vi.fn(),
+      setLang: vi.fn(),
       theme: signal('AUTO'),
+      lang: signal('AUTO'),
     };
     breakpointObserverMock = {
       observe: vi.fn().mockReturnValue(breakpointObserverObserve),

@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormArray,
@@ -67,8 +68,9 @@ export class SettingsFormComponent {
   protected readonly settingsStore = inject(SettingsStore);
 
   protected readonly ESettingKey = ESettingKey;
-  protected readonly keyTranslates =
-    this.translateService.instant('SETTINGS.BY_KEY');
+  protected readonly keyTranslates = toSignal(
+    this.translateService.stream('SETTINGS.BY_KEY'),
+  );
   protected readonly formArray = new FormArray<
     FormGroup<TInterfaceToForm<ISetting>>
   >([]);

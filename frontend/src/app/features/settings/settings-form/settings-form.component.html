@@ -11,14 +11,14 @@
           control: form.controls.value,
         }"></ng-container>
 
-      @if (keyTranslates[key]?.HINT; as hint) {
+      @if (keyTranslates()?.[key]?.HINT; as hint) {
         <p-button
           icon="pi pi-question"
           severity="contrast"
           [pTooltip]="hint"
           tooltipPosition="left"
           rounded="true"
-          (onClick)="onHintClick(keyTranslates[key]?.LINK)">
+          (onClick)="onHintClick(keyTranslates()?.[key]?.LINK)">
         </p-button>
       }
     }
@@ -63,7 +63,7 @@
           appendTo="body">
         </p-autocomplete>
         <label for="value-{{ key }}">
-          {{ keyTranslates[key]?.LABEL ?? key }}
+          {{ keyTranslates()?.[key]?.LABEL ?? key }}
         </label>
       </p-iftalabel>
     }
@@ -75,7 +75,7 @@
           id="value-{{ key }}"
           [formControl]="control"></textarea>
         <label for="value-{{ key }}">
-          {{ keyTranslates[key]?.LABEL ?? key }}
+          {{ keyTranslates()?.[key]?.LABEL ?? key }}
         </label>
       </p-iftalabel>
     }
@@ -87,7 +87,7 @@
           id="value-{{ key }}"
           [formControl]="control"></textarea>
         <label for="value-{{ key }}">
-          {{ keyTranslates[key]?.LABEL ?? key }}
+          {{ keyTranslates()?.[key]?.LABEL ?? key }}
         </label>
       </p-iftalabel>
     }
@@ -99,7 +99,7 @@
           id="value-{{ key }}"
           [formControl]="control"></textarea>
         <label for="value-{{ key }}">
-          {{ keyTranslates[key]?.LABEL ?? key }}
+          {{ keyTranslates()?.[key]?.LABEL ?? key }}
         </label>
       </p-iftalabel>
     }
@@ -111,7 +111,7 @@
               inputId="value-{{ key }}"
               [formControl]="control"></p-toggle-switch>
             <label for="value-{{ key }}">
-              {{ keyTranslates[key]?.LABEL ?? key }}
+              {{ keyTranslates()?.[key]?.LABEL ?? key }}
             </label>
           </app-boolean-field>
         }
@@ -124,7 +124,7 @@
               pInputText
               [formControl]="control" />
             <label for="value-{{ key }}">
-              {{ keyTranslates[key]?.LABEL ?? key }}
+              {{ keyTranslates()?.[key]?.LABEL ?? key }}
             </label>
           </p-iftalabel>
         }
@@ -135,7 +135,7 @@
               inputId="value-{{ key }}"
               [formControl]="control"></p-input-number>
             <label for="value-{{ key }}">
-              {{ keyTranslates[key]?.LABEL ?? key }}
+              {{ keyTranslates()?.[key]?.LABEL ?? key }}
             </label>
           </p-iftalabel>
         }
