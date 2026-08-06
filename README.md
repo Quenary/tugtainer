@@ -302,10 +302,3 @@ The backend API is served under the `/api` base path.
 ## Env:
 
 Most environment variables are optional. **AGENT_SECRET** is required for backend-agent communication. There is [.env.example](/.env.example) containing list of vars with description.
-
-## TODO:
-
-- add unit tests
-- Dozzle integration or something more universal (list of urls for redirects?)
-- Swarm support?
-- Try to add release notes (from labels or something)
