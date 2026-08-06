@@ -2,11 +2,11 @@
 
 <img src="resources/social_preview.jpg" width="100%">
 
-Please be aware that the application is distributed as is and is not recommended for use in a production environment.
+Please be aware that the application is distributed as-is and is not recommended for use in a production environment.
 
 And don't forget about regular backups of important data.
 
-Automatic updates are disabled by default. You can choose only what you need.
+Automatic updates are disabled by default. You can enable only what you need.
 
 ## Table of contents:
 
@@ -43,7 +43,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 - ### Quick start
 
-  Use [docker-compose.app.yml](./docker-compose.app.yml) or following docker commands.
+  Use [docker-compose.app.yml](./docker-compose.app.yml) or the following docker commands.
 
   ```bash
   # create volume
@@ -66,7 +66,7 @@ Automatic updates are disabled by default. You can choose only what you need.
 > [!IMPORTANT]
 > Keep in mind that you **cannot update** an **agent** or a **socket-proxy** from within the app because they are used to communicate with the Docker CLI.
 > Avoid including these containers in a docker-compose that contains other containers you want to update automatically, as this will result in an error during the update.
-> To keep them updated, you can activate the "check" only to receive notifications, and recreate manually or from another tool, such as Portainer.
+> To keep them updated, you can activate "check" only to receive notifications, and recreate them manually or from another tool, such as Portainer.
 
 - ### Remote hosts
 
@@ -76,11 +76,11 @@ Automatic updates are disabled by default. You can choose only what you need.
   > See [.env.example](./.env.example) for details. By default, only the built-in agent endpoint `127.0.0.1:8001` is allowed when `AGENT_ENABLED=true`.
 
   To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.
-  To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or following docker commands.
+  To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or the following docker commands.
 
   After deploying the agent, in the UI follow Menu -> Hosts, and add it with the respective parameters. The **Agent secret** field should match the **AGENT_SECRET** you've provided for the agent container.
 
-  Backend and agent use http to communicate, so you can utilize reverse proxy for https.
+  Backend and agent use HTTP to communicate, so you can use a reverse proxy for HTTPS.
 
   ```bash
   # pull image
@@ -98,26 +98,26 @@ Automatic updates are disabled by default. You can choose only what you need.
 
 - ### Socket proxy
 
-  You can use Tugtainer and Tugtainer Agent without direct mount of docker socket.
+  You can use Tugtainer and Tugtainer Agent without mounting the Docker socket directly.
 
   [docker-compose.app.yml](./docker-compose.app.yml) and [docker-compose.agent.yml](./docker-compose.agent.yml) use this approach by default.
 
   Manual setup:
   - Deploy socket-proxy e.g. https://hub.docker.com/r/linuxserver/socket-proxy
   - Enable at least **CONTAINERS, IMAGES, POST, INFO, PING** for the **check** feature, and **NETWORKS** for the **update** feature;
-  - Set env var DOCKER_HOST="tcp://my-socket-proxy:port" to the Tugtainer(-agent) container(s);
+  - Set the env var DOCKER_HOST="tcp://my-socket-proxy:port" on the Tugtainer(-agent) container(s);
 
 ## Check process:
 
-1. Verify that a container is suitable for checking (not local image);
-2. Pull image (if enabled in the settings, disabled by default), this may be handy if you using registry proxy;
+1. Verify that a container is suitable for checking (not a local image);
+2. Pull image (if enabled in the settings, disabled by default), this may be handy if you are using a registry proxy;
 3. Request current digest of an image from a registry;
 4. Compare digests;
-5. If different, the container **marked as available**.
+5. If different, the container is **marked as available**.
 
 **Scheduled** process includes all enabled hosts and all containers **selected for auto-check**.
 
-**Manual** process includes all containers despite auto-check toggle (or a single container if you've clicked one)
+**Manual** process includes all containers despite the auto-check toggle (or a single container if you've clicked one).
 
 ## Update process:
 
@@ -134,18 +134,18 @@ Automatic updates are disabled by default. You can choose only what you need.
      - [protected](#custom-labels) containers are skipped;
      - not `running` containers are skipped by default (can be changed in the settings);
   2. A set of **updatable** containers is calculated:
-     - Updatable container is a container which **marked as available** and **selected for auto-update** or **was clicked for update**;
+     - An updatable container is one that is **marked as available** and **selected for auto-update** or **was clicked for update**;
   3. A set of **affected** containers is calculated:
      - includes all containers that depend (directly or transitively) on any updatable container;
      - excludes the updatable containers themselves;
   4. A unified topological execution order is built based on the dependency graph;
-  5. **Image pull** performed for **updatable** containers;
-  6. All involved containers (**updatable** and **affected**) are stopped once, in order from most dependent to most dependable;
-  7. Then, in reverse order (from most dependable to most dependent):
+  5. **Image pull** is performed for **updatable** containers;
+  6. All involved containers (**updatable** and **affected**) are stopped once, in order from most dependent to least dependent;
+  7. Then, in reverse order (from least dependent to most dependent):
      - **Updatable** containers are recreated and started;
      - **Affected** containers are started;
 
-  **Scheduled process** being performed for all enabled hosts.
+  The **scheduled process** is performed for all enabled hosts.
 
 ## Private registries
 
@@ -163,7 +163,7 @@ To use private registries, you have to mount docker config to Tugtainer or Tugta
       }
     }
   ```
-- Mount the config to the Tugtainer (Agent) as a readonly volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
+- Mount the config to the Tugtainer (Agent) as a read-only volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
 - That's all you need to do, Docker CLI will take care of the rest.
 
 ## Custom labels:
@@ -174,14 +174,14 @@ To use private registries, you have to mount docker config to Tugtainer or Tugta
 
 - dev.quenary.tugtainer.depends_on="my_postgres,my_redis"
 
-  This label is an alternative to the docker compoes label. It allows you to declare that a container depends on another container, even if they are not in the same compose project. List of container names, separated by commas.
+  This label is an alternative to the docker compose label. It allows you to declare that a container depends on another container, even if they are not in the same compose project. List of container names, separated by commas.
 
 ## Hooks:
 
-Starting with this feature, you can configure shell commands to run inside a
-container at points of the update lifecycle: `pre_update`, `post_update`,
-`pre_stop`, `pre_rollback`, `post_rollback`. Each command runs as
-`sh -c "<command>"` inside the target container via the agent.
+You can configure shell commands to run inside a container at points of the
+update lifecycle: `pre_update`, `post_update`, `pre_stop`, `pre_rollback`,
+`post_rollback`. Each command runs as `sh -c "<command>"` inside the target
+container via the agent.
 
 Tugtainer has no built-in database/service-specific backup logic — writing
 the actual backup/notification commands (e.g. `pg_dump`) and managing where
@@ -267,21 +267,21 @@ Jinja2 context schema:
 - "not_available": No new image found.
 - "available": New image available for the container.
 - "available(notified)": New image available for the container, but it was in the previous notification. The app preserves digests of new images, so if another new image has appeared, the result will still be "available".
-- "updated": Container successfully recreaded with the new image.
+- "updated": Container successfully recreated with the new image.
 - "rolled_back": The app failed to recreate the container, but was able to restore it with the old image.
-- "failed": The app failed to recreate container.
+- "failed": The app failed to recreate the container.
 
-The notification is sent only if the body is not empty. For instance, if there is only containers with "available(notified)" results, the body will be empty (with default template), and notification will not be sent.
+The notification is sent only if the body is not empty. For instance, if there are only containers with "available(notified)" results, the body will be empty (with the default template), and the notification will not be sent.
 
-If you want to restore default template, it's [here](./backend/const.py)
+If you want to restore the default template, it's [here](./backend/const.py)
 
 ## Auth
 
-The app uses password authorization by default. The password is stored in the file in encrypted form.
+The app uses password authorization by default. The password is stored in a file in encrypted form.
 
-Auth cookies are not domain-specific and not https only, but you can change this using env variables.
+Alternatively, you can use an OpenID Connect provider instead of a password.
 
-Starting with v1.6.0, you can use the OpenID Connect provider instead of password. This can also be configured using env variables.
+Auth cookies are not domain-specific and not HTTPS-only. All of this can be configured using env variables.
 
 ## API
 
@@ -301,4 +301,4 @@ The backend API is served under the `/api` base path.
 
 ## Env:
 
-Most environment variables are optional. **AGENT_SECRET** is required for backend-agent communication. There is [.env.example](/.env.example) containing list of vars with description.
+Most environment variables are optional. **AGENT_SECRET** is required for backend-agent communication. See [.env.example](/.env.example) for a list of vars with descriptions.
