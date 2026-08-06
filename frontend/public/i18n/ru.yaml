@@ -1,0 +1,273 @@
+---
+GENERAL:
+  TITLE: Tugtainer
+  SAVE: Сохранить
+  ADD: Добавить
+  CONFIRM: Подтвердить
+  CANCEL: Отмена
+  CLOSE: Закрыть
+  GO_BACK: Назад
+  DELETE: Удалить
+  ENABLED: Включено
+  DISABLED: Выключено
+  'ON': Вкл
+  'OFF': Выкл
+  SUCCESS: Успешно
+  ERROR: Ошибка
+  IN_PROGRESS: В процессе
+  REFRESH: Обновить
+THEMES:
+  AUTO: Авто
+  LIGHT: Светлая
+  DARK: Тёмная
+NAV:
+  AUTH: Tugtainer. Авторизация.
+  HOSTS: Tugtainer. Хосты.
+  CONTAINERS: Tugtainer. Контейнеры.
+  IMAGES: Tugtainer. Образы.
+  SETTINGS: Tugtainer. Настройки.
+BREADCRUMBS:
+  HOSTS: Хосты
+  DASHBOARD: Дашборд
+  CONTAINERS: Контейнеры
+  IMAGES: Образы
+  SETTINGS: Настройки
+INSPECT:
+  LABEL: Inspect
+  JSON: JSON
+  TREE: Дерево
+MENU:
+  HOSTS: Хосты
+  SETTINGS: Настройки
+  GITHUB: GitHub
+  SIGNOUT: Выйти
+UPDATE_DIALOGUE:
+  UPDATE: Доступно обновление
+  UPDATE_NOTES: |-
+    Из-за ограничений контейнеров приложение не может обновить само себя.
+    Обновите вручную или, например, через Portainer.
+    Подробные инструкции доступны на GitHub.
+  DEPLOY_GUIDELINE: Руководство по развёртыванию
+  RELEASE_NOTES: Список изменений
+AUTH:
+  PASSWORD: Пароль
+  CONFIRM_PASSWORD: Подтвердите пароль
+  SIGNIN: Войти
+  PASSWORD_PROMPT: Придумайте пароль
+  PASSWORD_STRENGTH:
+    WEAK: Слишком простой
+    MEDIUM: Средняя сложность
+    STRONG: Сложный пароль
+  PASSWORD_HINTS:
+    - Хотя бы одна строчная буква
+    - Хотя бы одна заглавная буква
+    - Хотя бы одна цифра
+  SIGNIN_WITH_OIDC: Войти через OIDC
+ACTIONS:
+  RESULT: Результат
+  CHECK_ALL: Проверить все
+  UPDATE_ALL: Обновить все
+  ACTION_COMPLETED: Действие выполнено
+  PRUNE: Очистить
+  PRUNE_CONFIRM: Очистить образы?
+  PRUNE_ALL: Очистить все
+  PRUNE_ALL_HINT: Этот переключатель соответствует флагу --all команды 'docker image prune'.
+  PRUNE_RESULT: Результат очистки
+HOSTS:
+  NO_HOSTS_FOUND: Хосты не найдены
+  TABLE:
+    SEARCH_PLACEHOLDER: ID, имя, url
+    ADD: Добавить
+    NAME: Имя
+    URL: Адрес агента
+    STATUS: Статус
+    STATUS_OK: Ок
+    STATUS_ERROR: Ошибка
+    AVAILABLE: Доступно
+    AVAILABLE_HINT: Количество доступных обновлений
+    ONLY_AVAILABLE: Только с обновлениями
+  DASHBOARD:
+    CONTAINERS: Контейнеры
+    AVAILABLE: Доступно
+    RUNNING: Запущены
+    EXITED: Остановлены
+    HEALTHY: Healthy
+    UNHEALTHY: Unhealthy
+    IMAGES: Образы
+    UNUSED: Неиспользуемые
+    DANGLING: Dangling
+  CARD:
+    DELETE_CONFIRM: Удалить этот хост?
+    HELP:
+      LABEL: Справка
+      TEXT: |-
+        Если вы не смонтировали docker socket напрямую в контейнер, требуется
+        переменная окружения DOCKER_HOST — её можно задать в docker-compose или
+        команде docker.
+        Секрет агента (и переменная AGENT_SECRET) обязателен, если только вы
+        не установили ALLOW_UNAUTHENTICATED_AGENT=true в целях разработки.
+        Для основного экземпляра Tugtainer адрес агента — http://127.0.0.1:8001.
+        Для удалённых хостов нужно развернуть Tugtainer Agent
+        (ghcr.io/quenary/tugtainer-agent) и указать его адрес и секрет
+        в соответствующих полях.
+      HELP_BTN: Руководство по развёртыванию
+    GENERAL:
+      LABEL: Общее
+      ID: ID
+      NAME: Имя
+      ENABLED: Включён
+      PRUNE: Очистка
+      PRUNE_HINT: Включить автоочистку образов после планового процесса.
+      PRUNE_ALL: Очистить все
+      PRUNE_ALL_HINT: Этот переключатель соответствует флагу --all команды 'docker image prune'.
+      URL: Адрес агента
+      URL_PLACEHOLDER: http://127.0.0.1:8001
+      SECRET: Секрет агента
+      CHANGE_SECRET: Изменить секрет
+      HAS_SECRET: Секрет задан
+      SSL: SSL
+      SSL_HINT: Использовать проверку SSL для запросов backend → agent.
+      TIMEOUT: Таймаут агента
+      TIMEOUT_HINT:
+        Таймаут в секундах для обычно быстрых запросов к агенту.
+        Не влияет на потенциально долгие запросы, например создание контейнера
+        или pull образа.
+      CONTAINER_HC_TIMEOUT: Таймаут healthcheck контейнера
+      CONTAINER_HC_TIMEOUT_HINT:
+        Таймаут в секундах ожидания healthcheck во время обновления
+        перед началом отката.
+CONTAINERS:
+  SEARCH_PLACEHOLDER: Имя или ID
+  ONLY_AVAILABLE: Только с обновлениями
+  NAME: Имя
+  CONTAINER_ID: ID
+  IMAGE: Образ
+  UPDATE_AVAILABLE: Доступно обновление
+  STATUS: Статус
+  PORTS: Порты
+  HEALTH: Health
+  CHECK_ENABLED: Автопроверка
+  CHECK_HINT: |-
+    Проверять автоматически.
+    Настройка влияет только на плановую задачу.
+  UPDATE_ENABLED: Автообновление
+  UPDATE_HINT: |-
+    Обновлять автоматически.
+    Настройка влияет только на плановую задачу.
+  CHECKED_AT: Последняя проверка
+  UPDATED_AT: Последнее обновление
+  UPDATE: Обновить
+  UPDATE_DISABLED_HINTS:
+    PROTECTED: Защищённый контейнер нельзя обновить из приложения.
+    NOT_RUNNING: Контейнер должен быть в состоянии running.
+  CHECK: Проверить
+  MAIN_BTN_HINT:
+    Если контейнер входит в compose-проект, в процесс будут вовлечены
+    все контейнеры проекта.
+  PROTECTED: Защищён
+  PROTECTED_CONTAINER_HINT:
+    Контейнер помечен меткой dev.quenary.tugtainer.protected
+    и не может быть обновлён из приложения.
+  GENERAL:
+    LABEL: Общее
+  LOGS:
+    LABEL: Логи
+    SINCE: С
+    UNTIL: По
+    TAIL: Хвост
+    DETAILS: Показать детали
+    TIMESTAMPS: Показать метки времени
+  COMMANDS:
+    START: Start
+    STOP: Stop
+    RESTART: Restart
+    KILL: Kill
+    PAUSE: Pause
+    UNPAUSE: Unpause
+  HOOKS:
+    LABEL: Хуки
+    PRE_UPDATE: Pre-update
+    POST_UPDATE: Post-update
+    PRE_STOP: Pre-stop
+    PRE_ROLLBACK: Pre-rollback
+    POST_ROLLBACK: Post-rollback
+    SAVE: Сохранить
+    PLACEHOLDER: По одной shell-команде на строку
+IMAGES:
+  SEARCH_PLACEHOLDER: ID, репозиторий, теги
+  REPOSITORY: Репозиторий
+  ID: ID
+  DANGLING: Dangling
+  UNUSED: Неиспользуемые
+  TAGS: Теги
+  SIZE: Размер
+  SIZE_UNIT: МБ
+  CREATED: Создан
+SETTINGS:
+  VALUE: Значение
+  SECTIONS:
+    CHANGE_PASSWORD: Сменить пароль
+    APP_SETTINGS: Настройки приложения
+  BY_KEY:
+    CHECK_CRONTAB_EXPR:
+      LABEL: Crontab-выражение проверки
+      HINT: |-
+        Crontab-выражение для периодической задачи, например
+        0 * * * * — каждый час.
+
+        Нажмите для подробностей.
+      LINK: https://crontab.guru/
+    UPDATE_CRONTAB_EXPR:
+      LABEL: Crontab-выражение обновления
+      HINT: |-
+        Crontab-выражение для периодической задачи, например
+        0 * * * * — каждый час.
+
+        Нажмите для подробностей.
+      LINK: https://crontab.guru/
+    NOTIFICATION_URLS:
+      LABEL: URL уведомлений
+      HINT: |-
+        URL для уведомлений через Apprise, например tgram://<token>/<chat_id>
+        Можно указать несколько, каждый с новой строки.
+
+        Нажмите для подробностей.
+      LINK: https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications
+    TIMEZONE:
+      LABEL: Часовой пояс
+      HINT: Часовой пояс в формате IANA, например Europe/Moscow
+    REGISTRY_REQ_DELAY:
+      LABEL: Задержка запросов к registry, сек
+      HINT: Задержка между запросами к registry (manifest, pull и т.д.), чтобы избежать rate limit.
+    PULL_BEFORE_CHECK:
+      LABEL: Pull перед проверкой
+      HINT: Полезно, если вы используете registry-прокси, который обновляет манифесты только при pull.
+    UPDATE_ONLY_RUNNING:
+      LABEL: Обновлять только запущенные контейнеры
+      HINT: 'Будьте осторожны: при обновлении незапущенных контейнеров часть конфигурации может быть потеряна.'
+    NOTIFICATION_TITLE_TEMPLATE:
+      LABEL: Шаблон заголовка уведомления
+      HINT: |-
+        Jinja2-шаблон заголовка уведомления.
+
+        Нажмите для подробностей.
+      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+    NOTIFICATION_BODY_TEMPLATE:
+      LABEL: Шаблон текста уведомления
+      HINT: |-
+        Jinja2-шаблон текста уведомления.
+
+        Нажмите для подробностей.
+      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+    INSECURE_REGISTRIES:
+      LABEL: Небезопасные registries
+      HINT: |-
+        По одному registry на строку, например
+
+        my.registry.local
+        10.0.0.25:5000
+
+        Настройка влияет только на HEAD-запрос (проверка обновлений).
+        Для pull нужно изменить /etc/docker/daemon.json на хосте.
+        Полезно при использовании кастомного registry.
+    SEND_TEST_NOTIFICATION: Отправить тестовое уведомление
