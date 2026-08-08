@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.32.1 (2026-08-08)
+
+### Bug Fixes
+
+- **backend**: Preserve primary network and endpoint links on recreate
+  ([`232c9c6`](https://github.com/Quenary/tugtainer/commit/232c9c6fa0f99129be224eb322c18f6ccc2990cd))
+
+
 ## v1.32.0 (2026-08-06)
 
 ### Bug Fixes
