@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.32.2 (2026-08-08)
+
+### Bug Fixes
+
+- **backend**: Normalization of --uts and --userns (podman/docker cli compatibility)
+  ([`19cfd42`](https://github.com/Quenary/tugtainer/commit/19cfd42b8d22a2fcebe53479ac05cbe90a149097))
+
+- **backend**: Normalize Docker Hub aliases for remote digest checks
+  ([`ca11328`](https://github.com/Quenary/tugtainer/commit/ca1132859085557cf932776995ae7bd89a11f6c4))
+
+
 ## v1.32.1 (2026-08-08)
 
 ### Bug Fixes
