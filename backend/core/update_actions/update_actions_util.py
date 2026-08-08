@@ -16,6 +16,8 @@ from backend.modules.containers.containers_model import (
 from backend.util.now import now
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 
+logger = logging.getLogger("update_actions_util")
+
 
 async def update_containers_data_after_execution(
     result: UpdatePlanResult | None,
@@ -29,9 +31,7 @@ async def update_containers_data_after_execution(
     _now = now()
 
     async with async_session_maker() as session:
-        container_names = [
-            item.container.name for item in valid_items
-        ]
+        container_names = [item.container.name for item in valid_items]
         containers = await session.scalars(
             select(ContainersModel).where(
                 ContainersModel.host_id == result.host_id,
@@ -42,9 +42,7 @@ async def update_containers_data_after_execution(
         containers_map = {c.name: c for c in containers}
 
         for item in valid_items:
-            if container := containers_map.get(
-                str(item.container.name), None
-            ):
+            if container := containers_map.get(str(item.container.name), None):
                 if item.result == "updated":
                     container.update_available = False
                     container.updated_at = _now
@@ -57,7 +55,7 @@ async def disconnect_all_networks(
     client: AgentClient,
     container: ContainerInspectResult,
     force: bool,
-):
+) -> None:
     """
     Explicitly disconnects a container from all its networks.
     Prevents 'endpoint already exists' errors during recreation.
@@ -69,11 +67,10 @@ async def disconnect_all_networks(
         or not container.network_settings.networks
     ):
         return
-    for network in container.network_settings.networks.keys():
+
+    for network in container.network_settings.networks:
         try:
-            logging.info(
-                f"Disconnecting {container.name} from network {network}"
-            )
+            logger.info(f"Disconnecting {container.name} from network {network}")
             await client.network.disconnect(
                 NetworkDisconnectBodySchema(
                     network=network,
@@ -81,18 +78,16 @@ async def disconnect_all_networks(
                     force=force,
                 )
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(
+                f"Failed to disconnect {container.name} from network {network}: {e}"
+            )
 
 
-def get_dependencies(
-    container: ContainerInspectResult, label: str
-) -> set[str]:
+def get_dependencies(container: ContainerInspectResult, label: str) -> set[str]:
     """Get list of dependencies from label"""
     labels: dict[str, str] = (
-        container.config.labels
-        if container.config and container.config.labels
-        else {}
+        container.config.labels if container.config and container.config.labels else {}
     )
 
     # E.g. "service1:condition:value,service2:condition:value"

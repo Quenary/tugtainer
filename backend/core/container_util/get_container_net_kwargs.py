@@ -53,22 +53,37 @@ def get_container_net_kwargs(
 
     if NETWORK_SETTINGS.networks:
         NETWORKS_KEYS = list(NETWORK_SETTINGS.networks.keys())
-        MAIN_NETWORK = NETWORK_SETTINGS.networks[NETWORKS_KEYS[0]]
-        NETWORKS = [NETWORKS_KEYS[0]]
+        # Docker lists attachments sorted by name, which is not necessarily
+        # the network the container was created with. NetworkMode holds the
+        # actual primary network, so prefer it while it is still attached.
+        MAIN_KEY = (
+            NETWORK_MODE
+            if NETWORK_MODE in NETWORK_SETTINGS.networks
+            else NETWORKS_KEYS[0]
+        )
+        MAIN_NETWORK = NETWORK_SETTINGS.networks[MAIN_KEY]
+        NETWORKS = [MAIN_KEY]
         NETWORK_ALIASES = MAIN_NETWORK.aliases or []
+        # On user-defined networks links live on the endpoint;
+        # HostConfig.links is only populated for the legacy bridge.
+        LINK = MAIN_NETWORK.links or LINK
         if MAIN_NETWORK.ipam_config:
             IP = MAIN_NETWORK.ipam_config.ipv4_address
             IP6 = MAIN_NETWORK.ipam_config.ipv6_address
             # preserve mac address if static ips used
             # https://github.com/Quenary/tugtainer/issues/126
             MAC_ADDRESS = MAIN_NETWORK.mac_address or CONFIG.mac_address
-        for net in NETWORKS_KEYS[1:]:
+        for net in NETWORKS_KEYS:
+            if net == MAIN_KEY:
+                continue
             # Additional networks returned as commands
             # as docker cli doesn't support multiple aliases for multiple networks inline (in create/run)
             _cmd = ["network", "connect"]
             aliases = NETWORK_SETTINGS.networks[net].aliases or []
             for a in aliases:
                 _cmd += ["--alias", a]
+            for link in NETWORK_SETTINGS.networks[net].links or []:
+                _cmd += ["--link", link]
             ipam = NETWORK_SETTINGS.networks[net].ipam_config
             if ipam:
                 if ipam.ipv4_address:

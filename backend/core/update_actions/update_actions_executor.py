@@ -171,9 +171,7 @@ async def execute_update_plan(
             hooks = hooks_map.get(name)
             hook_errors = await run_hooks(client, name, hooks, EHookName.PRE_STOP)
             if not hook_errors and name in plan.to_update:
-                hook_errors = await run_hooks(
-                    client, name, hooks, EHookName.PRE_UPDATE
-                )
+                hook_errors = await run_hooks(client, name, hooks, EHookName.PRE_UPDATE)
             if hook_errors:
                 item.errors.extend(hook_errors)
                 logger.warning(
@@ -258,6 +256,11 @@ async def execute_update_plan(
                 config = cast(CreateContainerRequestBodySchema, item.config)
 
                 try:
+                    # Refresh the attachment list when possible, but always
+                    # attempt the disconnect: a force disconnect also clears
+                    # endpoints left behind by an already gone container.
+                    if await client.container.exists(item.name):
+                        item.container = await client.container.inspect(item.name)
                     await disconnect_all_networks(client, item.container, True)
 
                     logger.info("Removing container...")
@@ -293,17 +296,24 @@ async def execute_update_plan(
                         logger.info("Container is healthy!")
                         item.result = "updated"
                         hook_errors = await run_hooks(
-                            client, item.name, hooks_map.get(item.name), EHookName.POST_UPDATE
+                            client,
+                            item.name,
+                            hooks_map.get(item.name),
+                            EHookName.POST_UPDATE,
                         )
                         item.errors.extend(hook_errors)
                         continue
 
                     logger.warning("Container is unhealthy, rolling back...")
                     hook_errors = await run_hooks(
-                        client, item.name, hooks_map.get(item.name), EHookName.PRE_ROLLBACK
+                        client,
+                        item.name,
+                        hooks_map.get(item.name),
+                        EHookName.PRE_ROLLBACK,
                     )
                     item.errors.extend(hook_errors)
                     await client.container.stop(item.name)
+                    item.container = await client.container.inspect(item.name)
                     await disconnect_all_networks(client, item.container, True)
                     await client.container.remove(item.name)
                 except Exception as e:
@@ -315,6 +325,7 @@ async def execute_update_plan(
                     try:
                         if await client.container.exists(item.name):
                             existing = await client.container.inspect(item.name)
+                            item.container = existing
                             if is_running_container(existing):
                                 hook_errors = await run_hooks(
                                     client,
@@ -325,7 +336,9 @@ async def execute_update_plan(
                                 item.errors.extend(hook_errors)
                             logger.warning("Removing failed container")
                             await client.container.stop(item.name)
-                            await disconnect_all_networks(client, item.container, True)
+                            existing = await client.container.inspect(item.name)
+                            item.container = existing
+                            await disconnect_all_networks(client, existing, True)
                             await client.container.remove(name_or_id=item.name)
                     except Exception as e:
                         logger.exception("Cleanup error")
@@ -355,7 +368,10 @@ async def execute_update_plan(
                     item.container = await client.container.inspect(item.name)
                     item.result = "rolled_back"
                     hook_errors = await run_hooks(
-                        client, item.name, hooks_map.get(item.name), EHookName.POST_ROLLBACK
+                        client,
+                        item.name,
+                        hooks_map.get(item.name),
+                        EHookName.POST_ROLLBACK,
                     )
                     item.errors.extend(hook_errors)
 
