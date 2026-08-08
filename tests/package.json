@@ -1,0 +1,52 @@
+{
+  "name": "tugtainer-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "System, integration, and e2e tests for Tugtainer (Playwright)",
+  "scripts": {
+    "test": "playwright test",
+    "test:integration": "playwright test --project=integration",
+    "test:e2e": "playwright test --project=e2e",
+    "app:up": "docker compose -p tugtainer-tests-app -f docker-compose.app.yml up -d --build --wait",
+    "app:down": "docker compose -p tugtainer-tests-app -f docker-compose.app.yml down -v",
+    "test:docker": "docker compose -p tugtainer-tests-runner -f docker-compose.test.yml run --rm playwright",
+    "test:all": "trap 'npm run app:down' EXIT; npm run app:up && npm run test:docker",
+    "lint": "eslint .",
+    "prettier-check": "prettier --check ."
+  },
+  "prettier": {
+    "htmlWhitespaceSensitivity": "strict",
+    "bracketSameLine": true,
+    "singleAttributePerLine": true,
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "embeddedLanguageFormatting": "off",
+    "semi": true,
+    "quoteProps": "preserve",
+    "trailingComma": "all",
+    "endOfLine": "auto"
+  },
+  "lint-staged": {
+    "*.{ts,js,json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,js}": [
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.62.1",
+    "@types/node": "^26.2.0",
+    "eslint": "^10.8.1",
+    "eslint-plugin-playwright": "^2.11.0",
+    "lint-staged": "^17.3.0",
+    "prettier": "^3.9.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "8.56.1"
+  },
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0"
+  }
+}

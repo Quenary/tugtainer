@@ -25,6 +25,7 @@ See [/backend/README.md](/backend/README.md) and [/frontend/README.md](/frontend
 - If you modify existing functionality, update or add/extend the related tests
 - Ensure all tests pass before submitting changes
 - Ensure lint and typechecks pass before submitting changes (see backend/frontend readme for details)
+- Application tests (system / integration / e2e) live in [/tests](/tests); see [/tests/README.md](/tests/README.md)
 
 ## Pull Requests
 

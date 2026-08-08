@@ -7,6 +7,12 @@ repos:
         pass_filenames: false
         entry: bash -c 'cd frontend && npx lint-staged'
 
+      - id: tests-lint-staged
+        name: tests lint-staged
+        language: system
+        pass_filenames: false
+        entry: bash -c 'cd tests && npx lint-staged'
+
       - id: ruff
         name: ruff
         language: system

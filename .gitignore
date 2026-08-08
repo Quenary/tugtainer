@@ -1,6 +1,15 @@
 **/password_hash
 **/tugtainer.db
 
+# Application tests (Playwright)
+tests/test-results/
+tests/playwright-report/
+tests/blob-report/
+tests/playwright/.cache/
+tests/playwright.config.js
+tests/integration/**/*.js
+tests/e2e/**/*.js
+
 # Logs
 logs
 *.log
