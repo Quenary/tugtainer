@@ -28,6 +28,7 @@ from .map_log_config_to_kwargs import map_log_config_to_kwargs
 from .map_mounts_to_arg import map_mounts_to_arg
 from .map_tmpfs_dict_to_list import map_tmpfs_dict_to_list
 from .map_ulimits_to_arg import map_ulimits_to_arg
+from .normalize_ns_mode import normalize_ns_mode
 from .normalize_path import normalize_path
 
 
@@ -170,8 +171,8 @@ def get_container_config(
         "tmpfs": map_tmpfs_dict_to_list(host_config.tmpfs),
         "ulimit": map_ulimits_to_arg(host_config.ulimits),
         "user": config.user,
-        "userns": host_config.userns_mode,
-        "uts": host_config.uts_mode,
+        "userns": normalize_ns_mode(host_config.userns_mode),
+        "uts": normalize_ns_mode(host_config.uts_mode),
         "volume_driver": host_config.volume_driver,
         "volumes_from": host_config.volumes_from,
         "workdir": workdir,

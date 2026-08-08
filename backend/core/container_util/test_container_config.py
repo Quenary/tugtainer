@@ -128,3 +128,32 @@ def test_workdir_logic(c_workdir, i_workdir, expected_workdir):
     res, _ = get_container_config(container, image=image, docker_version=None)
 
     assert res.workdir == expected_workdir
+
+
+# Podman inspect returns "private" for default UTS/userns modes;
+# Docker CLI only accepts "" or "host" (#220).
+@pytest.mark.parametrize(
+    "uts_mode, userns_mode, expected_uts, expected_userns",
+    [
+        ("private", "private", None, None),
+        ("host", "host", "host", "host"),
+        ("", "", None, None),
+        (None, None, None, None),
+        ("private", "host", None, "host"),
+        ("host", "private", "host", None),
+    ],
+)
+def test_uts_userns_ns_mode_normalization(
+    uts_mode, userns_mode, expected_uts, expected_userns
+):
+    container = ContainerInspectResult(
+        config=ContainerConfig(image="test_image"),
+        host_config=ContainerHostConfig(
+            uts_mode=uts_mode, userns_mode=userns_mode
+        ),
+    )
+
+    res, _ = get_container_config(container, image=None, docker_version=None)
+
+    assert res.uts == expected_uts
+    assert res.userns == expected_userns
