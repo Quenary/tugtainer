@@ -149,18 +149,33 @@ async def check_one_container(
             result.remote_digests = remote_digests
             logger.info(f"Remote digests is {remote_digests}")
 
-            result_lit: ContainerCheckResultType = "not_available"
-            # check if any remote digest missing in local_digests
-            if any(all(rd not in ld for ld in local_digests) for rd in remote_digests):
+            result_lit: ContainerCheckResultType
+            update_available: bool
+            if not remote_digests:
+                # Failed lookup must not be reported as "up to date"
+                logger.warning(
+                    "No remote digests obtained; skipping availability conclusion"
+                )
+                result_lit = None
+                update_available = bool(c_db.update_available) if c_db else False
+            elif any(
+                all(rd not in ld for ld in local_digests)
+                for rd in remote_digests
+            ):
+                # Remote digest missing from local digests → update available
                 if c_db and c_db.remote_digests == remote_digests:
                     result_lit = "available(notified)"
                 else:
                     result_lit = "available"
+                update_available = True
+            else:
+                result_lit = "not_available"
+                update_available = False
             logger.info(f"Check result is {result_lit}")
             result.result = result_lit
 
             result_db: Final[ContainerInsertOrUpdateData] = {
-                "update_available": result_lit != "not_available",
+                "update_available": update_available,
                 "checked_at": now(),
                 "local_digests": local_digests,
                 "remote_digests": remote_digests,

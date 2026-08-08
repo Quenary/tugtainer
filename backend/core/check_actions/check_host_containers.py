@@ -70,9 +70,10 @@ async def check_host_containers(
                 item.name: item for item in containers_db
             }
 
-        containers = filter_containers_by_check_enabled(
-            containers, containers_db_map, manual
-        )
+        if not manual:
+            containers = filter_containers_by_check_enabled(
+                containers, containers_db_map
+            )
         containers = sort_containers_by_checked_at(
             containers, containers_db_map
         )

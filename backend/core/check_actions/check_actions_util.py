@@ -19,10 +19,7 @@ from backend.modules.settings.settings_storage import SettingsStorage
 def filter_containers_by_check_enabled(
     containers: list[ContainerInspectResult],
     containers_db_map: dict[str, ContainersModel],
-    manual: bool = False,
 ) -> list[ContainerInspectResult]:
-    if manual:
-        return containers
     _containers: list[ContainerInspectResult] = []
     for c in containers:
         c_db = containers_db_map.get(cast(str, c.name))
@@ -210,6 +207,11 @@ def parse_image_spec(spec: str) -> tuple[str, str, str]:
     else:
         registry = "registry-1.docker.io"
         repo = spec
+
+    # Docker Hub website hosts are not the Registry API endpoint.
+    # https://docs.docker.com/reference/api/registry/latest/
+    if registry in {"docker.io", "index.docker.io"}:
+        registry = "registry-1.docker.io"
 
     if registry == "registry-1.docker.io" and "/" not in repo:
         repo = f"library/{repo}"
