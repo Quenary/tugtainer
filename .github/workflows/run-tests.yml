@@ -5,98 +5,121 @@ on:
   pull_request:
 
 jobs:
-  frontend-tests:
-    name: Run Frontend Tests
+  frontend:
+    name: Frontend
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: ./frontend
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - uses: ./.github/actions/setup-frontend-deps
+      - name: Setup Node
+        uses: actions/setup-node@v6
         with:
-          path: frontend
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        id: install
+        run: npm ci
 
       - name: Run tests
+        if: always() && steps.install.outcome == 'success'
         run: npm run test:ci
 
-  frontend-lint:
-    name: Run Frontend Lint
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./frontend
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - uses: ./.github/actions/setup-frontend-deps
-        with:
-          path: frontend
-
       - name: Run lint
+        if: always() && steps.install.outcome == 'success'
         run: npm run lint
 
-  frontend-prettier:
-    name: Run Frontend Prettier Check
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./frontend
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - uses: ./.github/actions/setup-frontend-deps
-        with:
-          path: frontend
-
-      - name: Run Prettier Check
+      - name: Run Prettier check
+        if: always() && steps.install.outcome == 'success'
         run: npm run prettier-check
 
-  backend-tests:
-    name: Run Backend Tests
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - uses: ./.github/actions/setup-python-env
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
+          activate-environment: true
+
+      - name: Cache venv + uv cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            .venv
+            ~/.cache/uv
+          key: venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.python.outputs.python-version }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.python.outputs.python-version }}-
+            venv-${{ runner.os }}-${{ runner.arch }}-
+            venv-${{ runner.os }}-
+
+      - name: Install dependencies
+        id: install
+        run: uv sync --locked
 
       - name: Run pytest
+        if: always() && steps.install.outcome == 'success'
         run: python -m pytest
 
-  backend-lint:
-    name: Run Backend Lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - uses: ./.github/actions/setup-python-env
-
       - name: Run Ruff
+        if: always() && steps.install.outcome == 'success'
         run: ruff check agent backend shared
 
-  backend-typechecks:
-    name: Run Backend Typechecks
-    runs-on: ubuntu-latest
+      - name: Run Mypy
+        if: always() && steps.install.outcome == 'success'
+        run: mypy agent backend shared
 
+  # GitHub-hosted ubuntu-latest already provides Docker Engine + Compose and
+  # exposes /var/run/docker.sock on the VM. No DinD / privileged job container
+  # is required — compose starts sibling containers and mounts the runner
+  # socket into socket-proxy (same as local). Avoid ubuntu-slim: it is
+  # unprivileged and does not support Docker-in-Docker / docker.sock use cases.
+  app-tests:
+    name: Application tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ./tests
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - uses: ./.github/actions/setup-python-env
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
 
-      - name: Run Mypy
-        run: mypy agent backend shared
+      - name: Install dependencies
+        id: install
+        run: npm ci
+
+      - name: Run application tests
+        if: always() && steps.install.outcome == 'success'
+        run: npm run test:all
+
+      - name: Run lint
+        if: always() && steps.install.outcome == 'success'
+        run: npm run lint
+
+      - name: Run Prettier check
+        if: always() && steps.install.outcome == 'success'
+        run: npm run prettier-check
