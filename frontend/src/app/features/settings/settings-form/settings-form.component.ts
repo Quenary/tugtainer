@@ -19,10 +19,10 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ESettingKey,
-  ESettingSortIndex,
   ESettingValueType,
   ISetting,
   ITestNotificationRequestBody,
+  settingKeysOrder,
 } from '../settings.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
@@ -122,7 +122,8 @@ export class SettingsFormComponent {
     effect(() => {
       let list = this.settingsStore.entities();
       list = [...list].sort(
-        (a, b) => ESettingSortIndex[a.key] - ESettingSortIndex[b.key],
+        (a, b) =>
+          settingKeysOrder.indexOf(a.key) - settingKeysOrder.indexOf(b.key),
       );
       this.formArray.clear();
       this.formArray.reset();
@@ -131,34 +132,6 @@ export class SettingsFormComponent {
         this.formArray.push(form);
       }
     });
-  }
-
-  private getFormGroup(data: ISetting): FormGroup<TInterfaceToForm<ISetting>> {
-    const form = new FormGroup<TInterfaceToForm<ISetting>>({
-      key: new FormControl<ESettingKey>(data.key),
-      value: new FormControl<string | number | boolean>(
-        data.value,
-        this.getValueValidators(data.key),
-      ),
-      value_type: new FormControl<ESettingValueType>(data.value_type),
-      modified_at: new FormControl<string>({
-        value: data.modified_at,
-        disabled: true,
-      }),
-    });
-    return form;
-  }
-
-  private getValueValidators(key: ESettingKey): ValidatorFn[] {
-    switch (key) {
-      case ESettingKey.CHECK_CRONTAB_EXPR:
-      case ESettingKey.UPDATE_CRONTAB_EXPR:
-        return [Validators.required, this.cronValidator];
-      case ESettingKey.TIMEZONE:
-        return [Validators.required, this.timezoneValidator];
-      default:
-        return [];
-    }
   }
 
   protected onHintClick(link: string): void {
@@ -197,5 +170,33 @@ export class SettingsFormComponent {
         value: f.value.value,
       }));
     this.settingsStore.change({ entities });
+  }
+
+  private getFormGroup(data: ISetting): FormGroup<TInterfaceToForm<ISetting>> {
+    const form = new FormGroup<TInterfaceToForm<ISetting>>({
+      key: new FormControl<ESettingKey>(data.key),
+      value: new FormControl<string | number | boolean>(
+        data.value,
+        this.getValueValidators(data.key),
+      ),
+      value_type: new FormControl<ESettingValueType>(data.value_type),
+      modified_at: new FormControl<string>({
+        value: data.modified_at,
+        disabled: true,
+      }),
+    });
+    return form;
+  }
+
+  private getValueValidators(key: ESettingKey): ValidatorFn[] {
+    switch (key) {
+      case ESettingKey.CHECK_CRONTAB_EXPR:
+      case ESettingKey.UPDATE_CRONTAB_EXPR:
+        return [Validators.required, this.cronValidator];
+      case ESettingKey.TIMEZONE:
+        return [Validators.required, this.timezoneValidator];
+      default:
+        return [];
+    }
   }
 }
