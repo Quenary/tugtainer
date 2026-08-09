@@ -1,0 +1,59 @@
+networks:
+  tugtainer-tests:
+    name: tugtainer-tests
+    driver: bridge
+
+services:
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: tests-socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: UTC
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer-tests
+
+  app:
+    container_name: tests-tugtainer
+    build:
+      context: ..
+      dockerfile: Dockerfile.app
+      args:
+        VERSION: tests
+    environment:
+      ALLOW_UNAUTHENTICATED_AGENT: 'true'
+      ENABLE_PUBLIC_API: 'true'
+      LOG_LEVEL: info
+      DOCKER_HOST: tcp://socket-proxy:2375
+    volumes:
+      - tugtainer_data_tests:/tugtainer
+    networks:
+      tugtainer-tests:
+        aliases:
+          - app.tugtainer.test
+    ports:
+      - '9412:80'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/public/health']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    depends_on:
+      - socket-proxy
+
+volumes:
+  tugtainer_data_tests:
