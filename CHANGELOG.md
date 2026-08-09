@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.33.0 (2026-08-09)
+
+### Features
+
+- Implement update delay (global, per container)
+  ([`60db3f9`](https://github.com/Quenary/tugtainer/commit/60db3f901d69f3c814a2cf694e5af79cbbf62e5e))
+
+- **frontend**: Status filter to containers table
+  ([`e6db6c8`](https://github.com/Quenary/tugtainer/commit/e6db6c82429fd4a7c15a2fcd42a8c9b8e098ee3a))
+
+
 ## v1.32.3 (2026-08-09)
 
 ### Bug Fixes
