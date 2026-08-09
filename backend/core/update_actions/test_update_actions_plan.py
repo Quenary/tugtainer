@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import timedelta
 from typing import Any, cast
 from unittest.mock import AsyncMock
 
@@ -7,6 +8,8 @@ import pytest
 from backend.core.update_actions.update_actions_plan import (
     build_update_plan,
 )
+from backend.modules.settings.settings_enum import ESettingKey
+from backend.util.now import now
 
 base_module = "backend.core.update_actions.update_actions_plan"
 
@@ -18,10 +21,64 @@ class DummyContainer:
 
 
 class DummyDB:
-    def __init__(self, name, update_available=True, update_enabled=True):
+    def __init__(
+        self,
+        name,
+        update_available=True,
+        update_enabled=True,
+        delay_update_for=None,
+        remote_digests_changed_at=None,
+    ):
         self.name = name
         self.update_available = update_available
         self.update_enabled = update_enabled
+        self.delay_update_for = delay_update_for
+        self.remote_digests_changed_at = remote_digests_changed_at
+
+
+def _patch_common(mocker, db_list, deps, *, settings=None):
+    mock_result = mocker.Mock()
+    mock_result.scalars.return_value.all.return_value = db_list
+
+    async_session_mock = AsyncMock()
+    async_session_mock.execute.return_value = mock_result
+
+    async def session_ctx(*args, **kwargs):
+        return async_session_mock
+
+    async_session_ctx_mock = AsyncMock()
+    async_session_ctx_mock.__aenter__ = session_ctx
+
+    mocker.patch(
+        f"{base_module}.async_session_maker",
+        return_value=async_session_ctx_mock,
+    )
+
+    settings_map = {
+        ESettingKey.UPDATE_ONLY_RUNNING: False,
+        ESettingKey.DELAY_UPDATE_FOR: 0,
+        **(settings or {}),
+    }
+
+    def get_setting(key):
+        return settings_map[key]
+
+    mocker.patch(
+        f"{base_module}.SettingsStorage.get",
+        side_effect=get_setting,
+    )
+    mocker.patch(f"{base_module}.is_protected_container", return_value=False)
+    mocker.patch(f"{base_module}.is_running_container", return_value=True)
+    mocker.patch(f"{base_module}.get_service_name", return_value=None)
+    mocker.patch(f"{base_module}.get_compose_id", return_value=None)
+
+    def get_deps(container, _label):
+        return deps.get(container.name, set())
+
+    mocker.patch(
+        f"{base_module}.get_dependencies",
+        side_effect=get_deps,
+    )
 
 
 @pytest.mark.asyncio
@@ -154,73 +211,13 @@ async def test_build_update_plan(
     manual_for,
     expected,
 ):
-    # --- Containers
     container_objs = [DummyContainer(name=c) for c in containers]
+    _patch_common(mocker, list(db_items.values()), deps)
 
-    # --- DB mock
-    db_list = list(db_items.values())
-
-    mock_result = mocker.Mock()
-    mock_result.scalars.return_value.all.return_value = db_list
-
-    async_session_mock = AsyncMock()
-    async_session_mock.execute.return_value = mock_result
-
-    async def session_ctx(*args, **kwargs):
-        return async_session_mock
-
-    async_session_ctx_mock = AsyncMock()
-    async_session_ctx_mock.__aenter__ = session_ctx
-
-    # мок async_session_maker()
-    mocker.patch(
-        f"{base_module}.async_session_maker",
-        return_value=async_session_ctx_mock,
-    )
-
-    # --- Settings
-    mocker.patch(
-        f"{base_module}.SettingsStorage.get",
-        return_value=False,  # UPDATE_ONLY_RUNNING = False
-    )
-
-    # --- Helpers
-    mocker.patch(
-        f"{base_module}.is_protected_container",
-        return_value=False,
-    )
-
-    mocker.patch(
-        f"{base_module}.is_running_container",
-        return_value=True,
-    )
-
-    mocker.patch(
-        f"{base_module}.get_service_name",
-        return_value=None,
-    )
-
-    mocker.patch(
-        f"{base_module}.get_compose_id",
-        return_value=None,
-    )
-
-    def get_deps(container, _label):
-        return deps.get(container.name, set())
-
-    mocker.patch(
-        f"{base_module}.get_dependencies",
-        side_effect=get_deps,
-    )
-
-    # --- manual_for objects
     manual_objs = [DummyContainer(name=c) for c in manual_for]
-
-    # --- Host
     host = mocker.Mock()
     host.id = 1
 
-    # --- Run
     plan = await build_update_plan(
         host,
         cast(Any, container_objs),
@@ -233,8 +230,86 @@ async def test_build_update_plan(
             for dep in node_deps:
                 assert pos[dep] < pos[node], f"{dep} should be before {node}"
 
-    # --- Assert
     assert plan.to_update == expected["to_update"]
     assert plan.affected == expected["affected"]
     assert sorted(plan.order) == sorted(expected["order"])
     assert_topo_order(plan.order, deps)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "db_kwargs, settings, manual_for, expected_to_update",
+    [
+        # Delay not elapsed → skip scheduled
+        (
+            {
+                "delay_update_for": None,
+                "remote_digests_changed_at": now() - timedelta(seconds=10),
+            },
+            {ESettingKey.DELAY_UPDATE_FOR: 3600},
+            [],
+            set(),
+        ),
+        # Delay elapsed → include
+        (
+            {
+                "delay_update_for": None,
+                "remote_digests_changed_at": now() - timedelta(seconds=7200),
+            },
+            {ESettingKey.DELAY_UPDATE_FOR: 3600},
+            [],
+            {"api"},
+        ),
+        # Per-container override blocks while global would allow
+        (
+            {
+                "delay_update_for": 86400,
+                "remote_digests_changed_at": now() - timedelta(seconds=7200),
+            },
+            {ESettingKey.DELAY_UPDATE_FOR: 0},
+            [],
+            set(),
+        ),
+        # Null timestamp grandfathered → eligible
+        (
+            {
+                "delay_update_for": None,
+                "remote_digests_changed_at": None,
+            },
+            {ESettingKey.DELAY_UPDATE_FOR: 3600},
+            [],
+            {"api"},
+        ),
+        # Manual bypasses delay
+        (
+            {
+                "delay_update_for": None,
+                "remote_digests_changed_at": now() - timedelta(seconds=10),
+            },
+            {ESettingKey.DELAY_UPDATE_FOR: 3600},
+            ["api"],
+            {"api"},
+        ),
+    ],
+)
+async def test_build_update_plan_delay_update_for(
+    mocker,
+    db_kwargs,
+    settings,
+    manual_for,
+    expected_to_update,
+):
+    db_items = {
+        "api": DummyDB("api", True, True, **db_kwargs),
+    }
+    deps = {"api": set()}
+    _patch_common(mocker, list(db_items.values()), deps, settings=settings)
+
+    host = mocker.Mock()
+    host.id = 1
+    plan = await build_update_plan(
+        host,
+        cast(Any, [DummyContainer(name="api")]),
+        cast(Any, [DummyContainer(name=c) for c in manual_for]),
+    )
+    assert plan.to_update == expected_to_update

@@ -154,6 +154,12 @@ CONTAINERS:
     This setting only affects scheduled task.
   CHECKED_AT: Last check
   UPDATED_AT: Last update
+  REMOTE_DIGESTS_CHANGED_AT: Remote digests changed at
+  DELAY_UPDATE_FOR: Delay before update, in seconds
+  DELAY_UPDATE_FOR_HINT: |-
+    Override the global delay for this container (seconds).
+    Empty = use the global setting. Example: 86400 = 1 day.
+    Manual updates ignore the delay.
   UPDATE: Update
   UPDATE_DISABLED_HINTS:
     PROTECTED: The protected container cannot be updated from the app.
@@ -243,6 +249,18 @@ SETTINGS:
     UPDATE_ONLY_RUNNING:
       LABEL: Update only running containers
       HINT: Be careful, when updating non-running containers, some parts of the configuration may be lost.
+    DELAY_UPDATE_FOR:
+      LABEL: Delay before update, in seconds
+      HINT: |-
+        How long to wait after a new image is detected before applying
+        the scheduled update. Useful as a security buffer: if a bad or
+        compromised image is published, waiting gives time for the
+        publisher to yank it or ship a fix before you pull it.
+
+        0 = update on the next scheduled run (default, previous behavior).
+        Example: 86400 = 1 day, 172800 = 2 days.
+
+        Manual updates ignore the delay.
     NOTIFICATION_TITLE_TEMPLATE:
       LABEL: Notification title template
       HINT: |-

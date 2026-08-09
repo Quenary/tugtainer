@@ -181,6 +181,11 @@ async def check_one_container(
                 "remote_digests": remote_digests,
                 "image_id": str(image_id),
             }
+            # Record when remote digests last changed; never clear this field.
+            if result_lit is not None and (
+                not c_db or c_db.remote_digests != remote_digests
+            ):
+                result_db["remote_digests_changed_at"] = now()
             await insert_or_update_container(
                 session, host.id, str(container.name), result_db
             )

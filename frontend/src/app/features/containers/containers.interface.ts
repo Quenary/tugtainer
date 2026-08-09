@@ -28,6 +28,8 @@ export interface IContainerListItem {
   update_available: boolean;
   checked_at: string;
   updated_at: string;
+  remote_digests_changed_at: string | null;
+  delay_update_for: number | null;
   created_at: string;
   modified_at: string;
   exit_code: number;
@@ -84,6 +86,7 @@ export interface IContainerInfo {
 export interface IContainerPatchBody {
   check_enabled?: boolean;
   update_enabled?: boolean;
+  delay_update_for?: number | null;
   hooks?: IContainerHooks;
 }
 /**

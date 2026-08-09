@@ -31,6 +31,12 @@ class SettingsPatchRequestItem(SettingsBase):
             raise ValueError(
                 f"Invalid {ESettingKey.REGISTRY_REQ_DELAY}, expected positive integer."
             )
+        elif self.key == ESettingKey.DELAY_UPDATE_FOR:
+            if isinstance(self.value, int) and self.value >= 0:
+                return self
+            raise ValueError(
+                f"Invalid {ESettingKey.DELAY_UPDATE_FOR}, expected non-negative integer."
+            )
         elif self.key == ESettingKey.NOTIFICATION_URLS:
             validate_notification_urls(self.value)
             return self

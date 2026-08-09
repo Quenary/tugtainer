@@ -44,3 +44,14 @@
 **Manual** process updates all containers with an available update despite the auto-update toggle (or a single container if you've clicked one), including their affected dependents.
 
 Optional [hooks](../README.md#hooks) can run around stop, update, and rollback when enabled.
+
+## Update delay
+
+Optional delay between detecting a new image and applying a **scheduled** update (security buffer while a bad release can be yanked or fixed).
+
+- Global setting `DELAY_UPDATE_FOR` (seconds, default `0` = no delay);
+- Per-container `delay_update_for` overrides the global value when set; otherwise the global setting is used;
+- When remote digests change, `remote_digests_changed_at` is updated and kept as the last change time;
+- Scheduled update runs only if `now - remote_digests_changed_at >=` effective delay (or delay is `0` / timestamp is missing);
+- **Manual** updates ignore the delay;
+- Notifications on check are **not** delayed.
