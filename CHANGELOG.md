@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.32.3 (2026-08-09)
+
+### Bug Fixes
+
+- **backend**: Drop labels rejected by docker CLI (spaces, tabs in keys)
+  ([`c3a0359`](https://github.com/Quenary/tugtainer/commit/c3a0359b061526d1a29512fd6b76d2f120823acd))
+
+
 ## v1.32.2 (2026-08-08)
 
 ### Bug Fixes
