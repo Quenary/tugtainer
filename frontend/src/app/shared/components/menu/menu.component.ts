@@ -39,6 +39,9 @@ import { localeLabels, TAppLang } from 'src/app/core/services/locale.service';
   templateUrl: './menu.component.html',
   styleUrl: './menu.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.narrow]': 'narrow()',
+  },
 })
 export class MenuComponent {
   private readonly breakpointObserver = inject(BreakpointObserver);

@@ -1,5 +1,12 @@
 <p-toolbar>
   <ng-template #start>
+    <p-button
+      icon="pi pi-refresh"
+      [loading]="imagesStore.loading()"
+      [disabled]="imagesStore.loading()"
+      text
+      (onClick)="imagesStore.loadList()"></p-button>
+
     <p-iconfield iconPosition="left">
       <p-inputicon>
         <i class="pi pi-search"></i>
@@ -11,12 +18,6 @@
         type="text"
         (input)="dt2.filterGlobal($event.target.value, 'contains')"
         [placeholder]="'IMAGES.SEARCH_PLACEHOLDER' | translate" />
-      <p-button
-        icon="pi pi-refresh"
-        [loading]="imagesStore.loading()"
-        [disabled]="imagesStore.loading()"
-        text
-        (onClick)="imagesStore.loadList()"></p-button>
     </p-iconfield>
   </ng-template>
   <ng-template #end> </ng-template>

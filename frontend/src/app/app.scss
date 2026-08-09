@@ -53,4 +53,8 @@
       }
     }
   }
+
+  ::ng-deep .p-breadcrumb-list {
+    flex-wrap: wrap;
+  }
 }
