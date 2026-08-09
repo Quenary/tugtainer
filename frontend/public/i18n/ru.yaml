@@ -138,6 +138,8 @@ HOSTS:
 CONTAINERS:
   SEARCH_PLACEHOLDER: Имя или ID
   ONLY_AVAILABLE: Только с обновлениями
+  STATUS_FILTER: Любой статус
+  STATUS_FILTER_SELECTED: 'Статусов: {0}'
   NAME: Имя
   CONTAINER_ID: ID
   IMAGE: Образ

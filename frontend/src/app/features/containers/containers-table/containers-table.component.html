@@ -27,6 +27,18 @@
       [severity]="onlyAvailable() ? 'success' : 'secondary'"
       (onClick)="onlyAvailable.set(!onlyAvailable())">
     </p-button>
+
+    <p-multiselect
+      appendTo="body"
+      [options]="statusOptions"
+      [(ngModel)]="statuses"
+      [showHeader]="false"
+      [showClear]="true"
+      [showToggleAll]="false"
+      [maxSelectedLabels]="1"
+      [placeholder]="'CONTAINERS.STATUS_FILTER' | translate"
+      [selectedItemsLabel]="'CONTAINERS.STATUS_FILTER_SELECTED' | translate">
+    </p-multiselect>
   </ng-template>
 </p-toolbar>
 
