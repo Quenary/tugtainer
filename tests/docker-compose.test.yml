@@ -4,10 +4,13 @@ services:
     working_dir: /tests
     volumes:
       - .:/tests
+      # dockerode manages sibling containers on the host engine
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       # FQDN alias — Chromium refuses single-label hosts like "app"
       BASE_URL: http://app.tugtainer.test
       CI: 'true'
+      DOCKER_SOCKET: /var/run/docker.sock
     ipc: host
     networks:
       - tugtainer-tests

@@ -8,6 +8,8 @@ Layout:
 
 - [`integration/`](./integration) — API / service-level checks (Playwright `request`)
 - [`e2e/`](./e2e) — browser flows against the UI
+- [`fixtures/`](./fixtures) — shared Playwright fixtures
+- [`shared/`](./shared) — shared code used by fixtures/tests
 
 Tests run inside the official Playwright Docker image so the host does not need
 browsers or a display.
@@ -76,3 +78,6 @@ upgrading.
   `tugtainer-tests-runner`) and share the external network `tugtainer-tests`.
 - Inside Docker, tests use `BASE_URL=http://app.tugtainer.test` (FQDN network
   alias). Chromium does not reliably open single-label hosts like `http://app`.
+- The Playwright runner mounts `/var/run/docker.sock` so tests can create
+  containers via `dockerode` on the same engine the app reaches through
+  socket-proxy.
