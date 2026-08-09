@@ -134,6 +134,8 @@ HOSTS:
 CONTAINERS:
   SEARCH_PLACEHOLDER: 名称或 ID
   ONLY_AVAILABLE: 仅显示有更新
+  STATUS_FILTER: 任意状态
+  STATUS_FILTER_SELECTED: 已选 {0} 个状态
   NAME: 名称
   CONTAINER_ID: ID
   IMAGE: 镜像
@@ -151,6 +153,11 @@ CONTAINERS:
     此设置仅影响计划任务。
   CHECKED_AT: 上次检查
   UPDATED_AT: 上次更新
+  REMOTE_DIGESTS_CHANGED_AT: 远程摘要变更于
+  DELAY_UPDATE_FOR: 更新前延迟（秒）
+  DELAY_UPDATE_FOR_HINT: |-
+    为此容器覆盖全局延迟（秒）。留空 = 使用全局设置。
+    示例：86400 = 1 天。手动更新会忽略延迟。
   UPDATE: 更新
   UPDATE_DISABLED_HINTS:
     PROTECTED: 受保护的容器无法从此应用更新。
@@ -237,6 +244,16 @@ SETTINGS:
     UPDATE_ONLY_RUNNING:
       LABEL: 仅更新运行中的容器
       HINT: 请谨慎：更新未运行的容器时，部分配置可能会丢失。
+    DELAY_UPDATE_FOR:
+      LABEL: 更新前延迟（秒）
+      HINT: |-
+        检测到新镜像后，等待多久再执行计划更新。可用作安全缓冲：若发布了
+        有问题或被篡改的镜像，延迟可让发布者有时间撤回或修复，避免你拉取到它。
+
+        0 = 在下一次计划任务时更新（默认，与原先行为一致）。
+        示例：86400 = 1 天，172800 = 2 天。
+
+        手动更新会忽略延迟。
     NOTIFICATION_TITLE_TEMPLATE:
       LABEL: 通知标题模板
       HINT: |-

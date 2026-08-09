@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
     PortBinding,
@@ -52,6 +52,12 @@ class ContainersListItem(BaseModel):
     update_available: bool | None = None  # Is container update available
     checked_at: datetime | None = None  # Date of check for update
     updated_at: datetime | None = None  # Date of last update
+    remote_digests_changed_at: datetime | None = (
+        None  # When remote digests were last observed to change
+    )
+    delay_update_for: int | None = (
+        None  # Per-container delay override (seconds); None = use global
+    )
     created_at: datetime | None = None  # Date of creation of db entry
     modified_at: datetime | None = None  # Date ofmodification db entry
     hooks: ContainerHooks | None = None  # Update lifecycle hooks
@@ -85,6 +91,8 @@ class ContainersListItem(BaseModel):
                     "update_available": db_cont.update_available,
                     "checked_at": db_cont.checked_at,
                     "updated_at": db_cont.updated_at,
+                    "remote_digests_changed_at": db_cont.remote_digests_changed_at,
+                    "delay_update_for": db_cont.delay_update_for,
                     "created_at": db_cont.created_at,
                     "modified_at": db_cont.modified_at,
                     "hooks": ContainerHooks.model_validate(db_cont.hooks or {}),
@@ -101,4 +109,12 @@ class ContainerGetResponseBody(BaseModel):
 class ContainerPatchRequestBody(BaseModel):
     check_enabled: bool | None = None
     update_enabled: bool | None = None
+    delay_update_for: int | None = None
     hooks: ContainerHooks | None = None
+
+    @field_validator("delay_update_for")
+    @classmethod
+    def validate_delay_update_for(cls, value: int | None) -> int | None:
+        if value is not None and value < 0:
+            raise ValueError("delay_update_for must be a non-negative integer")
+        return value

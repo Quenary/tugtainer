@@ -24,6 +24,8 @@ class ContainerInsertOrUpdateData(TypedDict, total=False):
     update_available: bool
     checked_at: datetime
     updated_at: datetime
+    remote_digests_changed_at: datetime | None
+    delay_update_for: int | None
     local_digests: list[str]
     remote_digests: list[str]
     image_id: str

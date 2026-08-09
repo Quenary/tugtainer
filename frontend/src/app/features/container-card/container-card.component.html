@@ -128,6 +128,25 @@
             </label>
           </p-ifta-label>
 
+          <p-ifta-label style="width: 100%">
+            <p-iconfield>
+              <p-input-number
+                fluid
+                inputId="container-delay-update-for"
+                [ngModel]="_item.delay_update_for"
+                [showClear]="true"
+                [min]="0"
+                [placeholder]="globalDelayPlaceholder()"
+                (ngModelChange)="onDelayUpdateForChange($event)"></p-input-number>
+              <p-inputicon
+                class="pi pi-question-circle"
+                [pTooltip]="'CONTAINERS.DELAY_UPDATE_FOR_HINT' | translate"></p-inputicon>
+            </p-iconfield>
+            <label for="container-delay-update-for">
+              {{ 'CONTAINERS.DELAY_UPDATE_FOR' | translate }}
+            </label>
+          </p-ifta-label>
+
           <p-ifta-label>
             <input
               id="container-checked-at"
@@ -136,6 +155,17 @@
               [value]="_item.checked_at | dayjs" />
             <label for="container-checked-at">
               {{ 'CONTAINERS.CHECKED_AT' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label>
+            <input
+              id="container-remote-digests-changed-at"
+              pInputText
+              readonly
+              [value]="_item.remote_digests_changed_at | dayjs" />
+            <label for="container-remote-digests-changed-at">
+              {{ 'CONTAINERS.REMOTE_DIGESTS_CHANGED_AT' | translate }}
             </label>
           </p-ifta-label>
 

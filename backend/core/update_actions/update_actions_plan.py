@@ -23,6 +23,7 @@ from backend.modules.containers.containers_model import (
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+from backend.util.now import now
 
 from .update_actions_util import get_compose_id, get_dependencies
 
@@ -39,6 +40,7 @@ async def build_update_plan(
     :param manual_for: override updatable containers (for manual runs)
     """
     update_only_running: Final = SettingsStorage.get(ESettingKey.UPDATE_ONLY_RUNNING)
+    global_delay: Final = SettingsStorage.get(ESettingKey.DELAY_UPDATE_FOR)
     async with async_session_maker() as session:
         containers_db: Final = {
             c.name: c
@@ -73,11 +75,22 @@ async def build_update_plan(
             if c_db and c_db.update_available:
                 to_update.add(c_name)
     else:
+        _now = now()
         for c in containers:
             c_name = cast(str, c.name)
             c_db = containers_db.get(c_name)
-            if c_db and c_db.update_available and c_db.update_enabled:
-                to_update.add(c_name)
+            if not (c_db and c_db.update_available and c_db.update_enabled):
+                continue
+            effective_delay = (
+                c_db.delay_update_for
+                if c_db.delay_update_for is not None
+                else global_delay
+            )
+            if effective_delay > 0 and c_db.remote_digests_changed_at:
+                elapsed = (_now - c_db.remote_digests_changed_at).total_seconds()
+                if elapsed < effective_delay:
+                    continue
+            to_update.add(c_name)
 
     # region Dependency graphs
     compose_service_names: dict[

@@ -8,6 +8,13 @@
 
   p-toolbar {
     border-color: transparent;
+
+    .filters {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
   }
 
   p-table {

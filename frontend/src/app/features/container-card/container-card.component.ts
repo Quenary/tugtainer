@@ -19,6 +19,9 @@ import { AccordionModule } from 'primeng/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
 import { IftaLabelModule } from 'primeng/iftalabel';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { TextareaModule } from 'primeng/textarea';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
@@ -34,6 +37,8 @@ import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 import { ContainersStore } from '../containers/containers.store';
 import { InspectComponent } from '@shared/components/inspect/inspect.component';
+import { SettingsStore } from '../settings/settings.store';
+import { ESettingKey } from '../settings/settings.interface';
 
 @Component({
   selector: 'app-container-card',
@@ -42,6 +47,9 @@ import { InspectComponent } from '@shared/components/inspect/inspect.component';
     TranslatePipe,
     IftaLabelModule,
     InputTextModule,
+    InputNumberModule,
+    IconFieldModule,
+    InputIconModule,
     TextareaModule,
     ToolbarModule,
     ButtonModule,
@@ -64,6 +72,7 @@ import { InspectComponent } from '@shared/components/inspect/inspect.component';
 export class ContainerCardComponent implements OnDestroy {
   private readonly activatedRoute = inject(ActivatedRoute);
   protected readonly containersStore = inject(ContainersStore);
+  private readonly settingsStore = inject(SettingsStore);
 
   protected readonly EContainerStatusSeverity = EContainerStatusSeverity;
   protected readonly EContainerHealthSeverity = EContainerHealthSeverity;
@@ -106,6 +115,14 @@ export class ContainerCardComponent implements OnDestroy {
   protected readonly inspect = computed(
     () => this.containersStore.selectedInfo()?.inspect,
   );
+  /**
+   * Placeholder showing the global DELAY_UPDATE_FOR value
+   */
+  protected readonly globalDelayPlaceholder = computed(() => {
+    const settings = this.settingsStore.entityMap();
+    const value = settings[ESettingKey.DELAY_UPDATE_FOR]?.value;
+    return value === undefined || value === null ? '' : String(value);
+  });
 
   constructor() {
     this.activatedRoute.params
@@ -126,6 +143,10 @@ export class ContainerCardComponent implements OnDestroy {
       containerName: c.name,
       body,
     });
+  }
+
+  protected onDelayUpdateForChange(value: number | null): void {
+    this.patchContainer({ delay_update_for: value ?? null });
   }
 
   protected onCheck(): void {

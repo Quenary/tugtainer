@@ -1,12 +1,23 @@
 :host {
+  --menu-transition-duration: 0.3s;
+  --menu-width: 12rem;
+  --menu-width-narrow: calc(2 * var(--p-button-padding-x, 1rem) + 1rem);
+
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
+  width: var(--menu-width);
   height: 100%;
   gap: 1rem;
   position: relative;
+  transition: width var(--menu-transition-duration) ease;
 
   app-logo {
-    margin: 0.25rem 0 1rem 0;
+    margin: 0.25rem 0 1rem 0.75rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: left;
+    transition: margin var(--menu-transition-duration) ease;
   }
 
   .toggle {
@@ -31,6 +42,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    width: 100%;
+    flex: 0 0 auto;
+    overflow: hidden;
     font-size: 1rem;
     font-weight: 500;
     color: var(--p-content-color);
@@ -47,13 +61,60 @@
     &.router-link-active {
       color: var(--p-primary-color);
     }
+
+    > i,
+    > p-badge {
+      flex: 0 0 auto;
+    }
+
+    .label {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: opacity var(--menu-transition-duration) ease;
+    }
   }
 
   .submenu {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: 1fr;
     width: 100%;
-    gap: 0.5rem;
-    padding-left: 0.5rem;
+    transition:
+      grid-template-rows var(--menu-transition-duration) ease,
+      margin-bottom var(--menu-transition-duration) ease,
+      opacity var(--menu-transition-duration) ease;
+
+    &-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-left: 1.5rem;
+      overflow: hidden;
+    }
+  }
+}
+
+:host(.narrow) {
+  width: var(--menu-width-narrow);
+
+  app-logo {
+    margin-left: 0.25rem;
+  }
+
+  .menu-item .label {
+    opacity: 0;
+  }
+
+  .submenu {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    // Компенсация gap хоста у схлопнутого блока
+    margin-bottom: -1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    --menu-transition-duration: 0s;
   }
 }

@@ -25,21 +25,23 @@ export enum ESettingKey {
   NOTIFICATION_BODY_TEMPLATE = 'NOTIFICATION_BODY_TEMPLATE',
   UPDATE_ONLY_RUNNING = 'UPDATE_ONLY_RUNNING',
   INSECURE_REGISTRIES = 'INSECURE_REGISTRIES',
+  DELAY_UPDATE_FOR = 'DELAY_UPDATE_FOR',
 }
 export interface ITestNotificationRequestBody {
   title_template: string;
   body_template: string;
   urls: string;
 }
-export const ESettingSortIndex: Record<ESettingKey, number> = {
-  [ESettingKey.CHECK_CRONTAB_EXPR]: 0,
-  [ESettingKey.UPDATE_CRONTAB_EXPR]: 1,
-  [ESettingKey.TIMEZONE]: 2,
-  [ESettingKey.REGISTRY_REQ_DELAY]: 3,
-  [ESettingKey.PULL_BEFORE_CHECK]: 4,
-  [ESettingKey.INSECURE_REGISTRIES]: 5,
-  [ESettingKey.UPDATE_ONLY_RUNNING]: 6,
-  [ESettingKey.NOTIFICATION_URLS]: 7,
-  [ESettingKey.NOTIFICATION_TITLE_TEMPLATE]: 8,
-  [ESettingKey.NOTIFICATION_BODY_TEMPLATE]: 9,
-};
+export const settingKeysOrder: ESettingKey[] = [
+  ESettingKey.CHECK_CRONTAB_EXPR,
+  ESettingKey.UPDATE_CRONTAB_EXPR,
+  ESettingKey.TIMEZONE,
+  ESettingKey.REGISTRY_REQ_DELAY,
+  ESettingKey.PULL_BEFORE_CHECK,
+  ESettingKey.INSECURE_REGISTRIES,
+  ESettingKey.UPDATE_ONLY_RUNNING,
+  ESettingKey.DELAY_UPDATE_FOR,
+  ESettingKey.NOTIFICATION_URLS,
+  ESettingKey.NOTIFICATION_TITLE_TEMPLATE,
+  ESettingKey.NOTIFICATION_BODY_TEMPLATE,
+];

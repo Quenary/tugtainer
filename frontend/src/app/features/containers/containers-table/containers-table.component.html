@@ -1,18 +1,5 @@
 <p-toolbar>
   <ng-template #start>
-    <p-iconfield iconPosition="left">
-      <p-inputicon>
-        <i class="pi pi-search"></i>
-      </p-inputicon>
-      <input
-        #searchInput
-        id="{{ containersStore.hostId() }}-containers-search"
-        pInputText
-        type="text"
-        (input)="dt2.filterGlobal($event.target.value, 'contains')"
-        [placeholder]="'CONTAINERS.SEARCH_PLACEHOLDER' | translate" />
-    </p-iconfield>
-
     <p-button
       icon="pi pi-refresh"
       [loading]="containersStore.loading()"
@@ -20,13 +7,40 @@
       rounded
       (onClick)="containersStore.loadList()"></p-button>
 
-    <p-button
-      icon="pi pi-check-circle"
-      [label]="'CONTAINERS.ONLY_AVAILABLE' | translate"
-      text
-      [severity]="onlyAvailable() ? 'success' : 'secondary'"
-      (onClick)="onlyAvailable.set(!onlyAvailable())">
-    </p-button>
+    <div class="filters">
+      <p-iconfield iconPosition="left">
+        <p-inputicon>
+          <i class="pi pi-search"></i>
+        </p-inputicon>
+        <input
+          #searchInput
+          id="{{ containersStore.hostId() }}-containers-search"
+          pInputText
+          type="text"
+          (input)="dt2.filterGlobal($event.target.value, 'contains')"
+          [placeholder]="'CONTAINERS.SEARCH_PLACEHOLDER' | translate" />
+      </p-iconfield>
+
+      <p-button
+        icon="pi pi-check-circle"
+        [label]="'CONTAINERS.ONLY_AVAILABLE' | translate"
+        text
+        [severity]="onlyAvailable() ? 'success' : 'secondary'"
+        (onClick)="onlyAvailable.set(!onlyAvailable())">
+      </p-button>
+
+      <p-multiselect
+        appendTo="body"
+        [options]="statusOptions"
+        [(ngModel)]="statuses"
+        [showHeader]="false"
+        [showClear]="true"
+        [showToggleAll]="false"
+        [maxSelectedLabels]="1"
+        [placeholder]="'CONTAINERS.STATUS_FILTER' | translate"
+        [selectedItemsLabel]="'CONTAINERS.STATUS_FILTER_SELECTED' | translate">
+      </p-multiselect>
+    </div>
   </ng-template>
 </p-toolbar>
 

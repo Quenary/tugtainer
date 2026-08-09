@@ -17,6 +17,7 @@ import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import {
   IContainerListItem,
+  EContainerStatus,
   EContainerStatusSeverity,
   EContainerHealthSeverity,
   TControlContainerCommand,
@@ -29,8 +30,10 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
 import { ContainersStore, IContainerEntity } from '../containers.store';
 import { ButtonGroupModule } from 'primeng/buttongroup';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 const onlyAvailableStorageKey = 'tugtainer-containers-only-available';
+const statusesStorageKey = 'tugtainer-containers-statuses';
 
 @Component({
   selector: 'app-containers-table',
@@ -51,6 +54,7 @@ const onlyAvailableStorageKey = 'tugtainer-containers-only-available';
     ToolbarModule,
     ContainerActionsComponent,
     ButtonGroupModule,
+    MultiSelectModule,
   ],
   templateUrl: './containers-table.component.html',
   styleUrl: './containers-table.component.scss',
@@ -69,20 +73,37 @@ export class ContainersTableComponent {
     localStorage.getItemJson(onlyAvailableStorageKey) ?? false,
   );
   /**
+   * Options of the status filter
+   */
+  protected readonly statusOptions = Object.values(EContainerStatus);
+  /**
+   * Statuses filter, empty means no filtration
+   */
+  protected readonly statuses = signal<EContainerStatus[] | null | undefined>(
+    localStorage.getItemJson<EContainerStatus[]>(statusesStorageKey),
+  );
+  /**
    * List of containers
    */
   protected readonly filteredList = computed(() => {
     const onlyAvailable = this.onlyAvailable();
+    const statuses = this.statuses();
     const entities = this.containersStore.entities();
-    return onlyAvailable
-      ? entities.filter((c) => c.update_available)
-      : entities;
+    return entities.filter(
+      (c) =>
+        (!onlyAvailable || c.update_available) &&
+        (!statuses?.length || statuses.includes(c.status)),
+    );
   });
 
   constructor() {
     effect(() => {
       const onlyAvailable = this.onlyAvailable();
       localStorage.setItemJson(onlyAvailableStorageKey, onlyAvailable);
+    });
+    effect(() => {
+      const statuses = this.statuses();
+      localStorage.setItemJson(statusesStorageKey, statuses);
     });
     this.containersStore.loadList();
   }

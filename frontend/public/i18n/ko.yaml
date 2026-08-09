@@ -135,6 +135,8 @@ HOSTS:
 CONTAINERS:
   SEARCH_PLACEHOLDER: 이름 또는 ID
   ONLY_AVAILABLE: 사용 가능한 것만
+  STATUS_FILTER: 모든 상태
+  STATUS_FILTER_SELECTED: 상태 {0}개 선택됨
   NAME: 이름
   CONTAINER_ID: ID
   IMAGE: 이미지
@@ -152,6 +154,11 @@ CONTAINERS:
     이 설정은 예약된 작업에만 영향을 줍니다.
   CHECKED_AT: 마지막 확인
   UPDATED_AT: 마지막 업데이트
+  REMOTE_DIGESTS_CHANGED_AT: 원격 다이제스트 변경 시각
+  DELAY_UPDATE_FOR: 업데이트 전 지연(초)
+  DELAY_UPDATE_FOR_HINT: |-
+    이 컨테이너에 대한 전역 지연 재정의(초). 비우면 전역 설정을 사용합니다.
+    예: 86400 = 1일. 수동 업데이트는 지연을 무시합니다.
   UPDATE: 업데이트
   UPDATE_DISABLED_HINTS:
     PROTECTED: 보호된 컨테이너는 앱에서 업데이트할 수 없습니다.
@@ -241,6 +248,17 @@ SETTINGS:
     UPDATE_ONLY_RUNNING:
       LABEL: 실행 중인 컨테이너만 업데이트
       HINT: 실행 중이 아닌 컨테이너를 업데이트할 경우 일부 설정이 유실될 수 있으니 주의하세요.
+    DELAY_UPDATE_FOR:
+      LABEL: 업데이트 전 지연(초)
+      HINT: |-
+        새 이미지가 감지된 후 예약 업데이트를 적용하기까지 기다릴 시간입니다.
+        보안 버퍼로 유용합니다: 잘못된 이미지이나 변조된 이미지가 게시되면
+        대기하는 동안 게시자가 회수하거나 수정본을 올릴 시간을 벌 수 있습니다.
+
+        0 = 다음 예약 실행 시 업데이트(기본값, 기존 동작).
+        예: 86400 = 1일, 172800 = 2일.
+
+        수동 업데이트는 지연을 무시합니다.
     NOTIFICATION_TITLE_TEMPLATE:
       LABEL: 알림 제목 템플릿
       HINT: |-

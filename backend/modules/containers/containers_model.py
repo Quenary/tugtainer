@@ -57,6 +57,16 @@ class ContainersModel(BaseModel):
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )
+    # When remote digests were last observed to change.
+    # Used with DELAY_UPDATE_FOR / delay_update_for for scheduled updates.
+    # Never cleared — always reflects the last digest change time.
+    remote_digests_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    # Per-container override of DELAY_UPDATE_FOR (seconds). None = use global.
+    delay_update_for: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         server_default=text("CURRENT_TIMESTAMP"),

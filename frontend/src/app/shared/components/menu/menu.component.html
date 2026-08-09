@@ -8,58 +8,16 @@
   (onClick)="narrow.update(v => !v)">
 </p-button>
 
-@if (narrow()) {
-  <button
-    class="menu-item"
-    routerLink="/hosts"
-    routerLinkActive="router-link-active">
-    <i class="pi pi-server"></i>
-  </button>
+<button
+  class="menu-item"
+  routerLink="/hosts"
+  routerLinkActive="router-link-active">
+  <i class="pi pi-server"></i>
+  <span class="label">{{'MENU.HOSTS' | translate}}</span>
+</button>
 
-  <button
-    class="menu-item"
-    routerLink="/settings"
-    routerLinkActive="router-link-active">
-    <i class="pi pi-cog"></i>
-  </button>
-
-  <button
-    [style.margin-top]="'auto'"
-    class="menu-item"
-    (click)="openRepo()">
-    <i class="pi pi-github"></i>
-  </button>
-
-  <button
-    class="menu-item"
-    (click)="themeMenu.toggle($event)">
-    <i class="pi pi-palette"></i>
-  </button>
-
-  <button
-    class="menu-item"
-    (click)="langMenu.toggle($event)">
-    <i class="pi pi-language"></i>
-  </button>
-
-  @if (!appStore.isAuthDisabled()) {
-    <button
-      class="menu-item"
-      [style.color]="'var(--p-button-text-danger-color)'"
-      (click)="logout()">
-      <i class="pi pi-sign-out"></i>
-    </button>
-  }
-} @else {
-  <button
-    class="menu-item"
-    routerLink="/hosts"
-    routerLinkActive="router-link-active">
-    <i class="pi pi-server"></i>
-    <span>{{'MENU.HOSTS' | translate}}</span>
-  </button>
-
-  <div class="submenu">
+<div class="submenu">
+  <div class="submenu-items">
     @for (h of hostsStore.entities(); track h.id) {
       @if (h.enabled) {
         @let upd = h.available_updates_count;
@@ -68,8 +26,7 @@
           class="menu-item"
           routerLink="/hosts/{{h.id}}"
           routerLinkActive="router-link-active">
-          <!-- <i class="pi pi-server"></i> -->
-          <span>{{h.name}}</span>
+          <span class="label">{{h.name}}</span>
           @if (upd) {
             <p-badge
               size="small"
@@ -81,46 +38,46 @@
       }
     }
   </div>
+</div>
 
+<button
+  class="menu-item"
+  routerLink="/settings"
+  routerLinkActive="router-link-active">
+  <i class="pi pi-cog"></i>
+  <span class="label">{{'MENU.SETTINGS' | translate}}</span>
+</button>
+
+<button
+  [style.margin-top]="'auto'"
+  class="menu-item"
+  (click)="openRepo()">
+  <i class="pi pi-github"></i>
+  <span class="label">{{'MENU.GITHUB' | translate}}</span>
+</button>
+
+<button
+  class="menu-item"
+  (click)="themeMenu.toggle($event)">
+  <i class="pi pi-palette"></i>
+  <span class="label">{{selectedThemeLabel()}}</span>
+</button>
+
+<button
+  class="menu-item"
+  (click)="langMenu.toggle($event)">
+  <i class="pi pi-language"></i>
+  <span class="label">{{selectedLangLabel()}}</span>
+</button>
+
+@if (!appStore.isAuthDisabled()) {
   <button
     class="menu-item"
-    routerLink="/settings"
-    routerLinkActive="router-link-active">
-    <i class="pi pi-cog"></i>
-    <span>{{'MENU.SETTINGS' | translate}}</span>
+    [style.color]="'var(--p-button-text-danger-color)'"
+    (click)="logout()">
+    <i class="pi pi-sign-out"></i>
+    <span class="label">{{'MENU.SIGNOUT' | translate}}</span>
   </button>
-
-  <button
-    [style.margin-top]="'auto'"
-    class="menu-item"
-    (click)="openRepo()">
-    <i class="pi pi-github"></i>
-    <span>{{'MENU.GITHUB' | translate}}</span>
-  </button>
-
-  <button
-    class="menu-item"
-    (click)="themeMenu.toggle($event)">
-    <i class="pi pi-palette"></i>
-    <span>{{selectedThemeLabel()}}</span>
-  </button>
-
-  <button
-    class="menu-item"
-    (click)="langMenu.toggle($event)">
-    <i class="pi pi-language"></i>
-    <span>{{selectedLangLabel()}}</span>
-  </button>
-
-  @if (!appStore.isAuthDisabled()) {
-    <button
-      class="menu-item"
-      [style.color]="'var(--p-button-text-danger-color)'"
-      (click)="logout()">
-      <i class="pi pi-sign-out"></i>
-      <span>{{'MENU.SIGNOUT' | translate}}</span>
-    </button>
-  }
 }
 
 <p-menu
