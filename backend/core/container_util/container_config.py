@@ -1,3 +1,4 @@
+import logging
 from typing import Final
 
 from python_on_whales.components.container.models import (
@@ -16,6 +17,7 @@ from shared.schemas.container_schemas import (
 )
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 
+from .filter_cli_safe_labels import filter_cli_safe_labels
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
     get_container_restart_policy_str,
@@ -113,6 +115,12 @@ def get_container_config(
     if image and image.config and image.config.working_dir != config.working_dir:
         workdir = normalize_path(config.working_dir)
 
+    LABELS, REJECTED_LABELS = filter_cli_safe_labels(config.labels or {})
+    if REJECTED_LABELS:
+        logging.warning(
+            f"Labels rejected by docker CLI were dropped while preparing config of {container.name}: {REJECTED_LABELS}"
+        )
+
     config_dict = {
         "image": config.image,
         "name": container.name,
@@ -147,7 +155,7 @@ def get_container_config(
         "ipc": host_config.ipc_mode,
         "isolation": host_config.isolation,
         "kernel_memory": host_config.kernel_memory,
-        "labels": config.labels,
+        "labels": LABELS,
         **map_log_config_to_kwargs(host_config.log_config),
         "memory": host_config.memory,
         "memory_reservation": host_config.memory_reservation,

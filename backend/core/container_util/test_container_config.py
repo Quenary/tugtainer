@@ -157,3 +157,31 @@ def test_uts_userns_ns_mode_normalization(
 
     assert res.uts == expected_uts
     assert res.userns == expected_userns
+
+
+# Docker CLI refuses only labels with empty or whitespaced keys,
+# anything else must be preserved (#193)
+def test_labels_rejected_by_cli_are_dropped():
+    container = ContainerInspectResult(
+        config=ContainerConfig(
+            image="test_image",
+            labels={
+                "homepage.group": "Infra",
+                "pangolin.public-resources.ntfy.rules[0].action": "pass",
+                "ru.название": "значение",
+                "with.value": "value with spaces",
+                "* Regular Improvements": "",
+                "tab\tkey": "1",
+                "": "no key",
+            },
+        )
+    )
+
+    res, _ = get_container_config(container, image=None, docker_version=None)
+
+    assert res.labels == {
+        "homepage.group": "Infra",
+        "pangolin.public-resources.ntfy.rules[0].action": "pass",
+        "ru.название": "значение",
+        "with.value": "value with spaces",
+    }
