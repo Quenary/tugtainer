@@ -58,6 +58,11 @@ class ContainersListItem(BaseModel):
     delay_update_for: int | None = (
         None  # Per-container delay override (seconds); None = use global
     )
+    # Image the container ran before the last successful update.
+    # Digests pin the exact image, tags/version are informational.
+    previous_image_digests: list[str] | None = None
+    previous_image_tags: list[str] | None = None
+    previous_image_version: str | None = None
     created_at: datetime | None = None  # Date of creation of db entry
     modified_at: datetime | None = None  # Date ofmodification db entry
     hooks: ContainerHooks | None = None  # Update lifecycle hooks
@@ -93,6 +98,9 @@ class ContainersListItem(BaseModel):
                     "updated_at": db_cont.updated_at,
                     "remote_digests_changed_at": db_cont.remote_digests_changed_at,
                     "delay_update_for": db_cont.delay_update_for,
+                    "previous_image_digests": db_cont.previous_image_digests,
+                    "previous_image_tags": db_cont.previous_image_tags,
+                    "previous_image_version": db_cont.previous_image_version,
                     "created_at": db_cont.created_at,
                     "modified_at": db_cont.modified_at,
                     "hooks": ContainerHooks.model_validate(db_cont.hooks or {}),

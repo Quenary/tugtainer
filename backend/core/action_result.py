@@ -28,6 +28,11 @@ class ContainerActionResult:
     remote_image: ImageInspectResult | None = None
     local_digests: list[str] = field(default_factory=list)
     remote_digests: list[str] = field(default_factory=list)
+    # Identity of the image the container ran before the update.
+    # Only filled by the update process, available in notification templates.
+    previous_image_digests: list[str] = field(default_factory=list)
+    previous_image_tags: list[str] = field(default_factory=list)
+    previous_image_version: str | None = None
 
 
 @dataclass

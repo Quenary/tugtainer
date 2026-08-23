@@ -162,6 +162,15 @@ CONTAINERS:
     Override the global delay for this container (seconds).
     Empty = use the global setting. Example: 86400 = 1 day.
     Manual updates ignore the delay.
+  PREVIOUS_IMAGE: Previous image
+  PREVIOUS_IMAGE_HINT: |-
+    Image the container ran before its last update.
+    Pin it in your compose file to go back to that version.
+  PREVIOUS_IMAGE_VERSION: Previous image version
+  PREVIOUS_IMAGE_VERSION_HINT: |-
+    Version reported by the labels of the previous image.
+    It is a hint from the image publisher and is not always
+    a tag you can pull. Pin the previous image instead.
   UPDATE: Update
   UPDATE_DISABLED_HINTS:
     PROTECTED: The protected container cannot be updated from the app.

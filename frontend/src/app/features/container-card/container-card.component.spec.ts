@@ -66,6 +66,51 @@ describe('ContainerCardComponent', () => {
     expect(selectSpy).toHaveBeenCalledTimes(1);
   });
 
+  const selectContainer = (item: Partial<IContainerEntity>) =>
+    vi
+      .spyOn(containersStore, 'selected')
+      .mockReturnValue(item as IContainerEntity);
+
+  it('should prefer the previous image digests over its tags', () => {
+    selectContainer({
+      previous_image_digests: ['nginx@sha256:abc'],
+      previous_image_tags: ['nginx:latest'],
+    });
+
+    expect(component['previousImage']()).toBe('nginx@sha256:abc');
+  });
+
+  it('should fall back to the previous image tags without digests', () => {
+    selectContainer({
+      previous_image_digests: [],
+      previous_image_tags: ['my-app:latest'],
+    });
+
+    expect(component['previousImage']()).toBe('my-app:latest');
+  });
+
+  it('should join multiple previous image references', () => {
+    selectContainer({
+      previous_image_digests: ['nginx@sha256:abc', 'nginx@sha256:def'],
+      previous_image_tags: null,
+    });
+
+    expect(component['previousImage']()).toBe(
+      'nginx@sha256:abc\nnginx@sha256:def',
+    );
+    expect(component['previousImageRows']()).toBe(2);
+  });
+
+  it('should have no previous image when nothing was recorded', () => {
+    selectContainer({
+      previous_image_digests: null,
+      previous_image_tags: null,
+    });
+
+    expect(component['previousImage']()).toBe('');
+    expect(component['previousImageRows']()).toBe(2);
+  });
+
   it('should patch hooks for the selected container on save', () => {
     vi.spyOn(containersStore, 'selected').mockReturnValue({
       name: 'test-container',

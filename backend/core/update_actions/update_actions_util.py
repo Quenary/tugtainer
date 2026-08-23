@@ -47,6 +47,16 @@ async def update_containers_data_after_execution(
                     container.update_available = False
                     container.updated_at = _now
                     container.local_digests = item.remote_digests
+                    # Keep the last stored identity when this update
+                    # carried none, rather than dropping a usable pin.
+                    if (
+                        item.previous_image_digests
+                        or item.previous_image_tags
+                        or item.previous_image_version
+                    ):
+                        container.previous_image_digests = item.previous_image_digests
+                        container.previous_image_tags = item.previous_image_tags
+                        container.previous_image_version = item.previous_image_version
 
         await session.commit()
 
