@@ -274,14 +274,14 @@ SETTINGS:
         알림 제목의 Jinja2 템플릿입니다.
 
         자세한 내용은 클릭하여 확인하세요.
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     NOTIFICATION_BODY_TEMPLATE:
       LABEL: 알림 본문 템플릿
       HINT: |-
         알림 본문의 Jinja2 템플릿입니다.
 
         자세한 내용은 클릭하여 확인하세요.
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     INSECURE_REGISTRIES:
       LABEL: 안전하지 않은 레지스트리
       HINT: |-

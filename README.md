@@ -14,13 +14,14 @@ Automatic updates are disabled by default. You can enable only what you need.
 - [deploy](#deploy)
 - [private registries](#private-registries)
 - [custom labels](#custom-labels)
-- [notifications](#notifications)
+- [notifications](./docs/NOTIFICATIONS.md)
 - [auth](#auth)
 - [api](#api)
 - [env](#env)
 - [check and update](./docs/CHECK_AND_UPDATE.md)
 - [screenshots](./docs/SCREENSHOTS.md)
 - [contributing](./docs/CONTRIBUTING.md)
+- [security](./docs/SECURITY.md)
 
 ## Main features:
 
@@ -71,7 +72,8 @@ Automatic updates are disabled by default. You can enable only what you need.
   > [!IMPORTANT]
   > Agent host URLs that resolve to private or reserved networks are blocked by default (SSRF protection).
   > If your remote agent is on a LAN or Docker network, allow it on the primary instance via **AGENT_ALLOW_NETWORKS** (e.g. `192.168.0.0/24`) and/or **AGENT_ALLOW_ENDPOINTS** (e.g. `10.0.0.5:9413`).
-  > See [.env.example](./.env.example) for details. By default, only the built-in agent endpoint `127.0.0.1:8001` is allowed when `AGENT_ENABLED=true`.
+  > See [.env.example](./.env.example) and the [security policy](./docs/SECURITY.md).
+  > By default, only the built-in agent endpoint `127.0.0.1:8001` is allowed when `AGENT_ENABLED=true`.
 
   To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.
   To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or the following docker commands.
@@ -169,76 +171,6 @@ Failure semantics:
 The hooks form is hidden in the UI for protected containers (see
 [Custom labels](#custom-labels)), since protected containers are never
 updated by the app.
-
-## Notifications:
-
-The app uses [Apprise](https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications) to send notifications and [Jinja2](https://jinja.palletsprojects.com/en/stable/) to generate their content. You can view the documentation for each of them for more details.
-
-Jinja2 custom filters:
-
-- any_worthy - checks that at least one of the items has result equal to "available", "updated", "rolled_back" or "failed"
-
-Jinja2 context schema:
-
-```json
-{
-  "hostname": "Tugtainer container hostname",
-  "results": [
-    {
-      "host_id": 0,
-      "host_name": "string",
-      "items": [
-        {
-          "container": {
-            "id": "string",
-            "image": "string",
-            "...other keys of 'docker container inspect' in snake_case": {},
-          },
-          "local_image": {
-            "id": "string",
-            "repo_digests": [
-              "digest1",
-              "digest2",
-            ],
-            "...other keys of 'docker image inspect' in snake_case": {},
-          },
-          "remote_image": {
-            "...same schema as for local_image": {},
-          },
-          "local_digests": [
-            "list of platform specific image digests",
-          ],
-          "remote_digests": [
-            "list of platform specific image digests",
-          ],
-          "previous_image_digests": [
-            "digests of the image the container ran before the update",
-          ],
-          "previous_image_tags": [
-            "tags of the image the container ran before the update",
-          ],
-          "previous_image_version": "version from the previous image labels, or None",
-          "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
-        }
-      ],
-      "prune_result": "string",
-    }
-  ]
-}
-```
-
-"result" options:
-
-- "not_available": No new image found.
-- "available": New image available for the container.
-- "available(notified)": New image available for the container, but it was in the previous notification. The app preserves digests of new images, so if another new image has appeared, the result will still be "available".
-- "updated": Container successfully recreated with the new image.
-- "rolled_back": The app failed to recreate the container, but was able to restore it with the old image.
-- "failed": The app failed to recreate the container.
-
-The notification is sent only if the body is not empty. For instance, if there are only containers with "available(notified)" results, the body will be empty (with the default template), and the notification will not be sent.
-
-If you want to restore the default template, it's [here](./backend/const.py)
 
 ## Auth
 

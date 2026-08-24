@@ -87,4 +87,4 @@ enumerating every tag of a repository to find one would cost a request per tag,
 so it is deliberately not attempted.
 
 The values are shown on the container card and are available in the
-[notification templates](../README.md#notifications).
+[notification templates](./NOTIFICATIONS.md).

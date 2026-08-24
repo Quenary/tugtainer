@@ -280,14 +280,14 @@ SETTINGS:
         Jinja2-шаблон заголовка уведомления.
 
         Нажмите для подробностей.
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     NOTIFICATION_BODY_TEMPLATE:
       LABEL: Шаблон текста уведомления
       HINT: |-
         Jinja2-шаблон текста уведомления.
 
         Нажмите для подробностей.
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     INSECURE_REGISTRIES:
       LABEL: Небезопасные registries
       HINT: |-

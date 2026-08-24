@@ -278,14 +278,14 @@ SETTINGS:
         Jinja2 template of notification title.
 
         Click for more info.
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     NOTIFICATION_BODY_TEMPLATE:
       LABEL: Notification body template
       HINT: |-
         Jinja2 template of notification body.
 
         Click for more info.
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     INSECURE_REGISTRIES:
       LABEL: Insecure registries
       HINT: |-

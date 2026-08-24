@@ -269,14 +269,14 @@ SETTINGS:
         通知标题的 Jinja2 模板。
 
         点击了解更多信息。
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     NOTIFICATION_BODY_TEMPLATE:
       LABEL: 通知正文模板
       HINT: |-
         通知正文的 Jinja2 模板。
 
         点击了解更多信息。
-      LINK: https://github.com/Quenary/tugtainer?tab=readme-ov-file#notifications
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
     INSECURE_REGISTRIES:
       LABEL: 不安全的 registries
       HINT: |-
