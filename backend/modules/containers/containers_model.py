@@ -99,6 +99,24 @@ class ContainersModel(BaseModel):
         JSON,
         nullable=True,
     )
+    # Identity of the image the container ran before the last successful
+    # update. Captured from the pre-update image inspect, so it costs no
+    # extra registry requests. Digests are the only value that pins the
+    # exact image again; tags/version are informational.
+    previous_image_digests: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    previous_image_tags: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    # Version reported by the image labels (see VERSION_LABELS).
+    # A publisher provided hint, not necessarily a published tag.
+    previous_image_version: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
     # Update lifecycle hooks (see ContainerHooks), stored as
     # {"pre_update": ["cmd1", ...], "post_update": [...], ...}.
     # Only executed when backend ALLOW_HOOKS and the host's agent ALLOW_EXEC

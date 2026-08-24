@@ -29,6 +29,9 @@ class ContainerInsertOrUpdateData(TypedDict, total=False):
     local_digests: list[str]
     remote_digests: list[str]
     image_id: str
+    previous_image_digests: list[str] | None
+    previous_image_tags: list[str] | None
+    previous_image_version: str | None
     hooks: dict[str, list[str]]
 
 

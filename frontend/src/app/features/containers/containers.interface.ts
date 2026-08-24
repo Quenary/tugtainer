@@ -30,6 +30,13 @@ export interface IContainerListItem {
   updated_at: string;
   remote_digests_changed_at: string | null;
   delay_update_for: number | null;
+  /**
+   * Image the container ran before the last successful update.
+   * Digests pin the exact image, tags and version are informational.
+   */
+  previous_image_digests: string[] | null;
+  previous_image_tags: string[] | null;
+  previous_image_version: string | null;
   created_at: string;
   modified_at: string;
   exit_code: number;

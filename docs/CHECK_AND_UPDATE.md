@@ -55,3 +55,36 @@ Optional delay between detecting a new image and applying a **scheduled** update
 - Scheduled update runs only if `now - remote_digests_changed_at >=` effective delay (or delay is `0` / timestamp is missing);
 - **Manual** updates ignore the delay;
 - Notifications on check are **not** delayed.
+
+## Previous image
+
+After a container is successfully updated, the identity of the image it was
+running before is recorded, so the previous version can be pinned again if the
+new one turns out to be broken.
+
+Everything is read from the image inspect that the update already performs
+before pulling, so no extra registry requests are made.
+
+- `previous_image_digests` — repo digests of the previous image, e.g.
+  `nginx@sha256:...`. This is the only value that pins the exact image again;
+  put it in the `image:` of your compose file to go back to it;
+- `previous_image_tags` — repo tags the previous image had locally. Useful when
+  the container tracks a pinned tag, less so when it tracks a floating one such
+  as `latest`;
+- `previous_image_version` — version taken from the previous image labels
+  (`org.opencontainers.image.version`, falling back to
+  `org.label-schema.version`). It is a hint from the image publisher: it may be
+  inherited from a base image, be a branch name, or not be published as a tag in
+  that exact form. Pin the digest, not this value.
+
+Recorded only when the update **succeeded**. After a rollback or a failure the
+container is running that same image again, so it is the current one and is not
+recorded as previous. An update that could not collect any of the three values
+leaves the previously recorded ones untouched.
+
+There is no reverse lookup from a digest to a tag in the registry API, and
+enumerating every tag of a repository to find one would cost a request per tag,
+so it is deliberately not attempted.
+
+The values are shown on the container card and are available in the
+[notification templates](../README.md#notifications).

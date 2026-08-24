@@ -33,6 +33,9 @@ from backend.core.progress.progress_util import (
     is_allowed_start_cache,
 )
 from backend.core.update_actions.hooks_executor import get_hooks_map, run_hooks
+from backend.core.update_actions.previous_image_util import (
+    get_previous_image_for_result,
+)
 from backend.core.update_actions.update_actions_schema import (
     UpdatePlan,
     UpdatePlanItem,
@@ -405,18 +408,22 @@ async def execute_update_plan(
     if errors_count:
         logger.warning(f"Total errors: {errors_count} (see logs for details)")
 
+    def _to_action_result(item: UpdatePlanItem) -> ContainerActionResult:
+        previous = get_previous_image_for_result(item.local_image, item.result)
+        return ContainerActionResult(
+            container=item.container,
+            local_image=item.local_image,
+            remote_image=item.remote_image,
+            result=item.result,
+            previous_image_digests=previous.digests,
+            previous_image_tags=previous.tags,
+            previous_image_version=previous.version,
+        )
+
     result: Final = UpdatePlanResult(
         host_id=host.id,
         host_name=host.name,
-        items=[
-            ContainerActionResult(
-                container=item.container,
-                local_image=item.local_image,
-                remote_image=item.remote_image,
-                result=item.result,
-            )
-            for item in items
-        ],
+        items=[_to_action_result(item) for item in items],
     )
 
     await update_containers_data_after_execution(result)

@@ -158,6 +158,15 @@ CONTAINERS:
   DELAY_UPDATE_FOR_HINT: |-
     为此容器覆盖全局延迟（秒）。留空 = 使用全局设置。
     示例：86400 = 1 天。手动更新会忽略延迟。
+  PREVIOUS_IMAGE: 上一个镜像
+  PREVIOUS_IMAGE_HINT: |-
+    容器上次更新前所使用的镜像。
+    在 compose 文件中固定它即可回退到该版本。
+  PREVIOUS_IMAGE_VERSION: 上一个镜像版本
+  PREVIOUS_IMAGE_VERSION_HINT: |-
+    上一个镜像标签中记录的版本。
+    这是镜像发布者提供的提示，不一定是可以拉取的标签。
+    请改为固定上一个镜像。
   UPDATE: 更新
   UPDATE_DISABLED_HINTS:
     PROTECTED: 受保护的容器无法从此应用更新。

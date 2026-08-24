@@ -116,6 +116,23 @@ export class ContainerCardComponent implements OnDestroy {
     () => this.containersStore.selectedInfo()?.inspect,
   );
   /**
+   * Reference of the image the container ran before its last update.
+   * Prefers the digests, which are the only value that pins the exact
+   * image again, and falls back to the tags for local images.
+   */
+  protected readonly previousImage = computed<string>(() => {
+    const item = this.containersStore.selected();
+    const digests = item?.previous_image_digests ?? [];
+    const tags = item?.previous_image_tags ?? [];
+    return (digests.length ? digests : tags).join('\n');
+  });
+  /**
+   * Previous image textarea rows count
+   */
+  protected readonly previousImageRows = computed<number>(() =>
+    Math.max(this.previousImage().split('\n').length, 2),
+  );
+  /**
    * Placeholder showing the global DELAY_UPDATE_FOR value
    */
   protected readonly globalDelayPlaceholder = computed(() => {

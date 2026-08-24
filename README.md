@@ -211,6 +211,13 @@ Jinja2 context schema:
           "remote_digests": [
             "list of platform specific image digests",
           ],
+          "previous_image_digests": [
+            "digests of the image the container ran before the update",
+          ],
+          "previous_image_tags": [
+            "tags of the image the container ran before the update",
+          ],
+          "previous_image_version": "version from the previous image labels, or None",
           "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
         }
       ],

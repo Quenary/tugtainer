@@ -179,6 +179,44 @@
               {{ 'CONTAINERS.UPDATED_AT' | translate }}
             </label>
           </p-ifta-label>
+
+          @if (previousImage(); as _previousImage) {
+            <p-ifta-label style="width: 100%">
+              <textarea
+                fluid
+                style="resize: none"
+                id="container-previous-image"
+                pTextarea
+                readonly
+                [rows]="previousImageRows()"
+                [value]="_previousImage"
+                [pTooltip]="'CONTAINERS.PREVIOUS_IMAGE_HINT' | translate"></textarea>
+              <label for="container-previous-image">
+                {{ 'CONTAINERS.PREVIOUS_IMAGE' | translate }}
+              </label>
+            </p-ifta-label>
+          }
+
+          @if (_item.previous_image_version; as _previousImageVersion) {
+            <p-ifta-label>
+              <p-iconfield>
+                <input
+                  fluid
+                  id="container-previous-image-version"
+                  pInputText
+                  readonly
+                  [value]="_previousImageVersion" />
+                <p-inputicon
+                  class="pi pi-question-circle"
+                  [pTooltip]="
+                    'CONTAINERS.PREVIOUS_IMAGE_VERSION_HINT' | translate
+                  "></p-inputicon>
+              </p-iconfield>
+              <label for="container-previous-image-version">
+                {{ 'CONTAINERS.PREVIOUS_IMAGE_VERSION' | translate }}
+              </label>
+            </p-ifta-label>
+          }
         </section>
       }
     </p-accordion-content>

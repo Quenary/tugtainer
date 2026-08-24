@@ -159,6 +159,15 @@ CONTAINERS:
   DELAY_UPDATE_FOR_HINT: |-
     이 컨테이너에 대한 전역 지연 재정의(초). 비우면 전역 설정을 사용합니다.
     예: 86400 = 1일. 수동 업데이트는 지연을 무시합니다.
+  PREVIOUS_IMAGE: 이전 이미지
+  PREVIOUS_IMAGE_HINT: |-
+    컨테이너가 마지막 업데이트 전에 사용하던 이미지입니다.
+    해당 버전으로 되돌리려면 compose 파일에 고정하세요.
+  PREVIOUS_IMAGE_VERSION: 이전 이미지 버전
+  PREVIOUS_IMAGE_VERSION_HINT: |-
+    이전 이미지의 레이블에 기록된 버전입니다.
+    이미지 게시자가 제공하는 참고 값이며 항상 받을 수 있는
+    태그는 아닙니다. 대신 이전 이미지를 고정하세요.
   UPDATE: 업데이트
   UPDATE_DISABLED_HINTS:
     PROTECTED: 보호된 컨테이너는 앱에서 업데이트할 수 없습니다.
