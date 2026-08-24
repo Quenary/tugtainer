@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.34.1 (2026-08-24)
+
+### Bug Fixes
+
+- **security**: Restructure notifications documentation
+  ([`b838239`](https://github.com/Quenary/tugtainer/commit/b8382395236c63f3b00922d3a88f54f4a409cfab))
+
+### Documentation
+
+- Add security policy and update references in README and NOTIFICATIONS
+  ([`b838239`](https://github.com/Quenary/tugtainer/commit/b8382395236c63f3b00922d3a88f54f4a409cfab))
+
+
 ## v1.34.0 (2026-08-24)
 
 ### Features
