@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.34.0 (2026-08-24)
+
+### Features
+
+- Retain previous image info after update (#230) by @Ian-Costa18
+  ([`24ca811`](https://github.com/Quenary/tugtainer/commit/24ca8111a5d9ff034153cf70e3e3544fb5593606))
+
+
 ## v1.33.0 (2026-08-09)
 
 ### Features
