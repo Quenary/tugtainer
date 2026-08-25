@@ -62,3 +62,34 @@ export async function removeImageTagIfExists(
     }
   }
 }
+
+export async function removeNetworkIfExists(
+  docker: Docker,
+  name: string,
+): Promise<void> {
+  try {
+    const network = docker.getNetwork(name);
+    await network.inspect();
+    await network.remove();
+  } catch (err) {
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (statusCode !== 404) {
+      throw err;
+    }
+  }
+}
+
+export async function connectContainerToNetwork(
+  docker: Docker,
+  networkName: string,
+  containerName: string,
+  options?: { aliases?: string[]; links?: string[] },
+): Promise<void> {
+  await docker.getNetwork(networkName).connect({
+    Container: containerName,
+    EndpointConfig: {
+      Aliases: options?.aliases,
+      Links: options?.links,
+    },
+  });
+}

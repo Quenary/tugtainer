@@ -23,6 +23,15 @@ def validate_ip(value: str) -> None:
     ip_address(value)
 
 
+def validate_link(value: str) -> None:
+    name, sep, alias = value.partition(":")
+    if not name or (sep and not alias):
+        raise ValueError(f"Invalid link: {value}")
+    validate_docker_name(name)
+    if alias:
+        validate_alias(alias)
+
+
 class CmdSchema(TypedDict):
     # Flags and validators
     flags: dict[str, Callable[[str], Any]]
@@ -37,6 +46,7 @@ COMMAND_SCHEMAS: dict[tuple[str, ...], CmdSchema] = {
             "--alias": validate_alias,
             "--ip": validate_ip,
             "--ip6": validate_ip,
+            "--link": validate_link,
         },
         "positional": [
             validate_docker_name,  # network

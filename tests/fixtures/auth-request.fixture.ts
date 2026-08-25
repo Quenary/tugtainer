@@ -22,7 +22,8 @@ export async function login(request: APIRequestContext): Promise<void> {
         confirm_password: TEST_PASSWORD,
       },
     });
-    if (!setRes.ok()) {
+    // 401: another parallel worker already set the password.
+    if (!setRes.ok() && setRes.status() !== 401) {
       throw new Error(
         `set_password failed: ${setRes.status()} ${await setRes.text()}`,
       );
