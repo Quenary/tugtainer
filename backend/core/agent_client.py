@@ -19,6 +19,7 @@ from backend.db.session import async_session_maker
 from backend.exception import TugAgentClientError
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_util import validate_agent_url_against_ssrf
+from backend.util.pinned_ip_resolver import PinnedIpResolver
 from shared.schemas.command_schemas import RunCommandRequestBodySchema
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -79,6 +80,10 @@ class AgentClient:
                 self._session = aiohttp.ClientSession(
                     json_serialize=custom_json_dumps,
                     trust_env=True,
+                    connector=aiohttp.TCPConnector(
+                        resolver=PinnedIpResolver(self._url),
+                        use_dns_cache=False,
+                    ),
                 )
             return self._session
 
@@ -122,6 +127,7 @@ class AgentClient:
                 params=params,
                 ssl=self._ssl,
                 timeout=aiohttp.ClientTimeout(total=timeout),
+                allow_redirects=False,
             ) as resp:
                 try:
                     resp.raise_for_status()

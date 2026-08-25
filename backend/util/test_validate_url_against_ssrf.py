@@ -1,4 +1,4 @@
-from ipaddress import ip_network
+from ipaddress import ip_address, ip_network
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -53,12 +53,16 @@ class TestValidateUrlAgainstSsrf:
     ):
         # Whitelisted endpoints must bypass DNS resolution and return successfully
         with patch("dns.asyncresolver.resolve") as mock_resolve:
-            await validate_url_against_ssrf(
+            result = await validate_url_against_ssrf(
                 url=url,
                 allowed_networks=allowed_networks,
                 allowed_endpoints=allowed_endpoints,
             )
             mock_resolve.assert_not_called()
+        if "127.0.0.1" in url:
+            assert result == {ip_address("127.0.0.1")}
+        else:
+            assert result == set()
 
     @pytest.mark.parametrize(
         "url, expected_exception",
@@ -83,7 +87,10 @@ class TestValidateUrlAgainstSsrf:
                     url, allowed_networks, allowed_endpoints
                 )
         else:
-            await validate_url_against_ssrf(url, allowed_networks, allowed_endpoints)
+            result = await validate_url_against_ssrf(
+                url, allowed_networks, allowed_endpoints
+            )
+            assert result == {ip_address(url.split("://")[1].split("/")[0])}
 
     @pytest.mark.parametrize(
         "resolved_ips, expected_exception",
@@ -120,9 +127,26 @@ class TestValidateUrlAgainstSsrf:
                     "http://dynamic-target.local", allowed_networks, allowed_endpoints
                 )
         else:
-            await validate_url_against_ssrf(
+            result = await validate_url_against_ssrf(
                 "http://dynamic-target.local", allowed_networks, allowed_endpoints
             )
+            assert result == {ip_address(ip) for ip in resolved_ips}
+
+    @patch("dns.asyncresolver.resolve")
+    async def test_mixed_records_pin_only_connect_allowed_ips(
+        self, mock_resolve, allowed_networks, allowed_endpoints
+    ):
+        mock_answers = []
+        for ip in ("192.168.1.10", "10.0.0.1"):
+            mock_rdata = AsyncMock()
+            mock_rdata.address = ip
+            mock_answers.append(mock_rdata)
+        mock_resolve.return_value = mock_answers
+
+        result = await validate_url_against_ssrf(
+            "http://dynamic-target.local", allowed_networks, allowed_endpoints
+        )
+        assert result == {ip_address("192.168.1.10")}
 
     @patch("dns.asyncresolver.resolve")
     async def test_dns_resolve_failure_raises_validation_error(

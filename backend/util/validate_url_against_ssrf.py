@@ -7,14 +7,55 @@ import dns.asyncresolver
 from backend.const import RESTRICTED_NETWORKS
 from backend.exception import TugUrlValidationError, TugUrlValidationSSRFError
 
+type ResolvedIp = IPv4Address | IPv6Address
+
+
+def is_connect_allowed(
+    address: ResolvedIp,
+    allowed_networks: set[IPv4Network | IPv6Network],
+) -> bool:
+    """Whether this address may be used for a subsequent connection."""
+    if any(address in network for network in allowed_networks):
+        return True
+    if any(address in network for network in RESTRICTED_NETWORKS):
+        return False
+    return True
+
+
+async def _resolve_hostname(hostname: str) -> set[ResolvedIp]:
+    resolved: set[ResolvedIp] = set()
+    try:
+        resolved.add(ip_address(hostname))
+        return resolved
+    except ValueError:
+        pass
+
+    try:
+        answers = await dns.asyncresolver.resolve(hostname, "A")
+        resolved.update(ip_address(rdata.address) for rdata in answers)
+    except Exception:
+        pass
+
+    try:
+        answers = await dns.asyncresolver.resolve(hostname, "AAAA")
+        resolved.update(ip_address(rdata.address) for rdata in answers)
+    except Exception:
+        pass
+
+    return resolved
+
 
 async def validate_url_against_ssrf(
     url: str,
     allowed_networks: set[IPv4Network | IPv6Network],
     allowed_endpoints: set[str],
-) -> None:
+) -> set[ResolvedIp]:
     """
     Validate URL against SSRF.
+
+    Returns the addresses that are safe to connect to. An empty set means
+    the URL was accepted without a resolved address (allowlisted hostname);
+    the caller must resolve and pin separately if it needs a destination.
 
     Raises TugUrlValidationSSRFError if URL is valid and resolved to ip,
     but not in allowed networks or endpoints.
@@ -37,29 +78,14 @@ async def validate_url_against_ssrf(
     endpoint: Final[str] = f"{hostname}:{port}" if port is not None else hostname
 
     if endpoint in allowed_endpoints:
-        return
-
-    resolved: Final[set[IPv4Address | IPv6Address]] = set()
-
-    # Quick way for urls with ips
-    try:
-        resolved.add(ip_address(hostname))
-    except ValueError:
-        pass
-
-    # Resolve ip address
-    if not resolved:
         try:
-            answers = await dns.asyncresolver.resolve(hostname, "A")
-            resolved.update(ip_address(rdata.address) for rdata in answers)
-        except Exception:
-            pass
+            return {ip_address(hostname)}
+        except ValueError:
+            # Hostname allow-list: skip DNS so a compose name can be saved
+            # before it is resolvable. The agent client pins via getaddrinfo.
+            return set()
 
-        try:
-            answers = await dns.asyncresolver.resolve(hostname, "AAAA")
-            resolved.update(ip_address(rdata.address) for rdata in answers)
-        except Exception:
-            pass
+    resolved: Final[set[ResolvedIp]] = await _resolve_hostname(hostname)
 
     if not resolved:
         raise TugUrlValidationError(
@@ -67,9 +93,12 @@ async def validate_url_against_ssrf(
             f"while validating '{url}' for SSRF protection"
         )
 
-    for address in resolved:
-        if any(address in network for network in allowed_networks):
-            return
+    if any(address in network for address in resolved for network in allowed_networks):
+        return {
+            address
+            for address in resolved
+            if is_connect_allowed(address, allowed_networks)
+        }
 
     for address in resolved:
         if any(address in network for network in RESTRICTED_NETWORKS):
@@ -77,3 +106,5 @@ async def validate_url_against_ssrf(
                 f"URL '{url}' resolves to a private or reserved address "
                 "while validating for SSRF protection"
             )
+
+    return resolved

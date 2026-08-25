@@ -6,18 +6,19 @@ from backend.config import Config
 from backend.exception import TugUrlValidationError, TugUrlValidationSSRFError
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.hosts.hosts_schemas import HostInfo
-from backend.util.validate_url_against_ssrf import validate_url_against_ssrf
+from backend.util.validate_url_against_ssrf import ResolvedIp, validate_url_against_ssrf
 
 from .hosts_model import HostsModel
 
 
-async def validate_agent_url_against_ssrf(url: str) -> None:
+async def validate_agent_url_against_ssrf(url: str) -> set[ResolvedIp]:
     """
     Validate agent host URL against SSRF.
+    Returns addresses that are safe to pin on the subsequent connection.
     Raises HTTPException with a human-readable English message on failure.
     """
     try:
-        await validate_url_against_ssrf(
+        return await validate_url_against_ssrf(
             url,
             Config.AGENT_ALLOW_NETWORKS,
             Config.AGENT_ALLOW_ENDPOINTS,

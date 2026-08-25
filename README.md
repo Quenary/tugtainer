@@ -70,9 +70,10 @@ Automatic updates are disabled by default. You can enable only what you need.
 - ### Remote hosts
 
   > [!IMPORTANT]
-  > Agent host URLs that resolve to private or reserved networks are blocked by default (SSRF protection).
+  > Agent host URLs that resolve to private or reserved networks are blocked by default (best-effort check; see the [security policy](./docs/SECURITY.md)).
+  > The agent client then connects only to the addresses that passed that check, without replacing the hostname (TLS / virtual hosts stay intact).
   > If your remote agent is on a LAN or Docker network, allow it on the primary instance via **AGENT_ALLOW_NETWORKS** (e.g. `192.168.0.0/24`) and/or **AGENT_ALLOW_ENDPOINTS** (e.g. `10.0.0.5:9413`).
-  > See [.env.example](./.env.example) and the [security policy](./docs/SECURITY.md).
+  > See [.env.example](./.env.example).
   > By default, only the built-in agent endpoint `127.0.0.1:8001` is allowed when `AGENT_ENABLED=true`.
 
   To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.

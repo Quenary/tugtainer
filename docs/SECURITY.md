@@ -32,6 +32,7 @@ These are not treated as vulnerabilities (and will not be accepted as High):
 - Anything that requires an authenticated admin to paste an
   attacker-controlled URL, hostname, or shell command
 - SSRF or DNS rebinding from **admin-configured** notification URLs
+  or remote agent host URLs
 - Reaching Docker, socket-proxy, or link-local / metadata addresses from
   those URLs — the same admin already has equivalent access in the UI
 - Lab setups that replace the container's DNS resolver (for example
@@ -70,9 +71,18 @@ A stricter setup can set `NOTIFICATION_ALLOW_SCHEMES` (for example
 
 ### Agent host URLs
 
-The same best-effort private/reserved check applies to remote agent URLs.
+The same private/reserved check applies to remote agent URLs.
 Allow a LAN or Docker network with `AGENT_ALLOW_NETWORKS` and/or
 `AGENT_ALLOW_ENDPOINTS`. See [.env.example](../.env.example).
+
+Unlike notification URLs, agent requests are plain HTTP(S). The client
+resolves the hostname, applies the check, and connects only to the
+validated addresses. The original hostname is kept for the `Host`
+header, TLS SNI, and certificate verification.
+
+This is still not a security boundary against a malicious
+admin-supplied hostname: an admin who can set the URL already
+controls the session and Docker.
 
 ## Severity
 
