@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v1.34.2 (2026-08-25)
+
+### Bug Fixes
+
+- Allow --link on network connect after container update
+  ([`f9710b9`](https://github.com/Quenary/tugtainer/commit/f9710b99af46cb552e9c282a75491601d364e1fe))
+
+- **security**: Canonicalize numeric IPv4 in SSRF checks
+  ([`99aff9c`](https://github.com/Quenary/tugtainer/commit/99aff9c1ae20449c3531f7116b4d8851fa274417))
+
+- **security**: Pin validated agent IPs to block DNS rebinding
+  ([`9bded04`](https://github.com/Quenary/tugtainer/commit/9bded04b91bd2c0e63ee094470effdbfe3a4ed49))
+
+
 ## v1.34.1 (2026-08-24)
 
 ### Bug Fixes
