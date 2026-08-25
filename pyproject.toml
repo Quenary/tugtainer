@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "aiocron~=2.1",
-    "aiohttp~=3.13.3",
+    "aiohttp~=3.14.3",
     "aiosqlite~=0.22.1",
     "alembic~=1.18.1",
     "apprise~=1.9.5",
@@ -15,7 +15,7 @@ dependencies = [
     "cachetools-async~=0.0.5",
     "dnspython>=2.8.0",
     "dotenv~=0.9.9",
-    "fastapi~=0.128.0",
+    "fastapi~=0.141.1",
     "jinja2~=3.1.6",
     "packaging~=25.0",
     "paho-mqtt~=2.1.0",
@@ -27,7 +27,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "fastapi-cli~=0.0.20",
-    "fastapi[standard]~=0.128.0",
+    "fastapi[standard]~=0.141.1",
     "mypy~=1.20.2",
     "pre-commit~=4.6.0",
     "pytest~=9.0.2",

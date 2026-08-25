@@ -38,9 +38,9 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "1.62.1",
-    "@types/dockerode": "^3.3.45",
+    "@types/dockerode": "^4.0.1",
     "@types/node": "^26.2.0",
-    "dockerode": "^4.0.9",
+    "dockerode": "^5.0.1",
     "eslint": "^10.8.1",
     "eslint-plugin-playwright": "^2.11.0",
     "lint-staged": "^17.3.0",

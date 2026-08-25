@@ -46,11 +46,7 @@ export interface IContainerEntity extends IContainerListItem {
 }
 
 export type TContainerEntityLoading =
-  | 'loading'
-  | 'check'
-  | 'update'
-  | TControlContainerCommand
-  | null;
+  'loading' | 'check' | 'update' | TControlContainerCommand | null;
 
 const containersEntityConfig = entityConfig<IContainerEntity>({
   entity: type<IContainerEntity>(),
