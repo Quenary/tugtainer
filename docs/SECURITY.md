@@ -51,6 +51,9 @@ The app uses [Apprise](https://github.com/caronc/apprise). Private and
 reserved destinations are blocked with a **best-effort** check. See
 [Notifications](./NOTIFICATIONS.md).
 
+Literal IPv4 hosts are canonicalized the same way the libc stack does
+(including decimal, octal, hex, and short forms) before that check.
+
 That check does **not** cover DNS rebinding (TOCTOU between the validator's
 lookup and Apprise's own connect-time lookup). It is meant to stop obvious
 mistakes such as `json://socket-proxy:2375`, not to be a hard guarantee.

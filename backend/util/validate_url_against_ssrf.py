@@ -1,3 +1,4 @@
+import socket
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_address
 from typing import Final
 from urllib.parse import ParseResult, urlparse
@@ -8,6 +9,22 @@ from backend.const import RESTRICTED_NETWORKS
 from backend.exception import TugUrlValidationError, TugUrlValidationSSRFError
 
 type ResolvedIp = IPv4Address | IPv6Address
+
+
+def parse_literal_ip(hostname: str) -> ResolvedIp | None:
+    """
+    Parse a hostname that is already an IP, including non-canonical IPv4
+    forms that ``ip_address()`` rejects but the libc stack accepts
+    (decimal ``2886795265``, ``127.1``, octal/hex).
+    """
+    try:
+        return ip_address(hostname)
+    except ValueError:
+        pass
+    try:
+        return ip_address(socket.inet_ntoa(socket.inet_aton(hostname)))
+    except OSError:
+        return None
 
 
 def is_connect_allowed(
@@ -24,11 +41,9 @@ def is_connect_allowed(
 
 async def _resolve_hostname(hostname: str) -> set[ResolvedIp]:
     resolved: set[ResolvedIp] = set()
-    try:
-        resolved.add(ip_address(hostname))
-        return resolved
-    except ValueError:
-        pass
+    literal = parse_literal_ip(hostname)
+    if literal is not None:
+        return {literal}
 
     try:
         answers = await dns.asyncresolver.resolve(hostname, "A")
@@ -78,12 +93,12 @@ async def validate_url_against_ssrf(
     endpoint: Final[str] = f"{hostname}:{port}" if port is not None else hostname
 
     if endpoint in allowed_endpoints:
-        try:
-            return {ip_address(hostname)}
-        except ValueError:
-            # Hostname allow-list: skip DNS so a compose name can be saved
-            # before it is resolvable. The agent client pins via getaddrinfo.
-            return set()
+        literal = parse_literal_ip(hostname)
+        if literal is not None:
+            return {literal}
+        # Hostname allow-list: skip DNS so a compose name can be saved
+        # before it is resolvable. The agent client pins via getaddrinfo.
+        return set()
 
     resolved: Final[set[ResolvedIp]] = await _resolve_hostname(hostname)
 

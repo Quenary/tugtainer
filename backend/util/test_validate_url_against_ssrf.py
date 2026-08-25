@@ -148,6 +148,37 @@ class TestValidateUrlAgainstSsrf:
         )
         assert result == {ip_address("192.168.1.10")}
 
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "json://2886795265:9999/hook",
+            "http://2130706433/",
+            "http://127.1/",
+            "http://0177.0.0.1/",
+            "http://0x7f000001/",
+        ],
+    )
+    async def test_non_canonical_ipv4_is_treated_as_restricted(
+        self, url, allowed_networks, allowed_endpoints
+    ):
+        with patch("dns.asyncresolver.resolve") as mock_resolve:
+            with pytest.raises(TugUrlValidationSSRFError):
+                await validate_url_against_ssrf(
+                    url, allowed_networks, allowed_endpoints
+                )
+            mock_resolve.assert_not_called()
+
+    async def test_non_canonical_public_ipv4_is_allowed(
+        self, allowed_networks, allowed_endpoints
+    ):
+        # 134744072 == 8.8.8.8
+        with patch("dns.asyncresolver.resolve") as mock_resolve:
+            result = await validate_url_against_ssrf(
+                "http://134744072", allowed_networks, allowed_endpoints
+            )
+            mock_resolve.assert_not_called()
+        assert result == {ip_address("8.8.8.8")}
+
     @patch("dns.asyncresolver.resolve")
     async def test_dns_resolve_failure_raises_validation_error(
         self, mock_resolve, allowed_networks, allowed_endpoints
