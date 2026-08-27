@@ -1,9 +1,47 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
+from urllib.parse import urlparse
 
 from backend.config import Config
+
+_DOCKER_HUB_HOSTS: Final[frozenset[str]] = frozenset(
+    {
+        "docker.io",
+        "index.docker.io",
+        "registry-1.docker.io",
+    }
+)
+
+
+def normalize_registry_host(value: str) -> str:
+    """
+    Normalize a docker config auth key or image registry to host[:port].
+
+    URL-form keys such as https://ghcr.io/v1/ become ghcr.io.
+    Docker Hub aliases (docker.io, index.docker.io, registry-1.docker.io)
+    canonicalise to registry-1.docker.io.
+    """
+    raw = value.strip()
+    if not raw:
+        return ""
+
+    parsed = urlparse(raw if "://" in raw else f"//{raw}")
+    host = (parsed.hostname or "").casefold()
+    if not host:
+        return ""
+
+    if host in _DOCKER_HUB_HOSTS:
+        return "registry-1.docker.io"
+
+    if ":" in host:
+        host = f"[{host}]"
+
+    port = parsed.port
+    if port is not None:
+        return f"{host}:{port}"
+    return host
 
 
 class DockerConfig:
@@ -44,28 +82,17 @@ class DockerConfig:
 
     def get_basic_token(self, registry: str) -> str | None:
         """
-        Get Basic auth token for registry
+        Get Basic auth token for registry using exact normalized host match.
         """
-
-        entry = self.auths.get(registry)
-
-        # dockerhub special case
-        if not entry:
-            if registry in ["registry-1.docker.io", "docker.io"]:
-                registry = "https://index.docker.io/v1/"
-                entry = self.auths.get(registry)
-
-        # find by partial match
-        if not entry:
-            for k, v in self.auths.items():
-                if registry in k or k in registry:
-                    entry = v
-                    break
-
-        if not entry:
+        target = normalize_registry_host(registry)
+        if not target:
             return None
 
-        if "auth" in entry:
-            return entry["auth"]
+        for key, entry in self.auths.items():
+            if normalize_registry_host(key) != target:
+                continue
+            if entry and "auth" in entry:
+                return entry["auth"]
+            return None
 
         return None

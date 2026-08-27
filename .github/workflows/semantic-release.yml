@@ -33,13 +33,36 @@ jobs:
         run: |
           git reset --hard ${{ github.sha }}
 
+      # - name: Action | Semantic-release
+      #   id: semantic-release
+      #   uses: python-semantic-release/python-semantic-release@v10
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     git_committer_name: github-actions[bot]
+      #     git_committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      # Official PSR Docker action currently fails: GitPython 3.1.60 removed
+      # Actor.name_email_regex, and the action image resolves GitPython unpinned.
+      # https://github.com/python-semantic-release/python-semantic-release/issues/1475
+      # Restore python-semantic-release/python-semantic-release@v10 after a
+      # release that includes PR #1477.
+      - name: Setup | Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup | Install Python Semantic Release
+        run: pip install "python-semantic-release~=10.6.1" "gitpython<3.1.60"
+
       - name: Action | Semantic-release
         id: semantic-release
-        uses: python-semantic-release/python-semantic-release@v10
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          git_committer_name: github-actions[bot]
-          git_committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_COMMIT_AUTHOR: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          semantic-release -v version
 
       - name: Action | Trigger Prod Build Workflow
         if: steps.semantic-release.outputs.released == 'true'

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
-from backend.docker_config import DockerConfig
+from backend.docker_config import DockerConfig, normalize_registry_host
 
 module_path = "backend.docker_config"
 
@@ -77,17 +77,51 @@ def test_docker_config(
             "docker.io",
             "dockerhub_token",
         ),
-        # partial match: registry in key
+        # URL-form key with path (host only)
         (
             {"https://gcr.io/project": {"auth": "gcr_token"}},
             "gcr.io",
             "gcr_token",
         ),
-        # partial match: key in registry
+        # path on registry argument is stripped to host
         (
             {"gcr.io": {"auth": "gcr_token"}},
             "gcr.io/project",
             "gcr_token",
+        ),
+        # https://ghcr.io/v1/ → ghcr.io
+        (
+            {"https://ghcr.io/v1/": {"auth": "ghcr_token"}},
+            "ghcr.io",
+            "ghcr_token",
+        ),
+        # case-insensitive host match
+        (
+            {"https://GHCR.IO": {"auth": "ghcr_token"}},
+            "ghcr.io",
+            "ghcr_token",
+        ),
+        # substring lookalike must not match (SA)
+        (
+            {"ghcr.io": {"auth": "ghcr_token"}},
+            "ghcr.io.attacker.example",
+            None,
+        ),
+        (
+            {"https://ghcr.io": {"auth": "ghcr_token"}},
+            "ghcr.io.attacker.example",
+            None,
+        ),
+        (
+            {"ghcr.io.attacker.example": {"auth": "evil_token"}},
+            "ghcr.io",
+            None,
+        ),
+        # suffix lookalike must not match
+        (
+            {"gcr.io": {"auth": "gcr_token"}},
+            "mygcr.io",
+            None,
         ),
         # no match
         (
@@ -121,3 +155,24 @@ def test_get_basic_token(auths, registry, expected):
     result = docker_config.get_basic_token(registry)
 
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("ghcr.io", "ghcr.io"),
+        ("https://ghcr.io", "ghcr.io"),
+        ("https://ghcr.io/v1/", "ghcr.io"),
+        ("https://gcr.io/project", "gcr.io"),
+        ("GHCR.IO", "ghcr.io"),
+        ("localhost:5000", "localhost:5000"),
+        ("http://localhost:5000", "localhost:5000"),
+        ("https://index.docker.io/v1/", "registry-1.docker.io"),
+        ("docker.io", "registry-1.docker.io"),
+        ("registry-1.docker.io", "registry-1.docker.io"),
+        ("ghcr.io.attacker.example", "ghcr.io.attacker.example"),
+        ("", ""),
+    ],
+)
+def test_normalize_registry_host(value, expected):
+    assert normalize_registry_host(value) == expected
