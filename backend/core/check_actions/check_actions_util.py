@@ -1,14 +1,14 @@
 import logging
 from datetime import datetime
 from typing import Any, Final, cast
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import aiohttp
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 
-from backend.docker_config import DockerConfig
+from backend.docker_config import DockerConfig, normalize_registry_host
 from backend.modules.containers.containers_model import (
     ContainersModel,
 )
@@ -69,13 +69,7 @@ async def get_image_remote_digest(
     )
     logger.debug(f"Insecure Registries: {insecure_registries}")
 
-    insecure: bool = bool(
-        insecure_registries
-        and any(
-            x and registry and (registry in x or x in registry)
-            for x in insecure_registries.splitlines()
-        )
-    )
+    insecure = is_insecure_registry(registry, insecure_registries)
 
     schemes: list[str] = ["https"]
     if insecure:
@@ -140,6 +134,7 @@ async def get_image_remote_digest(
                         repo,
                         basic_token,
                         ssl,
+                        insecure,
                     )
                     headers["Authorization"] = (
                         f"Bearer {bearer_token}"
@@ -219,12 +214,41 @@ def parse_image_spec(spec: str) -> tuple[str, str, str]:
     return registry, repo, tag
 
 
+def is_insecure_registry(
+    registry: str,
+    insecure_registries: str | None,
+) -> bool:
+    """
+    True if registry host[:port] exactly matches an INSECURE_REGISTRIES entry.
+    """
+    if not insecure_registries:
+        return False
+    target = normalize_registry_host(registry)
+    if not target:
+        return False
+    return any(
+        normalize_registry_host(line) == target
+        for line in insecure_registries.splitlines()
+    )
+
+
+def _validate_bearer_realm(realm: str, insecure: bool) -> None:
+    parsed = urlparse(realm)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError(f"Invalid Bearer realm URL: {realm}")
+    if parsed.scheme == "http" and not insecure:
+        raise ValueError(
+            "HTTP Bearer realm is only allowed for insecure registries"
+        )
+
+
 async def get_registry_bearer_token(
     session: aiohttp.ClientSession,
     auth_header: str,
     repo: str,
     basic_token: str | None = None,
     ssl: bool = True,
+    insecure: bool = False,
 ) -> str:
     """
     Get registry bearer token
@@ -234,6 +258,7 @@ async def get_registry_bearer_token(
     :param repo: repo name
     :param basic_token: basic token
     :param ssl: ssl flag for request
+    :param insecure: whether the image registry is in INSECURE_REGISTRIES
     :return: token
     """
 
@@ -243,7 +268,13 @@ async def get_registry_bearer_token(
         for item in parts.replace('"', "").split(",")
     )
 
-    realm = items["realm"]
+    realm = items.get("realm")
+    if not realm:
+        raise ValueError(
+            "Bearer realm is missing from WWW-Authenticate header"
+        )
+    _validate_bearer_realm(realm, insecure)
+
     service = items.get("service")
     scope = items.get("scope") or f"repository:{repo}:pull"
 
@@ -256,7 +287,12 @@ async def get_registry_bearer_token(
     if basic_token:
         headers["Authorization"] = f"Basic {basic_token}"
 
-    async with session.get(url, headers=headers, ssl=ssl) as resp:
+    async with session.get(
+        url,
+        headers=headers,
+        ssl=ssl,
+        allow_redirects=False,
+    ) as resp:
         resp.raise_for_status()
         data: dict[str, Any] = await resp.json()
         return data.get("token") or data.get("access_token") or ""
