@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.34.3 (2026-08-27)
+
+### Bug Fixes
+
+- **security**: Match registry credentials by exact host
+  ([`4fb97c0`](https://github.com/Quenary/tugtainer/commit/4fb97c0eb554550be93f0652eb8fcc5d352b8bd6))
+
+
 ## v1.34.2 (2026-08-25)
 
 ### Bug Fixes
