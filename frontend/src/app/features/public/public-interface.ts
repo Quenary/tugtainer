@@ -18,6 +18,7 @@ export interface IHostSummary {
   by_check_enabled: Record<string, number>;
   by_update_enabled: Record<string, number>;
   by_update_available: Record<string, number>;
+  by_update_available_auto_check: Record<string, number>;
   total_images: number;
   unused_images: number;
   dangling_images: number;

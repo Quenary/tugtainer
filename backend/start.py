@@ -4,7 +4,10 @@ import subprocess
 import uvicorn
 from dotenv import load_dotenv
 
+from shared.util.file_env import apply_file_env
+
 load_dotenv()
+apply_file_env()
 log_level = os.getenv("LOG_LEVEL", "INFO").lower()
 
 

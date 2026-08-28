@@ -1,6 +1,7 @@
 import pytest
 from python_on_whales.components.container.models import (
     ContainerConfig,
+    ContainerHealthCheck,
     ContainerHostConfig,
     ContainerInspectResult,
 )
@@ -109,6 +110,51 @@ def test_entrypoint_cmd_logic(
 
     assert res.entrypoint == expected_entrypoint, f"Failed on: {case_name} (entrypoint)"
     assert res.command == expected_cmd, f"Failed on: {case_name} (command)"
+
+
+# Related to #226: inherit image healthcheck instead of flattening CMD to CMD-SHELL
+_HC_NS = 1_000_000_000
+_EXEC_HC = ContainerHealthCheck(
+    test=["CMD", "/beszel", "health", "--url", "http://127.0.0.1:8090"],
+    interval=30 * _HC_NS,
+    timeout=5 * _HC_NS,
+    retries=3,
+    start_period=10 * _HC_NS,
+)
+
+
+def test_healthcheck_dropped_when_matching_image():
+    container = ContainerInspectResult(
+        config=ContainerConfig(image="test_image", healthcheck=_EXEC_HC)
+    )
+    image = ImageInspectResult(
+        config=ContainerConfig(healthcheck=_EXEC_HC)
+    )
+
+    res, _ = get_container_config(container, image=image, docker_version=None)
+
+    assert res.healthcheck is None
+    assert res.health_cmd is None
+    assert res.health_interval is None
+    assert res.health_timeout is None
+    assert res.health_retries is None
+    assert res.health_start_period is None
+
+
+def test_healthcheck_override_keeps_cmd_when_different_from_image():
+    container = ContainerInspectResult(
+        config=ContainerConfig(image="test_image", healthcheck=_EXEC_HC)
+    )
+    image = ImageInspectResult(
+        config=ContainerConfig(
+            healthcheck=ContainerHealthCheck(test=["CMD", "/other", "health"])
+        )
+    )
+
+    res, _ = get_container_config(container, image=image, docker_version=None)
+
+    assert res.healthcheck is True
+    assert res.health_cmd == "/beszel health --url http://127.0.0.1:8090"
 
 
 # workdir parametrized test

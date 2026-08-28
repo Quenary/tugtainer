@@ -45,6 +45,7 @@ class HostSummary(BaseModel):
     by_check_enabled: dict[str, int]
     by_update_enabled: dict[str, int]
     by_update_available: dict[str, int]
+    by_update_available_auto_check: dict[str, int]
     total_images: int
     unused_images: int
     dangling_images: int

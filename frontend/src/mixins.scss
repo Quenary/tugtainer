@@ -73,3 +73,43 @@
   overflow: hidden;
   overflow-y: auto;
 }
+// Keep toolbar/header controls in one row and scroll horizontally
+// on narrow screens instead of wrapping and stealing table space.
+@mixin scrollable-header-row {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+@mixin nowrap-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+
+  > * {
+    flex-shrink: 0;
+  }
+}
+@mixin scrollable-toolbar {
+  @include scrollable-header-row;
+
+  p-iconfield {
+    flex-shrink: 0;
+    width: auto;
+  }
+
+  ::ng-deep .p-toolbar-start,
+  ::ng-deep .p-toolbar-center,
+  ::ng-deep .p-toolbar-end {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    gap: 0.5rem;
+  }
+}

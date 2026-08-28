@@ -151,7 +151,11 @@ def get_container_config(
         "envs": ENVS,
         "gpus": map_device_requests_to_gpus(host_config.device_requests),
         "groups_add": host_config.group_add,
-        **map_healthcheck_to_kwargs(config.healthcheck),
+        **map_healthcheck_to_kwargs(
+            config.healthcheck,
+            image.config.healthcheck if (image and image.config) else None,
+            inherit_matching=bool(image and image.config),
+        ),
         "ipc": host_config.ipc_mode,
         "isolation": host_config.isolation,
         "kernel_memory": host_config.kernel_memory,

@@ -8,12 +8,10 @@
 
   p-toolbar {
     border-color: transparent;
+    @include m.scrollable-toolbar;
 
     .filters {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+      @include m.nowrap-inline;
     }
   }
 

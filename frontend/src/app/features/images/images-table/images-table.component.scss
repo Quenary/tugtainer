@@ -8,6 +8,7 @@
 
   p-toolbar {
     border-color: transparent;
+    @include m.scrollable-toolbar;
   }
 
   p-table {
