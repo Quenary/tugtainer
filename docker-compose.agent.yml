@@ -38,6 +38,21 @@ services:
       # You can uncomment this to mount socket directly,
       # and remove socket-proxy service and DOCKER_HOST variable
       # - /var/run/docker.sock:/var/run/docker.sock:ro
+      # TLS without a reverse proxy: mount cert/key and extend uvicorn command.
+      # Paste the CA (or the self-signed cert) into Custom CA on the host in the UI.
+      # - ./certs/cert.pem:/certs/cert.pem:ro
+      # - ./certs/key.pem:/certs/key.pem:ro
+    # command:
+      # - --host
+      # - 0.0.0.0
+      # - --port
+      # - "8001"
+      # - --log-level
+      # - warning
+      # - --ssl-certfile
+      # - /certs/cert.pem
+      # - --ssl-keyfile
+      # - /certs/key.pem
     restart: unless-stopped
     environment:
       # The list of available variables is in env.example

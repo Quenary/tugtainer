@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Integer, String, text
+from sqlalchemy import Boolean, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db.base_model import BaseModel
@@ -50,6 +50,7 @@ class HostsModel(BaseModel):
         default=True,
         server_default=text("TRUE"),
     )
+    ssl_ca: Mapped[str | None] = mapped_column(Text, nullable=True)
     timeout: Mapped[int] = mapped_column(
         Integer, nullable=False, default=5, server_default=text("5")
     )

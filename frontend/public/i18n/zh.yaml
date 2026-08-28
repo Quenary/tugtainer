@@ -125,6 +125,9 @@ HOSTS:
       HAS_SECRET: 已设置密钥
       SSL: SSL
       SSL_HINT: 是否对后端到 Agent 的请求启用 SSL 验证。
+      SSL_CA: 自定义 CA
+      SSL_CA_HINT: 用于校验 backend → agent TLS 的 PEM CA（或自签名证书）。仅在启用 SSL 时生效。留空则使用系统 CA。
+      SSL_CA_PLACEHOLDER: '-----BEGIN CERTIFICATE-----'
       TIMEOUT: Agent 超时时间
       TIMEOUT_HINT: 常规短耗时 Agent 请求的超时时间（秒）。
         不影响创建容器或拉取镜像等可能较长的请求。

@@ -84,6 +84,26 @@
           </app-boolean-field>
 
           <p-iftaLabel style="width: 100%">
+            <p-iconfield>
+              <textarea
+                fluid
+                pTextarea
+                id="host-ssl-ca"
+                rows="6"
+                formControlName="ssl_ca"
+                [placeholder]="
+                  'HOSTS.CARD.GENERAL.SSL_CA_PLACEHOLDER' | translate
+                "></textarea>
+              <p-inputicon
+                class="pi pi-question-circle"
+                [pTooltip]="'HOSTS.CARD.GENERAL.SSL_CA_HINT' | translate"></p-inputicon>
+            </p-iconfield>
+            <label for="host-ssl-ca">
+              {{ 'HOSTS.CARD.GENERAL.SSL_CA' | translate }}
+            </label>
+          </p-iftaLabel>
+
+          <p-iftaLabel style="width: 100%">
             <input
               fluid
               pInputText

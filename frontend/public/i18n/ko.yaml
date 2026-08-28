@@ -125,6 +125,11 @@ HOSTS:
       HAS_SECRET: 시크릿이 설정됨
       SSL: SSL
       SSL_HINT: 백엔드-에이전트 요청에 SSL 검증을 사용할지 여부입니다.
+      SSL_CA: 사용자 지정 CA
+      SSL_CA_HINT:
+        backend → agent TLS 검증에 사용할 PEM CA(또는 자체 서명 인증서)입니다.
+        SSL이 켜져 있을 때만 사용됩니다. 비우면 시스템 CA를 사용합니다.
+      SSL_CA_PLACEHOLDER: '-----BEGIN CERTIFICATE-----'
       TIMEOUT: 에이전트 타임아웃
       TIMEOUT_HINT:
         일반적으로 빠르게 처리되는 에이전트 요청의 타임아웃(초)입니다.

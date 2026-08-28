@@ -126,6 +126,12 @@ HOSTS:
       HAS_SECRET: Secret is set
       SSL: SSL
       SSL_HINT: Whether to use SSL verification for backend > agent requests.
+      SSL_CA: Custom CA
+      SSL_CA_HINT:
+        PEM CA (or a self-signed certificate) used to verify TLS for
+        backend → agent requests. Used only when SSL is enabled. Leave empty
+        to use the system CA store.
+      SSL_CA_PLACEHOLDER: '-----BEGIN CERTIFICATE-----'
       TIMEOUT: Agent timeout
       TIMEOUT_HINT:
         Timeout in seconds for typically fast agent requests. It does

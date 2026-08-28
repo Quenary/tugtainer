@@ -1,9 +1,11 @@
+import ssl
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
 
-from backend.core.agent_client import AgentClient
+from backend.core.agent_client import AgentClient, build_agent_ssl
+from backend.modules.hosts.test_hosts_schemas import TEST_CA_PEM
 from backend.util.pinned_ip_resolver import PinnedIpResolver
 
 
@@ -62,3 +64,70 @@ async def test_session_uses_pinned_resolver_without_dns_cache():
         assert connector._resolver._hostname == "agent.example.com"
     finally:
         await client.close_session()
+
+
+def test_build_agent_ssl_default_verify():
+    assert build_agent_ssl(True) is True
+    assert build_agent_ssl(True, None) is True
+
+
+def test_build_agent_ssl_disabled_ignores_ca():
+    assert build_agent_ssl(False, TEST_CA_PEM) is False
+
+
+def test_build_agent_ssl_with_ca_returns_context():
+    context = build_agent_ssl(True, TEST_CA_PEM)
+    assert isinstance(context, ssl.SSLContext)
+
+
+@pytest.mark.asyncio
+async def test_request_uses_ssl_context_when_ca_set(
+    mocker: MockerFixture,
+):
+    mocker.patch(
+        "backend.core.agent_client.validate_agent_url_against_ssrf",
+        new=AsyncMock(return_value=set()),
+    )
+    cm = _mock_response(mocker)
+    session = MagicMock()
+    session.closed = False
+    session.request = MagicMock(return_value=cm)
+
+    client = AgentClient(
+        id=1,
+        url="https://agent.example.com:9413",
+        ssl=True,
+        ssl_ca=TEST_CA_PEM,
+    )
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+
+    await client._request("GET", "/api/public/health")
+
+    kwargs = session.request.call_args.kwargs
+    assert isinstance(kwargs["ssl"], ssl.SSLContext)
+
+
+@pytest.mark.asyncio
+async def test_request_disables_ssl_even_with_ca(
+    mocker: MockerFixture,
+):
+    mocker.patch(
+        "backend.core.agent_client.validate_agent_url_against_ssrf",
+        new=AsyncMock(return_value=set()),
+    )
+    cm = _mock_response(mocker)
+    session = MagicMock()
+    session.closed = False
+    session.request = MagicMock(return_value=cm)
+
+    client = AgentClient(
+        id=1,
+        url="https://agent.example.com:9413",
+        ssl=False,
+        ssl_ca=TEST_CA_PEM,
+    )
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+
+    await client._request("GET", "/api/public/health")
+
+    assert session.request.call_args.kwargs["ssl"] is False
