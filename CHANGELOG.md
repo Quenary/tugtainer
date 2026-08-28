@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v1.35.0 (2026-08-28)
+
+### Bug Fixes
+
+- Inherit image healthcheck instead of flattening to CMD-SHELL
+  ([`7d88a6b`](https://github.com/Quenary/tugtainer/commit/7d88a6b9c3be234a60e62a61860199f3bc5bcfd5))
+
+- **backend**: Log missing notification URLs instead of exception
+  ([`54df780`](https://github.com/Quenary/tugtainer/commit/54df780186e0b305b2587d0058b1a2d28fca199f))
+
+### Features
+
+- Add by_update_available_auto_check to host summary
+  ([`84d5514`](https://github.com/Quenary/tugtainer/commit/84d551422197d33bd3c11a4d48bcc1f91b56e4ab))
+
+- Add support for Docker-style VAR_FILE secrets
+  ([`d1e90b5`](https://github.com/Quenary/tugtainer/commit/d1e90b5676f81570d06943c460db5f75fce24b56))
+
+- **frontend**: Add autofocus to OIDC login button
+  ([`bd887e7`](https://github.com/Quenary/tugtainer/commit/bd887e7e4e2a0ff15724ed465f503587fe22f151))
+
+- **frontend**: Hosts dashboard styles optimized for smaller screens
+  ([`aa83076`](https://github.com/Quenary/tugtainer/commit/aa83076adc4bea5788b4fce64ae35a2f37ecf00a))
+
+- **frontend**: Scrollable toolbars/headers for smaller screens
+  ([`2139698`](https://github.com/Quenary/tugtainer/commit/21396981b963e776f42e4afba991888cc8135ad7))
+
+
 ## v1.34.3 (2026-08-27)
 
 ### Bug Fixes
