@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { HostsDashboardComponent } from './hosts-dashboard.component';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -14,18 +15,24 @@ describe('HostsDashboardComponent', () => {
   let hostsStore: InstanceType<typeof HostsStore>;
 
   const activatedRouteParams = new Subject<object>();
+  const breakpointObserverObserve = new Subject<BreakpointState>();
   let activatedRouteMock: Partial<Mocked<ActivatedRoute>>;
+  let breakpointObserverMock: Partial<Mocked<BreakpointObserver>>;
 
   beforeEach(async () => {
     activatedRouteMock = {
       params: activatedRouteParams,
       toString: vi.fn(),
     };
+    breakpointObserverMock = {
+      observe: vi.fn().mockReturnValue(breakpointObserverObserve),
+    };
 
     await TestBed.configureTestingModule({
       imports: [HostsDashboardComponent],
       providers: [
         { provide: ActivatedRoute, useValue: activatedRouteMock },
+        { provide: BreakpointObserver, useValue: breakpointObserverMock },
         HostsStore,
         MessageService,
         provideTranslateService(),
@@ -57,5 +64,22 @@ describe('HostsDashboardComponent', () => {
 
     expect(selectSpy).toHaveBeenCalledWith(null);
     expect(selectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should update narrow state', () => {
+    breakpointObserverObserve.next({ matches: true } as BreakpointState);
+    fixture.detectChanges();
+    expect(component['narrow']()).toBe(true);
+    expect(fixture.nativeElement.classList.contains('narrow')).toBe(true);
+
+    breakpointObserverObserve.next({ matches: false } as BreakpointState);
+    fixture.detectChanges();
+    expect(component['narrow']()).toBe(false);
+    expect(fixture.nativeElement.classList.contains('narrow')).toBe(false);
+
+    component['narrow'].set(true);
+    fixture.detectChanges();
+    expect(component['narrow']()).toBe(true);
+    expect(fixture.nativeElement.classList.contains('narrow')).toBe(true);
   });
 });

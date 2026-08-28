@@ -2,15 +2,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
+  linkedSignal,
   model,
   OnDestroy,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { map } from 'rxjs';
 import { HostsStore } from '../hosts.store';
 import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TagModule } from 'primeng/tag';
 import { HostStatusComponent } from '@shared/components/host-status/host-status.component';
 import { ButtonModule } from 'primeng/button';
@@ -43,12 +46,23 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
   templateUrl: './hosts-dashboard.component.html',
   styleUrl: './hosts-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.narrow]': 'narrow()',
+  },
 })
 export class HostsDashboardComponent implements OnDestroy {
   protected readonly hostsStore = inject(HostsStore);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly translateService = inject(TranslateService);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+
+  private readonly _narrow = toSignal<boolean>(
+    this.breakpointObserver
+      .observe([Breakpoints.Handset, Breakpoints.Small])
+      .pipe(map((result) => result.matches)),
+  );
+  protected readonly narrow = linkedSignal(this._narrow);
 
   protected readonly childActive = signal<boolean>(false);
   protected readonly pruneAll = model<boolean>(false);
