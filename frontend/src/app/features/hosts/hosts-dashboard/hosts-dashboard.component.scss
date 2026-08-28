@@ -1,3 +1,5 @@
+@use 'mixins' as m;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -7,18 +9,20 @@
 
   .header {
     font-size: 2rem;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
     padding-left: 1rem;
-    flex-wrap: wrap;
+    @include m.scrollable-header-row;
+
+    > * {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
 
     &-actions {
       margin-left: auto;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+      @include m.nowrap-inline;
     }
   }
 
