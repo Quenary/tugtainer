@@ -6,6 +6,8 @@ from typing import ClassVar
 
 from dotenv import load_dotenv
 
+from shared.util.file_env import apply_file_env
+
 
 class Config:
     _loaded: ClassVar[bool] = False
@@ -48,6 +50,7 @@ class Config:
     def load(cls):
         if not cls._loaded:
             load_dotenv()
+            apply_file_env()
             cls.HOSTNAME = os.getenv("HOSTNAME", "")
             cls.LOG_LEVEL = (os.getenv("LOG_LEVEL") or "info").upper()
             cls.DISABLE_AUTH = os.getenv("DISABLE_AUTH", "false").lower() == "true"
