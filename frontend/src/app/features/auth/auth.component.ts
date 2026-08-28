@@ -18,6 +18,7 @@ import { ToastService } from 'src/app/core/services/toast.service';
 import { ButtonModule } from 'primeng/button';
 import { DividerModule } from 'primeng/divider';
 import { TranslatePipe } from '@ngx-translate/core';
+import { AutoFocusModule } from 'primeng/autofocus';
 
 @Component({
   selector: 'app-auth',
@@ -29,6 +30,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     DividerModule,
     TranslatePipe,
     DividerModule,
+    AutoFocusModule,
   ],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',
