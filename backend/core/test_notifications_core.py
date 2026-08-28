@@ -3,7 +3,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from backend.config import Config
-from backend.core.notifications_core import send_notification
+from backend.core.notifications_core import (
+    send_check_notification,
+    send_notification,
+)
 from backend.exception import (
     TugNotificationException,
     TugUrlValidationError,
@@ -74,3 +77,39 @@ async def test_send_notification_allows_nonstandard_apprise_urls():
         await send_notification("title", "body", urls)
 
     apprise.async_notify.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_send_notification_skips_when_urls_undefined():
+    with patch("backend.core.notifications_core.Apprise") as apprise_class:
+        await send_notification("title", "body", [])
+
+    apprise_class.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_send_check_notification_skips_when_urls_undefined():
+    with (
+        patch(
+            "backend.core.notifications_core.SettingsStorage.get",
+            return_value="",
+        ),
+        patch(
+            "backend.core.notifications_core.send_notification",
+            new_callable=AsyncMock,
+        ) as send,
+    ):
+        await send_check_notification([])
+
+    send.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_send_check_notification_skips_when_urls_are_blank():
+    with patch(
+        "backend.core.notifications_core.send_notification",
+        new_callable=AsyncMock,
+    ) as send:
+        await send_check_notification([], urls="  \n  ")
+
+    send.assert_not_called()

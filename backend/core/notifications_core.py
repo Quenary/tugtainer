@@ -63,11 +63,10 @@ async def send_check_notification(
         if urls == u_sentinel:
             urls = SettingsStorage.get(ESettingKey.NOTIFICATION_URLS)
 
-        if not urls:
-            raise TugNotificationException(
-                "Failed to send notification. URLs is undefined."
-            )
-        _urls = [line.strip() for line in urls.splitlines() if line.strip()]
+        _urls = [line.strip() for line in (urls or "").splitlines() if line.strip()]
+        if not _urls:
+            logger.warning("Notification URLs is undefined. Exiting.")
+            return
 
         jinja2_env: Final = SandboxedEnvironment(
             trim_blocks=True,
@@ -111,42 +110,41 @@ async def send_notification(
     logger.debug(f"Title: {title}")
     logger.debug(f"Body: {body}")
 
-    if urls:
-        try:
-            for url in urls:
-                try:
-                    await validate_url_against_ssrf(
-                        url,
-                        Config.NOTIFICATION_ALLOW_NETWORKS,
-                        Config.NOTIFICATION_ALLOW_ENDPOINTS,
-                    )
-                except TugUrlValidationSSRFError as e:
-                    raise TugNotificationException(
-                        f"Notification URL blocked by SSRF protection: {e}"
-                    ) from e
-                except (TugUrlValidationError, ValueError):
-                    # Apprise URLs are not always standard URLs with a hostname.
-                    # Keep allowing those schemes, as the settings validation does.
-                    pass
+    if not urls:
+        logger.warning("Notification URLs is undefined. Exiting.")
+        return
 
-            logger.info("Sending notification")
-            _apprise: Final = Apprise()
-            _apprise.add(cast(Any, urls))
-            result: Final = await _apprise.async_notify(
-                title=title,
-                body=body,
-                body_format=body_format,
-            )
-            if result is False:
-                raise TugNotificationException(
-                    "Failed to send notification, but no exception was raised by Apprise."
+    try:
+        for url in urls:
+            try:
+                await validate_url_against_ssrf(
+                    url,
+                    Config.NOTIFICATION_ALLOW_NETWORKS,
+                    Config.NOTIFICATION_ALLOW_ENDPOINTS,
                 )
-        except AppriseException as e:
-            logger.exception("Failed to send notification")
-            raise TugNotificationException(
-                f"Failed to send notification. Apprise exception: {e}"
-            ) from e
-    else:
-        raise TugNotificationException(
-            "Failed to send notification. URLs is undefined."
+            except TugUrlValidationSSRFError as e:
+                raise TugNotificationException(
+                    f"Notification URL blocked by SSRF protection: {e}"
+                ) from e
+            except (TugUrlValidationError, ValueError):
+                # Apprise URLs are not always standard URLs with a hostname.
+                # Keep allowing those schemes, as the settings validation does.
+                pass
+
+        logger.info("Sending notification")
+        _apprise: Final = Apprise()
+        _apprise.add(cast(Any, urls))
+        result: Final = await _apprise.async_notify(
+            title=title,
+            body=body,
+            body_format=body_format,
         )
+        if result is False:
+            raise TugNotificationException(
+                "Failed to send notification, but no exception was raised by Apprise."
+            )
+    except AppriseException as e:
+        logger.exception("Failed to send notification")
+        raise TugNotificationException(
+            f"Failed to send notification. Apprise exception: {e}"
+        ) from e
