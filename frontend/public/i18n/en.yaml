@@ -156,6 +156,8 @@ CONTAINERS:
   NAME: Name
   CONTAINER_ID: ID
   IMAGE: Image
+  SOURCE_CODE: Source code
+  SOURCE_CODE_HINT: Opens the repository URL from the image labels.
   UPDATE_AVAILABLE: Update available
   STATUS: Status
   PORTS: Ports

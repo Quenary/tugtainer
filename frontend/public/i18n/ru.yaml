@@ -157,6 +157,8 @@ CONTAINERS:
   NAME: Имя
   CONTAINER_ID: ID
   IMAGE: Образ
+  SOURCE_CODE: Исходный код
+  SOURCE_CODE_HINT: Открывает URL репозитория из лейблов образа.
   UPDATE_AVAILABLE: Доступно обновление
   STATUS: Статус
   PORTS: Порты

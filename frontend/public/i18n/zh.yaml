@@ -150,6 +150,8 @@ CONTAINERS:
   NAME: 名称
   CONTAINER_ID: ID
   IMAGE: 镜像
+  SOURCE_CODE: 源代码
+  SOURCE_CODE_HINT: 打开镜像标签中的仓库地址。
   UPDATE_AVAILABLE: 有可用更新
   STATUS: 状态
   PORTS: 端口

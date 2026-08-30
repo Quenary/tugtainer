@@ -153,6 +153,8 @@ CONTAINERS:
   NAME: 이름
   CONTAINER_ID: ID
   IMAGE: 이미지
+  SOURCE_CODE: 소스 코드
+  SOURCE_CODE_HINT: 이미지 레이블의 저장소 URL을 엽니다.
   UPDATE_AVAILABLE: 업데이트 가능
   STATUS: 상태
   PORTS: 포트

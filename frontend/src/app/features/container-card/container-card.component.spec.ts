@@ -9,6 +9,7 @@ import {
   ContainersStore,
   IContainerEntity,
 } from '../containers/containers.store';
+import { IContainerInfo } from '../containers/containers.interface';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Mocked } from 'vitest';
 
@@ -109,6 +110,28 @@ describe('ContainerCardComponent', () => {
 
     expect(component['previousImage']()).toBe('');
     expect(component['previousImageRows']()).toBe(2);
+  });
+
+  it('should expose the source URL from inspect labels', () => {
+    vi.spyOn(containersStore, 'selectedInfo').mockReturnValue({
+      inspect: {
+        Config: {
+          Labels: {
+            'org.opencontainers.image.source': 'https://github.com/foo/bar',
+          },
+        },
+      },
+    } as unknown as IContainerInfo);
+
+    expect(component['sourceUrl']()).toBe('https://github.com/foo/bar');
+  });
+
+  it('should hide the source URL when inspect has no source label', () => {
+    vi.spyOn(containersStore, 'selectedInfo').mockReturnValue({
+      inspect: { Config: { Labels: {} } },
+    } as unknown as IContainerInfo);
+
+    expect(component['sourceUrl']()).toBeNull();
   });
 
   it('should patch hooks for the selected container on save', () => {
