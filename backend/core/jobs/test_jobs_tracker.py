@@ -1,11 +1,13 @@
 from types import SimpleNamespace
+from typing import cast
 
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.enums.job_status_enum import EJobStatus
+from backend.modules.hosts.hosts_model import HostsModel
 
 
 def _tracker(host_id: int, name: str = "tracker-test") -> HostJobTracker:
-    return HostJobTracker(SimpleNamespace(id=host_id, name=name))
+    return HostJobTracker(cast(HostsModel, SimpleNamespace(id=host_id, name=name)))
 
 
 def test_finish_appends_completed_and_begin_preserves_it():

@@ -169,7 +169,10 @@ export const ContainersStore = signalStore(
                       : 'check'
                     : null,
                 }));
-                patchState(store, setEntities(entities, containersEntityConfig));
+                patchState(
+                  store,
+                  setEntities(entities, containersEntityConfig),
+                );
               },
               error: (error) => toastService.error(error),
               finalize: () => patchState(store, { loading: false }),

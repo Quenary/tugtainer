@@ -47,7 +47,7 @@ export function isHostBusy(
 ): boolean {
   return Boolean(
     state?.status &&
-      ![EJobStatus.DONE, EJobStatus.ERROR].includes(state.status),
+    ![EJobStatus.DONE, EJobStatus.ERROR].includes(state.status),
   );
 }
 
@@ -95,8 +95,8 @@ export function hasHostJobsDialog(
 ): boolean {
   return Boolean(
     pruneResult ||
-      state?.completed?.length ||
-      state?.queued?.length ||
-      isHostBusy(state),
+    state?.completed?.length ||
+    state?.queued?.length ||
+    isHostBusy(state),
   );
 }

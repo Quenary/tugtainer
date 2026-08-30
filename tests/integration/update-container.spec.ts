@@ -69,8 +69,9 @@ test.describe('update container with extra network', () => {
         async () => {
           const state = await getHostState(request, host.id);
           return (
-            jobResults(state, names).some((item) => item.result === 'updated') ??
-            false
+            jobResults(state, names).some(
+              (item) => item.result === 'updated',
+            ) ?? false
           );
         },
         {

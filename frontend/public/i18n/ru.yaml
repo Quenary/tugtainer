@@ -136,8 +136,7 @@ HOSTS:
       SSL: SSL
       SSL_HINT: Использовать проверку SSL для запросов backend → agent.
       SSL_CA: Свой CA
-      SSL_CA_HINT:
-        PEM CA (или self-signed сертификат) для проверки TLS запросов
+      SSL_CA_HINT: PEM CA (или self-signed сертификат) для проверки TLS запросов
         backend → agent. Используется только при включённом SSL. Пустое поле —
         системные CA.
       SSL_CA_PLACEHOLDER: '-----BEGIN CERTIFICATE-----'

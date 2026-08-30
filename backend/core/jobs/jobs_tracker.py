@@ -73,7 +73,7 @@ class HostJobTracker:
         result: ContainerJobResult | None = None,
     ) -> None:
         state = self._cache.get() or {}
-        current = dict(state.get("current") or {})
+        current = cast(Job, dict(state.get("current") or {}))
         containers = dict(current.get("containers") or {})
         slot = cast(ContainerJob, dict(containers.get(name) or {}))
         slot["status"] = status
@@ -85,7 +85,7 @@ class HostJobTracker:
 
     def append_log(self, line: str) -> None:
         state = self._cache.get() or {}
-        current = dict(state.get("current") or {})
+        current = cast(Job, dict(state.get("current") or {}))
         if not current:
             return
         log = list(current.get("log") or [])

@@ -35,10 +35,7 @@ function settledMatchingJob(
 
 export async function getProgress<
   T extends HostState | AllHostsState = HostState,
->(
-  request: APIRequestContext,
-  cacheId: string,
-): Promise<T | null> {
+>(request: APIRequestContext, cacheId: string): Promise<T | null> {
   const response = await request.get('/api/containers/progress', {
     params: { cache_id: cacheId },
   });

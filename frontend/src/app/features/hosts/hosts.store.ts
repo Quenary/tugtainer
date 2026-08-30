@@ -315,10 +315,7 @@ export const HostsStore = signalStore(
       );
     }
 
-    const applyHostState = (
-      hostId: number,
-      jobState: IHostState | null,
-    ) => {
+    const applyHostState = (hostId: number, jobState: IHostState | null) => {
       const entity = store.entityMap()[hostId];
       if (!entity) {
         return;
@@ -329,10 +326,7 @@ export const HostsStore = signalStore(
       if (loading !== 'prune') {
         if (nextActive) {
           loading = jobState?.current?.kind === 'update' ? 'update' : 'check';
-        } else if (
-          jobState &&
-          (loading === 'check' || loading === 'update')
-        ) {
+        } else if (jobState && (loading === 'check' || loading === 'update')) {
           loading = null;
         }
       }

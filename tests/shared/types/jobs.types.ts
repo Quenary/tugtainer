@@ -1,10 +1,5 @@
 export type JobStatus =
-  | 'PREPARING'
-  | 'CHECKING'
-  | 'UPDATING'
-  | 'PRUNING'
-  | 'DONE'
-  | 'ERROR';
+  'PREPARING' | 'CHECKING' | 'UPDATING' | 'PRUNING' | 'DONE' | 'ERROR';
 
 export type JobKind = 'check' | 'update';
 
@@ -50,7 +45,9 @@ export interface AllHostsState {
   hosts?: Record<string, Job>;
 }
 
-export function latestJob(state: HostState | null | undefined): Job | undefined {
+export function latestJob(
+  state: HostState | null | undefined,
+): Job | undefined {
   if (state?.current) {
     return state.current;
   }
