@@ -10,6 +10,7 @@ from backend.core.agent_client import (
     load_agents_on_init,
 )
 from backend.core.cron_manager import schedule_jobs_on_init
+from backend.core.jobs.jobs_log import install_job_log_handler
 from backend.exception import TugAgentClientError
 from backend.modules.auth.auth_router import (
     auth_router as auth_router,
@@ -37,6 +38,7 @@ logging.basicConfig(
     format="BACKEND - %(levelname)s - %(name)s: %(message)s",
     force=True,
 )
+install_job_log_handler()
 
 uvicorn_logger = logging.getLogger("uvicorn.access")
 uvicorn_logger.setLevel(Config.LOG_LEVEL)

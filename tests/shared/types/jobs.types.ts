@@ -35,6 +35,7 @@ export interface Job {
   host_name?: string;
   containers?: Record<string, ContainerJob>;
   prune_result?: string | null;
+  log?: string[];
 }
 
 export interface HostState {

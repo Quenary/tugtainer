@@ -74,6 +74,7 @@ ACTIONS:
   UPDATE_ALL: Обновить все
   JOB_CHECK: Проверка
   JOB_UPDATE: Обновление
+  JOB_LOG: Журнал
   ACTION_COMPLETED: Действие выполнено
   PRUNE: Очистить
   PRUNE_CONFIRM: Очистить образы?

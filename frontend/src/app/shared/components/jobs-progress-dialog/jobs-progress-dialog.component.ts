@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -56,6 +57,7 @@ export function toJobsProgressDialogData(
   imports: [
     AccordionModule,
     HostJobsResultComponent,
+    NgTemplateOutlet,
     TranslatePipe,
     TagModule,
   ],

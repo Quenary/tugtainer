@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass, field
 
 from backend.core.agent_client import AgentClientManager
+from backend.core.jobs.jobs_log import capture_job_logs
 from backend.core.jobs.jobs_schemas import Job, JobKind
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.enums.job_status_enum import EJobStatus
@@ -141,22 +142,27 @@ class HostJobCoordinator:
                 names_list = None if runtime.names is None else sorted(runtime.names)
                 tracker.begin(runtime.kind, names_list, queued)
                 try:
-                    if runtime.kind == "check":
-                        ok = await run_check_host_job(
-                            host,
-                            client,
-                            manual=runtime.manual if runtime.names is None else True,
-                            names=names_list,
-                            tracker=tracker,
-                        )
-                    else:
-                        ok = await run_update_host_job(
-                            host,
-                            client,
-                            manual=runtime.manual if runtime.names is None else True,
-                            names=names_list,
-                            tracker=tracker,
-                        )
+                    async with capture_job_logs(tracker):
+                        if runtime.kind == "check":
+                            ok = await run_check_host_job(
+                                host,
+                                client,
+                                manual=runtime.manual
+                                if runtime.names is None
+                                else True,
+                                names=names_list,
+                                tracker=tracker,
+                            )
+                        else:
+                            ok = await run_update_host_job(
+                                host,
+                                client,
+                                manual=runtime.manual
+                                if runtime.names is None
+                                else True,
+                                names=names_list,
+                                tracker=tracker,
+                            )
                     runtime.job = await self._record_job_end(
                         host,
                         tracker,

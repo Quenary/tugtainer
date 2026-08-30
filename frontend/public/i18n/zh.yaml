@@ -74,6 +74,7 @@ ACTIONS:
   UPDATE_ALL: 全部更新
   JOB_CHECK: 检查
   JOB_UPDATE: 更新
+  JOB_LOG: 日志
   ACTION_COMPLETED: 操作完成
   PRUNE: 清理
   PRUNE_CONFIRM: 确定清理镜像吗？

@@ -27,6 +27,7 @@ export interface IJob extends IJobBase {
   host_name?: string;
   containers?: Record<string, IContainerJob>;
   prune_result?: string | null;
+  log?: string[];
 }
 
 export interface IHostState {

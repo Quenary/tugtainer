@@ -12,6 +12,8 @@ from backend.core.jobs.jobs_util import get_host_cache_key
 from backend.enums.job_status_enum import EJobStatus
 from backend.modules.hosts.hosts_model import HostsModel
 
+JOB_LOG_MAX_LINES = 500
+
 
 class HostJobTracker:
     """Read/write helper for the unified per-host job state cache."""
@@ -41,6 +43,7 @@ class HostJobTracker:
             "host_id": self._host.id,
             "host_name": self._host.name,
             "containers": containers,
+            "log": [],
         }
         self._cache.set(
             {
@@ -78,6 +81,18 @@ class HostJobTracker:
             slot["result"] = result
         containers[name] = slot
         current["containers"] = containers
+        self._cache.update({"current": cast(Job, current)})
+
+    def append_log(self, line: str) -> None:
+        state = self._cache.get() or {}
+        current = dict(state.get("current") or {})
+        if not current:
+            return
+        log = list(current.get("log") or [])
+        log.append(line)
+        if len(log) > JOB_LOG_MAX_LINES:
+            log = log[-JOB_LOG_MAX_LINES:]
+        current["log"] = log
         self._cache.update({"current": cast(Job, current)})
 
     def set_prune_result(self, prune_result: str | None) -> None:

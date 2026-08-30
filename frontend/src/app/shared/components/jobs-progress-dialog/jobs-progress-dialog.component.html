@@ -31,6 +31,9 @@
           @if (current.containers || current.prune_result) {
             <app-host-jobs-result [job]="current"></app-host-jobs-result>
           }
+          <ng-container
+            [ngTemplateOutlet]="jobLog"
+            [ngTemplateOutletContext]="{ $implicit: current }" />
         </p-accordion-content>
       </p-accordion-panel>
     </p-accordion>
@@ -95,12 +98,34 @@
             @if (c.containers || c.prune_result) {
               <app-host-jobs-result [job]="c"></app-host-jobs-result>
             }
+            <ng-container
+              [ngTemplateOutlet]="jobLog"
+              [ngTemplateOutletContext]="{ $implicit: c }" />
           </p-accordion-content>
         </p-accordion-panel>
       }
     </p-accordion>
   </section>
 }
+
+<ng-template
+  #jobLog
+  let-job>
+  @if (job.log?.length) {
+    <p-accordion>
+      <p-accordion-panel value="log">
+        <p-accordion-header>{{
+          'ACTIONS.JOB_LOG' | translate
+        }}</p-accordion-header>
+        <p-accordion-content>
+          <pre class="job-log">@for (line of job.log; track $index) {
+{{ line }}
+}</pre>
+        </p-accordion-content>
+      </p-accordion-panel>
+    </p-accordion>
+  }
+</ng-template>
 
 @if (view.pruneResult; as r) {
   <section class="progress-section">

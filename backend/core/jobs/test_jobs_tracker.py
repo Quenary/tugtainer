@@ -61,3 +61,22 @@ def test_complete_current_keeps_host_active():
     assert state["queued"] == [{"kind": "update", "names": ["b"]}]
     assert len(state["completed"]) == 1
     assert first["kind"] == "check"
+
+
+def test_append_log_writes_and_caps():
+    tracker = _tracker(99013)
+    tracker.begin("check", ["a"], [])
+    tracker.append_log("line-0")
+    current = tracker.get()["current"]
+    assert current["log"] == ["line-0"]
+
+    for i in range(1, 501):
+        tracker.append_log(f"line-{i}")
+    log = tracker.get()["current"]["log"]
+    assert len(log) == 500
+    assert log[0] == "line-1"
+    assert log[-1] == "line-500"
+
+    finished = tracker.finish(EJobStatus.DONE)
+    assert finished["log"][-1] == "line-500"
+    assert tracker.get()["completed"][0]["log"][-1] == "line-500"

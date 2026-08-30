@@ -74,6 +74,7 @@ ACTIONS:
   UPDATE_ALL: 전체 업데이트
   JOB_CHECK: 확인
   JOB_UPDATE: 업데이트
+  JOB_LOG: 로그
   ACTION_COMPLETED: 작업 완료
   PRUNE: 정리
   PRUNE_CONFIRM: 이미지를 정리하시겠습니까?

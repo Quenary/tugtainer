@@ -26,6 +26,7 @@ class Job(JobBase, total=False):
     host_name: str
     containers: dict[str, ContainerJob]
     prune_result: str | None
+    log: list[str]
 
 
 class HostState(TypedDict, total=False):

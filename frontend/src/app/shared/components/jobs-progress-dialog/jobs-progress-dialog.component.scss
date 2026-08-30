@@ -10,6 +10,13 @@
     white-space: pre-line;
   }
 
+  pre.job-log {
+    max-height: 16rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+  }
+
   .progress-section {
     display: flex;
     flex-direction: column;

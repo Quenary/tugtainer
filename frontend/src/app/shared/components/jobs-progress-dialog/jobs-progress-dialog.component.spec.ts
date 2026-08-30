@@ -35,6 +35,9 @@ describe('JobsProgressDialogComponent', () => {
           containers: {
             a: { status: EJobStatus.CHECKING },
           },
+          log: [
+            'BACKEND - INFO - run_check_container_job.a: Checking container',
+          ],
         },
         queued: [{ kind: 'update' as const, names: ['c', 'd'] }],
         completed: [
@@ -99,6 +102,12 @@ describe('JobsProgressDialogComponent', () => {
 
     expect(fixture.nativeElement.textContent).toContain('new-container');
     expect(fixture.nativeElement.textContent).not.toContain('c, d');
+  });
+
+  it('renders a nested journal accordion when the job has log lines', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('ACTIONS.JOB_LOG');
+    expect(fixture.nativeElement.textContent).toContain('Checking container');
   });
 
   it('renders job results inside accordion content', () => {

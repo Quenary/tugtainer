@@ -74,6 +74,7 @@ ACTIONS:
   UPDATE_ALL: Update all
   JOB_CHECK: Checking
   JOB_UPDATE: Updating
+  JOB_LOG: Journal
   ACTION_COMPLETED: Action completed
   PRUNE: Prune
   PRUNE_CONFIRM: Do you want to prune images?
