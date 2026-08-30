@@ -57,7 +57,7 @@ export async function removeImageTagIfExists(
     await docker.getImage(image).remove();
   } catch (err) {
     const statusCode = (err as { statusCode?: number }).statusCode;
-    if (statusCode !== 404) {
+    if (statusCode !== 404 && statusCode !== 409) {
       throw err;
     }
   }

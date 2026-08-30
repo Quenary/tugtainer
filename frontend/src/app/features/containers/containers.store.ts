@@ -27,7 +27,11 @@ import { ContainersApiService } from './containers-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { HostsStore } from '../hosts/hosts.store';
 import { tapResponse } from '@ngrx/operators';
-import { IContainerActionProgress } from '@shared/interfaces/progress.interface';
+import {
+  containerJobSlot,
+  IContainerJob,
+  isContainerBusy,
+} from '@shared/interfaces/jobs.interface';
 import { TranslateService } from '@ngx-translate/core';
 
 interface IContainersStore {
@@ -41,7 +45,7 @@ interface IContainersStore {
  * Container store entity
  */
 export interface IContainerEntity extends IContainerListItem {
-  progress?: IContainerActionProgress | null;
+  progress?: IContainerJob | null;
   loading?: TContainerEntityLoading;
 }
 
@@ -59,7 +63,6 @@ export const ContainersStore = signalStore(
     loading: false,
     selectedNameOrId: null,
     selectedInfo: null,
-    hostActionProgress: null,
     hooksEnabled: false,
   })),
   withComputed((store) => {
@@ -109,6 +112,7 @@ export const ContainersStore = signalStore(
     const containersApiService = inject(ContainersApiService);
     const toastService = inject(ToastService);
     const translateService = inject(TranslateService);
+    const hostsStore = inject(HostsStore);
 
     /**
      * Select container by name, id or id(internal int)
@@ -155,7 +159,17 @@ export const ContainersStore = signalStore(
           return containersApiService.list(hostId).pipe(
             tapResponse({
               next: (list) => {
-                patchState(store, setEntities(list, containersEntityConfig));
+                const jobState = hostsStore.selected()?.jobState;
+                const entities: IContainerEntity[] = list.map((item) => ({
+                  ...item,
+                  progress: containerJobSlot(jobState, item.name) ?? null,
+                  loading: isContainerBusy(jobState, item.name)
+                    ? jobState?.current?.kind === 'update'
+                      ? 'update'
+                      : 'check'
+                    : null,
+                }));
+                patchState(store, setEntities(entities, containersEntityConfig));
               },
               error: (error) => toastService.error(error),
               finalize: () => patchState(store, { loading: false }),
@@ -178,92 +192,38 @@ export const ContainersStore = signalStore(
       ),
     );
 
-    function createContainerActionMethod(
-      apiCall: (hostId: number, name: string) => Observable<string>,
-      loading: Extract<TContainerEntityLoading, 'check' | 'update'>,
+    function runNamesAction(
+      apiCall: (hostId: number, names: string[]) => Observable<string>,
     ) {
-      return rxMethod<{ containerName: string }>(
+      return rxMethod<{ names: string[] }>(
         pipe(
-          tap(({ containerName }) =>
-            patchState(
-              store,
-              updateEntity(
-                {
-                  id: containerName,
-                  changes: {
-                    progress: null,
-                  },
-                },
-                containersEntityConfig,
-              ),
-            ),
-          ),
-          mergeMap(({ containerName }) => {
+          mergeMap(({ names }) => {
             const hostId = store.hostId();
-            if (!hostId) {
+            if (!hostId || !names.length) {
               return EMPTY;
             }
-
-            patchState(
-              store,
-              updateEntity(
-                {
-                  id: containerName,
-                  changes: {
-                    loading,
-                  },
-                },
-                containersEntityConfig,
-              ),
-            );
-            return apiCall(hostId, containerName).pipe(
+            return apiCall(hostId, names).pipe(
               tap(() =>
                 toastService.success(
                   translateService.instant('GENERAL.IN_PROGRESS'),
                 ),
               ),
-              switchMap((cacheId) =>
-                containersApiService.watchProgress<IContainerActionProgress>(
-                  cacheId,
-                ),
-              ),
               tapResponse({
-                next: (progress) => {
-                  patchState(
-                    store,
-                    updateEntity(
-                      {
-                        id: containerName,
-                        changes: { progress },
-                      },
-                      containersEntityConfig,
-                    ),
-                  );
-                },
-                error: (error) => {
-                  toastService.error(error);
-                },
-                finalize: () => {
-                  patchState(
-                    store,
-                    updateEntity(
-                      {
-                        id: containerName,
-                        changes: {
-                          loading: null,
-                        },
-                      },
-                      containersEntityConfig,
-                    ),
-                  );
-                  reloadEntity({ containerName });
-                },
+                next: () => undefined,
+                error: (error) => toastService.error(error),
               }),
             );
           }),
         ),
       );
     }
+
+    const checkContainers = runNamesAction((hostId, names) =>
+      containersApiService.checkHost(hostId, names),
+    );
+    const updateContainers = runNamesAction((hostId, names) =>
+      containersApiService.updateHost(hostId, names),
+    );
 
     const reloadEntity = rxMethod<{ containerName: string }>(
       pipe(
@@ -453,19 +413,23 @@ export const ContainersStore = signalStore(
        */
       reloadEntity,
       /**
+       * Check specified containers
+       */
+      checkContainers,
+      /**
        * Check specified container
        */
-      checkContainer: createContainerActionMethod(
-        (...args) => containersApiService.checkContainer(...args),
-        'check',
-      ),
+      checkContainer: (args: { containerName: string }) =>
+        checkContainers({ names: [args.containerName] }),
+      /**
+       * Update specified containers
+       */
+      updateContainers,
       /**
        * Update specified container
        */
-      updateContainer: createContainerActionMethod(
-        (...args) => containersApiService.updateContainer(...args),
-        'update',
-      ),
+      updateContainer: (args: { containerName: string }) =>
+        updateContainers({ names: [args.containerName] }),
       /**
        * Patch specified container
        */
@@ -499,6 +463,59 @@ export const ContainersStore = signalStore(
             store.loadList();
           });
         }
+      });
+
+      effect(() => {
+        const jobState = hostsStore.selected()?.jobState ?? null;
+        store.ids();
+        untracked(() => {
+          for (const entity of store.entities()) {
+            const slot = containerJobSlot(jobState, entity.name);
+            const busy = isContainerBusy(jobState, entity.name);
+            const isCommandLoading =
+              !!entity.loading &&
+              entity.loading !== 'check' &&
+              entity.loading !== 'update' &&
+              entity.loading !== 'loading';
+            if (isCommandLoading) {
+              if (entity.progress !== (slot ?? null)) {
+                patchState(
+                  store,
+                  updateEntity(
+                    {
+                      id: entity.name,
+                      changes: { progress: slot ?? null },
+                    },
+                    containersEntityConfig,
+                  ),
+                );
+              }
+              continue;
+            }
+            const loading: TContainerEntityLoading = busy
+              ? jobState?.current?.kind === 'update'
+                ? 'update'
+                : 'check'
+              : entity.loading === 'check' || entity.loading === 'update'
+                ? null
+                : (entity.loading ?? null);
+            if (
+              entity.progress !== (slot ?? null) ||
+              entity.loading !== loading
+            ) {
+              patchState(
+                store,
+                updateEntity(
+                  {
+                    id: entity.name,
+                    changes: { progress: slot ?? null, loading },
+                  },
+                  containersEntityConfig,
+                ),
+              );
+            }
+          }
+        });
       });
     },
   }),

@@ -126,3 +126,9 @@ class ContainerPatchRequestBody(BaseModel):
         if value is not None and value < 0:
             raise ValueError("delay_update_for must be a non-negative integer")
         return value
+
+
+class ContainerNamesRequestBody(BaseModel):
+    """Optional list of container names for bulk check/update."""
+
+    names: list[str] | None = None

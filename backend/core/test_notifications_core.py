@@ -4,7 +4,7 @@ import pytest
 
 from backend.config import Config
 from backend.core.notifications_core import (
-    send_check_notification,
+    send_job_notification,
     send_notification,
 )
 from backend.exception import (
@@ -88,7 +88,7 @@ async def test_send_notification_skips_when_urls_undefined():
 
 
 @pytest.mark.asyncio
-async def test_send_check_notification_skips_when_urls_undefined():
+async def test_send_job_notification_skips_when_urls_undefined():
     with (
         patch(
             "backend.core.notifications_core.SettingsStorage.get",
@@ -99,17 +99,17 @@ async def test_send_check_notification_skips_when_urls_undefined():
             new_callable=AsyncMock,
         ) as send,
     ):
-        await send_check_notification([])
+        await send_job_notification([])
 
     send.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_send_check_notification_skips_when_urls_are_blank():
+async def test_send_job_notification_skips_when_urls_are_blank():
     with patch(
         "backend.core.notifications_core.send_notification",
         new_callable=AsyncMock,
     ) as send:
-        await send_check_notification([], urls="  \n  ")
+        await send_job_notification([], urls="  \n  ")
 
     send.assert_not_called()

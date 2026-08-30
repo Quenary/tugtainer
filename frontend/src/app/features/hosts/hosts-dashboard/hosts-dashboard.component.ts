@@ -24,6 +24,7 @@ import { FormsModule } from '@angular/forms';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService } from 'primeng/api';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { hasHostJobsDialog } from '@shared/interfaces/jobs.interface';
 
 @Component({
   selector: 'app-hosts-dashboard',
@@ -66,6 +67,7 @@ export class HostsDashboardComponent implements OnDestroy {
 
   protected readonly childActive = signal<boolean>(false);
   protected readonly pruneAll = model<boolean>(false);
+  protected readonly hasHostJobsDialog = hasHostJobsDialog;
 
   constructor() {
     this.activatedRoute.params

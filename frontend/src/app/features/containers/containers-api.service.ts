@@ -9,9 +9,10 @@ import {
   IGetContainerLogsRequestBody,
 } from './containers.interface';
 import {
-  EActionStatus,
-  IActionProgress,
-} from '../../shared/interfaces/progress.interface';
+  EJobStatus,
+  IAllHostsState,
+  IHostState,
+} from '../../shared/interfaces/jobs.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -50,61 +51,63 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
     return this.httpClient.post<string>(`${this.basePath}/check`, {});
   }
 
-  checkHost(host_id: number): Observable<string> {
+  checkHost(host_id: number, names?: string[]): Observable<string> {
     return this.httpClient.post<string>(
       `${this.basePath}/check/${host_id}`,
-      {},
+      names?.length ? { names } : {},
     );
   }
 
   checkContainer(host_id: number, name: string): Observable<string> {
-    return this.httpClient.post<string>(
-      `${this.basePath}/check/${host_id}/${name}`,
-      {},
-    );
+    return this.checkHost(host_id, [name]);
   }
 
   updateAll(): Observable<string> {
     return this.httpClient.post<string>(`${this.basePath}/update`, {});
   }
 
-  updateHost(host_id: number): Observable<string> {
+  updateHost(host_id: number, names?: string[]): Observable<string> {
     return this.httpClient.post<string>(
       `${this.basePath}/update/${host_id}`,
-      {},
+      names?.length ? { names } : {},
     );
   }
 
   updateContainer(host_id: number, name: string): Observable<string> {
-    return this.httpClient.post<string>(
-      `${this.basePath}/update/${host_id}/${name}`,
-      {},
+    return this.updateHost(host_id, [name]);
+  }
+
+  /**
+   * Unified per-host job state
+   */
+  hostState(host_id: number): Observable<IHostState | null> {
+    return this.httpClient.get<IHostState | null>(
+      `${this.basePath}/progress/${host_id}`,
     );
   }
 
   /**
-   * Get progress
-   * @param cache_id id of progress cache
-   * @returns
+   * Get job state by cache id
    */
-  progress<T extends IActionProgress>(cache_id: string): Observable<T> {
+  jobState<T extends IHostState | IAllHostsState>(
+    cache_id: string,
+  ): Observable<T> {
     return this.httpClient.get<T>(`${this.basePath}/progress`, {
       params: { cache_id },
     });
   }
 
   /**
-   * Watch progress, emits until status not DONE or ERROR
-   * @param cache_id id of progress cache
-   * @returns
+   * Watch job state until DONE or ERROR
    */
-  watchProgress<T extends IActionProgress>(cache_id: string): Observable<T> {
-    return this.progress<T>(cache_id).pipe(
+  watchJobState<T extends IHostState | IAllHostsState>(
+    cache_id: string,
+  ): Observable<T> {
+    return this.jobState<T>(cache_id).pipe(
       repeat({ delay: 500 }),
       takeWhile(
         (res) =>
-          res &&
-          ![EActionStatus.DONE, EActionStatus.ERROR].includes(res.status),
+          res && ![EJobStatus.DONE, EJobStatus.ERROR].includes(res.status),
         true,
       ),
     );

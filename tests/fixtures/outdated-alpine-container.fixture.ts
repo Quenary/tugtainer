@@ -29,10 +29,11 @@ export const test = base.extend<{
 }>({
   // Playwright requires a destructuring pattern for the fixtures argument
   // eslint-disable-next-line no-empty-pattern
-  outdatedAlpineContainer: async ({}, use) => {
+  outdatedAlpineContainer: async ({}, use, testInfo) => {
     const docker = getDocker();
+    const name = `${TEST_CONTAINER_NAME}-${testInfo.workerIndex}-${testInfo.parallelIndex}`;
 
-    await removeContainerIfExists(docker, TEST_CONTAINER_NAME);
+    await removeContainerIfExists(docker, name);
     await removeImageTagIfExists(docker, STALE_TAG);
 
     await pullImage(docker, SOURCE_IMAGE);
@@ -42,7 +43,7 @@ export const test = base.extend<{
 
     const container = await docker.createContainer({
       Image: STALE_TAG,
-      name: TEST_CONTAINER_NAME,
+      name,
       Cmd: ['sleep', 'infinity'],
       Labels: {
         'dev.quenary.tugtainer.test': 'check-updates',
@@ -51,9 +52,9 @@ export const test = base.extend<{
     await container.start();
 
     try {
-      await use({ name: TEST_CONTAINER_NAME, image: STALE_TAG });
+      await use({ name, image: STALE_TAG });
     } finally {
-      await removeContainerIfExists(docker, TEST_CONTAINER_NAME);
+      await removeContainerIfExists(docker, name);
       await removeImageTagIfExists(docker, STALE_TAG);
     }
   },

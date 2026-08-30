@@ -65,8 +65,15 @@ AUTH:
   SIGNIN_WITH_OIDC: Sign-in with OIDC
 ACTIONS:
   RESULT: Result
+  PROGRESS: Progress
+  IN_PROGRESS: In progress
+  QUEUED: Queued
+  COMPLETED: Completed
+  ALL_CONTAINERS: All containers
   CHECK_ALL: Check all
   UPDATE_ALL: Update all
+  JOB_CHECK: Checking
+  JOB_UPDATE: Updating
   ACTION_COMPLETED: Action completed
   PRUNE: Prune
   PRUNE_CONFIRM: Do you want to prune images?
@@ -182,9 +189,9 @@ CONTAINERS:
     PROTECTED: The protected container cannot be updated from the app.
     NOT_RUNNING: The container must be in running state.
   CHECK: Check
-  MAIN_BTN_HINT:
-    If a container is a part of a compose project, all project's containers
-    will be involved in the process.
+  MAIN_BTN_HINT: |-
+    Dependents of updated containers are stopped and started with them.
+    Select several rows to check or update them together.
   PROTECTED: Protected
   PROTECTED_CONTAINER_HINT:
     This container labeled with dev.quenary.tugtainer.protected

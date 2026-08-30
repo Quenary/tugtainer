@@ -65,8 +65,15 @@ AUTH:
   SIGNIN_WITH_OIDC: Войти через OIDC
 ACTIONS:
   RESULT: Результат
+  PROGRESS: Прогресс
+  IN_PROGRESS: Выполняется
+  QUEUED: В очереди
+  COMPLETED: Завершено
+  ALL_CONTAINERS: Все контейнеры
   CHECK_ALL: Проверить все
   UPDATE_ALL: Обновить все
+  JOB_CHECK: Проверка
+  JOB_UPDATE: Обновление
   ACTION_COMPLETED: Действие выполнено
   PRUNE: Очистить
   PRUNE_CONFIRM: Очистить образы?
@@ -183,9 +190,9 @@ CONTAINERS:
     PROTECTED: Защищённый контейнер нельзя обновить из приложения.
     NOT_RUNNING: Контейнер должен быть в состоянии running.
   CHECK: Проверить
-  MAIN_BTN_HINT:
-    Если контейнер входит в compose-проект, в процесс будут вовлечены
-    все контейнеры проекта.
+  MAIN_BTN_HINT: |-
+    Зависимые контейнеры останавливаются и запускаются вместе с обновляемыми.
+    Выберите несколько строк, чтобы проверить или обновить их вместе.
   PROTECTED: Защищён
   PROTECTED_CONTAINER_HINT:
     Контейнер помечен меткой dev.quenary.tugtainer.protected

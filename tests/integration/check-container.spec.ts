@@ -1,12 +1,10 @@
 import { mergeTests, expect } from '@playwright/test';
-import type {
-  ContainerActionProgress,
-  ContainerListItem,
-} from '../shared/types/containers.types';
+import type { ContainerListItem } from '../shared/types/containers.types';
+import { jobResults } from '../shared/types/jobs.types';
 import { test as authTest } from '../fixtures/auth-request.fixture';
 import { test as outdatedAlpineContainerTest } from '../fixtures/outdated-alpine-container.fixture';
 import { getEnabledHost } from './hosts.util';
-import { waitUntilSettled } from './progress.util';
+import { watchHostJobs } from './progress.util';
 
 export const test = mergeTests(authTest, outdatedAlpineContainerTest);
 
@@ -18,6 +16,8 @@ test.describe('check container update availability', () => {
     outdatedAlpineContainer,
   }) => {
     const host = await getEnabledHost(request);
+    const names = [outdatedAlpineContainer.name];
+    const watch = await watchHostJobs(request, host.id);
 
     const checkRes = await request.post(
       `/api/containers/check/${host.id}/${outdatedAlpineContainer.name}`,
@@ -26,22 +26,42 @@ test.describe('check container update availability', () => {
     const cacheId = (await checkRes.json()) as string;
     expect(cacheId).toBeTruthy();
 
-    const progress = await waitUntilSettled<ContainerActionProgress>(
-      request,
-      cacheId,
-    );
+    const state = await watch.waitUntilSettled({ names });
 
-    // "available(notified)" is the same verdict for a re-check of a digest
-    // already stored in the db (e.g. app volume kept between runs)
-    expect(['available', 'available(notified)']).toContain(
-      progress.result?.result,
-    );
-    expect(progress.result?.image_spec).toBe(outdatedAlpineContainer.image);
+    const results = jobResults(state, names);
+    const itemResult =
+      results.find(
+        (item) => item.image_spec === outdatedAlpineContainer.image,
+      ) ?? results[0];
+    expect(['available', 'available(notified)']).toContain(itemResult?.result);
+    expect(itemResult?.image_spec).toBe(outdatedAlpineContainer.image);
 
     const listRes = await request.get(`/api/containers/${host.id}/list`);
     expect(listRes.ok()).toBeTruthy();
     const list = (await listRes.json()) as ContainerListItem[];
     const item = list.find((c) => c.name === outdatedAlpineContainer.name);
     expect(item?.update_available).toBe(true);
+  });
+
+  test('checks selected names via host endpoint body', async ({
+    authorizedRequest: request,
+    outdatedAlpineContainer,
+  }) => {
+    const host = await getEnabledHost(request);
+    const names = [outdatedAlpineContainer.name];
+    const watch = await watchHostJobs(request, host.id);
+
+    const checkRes = await request.post(`/api/containers/check/${host.id}`, {
+      data: {
+        names: [outdatedAlpineContainer.name, 'does-not-exist'],
+      },
+    });
+    expect(checkRes.ok()).toBeTruthy();
+
+    const state = await watch.waitUntilSettled({ names });
+    const itemResult = jobResults(state, names).find(
+      (item) => item.image_spec === outdatedAlpineContainer.image,
+    );
+    expect(['available', 'available(notified)']).toContain(itemResult?.result);
   });
 });

@@ -4,8 +4,8 @@ from zoneinfo import ZoneInfo, available_timezones
 
 import aiocron
 
-from backend.core.check_actions.check_all_containers import check_all_containers
-from backend.core.update_actions.update_all_containers import update_all_containers
+from backend.core.jobs.check.check_all import check_all_hosts
+from backend.core.jobs.update.update_all import update_all_hosts
 from backend.enums.cron_jobs_enum import ECronJob
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
@@ -13,7 +13,7 @@ from backend.modules.settings.settings_storage import SettingsStorage
 VALID_TIMEZONES = available_timezones()
 
 
-async def schedule_actions_on_init():
+async def schedule_jobs_on_init():
     """
     Schedule container check and update on app init
     """
@@ -30,14 +30,14 @@ async def schedule_actions_on_init():
             ECronJob.CHECK_CONTAINERS,
             check_crontab,
             tz,
-            check_all_containers,
+            check_all_hosts,
         )
     if update_crontab:
         CronManager.schedule_job(
             ECronJob.UPDATE_CONTAINERS,
             update_crontab,
             tz,
-            update_all_containers,
+            update_all_hosts,
         )
 
 

@@ -65,8 +65,15 @@ AUTH:
   SIGNIN_WITH_OIDC: 使用 OIDC 登录
 ACTIONS:
   RESULT: 结果
+  PROGRESS: 进度
+  IN_PROGRESS: 进行中
+  QUEUED: 排队中
+  COMPLETED: 已完成
+  ALL_CONTAINERS: 全部容器
   CHECK_ALL: 全部检查
   UPDATE_ALL: 全部更新
+  JOB_CHECK: 检查
+  JOB_UPDATE: 更新
   ACTION_COMPLETED: 操作完成
   PRUNE: 清理
   PRUNE_CONFIRM: 确定清理镜像吗？
@@ -175,7 +182,9 @@ CONTAINERS:
     PROTECTED: 受保护的容器无法从此应用更新。
     NOT_RUNNING: 容器必须处于运行状态。
   CHECK: 检查
-  MAIN_BTN_HINT: 若容器属于 Compose 项目，该项目的所有容器都将参与此过程。
+  MAIN_BTN_HINT: |-
+    被更新容器的依赖项会一并停止并启动。
+    可多选行以批量检查或更新。
   PROTECTED: 受保护
   PROTECTED_CONTAINER_HINT: 此容器标记为 dev.quenary.tugtainer.protected，
     无法从此应用更新。

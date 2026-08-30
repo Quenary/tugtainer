@@ -1,13 +1,10 @@
 import { mergeTests, expect } from '@playwright/test';
-import type {
-  ContainerActionProgress,
-  UpdatePlanProgress,
-} from '../shared/types/containers.types';
+import { jobResults } from '../shared/types/jobs.types';
 import { test as authTest } from '../fixtures/auth-request.fixture';
 import { test as outdatedAlpineExtraNetworkTest } from '../fixtures/outdated-alpine-extra-network.fixture';
 import { getDocker } from '../shared/util/docker.util';
 import { getEnabledHost } from './hosts.util';
-import { waitUntilSettled } from './progress.util';
+import { getHostState, watchHostJobs } from './progress.util';
 
 export const test = mergeTests(authTest, outdatedAlpineExtraNetworkTest);
 
@@ -52,31 +49,36 @@ test.describe('update container with extra network', () => {
       ]),
     );
 
+    const names = [outdatedAlpineExtraNetwork.name];
+    const checkWatch = await watchHostJobs(request, host.id);
     const checkRes = await request.post(
       `/api/containers/check/${host.id}/${outdatedAlpineExtraNetwork.name}`,
     );
     expect(checkRes.ok()).toBeTruthy();
-    const checkCacheId = (await checkRes.json()) as string;
-    const checkProgress = await waitUntilSettled<ContainerActionProgress>(
-      request,
-      checkCacheId,
-    );
+    const checkState = await checkWatch.waitUntilSettled({ names });
     expect(['available', 'available(notified)']).toContain(
-      checkProgress.result?.result,
+      jobResults(checkState, names)[0]?.result,
     );
 
     const updateRes = await request.post(
       `/api/containers/update/${host.id}/${outdatedAlpineExtraNetwork.name}`,
     );
     expect(updateRes.ok()).toBeTruthy();
-    const updateCacheId = (await updateRes.json()) as string;
-    const updateProgress = await waitUntilSettled<UpdatePlanProgress>(
-      request,
-      updateCacheId,
-    );
-    expect(
-      updateProgress.result?.items.some((item) => item.result === 'updated'),
-    ).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          const state = await getHostState(request, host.id);
+          return (
+            jobResults(state, names).some((item) => item.result === 'updated') ??
+            false
+          );
+        },
+        {
+          timeout: 240_000,
+          intervals: [500, 1000, 2000],
+        },
+      )
+      .toBe(true);
 
     const after = await docker
       .getContainer(outdatedAlpineExtraNetwork.name)
