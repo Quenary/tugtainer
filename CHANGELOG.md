@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.36.0 (2026-08-30)
+
+### Features
+
+- Add source code link to container card
+  ([`413a56f`](https://github.com/Quenary/tugtainer/commit/413a56f57af12ce9afd317c27602079a3a089c31))
+
+- Add SSL CA support for agent communication
+  ([`287f6b9`](https://github.com/Quenary/tugtainer/commit/287f6b9f60035eaf66107b9767fce6b71e41b178))
+
+- Show live job journal in the progress dialog
+  ([`f8f4248`](https://github.com/Quenary/tugtainer/commit/f8f424868440e6df7fe57677a4ca3d6a1a428a02))
+
+- Unify check/update around Job and HostState, batch check/update
+  ([`c37b73f`](https://github.com/Quenary/tugtainer/commit/c37b73fac90b036a3b3391b7457bdbab9f6ea408))
+
+
 ## v1.35.0 (2026-08-28)
 
 ### Bug Fixes
