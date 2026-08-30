@@ -10,9 +10,9 @@ from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
 
-from backend.core.action_result import (
-    ContainerActionResult,
-    HostActionResult,
+from backend.core.jobs.jobs_results import (
+    ContainerJobResult,
+    JobNotificationResult,
 )
 
 _NOW = datetime.now()
@@ -68,8 +68,8 @@ TEST_NOTIFICATION_DIGESTS: list[str] = [
     "sha256:f751174c3d8ae54b12575af320a4aa01bb3b6e61ab82aa1e4f8ecac8a079ce61",
 ]
 
-TEST_NOTIFICATION_ITEMS: list[ContainerActionResult] = [
-    ContainerActionResult(
+TEST_NOTIFICATION_ITEMS: list[ContainerJobResult] = [
+    ContainerJobResult(
         container=TEST_NOTIFICATION_CONTAINER,
         local_image=None,
         remote_image=None,
@@ -77,7 +77,7 @@ TEST_NOTIFICATION_ITEMS: list[ContainerActionResult] = [
         remote_digests=[],
         result=None,
     ),
-    ContainerActionResult(
+    ContainerJobResult(
         container=TEST_NOTIFICATION_CONTAINER,
         local_image=TEST_NOTIFICATION_IMAGE,
         remote_image=None,
@@ -85,7 +85,7 @@ TEST_NOTIFICATION_ITEMS: list[ContainerActionResult] = [
         remote_digests=[],
         result="not_available",
     ),
-    ContainerActionResult(
+    ContainerJobResult(
         container=TEST_NOTIFICATION_CONTAINER,
         local_image=TEST_NOTIFICATION_IMAGE,
         remote_image=TEST_NOTIFICATION_IMAGE,
@@ -93,7 +93,7 @@ TEST_NOTIFICATION_ITEMS: list[ContainerActionResult] = [
         remote_digests=TEST_NOTIFICATION_DIGESTS,
         result="updated",
     ),
-    ContainerActionResult(
+    ContainerJobResult(
         container=TEST_NOTIFICATION_CONTAINER,
         local_image=TEST_NOTIFICATION_IMAGE,
         remote_image=TEST_NOTIFICATION_IMAGE,
@@ -101,7 +101,7 @@ TEST_NOTIFICATION_ITEMS: list[ContainerActionResult] = [
         remote_digests=TEST_NOTIFICATION_DIGESTS,
         result="available",
     ),
-    ContainerActionResult(
+    ContainerJobResult(
         container=TEST_NOTIFICATION_CONTAINER,
         local_image=TEST_NOTIFICATION_IMAGE,
         remote_image=TEST_NOTIFICATION_IMAGE,
@@ -109,7 +109,7 @@ TEST_NOTIFICATION_ITEMS: list[ContainerActionResult] = [
         remote_digests=TEST_NOTIFICATION_DIGESTS,
         result="available(notified)",
     ),
-    ContainerActionResult(
+    ContainerJobResult(
         container=TEST_NOTIFICATION_CONTAINER,
         local_image=TEST_NOTIFICATION_IMAGE,
         remote_image=TEST_NOTIFICATION_IMAGE,
@@ -117,7 +117,7 @@ TEST_NOTIFICATION_ITEMS: list[ContainerActionResult] = [
         remote_digests=TEST_NOTIFICATION_DIGESTS,
         result="rolled_back",
     ),
-    ContainerActionResult(
+    ContainerJobResult(
         container=TEST_NOTIFICATION_CONTAINER,
         local_image=TEST_NOTIFICATION_IMAGE,
         remote_image=TEST_NOTIFICATION_IMAGE,
@@ -135,14 +135,14 @@ deleted: sha256:030dbd4c7f006cf2a8a482f9128f1b3238e5c820bb107aef0a47299e51179e4b
 Total reclaimed space: 1.5GB
 """
 
-TEST_NOTIFICATION_RESULTS: list[HostActionResult] = [
-    HostActionResult(
+TEST_NOTIFICATION_RESULTS: list[JobNotificationResult] = [
+    JobNotificationResult(
         host_id=1,
         host_name="test_host_1",
         items=TEST_NOTIFICATION_ITEMS,
         prune_result=TEST_NOTIFICATION_PRUNE_RESULT,
     ),
-    HostActionResult(
+    JobNotificationResult(
         host_id=2,
         host_name="test_host_2",
         items=TEST_NOTIFICATION_ITEMS,

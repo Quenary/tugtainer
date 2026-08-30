@@ -5,14 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.check_actions.check_all_containers import (
-    check_all_containers,
-)
 from backend.core.cron_manager import CronManager
-from backend.core.notifications_core import send_check_notification
-from backend.core.update_actions.update_all_containers import (
-    update_all_containers,
-)
+from backend.core.jobs.check.check_all import check_all_hosts
+from backend.core.jobs.update.update_all import update_all_hosts
+from backend.core.notifications_core import send_job_notification
 from backend.db.session import get_async_session
 from backend.enums.cron_jobs_enum import ECronJob
 from backend.exception import TugNotificationException
@@ -100,13 +96,13 @@ async def change_system_settings(
         ECronJob.CHECK_CONTAINERS,
         check_cron_item,
         tz,
-        check_all_containers,
+        check_all_hosts,
     )
     CronManager.schedule_job(
         ECronJob.UPDATE_CONTAINERS,
         update_cron_item,
         tz,
-        update_all_containers,
+        update_all_hosts,
     )
 
     return {"status": "updated", "count": len(data)}
@@ -124,7 +120,7 @@ async def test_notification(data: TestNotificationRequestBody):
     await validate_notification_urls_against_ssrf(data.urls)
 
     try:
-        await send_check_notification(
+        await send_job_notification(
             TEST_NOTIFICATION_RESULTS,
             title_template=data.title_template,
             body_template=data.body_template,

@@ -1,0 +1,47 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  pre {
+    max-height: 50vh;
+    max-width: 75vw;
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  pre.job-log {
+    max-height: 16rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+  }
+
+  .progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .job-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  ::ng-deep {
+    .p-accordionheader {
+      padding-inline: 0.75rem;
+    }
+
+    .p-accordioncontent-content {
+      padding-block-start: 0.5rem;
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import ssl as ssl_lib
 from typing import Any, Final, Literal
 
 import aiohttp
@@ -41,6 +42,20 @@ from shared.util.custom_json_dumps import custom_json_dumps
 from shared.util.signature import get_signature_headers
 
 
+def build_agent_ssl(
+    ssl: bool,
+    ssl_ca: str | None = None,
+) -> ssl_lib.SSLContext | bool:
+    """Build the aiohttp ``ssl=`` value for an agent host."""
+    if not ssl:
+        return False
+    if not ssl_ca:
+        return True
+    context = ssl_lib.create_default_context()
+    context.load_verify_locations(cadata=ssl_ca)
+    return context
+
+
 class AgentClient:
     def __init__(
         self,
@@ -49,13 +64,14 @@ class AgentClient:
         secret: str | None = None,
         timeout: int = 5,
         ssl: bool = True,
+        ssl_ca: str | None = None,
     ):
         self._id = id
         self._url = url
         self._secret = secret
         self._timeout = timeout
         self._long_timeout = 600  # timeout for potentially long requests
-        self._ssl: Final = ssl
+        self._ssl: Final[ssl_lib.SSLContext | bool] = build_agent_ssl(ssl, ssl_ca)
         self._session: aiohttp.ClientSession | None = None
         self._session_lock: Final = asyncio.Lock()
         self._logger: Final = logging.getLogger(self.__class__.__name__)
@@ -445,6 +461,7 @@ class AgentClientManager:
             secret=host.secret,
             timeout=host.timeout,
             ssl=host.ssl,
+            ssl_ca=host.ssl_ca,
         )
 
     @classmethod

@@ -7,9 +7,9 @@ from apprise.exception import AppriseException
 from jinja2.sandbox import SandboxedEnvironment
 
 from backend.config import Config
-from backend.core.action_result import (
-    ContainerActionResult,
-    HostActionResult,
+from backend.core.jobs.jobs_results import (
+    ContainerJobResult,
+    JobNotificationResult,
 )
 from backend.exception import (
     TugNotificationException,
@@ -21,7 +21,7 @@ from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.validate_url_against_ssrf import validate_url_against_ssrf
 
 
-def any_worthy(items: list[ContainerActionResult]) -> bool:
+def any_worthy(items: list[ContainerJobResult]) -> bool:
     return any(
         item.result
         in [
@@ -39,8 +39,8 @@ bt_sentinel = object()
 u_sentinel = object()
 
 
-async def send_check_notification(
-    results: list[HostActionResult],
+async def send_job_notification(
+    results: list[JobNotificationResult],
     title_template: str | None = cast(None, tt_sentinel),
     body_template: str | None = cast(None, bt_sentinel),
     urls: str | None = cast(None, u_sentinel),
@@ -52,7 +52,7 @@ async def send_check_notification(
     :param body_template: override body template
     :param urls: override urls
     """
-    logger: Final = logging.getLogger("send_check_notification")
+    logger: Final = logging.getLogger("send_job_notification")
     try:
         if title_template == tt_sentinel:
             title_template = SettingsStorage.get(

@@ -42,6 +42,23 @@
       </p-multiselect>
     </div>
   </ng-template>
+  <ng-template #end>
+    <p-button-group>
+      <p-button
+        icon="pi pi-check-square"
+        [disabled]="!selected().length"
+        [label]="'CONTAINERS.CHECK' | translate"
+        (onClick)="onCheckSelected()">
+      </p-button>
+      <p-button
+        icon="pi pi-check-square"
+        severity="success"
+        [disabled]="!updatableSelected().length"
+        [label]="'CONTAINERS.UPDATE' | translate"
+        (onClick)="onUpdateSelected()">
+      </p-button>
+    </p-button-group>
+  </ng-template>
 </p-toolbar>
 
 <p-table
@@ -56,10 +73,18 @@
   [scrollable]="true"
   scrollHeight="flex"
   [value]="filteredList()"
-  [rowTrackBy]="item => item.id">
+  [rowTrackBy]="item => item.id"
+  [selection]="selected()"
+  (selectionChange)="selected.set($event)"
+  selectionMode="multiple">
   <ng-template #header>
     <tr>
-      <th pSortableColumn="name">
+      <th class="selection-col">
+        <p-tableHeaderCheckbox />
+      </th>
+      <th
+        class="name-col"
+        pSortableColumn="name">
         {{ 'CONTAINERS.NAME' | translate }}
         <p-sortIcon field="name"></p-sortIcon>
       </th>
@@ -114,7 +139,10 @@
     #body
     let-container>
     <tr>
-      <td>
+      <td class="selection-col">
+        <p-tableCheckbox [value]="container" />
+      </td>
+      <td class="name-col">
         <a
           [routerLink]="container.name || container.container_id || container.id">
           <p-button

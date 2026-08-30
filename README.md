@@ -81,7 +81,11 @@ Automatic updates are disabled by default. You can enable only what you need.
 
   After deploying the agent, in the UI follow Menu -> Hosts, and add it with the respective parameters. The **Agent secret** field should match the **AGENT_SECRET** you've provided for the agent container.
 
-  Backend and agent use HTTP to communicate, so you can use a reverse proxy for HTTPS.
+  Backend and agent use HTTP by default. You can put a reverse proxy in front for HTTPS.
+
+  - Public CA (Let's Encrypt, etc.): set the host URL to `https://…`, leave **SSL** on, leave **Custom CA** empty.
+  - Private CA or self-signed: paste the CA PEM (or the self-signed certificate) into **Custom CA**, keep **SSL** on. The certificate hostname/SAN must match the URL host.
+  - TLS on the agent without a reverse proxy: mount cert/key into the agent container and pass `--ssl-certfile` / `--ssl-keyfile` via `command` (see [docker-compose.agent.yml](./docker-compose.agent.yml)). Paste the corresponding CA in the host settings. The image healthcheck uses `http://localhost:8001` and may fail if uvicorn serves only HTTPS.
 
   ```bash
   # pull image

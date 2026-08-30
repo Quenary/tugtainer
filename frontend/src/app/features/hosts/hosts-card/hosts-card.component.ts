@@ -45,6 +45,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { HostsStore } from '../hosts.store';
 import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 
 @Component({
   selector: 'app-host-card',
@@ -70,6 +71,7 @@ import { TagModule } from 'primeng/tag';
     InputIconModule,
     BooleanFieldComponent,
     TagModule,
+    TextareaModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './hosts-card.component.html',
@@ -100,6 +102,7 @@ export class HostsCardComponent implements OnDestroy {
       timeout: 5,
       container_hc_timeout: 60,
       ssl: true,
+      ssl_ca: null,
       is_changing_secret: false,
       secret: null,
     };
@@ -130,6 +133,7 @@ export class HostsCardComponent implements OnDestroy {
     is_changing_secret: new FormControl<boolean>(false),
     secret: new FormControl<string>(null),
     ssl: new FormControl<boolean>(true),
+    ssl_ca: new FormControl<string | null>(null),
     timeout: new FormControl<number>(null, [Validators.required]),
     container_hc_timeout: new FormControl(null, [Validators.required]),
   });

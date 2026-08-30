@@ -12,7 +12,6 @@ import {
   IContainerInspectResult,
 } from './containers.interface';
 import dayjs from 'dayjs';
-import { EActionStatus } from '@shared/interfaces/progress.interface';
 import { Mocked } from 'vitest';
 import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
 import { getContainersApiServiceMock } from '@testing/mocks/containers-api.service.mock';
@@ -138,13 +137,13 @@ describe('ContainersStore', () => {
       it('should select by name', () => {
         store.select('nginx');
 
-        expect(store.selected()).toEqual(mockContainerItem);
+        expect(store.selected()).toMatchObject(mockContainerItem);
       });
 
       it('should select by container_id', () => {
         store.select('container-1');
 
-        expect(store.selected()).toEqual(mockContainerItem);
+        expect(store.selected()).toMatchObject(mockContainerItem);
       });
 
       it('should return null if selected not found', () => {
@@ -187,7 +186,7 @@ describe('ContainersStore', () => {
       store.loadList();
 
       expect(containersApiServiceMock.list).toHaveBeenCalledWith(1);
-      expect(store.entities()).toEqual([mockContainerItem]);
+      expect(store.entities()).toMatchObject([mockContainerItem]);
     });
 
     it('should show error on load failure', () => {
@@ -385,27 +384,18 @@ describe('ContainersStore', () => {
     });
 
     it('should check container', () => {
-      containersApiServiceMock.checkContainer.mockReturnValue(of('cache-id'));
-      containersApiServiceMock.watchProgress.mockReturnValue(
-        of({
-          status: EActionStatus.DONE,
-        }),
-      );
+      containersApiServiceMock.checkHost.mockReturnValue(of('cache-id'));
 
       store.checkContainer({ containerName: 'nginx' });
 
-      expect(containersApiServiceMock.checkContainer).toHaveBeenCalledWith(
-        1,
+      expect(containersApiServiceMock.checkHost).toHaveBeenCalledWith(1, [
         'nginx',
-      );
-      expect(containersApiServiceMock.watchProgress).toHaveBeenCalledWith(
-        'cache-id',
-      );
+      ]);
     });
 
     it('should show error on check failure', () => {
       const error = new Error('Check failed');
-      containersApiServiceMock.checkContainer.mockReturnValue(
+      containersApiServiceMock.checkHost.mockReturnValue(
         throwError(() => error),
       );
 
@@ -421,28 +411,18 @@ describe('ContainersStore', () => {
     });
 
     it('should update container', () => {
-      containersApiServiceMock.updateContainer.mockReturnValue(of('cache-id'));
-
-      containersApiServiceMock.watchProgress.mockReturnValue(
-        of({
-          status: EActionStatus.DONE,
-        }),
-      );
+      containersApiServiceMock.updateHost.mockReturnValue(of('cache-id'));
 
       store.updateContainer({ containerName: 'nginx' });
 
-      expect(containersApiServiceMock.updateContainer).toHaveBeenCalledWith(
-        1,
+      expect(containersApiServiceMock.updateHost).toHaveBeenCalledWith(1, [
         'nginx',
-      );
-      expect(containersApiServiceMock.watchProgress).toHaveBeenCalledWith(
-        'cache-id',
-      );
+      ]);
     });
 
     it('should show error on update failure', () => {
       const error = new Error('Update failed');
-      containersApiServiceMock.updateContainer.mockReturnValue(
+      containersApiServiceMock.updateHost.mockReturnValue(
         throwError(() => error),
       );
 

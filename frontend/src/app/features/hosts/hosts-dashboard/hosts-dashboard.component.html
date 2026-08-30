@@ -38,14 +38,14 @@
     </p-button>
 
     <section class="header-actions">
-      @let res = h.progress?.result;
+      @let jobState = h.jobState;
       @let pruneRes = h.pruneResult;
-      @if (res || pruneRes) {
+      @if (hasHostJobsDialog(jobState, pruneRes)) {
         <p-button
           severity="success"
           text
-          [label]="'ACTIONS.RESULT' | translate"
-          (onClick)="hostsStore.openActionResultDialog(res ? [ res] : [],pruneRes)">
+          [label]="'ACTIONS.PROGRESS' | translate"
+          (onClick)="hostsStore.openJobProgressDialog({ hostId: h.id })">
         </p-button>
       }
 

@@ -33,6 +33,7 @@ describe('HostsCardComponent', () => {
     prune_all: false,
     url: 'https://agent.example.com',
     ssl: true,
+    ssl_ca: null,
     timeout: 5,
     container_hc_timeout: 60,
     has_secret: true,
@@ -123,5 +124,38 @@ describe('HostsCardComponent', () => {
     expect(hostsStoreMock.create).not.toHaveBeenCalled();
     expect(component.form.controls.name.touched).toBe(true);
     expect(component.form.controls.url.touched).toBe(true);
+  });
+
+  it('includes ssl_ca when creating a host', () => {
+    const sslCa =
+      '-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----';
+    component.form.patchValue({
+      ...host,
+      secret: '',
+      ssl_ca: sslCa,
+    });
+
+    component.save();
+
+    expect(hostsStoreMock.create).toHaveBeenCalledWith({
+      body: expect.objectContaining({ ssl_ca: sslCa }),
+    });
+  });
+
+  it('patches ssl_ca from host info and submits it on update', () => {
+    const sslCa = '-----BEGIN CERTIFICATE-----\nca\n-----END CERTIFICATE-----';
+    selectedId.set(host.id);
+    selected.set({ ...host, ssl_ca: sslCa });
+    fixture.detectChanges();
+
+    expect(component.form.controls.ssl_ca.value).toBe(sslCa);
+
+    component.form.markAsDirty();
+    component.save();
+
+    expect(hostsStoreMock.update).toHaveBeenCalledWith({
+      id: host.id,
+      body: expect.objectContaining({ ssl_ca: sslCa }),
+    });
   });
 });

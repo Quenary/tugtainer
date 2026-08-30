@@ -16,7 +16,7 @@ import {
   IHostUpdate,
 } from './hosts.interface';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { IActionProgress } from '@shared/interfaces/progress.interface';
+import { IAllHostsState } from '@shared/interfaces/jobs.interface';
 import { IPruneImageRequestBodySchema } from '../images/images.interface';
 import { Mocked } from 'vitest';
 import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
@@ -281,17 +281,17 @@ describe('HostsStore', () => {
   describe('checkAll', () => {
     it('should check all hosts', () => {
       containersApiServiceMock.checkAll.mockReturnValue(of('cache-id'));
-      containersApiServiceMock.watchProgress.mockReturnValue(
+      containersApiServiceMock.watchJobState.mockReturnValue(
         of({
           status: 'DONE',
-          result: {},
-        } as IActionProgress),
+          hosts: {},
+        } as IAllHostsState),
       );
 
       store.checkAll();
 
       expect(containersApiServiceMock.checkAll).toHaveBeenCalled();
-      expect(containersApiServiceMock.watchProgress).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.watchJobState).toHaveBeenCalledWith(
         'cache-id',
       );
     });
@@ -315,12 +315,6 @@ describe('HostsStore', () => {
 
     it('should check host', () => {
       containersApiServiceMock.checkHost.mockReturnValue(of('cache-id'));
-      containersApiServiceMock.watchProgress.mockReturnValue(
-        of({
-          status: 'DONE',
-          result: {},
-        } as IActionProgress),
-      );
 
       store.checkHost({ id: 1 });
 
@@ -361,9 +355,9 @@ describe('HostsStore', () => {
     });
   });
 
-  describe('openActionResultDialog', () => {
+  describe('openJobProgressDialog', () => {
     it('should open dialog', () => {
-      store.openActionResultDialog([], null);
+      store.openJobProgressDialog({ hostId: 1 });
       expect(dialogServiceMock.open).toHaveBeenCalled();
     });
   });

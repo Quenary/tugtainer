@@ -19,6 +19,7 @@ import {
 } from 'src/app/features/containers/containers.store';
 import { SettingsStore } from 'src/app/features/settings/settings.store';
 import { IHostEntity } from 'src/app/features/hosts/hosts.store';
+import { isContainerBusy } from '@shared/interfaces/jobs.interface';
 
 /**
  * Container action buttons and common logic
@@ -73,7 +74,11 @@ export class ContainerActionsComponent {
   });
   protected readonly hostActionLoading = computed<boolean>(() => {
     const host = this.host();
-    return ['check', 'update', 'prune'].includes(host?.loading);
+    const item = this.item();
+    if (host?.loading === 'prune') {
+      return true;
+    }
+    return isContainerBusy(host?.jobState, item?.name);
   });
   /**
    * Whether to update only running containers

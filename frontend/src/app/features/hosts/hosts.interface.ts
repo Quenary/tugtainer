@@ -5,6 +5,7 @@ export interface IHostBase {
   prune_all: boolean;
   url: string;
   ssl: boolean;
+  ssl_ca: string | null;
   timeout: number;
   container_hc_timeout: number;
 }

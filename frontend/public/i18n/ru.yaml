@@ -65,8 +65,16 @@ AUTH:
   SIGNIN_WITH_OIDC: Войти через OIDC
 ACTIONS:
   RESULT: Результат
+  PROGRESS: Прогресс
+  IN_PROGRESS: Выполняется
+  QUEUED: В очереди
+  COMPLETED: Завершено
+  ALL_CONTAINERS: Все контейнеры
   CHECK_ALL: Проверить все
   UPDATE_ALL: Обновить все
+  JOB_CHECK: Проверка
+  JOB_UPDATE: Обновление
+  JOB_LOG: Журнал
   ACTION_COMPLETED: Действие выполнено
   PRUNE: Очистить
   PRUNE_CONFIRM: Очистить образы?
@@ -127,6 +135,11 @@ HOSTS:
       HAS_SECRET: Секрет задан
       SSL: SSL
       SSL_HINT: Использовать проверку SSL для запросов backend → agent.
+      SSL_CA: Свой CA
+      SSL_CA_HINT: PEM CA (или self-signed сертификат) для проверки TLS запросов
+        backend → agent. Используется только при включённом SSL. Пустое поле —
+        системные CA.
+      SSL_CA_PLACEHOLDER: '-----BEGIN CERTIFICATE-----'
       TIMEOUT: Таймаут агента
       TIMEOUT_HINT: Таймаут в секундах для обычно быстрых запросов к агенту.
         Не влияет на потенциально долгие запросы, например создание контейнера
@@ -143,6 +156,8 @@ CONTAINERS:
   NAME: Имя
   CONTAINER_ID: ID
   IMAGE: Образ
+  SOURCE_CODE: Исходный код
+  SOURCE_CODE_HINT: Открывает URL репозитория из лейблов образа.
   UPDATE_AVAILABLE: Доступно обновление
   STATUS: Статус
   PORTS: Порты
@@ -177,9 +192,9 @@ CONTAINERS:
     PROTECTED: Защищённый контейнер нельзя обновить из приложения.
     NOT_RUNNING: Контейнер должен быть в состоянии running.
   CHECK: Проверить
-  MAIN_BTN_HINT:
-    Если контейнер входит в compose-проект, в процесс будут вовлечены
-    все контейнеры проекта.
+  MAIN_BTN_HINT: |-
+    Зависимые контейнеры останавливаются и запускаются вместе с обновляемыми.
+    Выберите несколько строк, чтобы проверить или обновить их вместе.
   PROTECTED: Защищён
   PROTECTED_CONTAINER_HINT:
     Контейнер помечен меткой dev.quenary.tugtainer.protected

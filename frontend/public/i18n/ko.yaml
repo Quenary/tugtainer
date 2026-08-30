@@ -65,8 +65,16 @@ AUTH:
   SIGNIN_WITH_OIDC: OIDC로 로그인
 ACTIONS:
   RESULT: 결과
+  PROGRESS: 진행
+  IN_PROGRESS: 진행 중
+  QUEUED: 대기 중
+  COMPLETED: 완료됨
+  ALL_CONTAINERS: 모든 컨테이너
   CHECK_ALL: 전체 확인
   UPDATE_ALL: 전체 업데이트
+  JOB_CHECK: 확인
+  JOB_UPDATE: 업데이트
+  JOB_LOG: 로그
   ACTION_COMPLETED: 작업 완료
   PRUNE: 정리
   PRUNE_CONFIRM: 이미지를 정리하시겠습니까?
@@ -125,6 +133,11 @@ HOSTS:
       HAS_SECRET: 시크릿이 설정됨
       SSL: SSL
       SSL_HINT: 백엔드-에이전트 요청에 SSL 검증을 사용할지 여부입니다.
+      SSL_CA: 사용자 지정 CA
+      SSL_CA_HINT:
+        backend → agent TLS 검증에 사용할 PEM CA(또는 자체 서명 인증서)입니다.
+        SSL이 켜져 있을 때만 사용됩니다. 비우면 시스템 CA를 사용합니다.
+      SSL_CA_PLACEHOLDER: '-----BEGIN CERTIFICATE-----'
       TIMEOUT: 에이전트 타임아웃
       TIMEOUT_HINT:
         일반적으로 빠르게 처리되는 에이전트 요청의 타임아웃(초)입니다.
@@ -140,6 +153,8 @@ CONTAINERS:
   NAME: 이름
   CONTAINER_ID: ID
   IMAGE: 이미지
+  SOURCE_CODE: 소스 코드
+  SOURCE_CODE_HINT: 이미지 레이블의 저장소 URL을 엽니다.
   UPDATE_AVAILABLE: 업데이트 가능
   STATUS: 상태
   PORTS: 포트
@@ -173,9 +188,9 @@ CONTAINERS:
     PROTECTED: 보호된 컨테이너는 앱에서 업데이트할 수 없습니다.
     NOT_RUNNING: 컨테이너는 실행 중 상태여야 합니다.
   CHECK: 확인
-  MAIN_BTN_HINT:
-    컨테이너가 컴포즈 프로젝트의 일부인 경우, 해당 프로젝트의 모든 컨테이너가
-    이 과정에 포함됩니다.
+  MAIN_BTN_HINT: |-
+    업데이트되는 컨테이너의 종속 컨테이너도 함께 중지되고 시작됩니다.
+    여러 행을 선택해 한꺼번에 확인하거나 업데이트할 수 있습니다.
   PROTECTED: 보호됨
   PROTECTED_CONTAINER_HINT:
     이 컨테이너는 dev.quenary.tugtainer.protected로 표시되어 있어

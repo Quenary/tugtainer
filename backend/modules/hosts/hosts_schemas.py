@@ -1,4 +1,21 @@
-from pydantic import BaseModel, ConfigDict
+import ssl
+
+from pydantic import BaseModel, ConfigDict, field_validator
+
+
+def normalize_ssl_ca(value: str | None) -> str | None:
+    """Strip PEM, treat empty as unset, reject invalid certificates."""
+    if value is None:
+        return None
+    pem = value.strip()
+    if not pem:
+        return None
+    try:
+        context = ssl.create_default_context()
+        context.load_verify_locations(cadata=pem)
+    except ssl.SSLError as e:
+        raise ValueError("Invalid CA certificate PEM") from e
+    return pem
 
 
 class HostBase(BaseModel):
@@ -8,6 +25,7 @@ class HostBase(BaseModel):
     prune_all: bool
     url: str
     ssl: bool
+    ssl_ca: str | None = None
     timeout: int
     container_hc_timeout: int
 
@@ -15,10 +33,20 @@ class HostBase(BaseModel):
 class HostCreate(HostBase):
     secret: str | None = None
 
+    @field_validator("ssl_ca")
+    @classmethod
+    def validate_ssl_ca(cls, value: str | None) -> str | None:
+        return normalize_ssl_ca(value)
+
 
 class HostUpdate(HostBase):
     is_changing_secret: bool = False
     secret: str | None = None
+
+    @field_validator("ssl_ca")
+    @classmethod
+    def validate_ssl_ca(cls, value: str | None) -> str | None:
+        return normalize_ssl_ca(value)
 
 
 class HostInfo(HostBase):

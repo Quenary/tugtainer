@@ -2,6 +2,7 @@ import {
   patchState,
   signalStore,
   withComputed,
+  withHooks,
   withMethods,
   withState,
 } from '@ngrx/signals';
@@ -18,36 +19,44 @@ import {
   IHostStatus,
   IHostUpdate,
 } from './hosts.interface';
-import { computed, inject } from '@angular/core';
+import { computed, effect, inject } from '@angular/core';
 import { HostsApiService } from './hosts-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { mergeMap, Observable, pipe, switchMap, tap } from 'rxjs';
+import {
+  EMPTY,
+  interval,
+  mergeMap,
+  Observable,
+  pipe,
+  startWith,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { tapResponse } from '@ngrx/operators';
 import {
-  EActionStatus,
-  IAllActionProgress,
-  IHostActionProgress,
-} from '@shared/interfaces/progress.interface';
+  IAllHostsState,
+  IHostState,
+  isHostBusy,
+} from '@shared/interfaces/jobs.interface';
 import { ContainersApiService } from '../containers/containers-api.service';
 import { IHostSummary } from '../public/public-interface';
 import { PublicApiService } from '../public/public-api.service';
 import { HttpErrorResponse } from '@angular/common/http';
-import { IHostActionResult } from '@shared/interfaces/check-result.interface';
 import { IPruneImageRequestBodySchema } from '../images/images.interface';
 import { ImagesApiService } from '../images/images-api.service';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
-  ActionResultDialogComponent,
-  IActionResultDialogData,
-} from '@shared/components/action-result-dialog/action-result-dialog.component';
+  IJobsProgressDialogSource,
+  JobsProgressDialogComponent,
+} from '@shared/components/jobs-progress-dialog/jobs-progress-dialog.component';
 
 interface IHostsStore {
   loading: THostsLoading;
   selectedId: number | null;
-  globalActionProgress: IAllActionProgress | null;
+  globalJobState: IAllHostsState | null;
   /**
    * Update containers list signal
    */
@@ -61,7 +70,7 @@ interface IHostsStore {
 export interface IHostEntity extends IHostInfo {
   summary: IHostSummary | null;
   status: IHostStatus | null;
-  progress: IHostActionProgress | null;
+  jobState: IHostState | null;
   pruneResult: string | null;
   loading: THostsLoading;
 }
@@ -74,7 +83,7 @@ export const HostsStore = signalStore(
   withState<IHostsStore>(() => ({
     loading: null,
     selectedId: null,
-    globalActionProgress: null,
+    globalJobState: null,
     updateContainersList: null,
     updateImagesList: null,
   })),
@@ -98,13 +107,7 @@ export const HostsStore = signalStore(
      * If global action (check/update) is active
      */
     globalActionActive: computed<boolean>(() => {
-      const globalACtionProgress = store.globalActionProgress();
-      return Boolean(
-        globalACtionProgress &&
-        ![EActionStatus.DONE, EActionStatus.ERROR].includes(
-          globalACtionProgress.status,
-        ),
-      );
+      return isHostBusy(store.globalJobState());
     }),
   })),
   withMethods((store) => {
@@ -135,7 +138,7 @@ export const HostsStore = signalStore(
                   ...(oldEntities[item.id] ?? {
                     summary: null,
                     status: null,
-                    progress: null,
+                    jobState: null,
                     pruneResult: null,
                     loading: null,
                   }),
@@ -239,7 +242,7 @@ export const HostsStore = signalStore(
     ) {
       return rxMethod<void>(
         pipe(
-          tap(() => patchState(store, { globalActionProgress: null, loading })),
+          tap(() => patchState(store, { globalJobState: null, loading })),
           switchMap(() =>
             apiCall().pipe(
               tap(() =>
@@ -248,17 +251,12 @@ export const HostsStore = signalStore(
                 ),
               ),
               switchMap((cacheId) =>
-                containersApiService.watchProgress<IAllActionProgress>(cacheId),
+                containersApiService.watchJobState<IAllHostsState>(cacheId),
               ),
               tapResponse({
-                next: (globalActionProgress) => {
-                  patchState(store, { globalActionProgress });
-                  if (globalActionProgress.result) {
-                    openActionResultDialog(
-                      Object.values(globalActionProgress.result),
-                      null,
-                    );
-                  }
+                next: (globalJobState) => {
+                  patchState(store, { globalJobState });
+                  openJobProgressDialog({ global: true });
                 },
                 error: (error) => {
                   toastService.error(error);
@@ -287,10 +285,7 @@ export const HostsStore = signalStore(
               store,
               updateEntity({
                 id,
-                changes: {
-                  progress: null,
-                  loading,
-                },
+                changes: { loading },
               }),
             ),
           ),
@@ -301,28 +296,10 @@ export const HostsStore = signalStore(
                   translateService.instant('GENERAL.IN_PROGRESS'),
                 ),
               ),
-              switchMap((cacheId) =>
-                containersApiService.watchProgress<IHostActionProgress>(
-                  cacheId,
-                ),
-              ),
               tapResponse({
-                next: (progress) => {
-                  patchState(
-                    store,
-                    updateEntity({
-                      id,
-                      changes: { progress },
-                    }),
-                  );
-                  if (progress.result) {
-                    openActionResultDialog([progress.result], null);
-                  }
-                },
+                next: () => undefined,
                 error: (error) => {
                   toastService.error(error);
-                },
-                finalize: () => {
                   patchState(
                     store,
                     updateEntity({
@@ -330,9 +307,6 @@ export const HostsStore = signalStore(
                       changes: { loading: null },
                     }),
                   );
-                  loadList();
-                  _updateContainersList();
-                  _updateImagesList();
                 },
               }),
             ),
@@ -341,22 +315,101 @@ export const HostsStore = signalStore(
       );
     }
 
-    const openActionResultDialog = (
-      results: IHostActionResult[],
-      pruneResult: string | null,
-    ) => {
-      dialogService.open<ActionResultDialogComponent, IActionResultDialogData>(
-        ActionResultDialogComponent,
-        {
-          closeOnEscape: true,
-          closable: true,
-          header: translateService.instant('ACTIONS.ACTION_COMPLETED'),
-          data: {
-            results,
-            pruneResult,
+    const applyHostState = (hostId: number, jobState: IHostState | null) => {
+      const entity = store.entityMap()[hostId];
+      if (!entity) {
+        return;
+      }
+      const prevActive = isHostBusy(entity.jobState);
+      const nextActive = isHostBusy(jobState);
+      let loading = entity.loading;
+      if (loading !== 'prune') {
+        if (nextActive) {
+          loading = jobState?.current?.kind === 'update' ? 'update' : 'check';
+        } else if (jobState && (loading === 'check' || loading === 'update')) {
+          loading = null;
+        }
+      }
+      patchState(
+        store,
+        updateEntity({
+          id: hostId,
+          changes: { jobState, loading },
+        }),
+      );
+      if (prevActive && !nextActive) {
+        if (jobState?.completed?.length) {
+          openJobProgressDialog({ hostId });
+        }
+        loadList();
+        _updateContainersList();
+        _updateImagesList();
+      }
+    };
+
+    const pollHostState = rxMethod<number | null>(
+      pipe(
+        switchMap((hostId) => {
+          if (!hostId) {
+            return EMPTY;
+          }
+          return interval(1000).pipe(
+            startWith(0),
+            switchMap(() =>
+              containersApiService.hostState(hostId).pipe(
+                tapResponse({
+                  next: (jobState) => applyHostState(hostId, jobState),
+                  error: () => undefined,
+                }),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+
+    let progressDialogRef: DynamicDialogRef | null = null;
+
+    const openJobProgressDialog = (source: {
+      hostId?: number;
+      global?: boolean;
+    }) => {
+      if (progressDialogRef) {
+        return;
+      }
+      const ref = dialogService.open<
+        JobsProgressDialogComponent,
+        IJobsProgressDialogSource
+      >(JobsProgressDialogComponent, {
+        closeOnEscape: true,
+        closable: true,
+        header: translateService.instant('ACTIONS.PROGRESS'),
+        data: {
+          read: () => {
+            if (source.global) {
+              const hosts = store.globalJobState()?.hosts ?? {};
+              return {
+                jobState: null,
+                pruneResult: null,
+                extraJobs: Object.values(hosts),
+              };
+            }
+            const entity =
+              source.hostId != null ? store.entityMap()[source.hostId] : null;
+            return {
+              jobState: entity?.jobState ?? null,
+              pruneResult: entity?.pruneResult ?? null,
+            };
           },
         },
-      );
+      });
+      if (!ref) {
+        return;
+      }
+      progressDialogRef = ref;
+      progressDialogRef.onClose.subscribe(() => {
+        progressDialogRef = null;
+      });
     };
 
     return {
@@ -377,7 +430,7 @@ export const HostsStore = signalStore(
                       ...info,
                       summary: null,
                       status: null,
-                      progress: null,
+                      jobState: null,
                       pruneResult: null,
                       loading: null,
                     }),
@@ -498,7 +551,7 @@ export const HostsStore = signalStore(
                       },
                     }),
                   );
-                  openActionResultDialog([], pruneResult);
+                  openJobProgressDialog({ hostId: id });
                 },
                 error: (error) => toastService.error(error),
                 finalize: () => {
@@ -514,10 +567,20 @@ export const HostsStore = signalStore(
         ),
       ),
       /**
-       * Open action results dialog
-       * @param results
+       * Open queued / completed host jobs dialog
        */
-      openActionResultDialog,
+      openJobProgressDialog,
+      /**
+       * Poll unified host job state while a host is selected
+       */
+      pollHostState,
     };
+  }),
+  withHooks({
+    onInit: (store) => {
+      effect(() => {
+        store.pollHostState(store.selectedId());
+      });
+    },
   }),
 );

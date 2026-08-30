@@ -1,0 +1,135 @@
+@let view = data();
+
+@if (view.current; as current) {
+  <section class="progress-section">
+    <h3>{{ 'ACTIONS.IN_PROGRESS' | translate }}</h3>
+    <p-accordion
+      [multiple]="true"
+      [value]="accordionValue()"
+      (valueChange)="accordionValue.set($event)">
+      <p-accordion-panel value="current">
+        <p-accordion-header>
+          <div class="job-header">
+            @if (current.kind; as kind) {
+              <p-tag [severity]="kindSeverity[kind]">{{
+                kindKey[kind] | translate
+              }}</p-tag>
+            }
+            <span>
+              @if (current.names; as names) {
+                {{ names.join(', ') }}
+              } @else {
+                {{ 'ACTIONS.ALL_CONTAINERS' | translate }}
+              }
+            </span>
+            @if (current.status; as status) {
+              <p-tag [severity]="statusSeverity[status]">{{ status }}</p-tag>
+            }
+          </div>
+        </p-accordion-header>
+        <p-accordion-content>
+          @if (current.containers || current.prune_result) {
+            <app-host-jobs-result [job]="current"></app-host-jobs-result>
+          }
+          <ng-container
+            [ngTemplateOutlet]="jobLog"
+            [ngTemplateOutletContext]="{ $implicit: current }" />
+        </p-accordion-content>
+      </p-accordion-panel>
+    </p-accordion>
+  </section>
+}
+
+@if (view.queued.length) {
+  <section class="progress-section">
+    <h3>{{ 'ACTIONS.QUEUED' | translate }}</h3>
+    <p-accordion [multiple]="true">
+      @for (q of view.queued; track $index) {
+        <p-accordion-panel [value]="'queued-' + $index">
+          <p-accordion-header>
+            <div class="job-header">
+              @if (q.kind; as kind) {
+                <p-tag [severity]="kindSeverity[kind]">{{
+                  kindKey[kind] | translate
+                }}</p-tag>
+              }
+              <span>
+                @if (q.names; as names) {
+                  {{ names.join(', ') }}
+                } @else {
+                  {{ 'ACTIONS.ALL_CONTAINERS' | translate }}
+                }
+              </span>
+            </div>
+          </p-accordion-header>
+          <p-accordion-content></p-accordion-content>
+        </p-accordion-panel>
+      }
+    </p-accordion>
+  </section>
+}
+
+@if (view.completed.length) {
+  <section class="progress-section">
+    <h3>{{ 'ACTIONS.COMPLETED' | translate }}</h3>
+    <p-accordion [multiple]="true">
+      @for (c of view.completed; track $index) {
+        <p-accordion-panel [value]="'completed-' + $index">
+          <p-accordion-header>
+            <div class="job-header">
+              @if (c.kind; as kind) {
+                <p-tag [severity]="kindSeverity[kind]">{{
+                  kindKey[kind] | translate
+                }}</p-tag>
+              }
+              <span>
+                @if (c.names; as names) {
+                  {{ names.join(', ') }}
+                } @else if (c.kind) {
+                  {{ 'ACTIONS.ALL_CONTAINERS' | translate }}
+                }
+              </span>
+              @if (c.status; as status) {
+                <p-tag [severity]="statusSeverity[status]">{{ status }}</p-tag>
+              }
+            </div>
+          </p-accordion-header>
+          <p-accordion-content>
+            @if (c.containers || c.prune_result) {
+              <app-host-jobs-result [job]="c"></app-host-jobs-result>
+            }
+            <ng-container
+              [ngTemplateOutlet]="jobLog"
+              [ngTemplateOutletContext]="{ $implicit: c }" />
+          </p-accordion-content>
+        </p-accordion-panel>
+      }
+    </p-accordion>
+  </section>
+}
+
+<ng-template
+  #jobLog
+  let-job>
+  @if (job.log?.length) {
+    <p-accordion>
+      <p-accordion-panel value="log">
+        <p-accordion-header>{{
+          'ACTIONS.JOB_LOG' | translate
+        }}</p-accordion-header>
+        <p-accordion-content>
+          <pre class="job-log">@for (line of job.log; track $index) {
+{{ line }}
+}</pre>
+        </p-accordion-content>
+      </p-accordion-panel>
+    </p-accordion>
+  }
+</ng-template>
+
+@if (view.pruneResult; as r) {
+  <section class="progress-section">
+    <h3>{{ 'ACTIONS.PRUNE_RESULT' | translate }}</h3>
+    <pre>{{ r }}</pre>
+  </section>
+}

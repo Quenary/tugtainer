@@ -78,6 +78,20 @@
               [value]="_item.health"></p-tag>
           </section>
 
+          @if (sourceUrl()) {
+            <div style="flex-basis: 100%;">
+              <p-button
+                class="general-content-source"
+                [label]="'CONTAINERS.SOURCE_CODE' | translate"
+                [pTooltip]="'CONTAINERS.SOURCE_CODE_HINT' | translate"
+                icon="pi pi-external-link"
+                iconPos="right"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="openSource()"></p-button>
+            </div>
+          }
+
           <p-ifta-label>
             <input
               id="container-name"

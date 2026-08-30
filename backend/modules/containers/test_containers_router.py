@@ -112,6 +112,26 @@ async def test_hooks_enabled_reflects_config(mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
+async def test_host_progress_empty_returns_null(mocker: MockerFixture):
+    host = mocker.Mock()
+    host.id = 2
+    host.name = "local"
+    mocker.patch(
+        f"{base_module}.get_host",
+        mocker.AsyncMock(return_value=host),
+    )
+
+    async def override_get_async_session():
+        return AsyncMock(spec=AsyncSession)
+
+    app.dependency_overrides[get_async_session] = override_get_async_session
+
+    response = client.get("/containers/progress/2")
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+@pytest.mark.asyncio
 async def test_patch_container_hooks_forbidden_when_disabled(
     mocker: MockerFixture,
 ):

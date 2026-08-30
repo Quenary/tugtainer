@@ -19,8 +19,14 @@
     @include m.p-table;
   }
 
-  th:first-child,
-  td:first-child {
+  th.selection-col,
+  td.selection-col {
+    width: 3rem;
+    max-width: 3rem;
+  }
+
+  th.name-col,
+  td.name-col {
     width: 40%;
     max-width: 35vw;
   }

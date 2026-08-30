@@ -41,7 +41,7 @@ def test_test_notification_requires_urls(urls: str):
 @pytest.mark.asyncio
 async def test_test_notification_sends_sample_results(mocker: MockerFixture):
     send = mocker.patch(
-        f"{base_module}.send_check_notification",
+        f"{base_module}.send_job_notification",
         new_callable=AsyncMock,
     )
     mocker.patch(

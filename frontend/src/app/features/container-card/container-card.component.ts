@@ -35,6 +35,7 @@ import { ContainerCardLogsComponent } from './container-card-logs/container-card
 import { ContainerCardHooksComponent } from './container-card-hooks/container-card-hooks.component';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
+import { getImageSourceUrl } from '@shared/functions/get-image-source-url.function';
 import { ContainersStore } from '../containers/containers.store';
 import { InspectComponent } from '@shared/components/inspect/inspect.component';
 import { SettingsStore } from '../settings/settings.store';
@@ -116,6 +117,12 @@ export class ContainerCardComponent implements OnDestroy {
     () => this.containersStore.selectedInfo()?.inspect,
   );
   /**
+   * Source repository URL from image labels, if the publisher set one.
+   */
+  protected readonly sourceUrl = computed(() =>
+    getImageSourceUrl(this.inspect()),
+  );
+  /**
    * Reference of the image the container ran before its last update.
    * Prefers the digests, which are the only value that pins the exact
    * image again, and falls back to the tags for local images.
@@ -183,5 +190,12 @@ export class ContainerCardComponent implements OnDestroy {
 
   protected onSaveHooks(hooks: IContainerHooks): void {
     this.patchContainer({ hooks });
+  }
+
+  protected openSource(): void {
+    const url = this.sourceUrl();
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   }
 }

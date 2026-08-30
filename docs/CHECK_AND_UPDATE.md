@@ -10,7 +10,7 @@
 
 **Scheduled** process includes all enabled hosts and all containers **selected for auto-check**.
 
-**Manual** process includes all containers despite the auto-check toggle (or a single container if you've clicked one).
+**Manual** process includes all containers despite the auto-check toggle, a single container, or a selected set of containers.
 
 ## Update process
 
@@ -41,7 +41,11 @@
 
 **Scheduled** process runs on all enabled hosts for containers **selected for auto-update**.
 
-**Manual** process updates all containers with an available update despite the auto-update toggle (or a single container if you've clicked one), including their affected dependents.
+**Manual** process updates all containers with an available update despite the auto-update toggle (Check all / Update all on a host), a single container, or a selected set of containers. Dependents of those containers are still included in `affected` and are stopped/started with the plan. Select several rows in the containers table to check or update them together.
+
+Check and update jobs on the **same host** run one after another (a check of A and B cannot overlap an update of C and D). Jobs on different hosts can run at the same time.
+
+Per-host `HostState` is the source of truth: `current` job, `queued` jobs, and `completed` jobs. Each `Job` carries its own `containers` (status + result). Finished jobs stay in `completed` until the cache expires.
 
 Optional [hooks](../README.md#hooks) can run around stop, update, and rollback when enabled.
 

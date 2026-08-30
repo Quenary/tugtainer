@@ -31,6 +31,8 @@ import { ContainerActionsComponent } from '@shared/components/container-actions/
 import { ContainersStore, IContainerEntity } from '../containers.store';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { SettingsStore } from 'src/app/features/settings/settings.store';
+import { ESettingKey } from 'src/app/features/settings/settings.interface';
 
 const onlyAvailableStorageKey = 'tugtainer-containers-only-available';
 const statusesStorageKey = 'tugtainer-containers-statuses';
@@ -62,9 +64,15 @@ const statusesStorageKey = 'tugtainer-containers-statuses';
 })
 export class ContainersTableComponent {
   protected readonly containersStore = inject(ContainersStore);
+  private readonly settingsStore = inject(SettingsStore);
 
   protected readonly EContainerStatusSeverity = EContainerStatusSeverity;
   protected readonly EContainerHealthSeverity = EContainerHealthSeverity;
+
+  /**
+   * Selected table rows
+   */
+  protected readonly selected = signal<IContainerEntity[]>([]);
 
   /**
    * Show only available filter
@@ -93,6 +101,21 @@ export class ContainersTableComponent {
       (c) =>
         (!onlyAvailable || c.update_available) &&
         (!statuses?.length || statuses.includes(c.status)),
+    );
+  });
+
+  /**
+   * Selected containers that can be updated
+   */
+  protected readonly updatableSelected = computed(() => {
+    const updateOnlyRunning =
+      (this.settingsStore.entityMap()[ESettingKey.UPDATE_ONLY_RUNNING]
+        ?.value as boolean) ?? true;
+    return this.selected().filter(
+      (c) =>
+        c.update_available &&
+        !c.protected &&
+        (c.status === 'running' || !updateOnlyRunning),
     );
   });
 
@@ -138,6 +161,24 @@ export class ContainersTableComponent {
 
   protected onUpdate(container: IContainerEntity): void {
     this.containersStore.updateContainer({ containerName: container.name });
+  }
+
+  protected onCheckSelected(): void {
+    const names = this.selected().map((c) => c.name);
+    if (!names.length) {
+      return;
+    }
+    this.containersStore.checkContainers({ names });
+    this.selected.set([]);
+  }
+
+  protected onUpdateSelected(): void {
+    const names = this.updatableSelected().map((c) => c.name);
+    if (!names.length) {
+      return;
+    }
+    this.containersStore.updateContainers({ names });
+    this.selected.set([]);
   }
 
   protected onCommand(

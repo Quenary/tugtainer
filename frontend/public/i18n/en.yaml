@@ -65,8 +65,16 @@ AUTH:
   SIGNIN_WITH_OIDC: Sign-in with OIDC
 ACTIONS:
   RESULT: Result
+  PROGRESS: Progress
+  IN_PROGRESS: In progress
+  QUEUED: Queued
+  COMPLETED: Completed
+  ALL_CONTAINERS: All containers
   CHECK_ALL: Check all
   UPDATE_ALL: Update all
+  JOB_CHECK: Checking
+  JOB_UPDATE: Updating
+  JOB_LOG: Journal
   ACTION_COMPLETED: Action completed
   PRUNE: Prune
   PRUNE_CONFIRM: Do you want to prune images?
@@ -126,6 +134,11 @@ HOSTS:
       HAS_SECRET: Secret is set
       SSL: SSL
       SSL_HINT: Whether to use SSL verification for backend > agent requests.
+      SSL_CA: Custom CA
+      SSL_CA_HINT: PEM CA (or a self-signed certificate) used to verify TLS for
+        backend → agent requests. Used only when SSL is enabled. Leave empty
+        to use the system CA store.
+      SSL_CA_PLACEHOLDER: '-----BEGIN CERTIFICATE-----'
       TIMEOUT: Agent timeout
       TIMEOUT_HINT:
         Timeout in seconds for typically fast agent requests. It does
@@ -142,6 +155,8 @@ CONTAINERS:
   NAME: Name
   CONTAINER_ID: ID
   IMAGE: Image
+  SOURCE_CODE: Source code
+  SOURCE_CODE_HINT: Opens the repository URL from the image labels.
   UPDATE_AVAILABLE: Update available
   STATUS: Status
   PORTS: Ports
@@ -176,9 +191,9 @@ CONTAINERS:
     PROTECTED: The protected container cannot be updated from the app.
     NOT_RUNNING: The container must be in running state.
   CHECK: Check
-  MAIN_BTN_HINT:
-    If a container is a part of a compose project, all project's containers
-    will be involved in the process.
+  MAIN_BTN_HINT: |-
+    Dependents of updated containers are stopped and started with them.
+    Select several rows to check or update them together.
   PROTECTED: Protected
   PROTECTED_CONTAINER_HINT:
     This container labeled with dev.quenary.tugtainer.protected
