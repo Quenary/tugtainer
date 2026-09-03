@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v1.37.0 (2026-09-03)
+
+### Bug Fixes
+
+- Prevent host form overwrite on poll of progress
+  ([`6c4939b`](https://github.com/Quenary/tugtainer/commit/6c4939b08ffca30a5902e6f910dece40589f2c09))
+
+- Side menu hosts list scroll on overflow
+  ([`b2f6e56`](https://github.com/Quenary/tugtainer/commit/b2f6e56cc0988ab1a4cfd110b7af0a06efd53a62))
+
+### Documentation
+
+- Update socket-proxy config with newly required ALLOW_* permissions
+  ([`c46ca77`](https://github.com/Quenary/tugtainer/commit/c46ca77daedbbe4de0e7f8f6aa231e0c7c26a512))
+
+### Features
+
+- Sanitize host URLs by stripping whitespace and update validation regex to reject invalid
+  characters
+  ([`b4e786d`](https://github.com/Quenary/tugtainer/commit/b4e786d827a0a693357bf7b8fe2a0842d8ec9428))
+
+
 ## v1.36.0 (2026-08-30)
 
 ### Features
