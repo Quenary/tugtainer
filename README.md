@@ -109,7 +109,11 @@ Automatic updates are disabled by default. You can enable only what you need.
 
   Manual setup:
   - Deploy socket-proxy e.g. https://hub.docker.com/r/linuxserver/socket-proxy
-  - Enable at least **CONTAINERS, IMAGES, POST, INFO, PING** for the **check** feature, and **NETWORKS** for the **update** feature;
+  - Enable the following environment variables based on the features you want to use:
+    - **Base (check feature)**: `CONTAINERS`, `IMAGES`, `POST`, `INFO`, `PING`
+    - **Update feature**: `NETWORKS`
+    - **Logs feature**: `ALLOW_LOGS`
+    - **Container controls (start/stop/restart)**: `ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `ALLOW_PAUSE`, `ALLOW_UNPAUSE`
   - Set the env var DOCKER_HOST="tcp://my-socket-proxy:port" on the Tugtainer(-agent) container(s);
 
 ## Private registries

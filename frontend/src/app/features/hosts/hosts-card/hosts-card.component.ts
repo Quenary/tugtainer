@@ -2,12 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   OnDestroy,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormControl,
@@ -46,6 +45,7 @@ import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-
 import { HostsStore } from '../hosts.store';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-host-card',
@@ -128,7 +128,7 @@ export class HostsCardComponent implements OnDestroy {
     url: new FormControl<string>(null, [
       Validators.required,
       this.urlValidator,
-      Validators.pattern(/^(http|https):\/\//),
+      Validators.pattern(/^(http|https):\/\/[^\s]+$/),
     ]),
     is_changing_secret: new FormControl<boolean>(false),
     secret: new FormControl<string>(null),
@@ -146,10 +146,17 @@ export class HostsCardComponent implements OnDestroy {
         this.hostsStore.select(id);
       });
 
-    effect(() => {
-      const info = this.hostsStore.selected();
-      this.prepareForm(info);
-    });
+    const keys = Object.keys(this.form.controls);
+    toObservable(this.hostsStore.selected)
+      .pipe(
+        distinctUntilChanged((a, b) => keys.every((k) => a?.[k] === b?.[k])),
+        takeUntilDestroyed(),
+      )
+      .subscribe({
+        next: (info) => {
+          this.prepareForm(info);
+        },
+      });
 
     this.form.controls.prune.valueChanges
       .pipe(takeUntilDestroyed())
@@ -194,13 +201,8 @@ export class HostsCardComponent implements OnDestroy {
 
   public save(): void {
     if (this.form.invalid) {
-      const controls = this.form.controls;
-      for (const k in controls) {
-        if (controls[k].invalid) {
-          controls[k].markAsTouched();
-          controls[k].markAsDirty();
-        }
-      }
+      this.form.markAllAsTouched();
+      this.form.markAllAsDirty();
       return;
     }
     const id = this.hostsStore.selectedId();

@@ -33,6 +33,11 @@ class HostBase(BaseModel):
 class HostCreate(HostBase):
     secret: str | None = None
 
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str) -> str:
+        return value.strip()
+
     @field_validator("ssl_ca")
     @classmethod
     def validate_ssl_ca(cls, value: str | None) -> str | None:
@@ -42,6 +47,11 @@ class HostCreate(HostBase):
 class HostUpdate(HostBase):
     is_changing_secret: bool = False
     secret: str | None = None
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str) -> str:
+        return value.strip()
 
     @field_validator("ssl_ca")
     @classmethod
