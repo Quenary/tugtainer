@@ -79,6 +79,8 @@
     display: grid;
     grid-template-rows: 1fr;
     width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     transition:
       grid-template-rows var(--menu-transition-duration) ease,
       margin-bottom var(--menu-transition-duration) ease,
@@ -89,7 +91,8 @@
       flex-direction: column;
       gap: 0.5rem;
       padding-left: 1.5rem;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
   }
 }
