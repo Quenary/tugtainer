@@ -114,6 +114,27 @@
             </label>
           </p-ifta-label>
 
+          @if (_item.current_version; as _currentVersion) {
+            <p-ifta-label>
+              <p-iconfield>
+                <input
+                  fluid
+                  id="container-current-version"
+                  pInputText
+                  readonly
+                  [value]="_currentVersion" />
+                <p-inputicon
+                  class="pi pi-question-circle"
+                  [pTooltip]="
+                    'CONTAINERS.CURRENT_VERSION_HINT' | translate
+                  "></p-inputicon>
+              </p-iconfield>
+              <label for="container-current-version">
+                {{ 'CONTAINERS.CURRENT_VERSION' | translate }}
+              </label>
+            </p-ifta-label>
+          }
+
           <p-ifta-label style="width: 100%">
             <textarea
               fluid

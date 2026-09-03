@@ -1,19 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Final
 
 from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
 
 from backend.core.jobs.jobs_results import ContainerJobOutcome
-
-# Labels commonly used by publishers to declare a human readable version.
-# The OCI label is the current standard, label-schema is its predecessor
-# and is still present on a fair amount of older images.
-VERSION_LABELS: Final[tuple[str, ...]] = (
-    "org.opencontainers.image.version",
-    "org.label-schema.version",
-)
+from backend.util.get_version_from_labels import get_version_from_labels
 
 
 @dataclass
@@ -36,30 +28,6 @@ class PreviousImage:
         return bool(self.digests or self.tags or self.version)
 
 
-def get_image_version_label(
-    image: ImageInspectResult | None,
-) -> str | None:
-    """
-    Get a human readable version declared by the image labels.
-
-    This is a best effort hint, not something to pin with:
-    the value is whatever the publisher wrote, so it may be inherited
-    from a base image, a branch name, or a tag that is not published
-    in the same form. Use the digests to pin an image.
-
-    :param image: inspected image
-    :return: version string or None
-    """
-    labels = image.config.labels if image and image.config else None
-    if not labels:
-        return None
-    for label in VERSION_LABELS:
-        value = labels.get(label)
-        if value and value.strip():
-            return value.strip()
-    return None
-
-
 def get_previous_image(
     image: ImageInspectResult | None,
 ) -> PreviousImage:
@@ -76,7 +44,7 @@ def get_previous_image(
     return PreviousImage(
         digests=list(image.repo_digests or []),
         tags=list(image.repo_tags or []),
-        version=get_image_version_label(image),
+        version=get_version_from_labels(image.config.labels if image.config else None),
     )
 
 

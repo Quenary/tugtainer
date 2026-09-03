@@ -37,6 +37,7 @@ export interface IContainerListItem {
   previous_image_digests: string[] | null;
   previous_image_tags: string[] | null;
   previous_image_version: string | null;
+  current_version: string | null;
   created_at: string;
   modified_at: string;
   exit_code: number;

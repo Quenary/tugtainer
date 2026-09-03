@@ -3,7 +3,6 @@ from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.core.jobs.update.update_previous_image import (
     PreviousImage,
-    get_image_version_label,
     get_previous_image,
     get_previous_image_for_result,
 )
@@ -20,47 +19,6 @@ def _image(
         repo_tags=tags,
         config=ContainerConfig(labels=labels),
     )
-
-
-def test_version_label_from_oci_label():
-    image = _image(labels={"org.opencontainers.image.version": "1.2.3"})
-
-    assert get_image_version_label(image) == "1.2.3"
-
-
-def test_version_label_falls_back_to_label_schema():
-    image = _image(labels={"org.label-schema.version": "1.2.3"})
-
-    assert get_image_version_label(image) == "1.2.3"
-
-
-def test_version_label_prefers_oci_over_label_schema():
-    image = _image(
-        labels={
-            "org.label-schema.version": "0.9.0",
-            "org.opencontainers.image.version": "1.2.3",
-        }
-    )
-
-    assert get_image_version_label(image) == "1.2.3"
-
-
-def test_version_label_is_stripped():
-    image = _image(labels={"org.opencontainers.image.version": "  1.2.3\n"})
-
-    assert get_image_version_label(image) == "1.2.3"
-
-
-def test_version_label_ignores_blank_value():
-    image = _image(labels={"org.opencontainers.image.version": "   "})
-
-    assert get_image_version_label(image) is None
-
-
-def test_version_label_without_labels():
-    assert get_image_version_label(_image()) is None
-    assert get_image_version_label(_image(labels={})) is None
-    assert get_image_version_label(None) is None
 
 
 def test_get_previous_image_collects_everything():

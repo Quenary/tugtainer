@@ -180,6 +180,10 @@ CONTAINERS:
     上一个镜像标签中记录的版本。
     这是镜像发布者提供的提示，不一定是可以拉取的标签。
     请改为固定上一个镜像。
+  CURRENT_VERSION: 当前版本
+  CURRENT_VERSION_HINT: |-
+    当前镜像标签中记录的版本。
+    这是镜像发布者提供的提示。
   UPDATE: 更新
   UPDATE_DISABLED_HINTS:
     PROTECTED: 受保护的容器无法从此应用更新。
