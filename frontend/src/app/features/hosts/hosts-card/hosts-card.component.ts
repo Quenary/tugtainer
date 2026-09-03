@@ -128,7 +128,7 @@ export class HostsCardComponent implements OnDestroy {
     url: new FormControl<string>(null, [
       Validators.required,
       this.urlValidator,
-      Validators.pattern(/^(http|https):\/\//),
+      Validators.pattern(/^(http|https):\/\/[^\s]+$/),
     ]),
     is_changing_secret: new FormControl<boolean>(false),
     secret: new FormControl<string>(null),
