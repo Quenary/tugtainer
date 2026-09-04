@@ -84,3 +84,24 @@ async def test_get_host_summary_auto_check_counts_only_check_enabled(
 
     assert summary.by_update_available == {"true": 2, "false": 1}
     assert summary.by_update_available_auto_check == {"true": 1, "false": 1}
+
+
+@pytest.mark.asyncio
+async def test_get_host_summary_host_error_returns_empty_summary(
+    mocker: MockerFixture,
+):
+    fake_client = mocker.Mock()
+    fake_client.container.list = mocker.AsyncMock(
+        side_effect=Exception("Connection error")
+    )
+    mocker.patch(
+        f"{module_path}.AgentClientManager.get_host_client",
+        return_value=fake_client,
+    )
+
+    summary = await get_host_summary(_host(enabled=True), session=None)
+
+    assert summary.host_enabled is True
+    assert summary.total_containers == 0
+    assert summary.by_status == {}
+    assert summary.by_update_available == {"true": 0, "false": 0}

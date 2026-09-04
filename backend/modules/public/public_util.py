@@ -33,11 +33,11 @@ async def fetch_latest_release() -> dict[str, Any]:
 
 
 async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSummary:
-    if not host.enabled:
+    def _empty_summary() -> HostSummary:
         return HostSummary(
             host_id=host.id,
             host_name=host.name,
-            host_enabled=False,
+            host_enabled=host.enabled,
             total_containers=0,
             by_status={},
             by_health={},
@@ -51,100 +51,109 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
             dangling_images=0,
         )
 
-    client: Final = AgentClientManager.get_host_client(host)
-    containers: Final = await client.container.list(
-        GetContainerListBodySchema(all=True)
-    )
+    if not host.enabled:
+        return _empty_summary()
 
-    containers_db: Final = (
-        (
-            await session.execute(
-                select(ContainersModel).where(ContainersModel.host_id == host.id)
+    try:
+        client: Final = AgentClientManager.get_host_client(host)
+        containers: Final = await client.container.list(
+            GetContainerListBodySchema(all=True)
+        )
+
+        containers_db: Final = (
+            (
+                await session.execute(
+                    select(ContainersModel).where(ContainersModel.host_id == host.id)
+                )
             )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    containers_db_map: Final = {c.name: c for c in containers_db}
+        containers_db_map: Final = {c.name: c for c in containers_db}
 
-    mapped_containers: Final = [
-        ContainersListItem.from_sources(
-            host.id, c, containers_db_map.get(cast(str, c.name))
+        mapped_containers: Final = [
+            ContainersListItem.from_sources(
+                host.id, c, containers_db_map.get(cast(str, c.name))
+            )
+            for c in containers
+        ]
+
+        by_status = {
+            "created": 0,
+            "running": 0,
+            "paused": 0,
+            "restarting": 0,
+            "removing": 0,
+            "exited": 0,
+            "dead": 0,
+        }
+        by_health = {
+            "unknown": 0,
+            "healthy": 0,
+            "unhealthy": 0,
+            "starting": 0,
+        }
+        by_protected = {"true": 0, "false": 0}
+        by_check_enabled = {"true": 0, "false": 0}
+        by_update_enabled = {"true": 0, "false": 0}
+        by_update_available = {"true": 0, "false": 0}
+        by_update_available_auto_check = {"true": 0, "false": 0}
+
+        for container in mapped_containers:
+            if container.status:
+                by_status[container.status] = by_status.get(container.status, 0) + 1
+
+            health_key = container.health or "none"
+            by_health[health_key] = by_health.get(health_key, 0) + 1
+
+            protected_key = "true" if container.protected else "false"
+            by_protected[protected_key] += 1
+
+            if container.check_enabled is not None:
+                check_key = "true" if container.check_enabled else "false"
+                by_check_enabled[check_key] += 1
+
+            if container.update_enabled is not None:
+                update_key = "true" if container.update_enabled else "false"
+                by_update_enabled[update_key] += 1
+
+            if container.update_available is not None:
+                avail_key = "true" if container.update_available else "false"
+                by_update_available[avail_key] += 1
+                if container.check_enabled:
+                    by_update_available_auto_check[avail_key] += 1
+
+        images: Final = await client.image.list(GetImageListBodySchema(all=True))
+        used_images: Final[set[str]] = {c.image for c in containers if c.image}
+
+        total_images: Final = len(images)
+        unused_images: int = 0
+        dangling_images: int = 0
+
+        for image in images:
+            if not image.repo_tags and image.id not in used_images:
+                dangling_images += 1
+            if image.id not in used_images:
+                unused_images += 1
+
+        return HostSummary(
+            host_id=host.id,
+            host_name=host.name,
+            host_enabled=True,
+            total_containers=len(mapped_containers),
+            by_status=by_status,
+            by_health=by_health,
+            by_protected=by_protected,
+            by_check_enabled=by_check_enabled,
+            by_update_enabled=by_update_enabled,
+            by_update_available=by_update_available,
+            by_update_available_auto_check=by_update_available_auto_check,
+            total_images=total_images,
+            unused_images=unused_images,
+            dangling_images=dangling_images,
         )
-        for c in containers
-    ]
+    except Exception as e:
+        import logging
 
-    by_status = {
-        "created": 0,
-        "running": 0,
-        "paused": 0,
-        "restarting": 0,
-        "removing": 0,
-        "exited": 0,
-        "dead": 0,
-    }
-    by_health = {
-        "unknown": 0,
-        "healthy": 0,
-        "unhealthy": 0,
-        "starting": 0,
-    }
-    by_protected = {"true": 0, "false": 0}
-    by_check_enabled = {"true": 0, "false": 0}
-    by_update_enabled = {"true": 0, "false": 0}
-    by_update_available = {"true": 0, "false": 0}
-    by_update_available_auto_check = {"true": 0, "false": 0}
-
-    for container in mapped_containers:
-        if container.status:
-            by_status[container.status] = by_status.get(container.status, 0) + 1
-
-        health_key = container.health or "none"
-        by_health[health_key] = by_health.get(health_key, 0) + 1
-
-        protected_key = "true" if container.protected else "false"
-        by_protected[protected_key] += 1
-
-        if container.check_enabled is not None:
-            check_key = "true" if container.check_enabled else "false"
-            by_check_enabled[check_key] += 1
-
-        if container.update_enabled is not None:
-            update_key = "true" if container.update_enabled else "false"
-            by_update_enabled[update_key] += 1
-
-        if container.update_available is not None:
-            avail_key = "true" if container.update_available else "false"
-            by_update_available[avail_key] += 1
-            if container.check_enabled:
-                by_update_available_auto_check[avail_key] += 1
-
-    images: Final = await client.image.list(GetImageListBodySchema(all=True))
-    used_images: Final[set[str]] = {c.image for c in containers if c.image}
-
-    total_images: Final = len(images)
-    unused_images: int = 0
-    dangling_images: int = 0
-
-    for image in images:
-        if not image.repo_tags and image.id not in used_images:
-            dangling_images += 1
-        if image.id not in used_images:
-            unused_images += 1
-
-    return HostSummary(
-        host_id=host.id,
-        host_name=host.name,
-        host_enabled=True,
-        total_containers=len(mapped_containers),
-        by_status=by_status,
-        by_health=by_health,
-        by_protected=by_protected,
-        by_check_enabled=by_check_enabled,
-        by_update_enabled=by_update_enabled,
-        by_update_available=by_update_available,
-        by_update_available_auto_check=by_update_available_auto_check,
-        total_images=total_images,
-        unused_images=unused_images,
-        dangling_images=dangling_images,
-    )
+        logging.exception(f"Failed to get summary for host {host.id}: {e}")
+        return _empty_summary()
