@@ -14,7 +14,7 @@ from backend.enums.job_status_enum import EJobStatus
 from backend.modules.hosts.hosts_model import HostsModel
 
 
-async def update_all_hosts():
+async def update_all_hosts() -> None:
     """
     Main func for scheduled/manual update of all containers
     marked for it, for all specified docker hosts.
@@ -34,11 +34,7 @@ async def update_all_hosts():
 
         async with async_session_maker() as session:
             hosts: Final = (
-                (
-                    await session.execute(
-                        select(HostsModel).where(HostsModel.enabled)
-                    )
-                )
+                (await session.execute(select(HostsModel).where(HostsModel.enabled)))
                 .scalars()
                 .all()
             )

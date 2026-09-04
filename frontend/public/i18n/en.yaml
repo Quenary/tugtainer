@@ -186,6 +186,10 @@ CONTAINERS:
     Version reported by the labels of the previous image.
     It is a hint from the image publisher and is not always
     a tag you can pull. Pin the previous image instead.
+  CURRENT_VERSION: Current version
+  CURRENT_VERSION_HINT: |-
+    Version reported by the labels of the current image.
+    It is a hint from the image publisher.
   UPDATE: Update
   UPDATE_DISABLED_HINTS:
     PROTECTED: The protected container cannot be updated from the app.

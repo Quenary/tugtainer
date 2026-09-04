@@ -12,6 +12,7 @@ from backend.core.container_util.get_container_health_status_str import (
 )
 from backend.core.container_util.is_protected_container import is_protected_container
 from backend.modules.containers.containers_model import ContainersModel
+from backend.util.get_version_from_labels import get_version_from_labels
 
 if TYPE_CHECKING:
     from .containers_model import ContainersModel
@@ -66,6 +67,7 @@ class ContainersListItem(BaseModel):
     created_at: datetime | None = None  # Date of creation of db entry
     modified_at: datetime | None = None  # Date ofmodification db entry
     hooks: ContainerHooks | None = None  # Update lifecycle hooks
+    current_version: str | None = None  # Calculated from labels, not stored in db
 
     @classmethod
     def from_sources(
@@ -86,6 +88,9 @@ class ContainersListItem(BaseModel):
             "exit_code": docker_cont.state.exit_code if docker_cont.state else None,
             "health": get_container_health_status_str(docker_cont),
             "protected": is_protected_container(docker_cont),
+            "current_version": get_version_from_labels(
+                docker_cont.config.labels if docker_cont.config else None
+            ),
         }
         if db_cont:
             data.update(

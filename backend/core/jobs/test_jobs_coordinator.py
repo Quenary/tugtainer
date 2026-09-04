@@ -1,5 +1,6 @@
 import asyncio
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
@@ -12,7 +13,7 @@ from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.enums.job_status_enum import EJobStatus
 
 
-def test_merge_or_append_same_kind_unstarted():
+def test_merge_or_append_same_kind_unstarted() -> None:
     jobs: list[HostJobRuntime] = []
     first = merge_or_append_job(jobs, "check", {"a"}, True)
     second = merge_or_append_job(jobs, "check", {"b"}, True)
@@ -22,7 +23,7 @@ def test_merge_or_append_same_kind_unstarted():
     assert jobs[0].manual is True
 
 
-def test_merge_or_append_names_none_wins():
+def test_merge_or_append_names_none_wins() -> None:
     jobs: list[HostJobRuntime] = []
     merge_or_append_job(jobs, "update", {"a"}, True)
     merge_or_append_job(jobs, "update", None, True)
@@ -30,7 +31,7 @@ def test_merge_or_append_names_none_wins():
     assert jobs[0].names is None
 
 
-def test_merge_or_append_different_kind_appends():
+def test_merge_or_append_different_kind_appends() -> None:
     jobs: list[HostJobRuntime] = []
     merge_or_append_job(jobs, "check", {"a"}, True)
     merge_or_append_job(jobs, "update", {"b"}, True)
@@ -39,7 +40,7 @@ def test_merge_or_append_different_kind_appends():
     assert jobs[1].kind == "update"
 
 
-def test_merge_or_append_started_job_is_not_merged():
+def test_merge_or_append_started_job_is_not_merged() -> None:
     jobs: list[HostJobRuntime] = []
     first = merge_or_append_job(jobs, "check", {"a"}, True)
     first.started = True
@@ -51,9 +52,9 @@ def test_merge_or_append_started_job_is_not_merged():
 
 
 @pytest.mark.asyncio
-async def test_submit_queues_second_kind_until_first_finishes(mocker):
+async def test_submit_queues_second_kind_until_first_finishes(mocker) -> None:
     coord = HostJobCoordinator()
-    host = SimpleNamespace(id=1, name="h")
+    host = cast(Any, SimpleNamespace(id=1, name="h"))
     started = mocker.Mock()
     release_check = mocker.AsyncMock()
     check_order: list[str] = []
@@ -111,9 +112,7 @@ async def test_submit_queues_second_kind_until_first_finishes(mocker):
 
     release_check.side_effect = wait_then_go
 
-    check_job = await coord.submit(
-        host, "check", names=["a"], manual=True, wait=False
-    )
+    check_job = await coord.submit(host, "check", names=["a"], manual=True, wait=False)
     await wait_event.wait()
     update_job = await coord.submit(
         host, "update", names=["b"], manual=True, wait=False
@@ -127,9 +126,9 @@ async def test_submit_queues_second_kind_until_first_finishes(mocker):
 
 
 @pytest.mark.asyncio
-async def test_sequential_jobs_accumulate_completed(mocker):
+async def test_sequential_jobs_accumulate_completed(mocker) -> None:
     coord = HostJobCoordinator()
-    host = SimpleNamespace(id=99013, name="completed-host")
+    host = cast(Any, SimpleNamespace(id=99013, name="completed-host"))
 
     async def check(*args, **kwargs):
         return True
