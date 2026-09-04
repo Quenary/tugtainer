@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.38.0 (2026-09-04)
+
+### Bug Fixes
+
+- **backend**: Return empty summary for failed host instead of req error
+  ([`7768c37`](https://github.com/Quenary/tugtainer/commit/7768c378b4428f45f7466c95dcf507dca8dd7783))
+
+### Features
+
+- Display current version on container card from labels
+  ([`12ee703`](https://github.com/Quenary/tugtainer/commit/12ee703c3a455e43548bbf1bccf9f446be6505e8))
+
+
 ## v1.37.0 (2026-09-03)
 
 ### Bug Fixes
