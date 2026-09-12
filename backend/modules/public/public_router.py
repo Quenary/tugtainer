@@ -50,11 +50,7 @@ async def health(session: AsyncSession = Depends(get_async_session)):
     except Exception as e:
         raise HTTPException(503, f"Database error {e}") from e
     cron_jobs = CronManager.get_jobs()
-    jobs_keys = [
-        ECronJob.CHECK_CONTAINERS,
-        ECronJob.UPDATE_CONTAINERS,
-        ECronJob.HEALTH_MONITOR,
-    ]
+    jobs_keys = list(ECronJob)
     for job_key in jobs_keys:
         if job_key not in cron_jobs:
             raise HTTPException(500, f"Cron job '{job_key}' not running")
