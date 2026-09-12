@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v1.41.0 (2026-09-12)
+
+### Bug Fixes
+
+- **backend**: Check all cron jobs in self health check endpoint
+  ([`2a043b2`](https://github.com/Quenary/tugtainer/commit/2a043b2dc696148024422efad921f767bff07d9c))
+
+- **backend**: Clear update_available flag for removed containers
+  ([`b4d7722`](https://github.com/Quenary/tugtainer/commit/b4d77220b30e892129b7f61c8b6304fd1b357297))
+
+- **backend**: Validate HEALTH_MONITOR_CRON_EXPR setting before save
+  ([`cf49d83`](https://github.com/Quenary/tugtainer/commit/cf49d8371c5a7cf8c526c9fe05556285ae52228d))
+
+### Documentation
+
+- Add AGENTS.md with architecture overview and development guidelines
+  ([`a5b76bc`](https://github.com/Quenary/tugtainer/commit/a5b76bc4b801b6541078bf9d2bda49238f86d1ea))
+
+### Features
+
+- Add container health monitoring and history tracking
+  ([`ed88106`](https://github.com/Quenary/tugtainer/commit/ed881065f6c63b0d87524855912f12c0c168598b))
+
+- Validate all cron jobs in health endpoint and add tests
+  ([`a50d50d`](https://github.com/Quenary/tugtainer/commit/a50d50d7e19a64acbef4bf59c2e9ee0ba391a627))
+
+
 ## v1.40.0 (2026-09-07)
 
 ### Bug Fixes
