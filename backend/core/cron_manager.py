@@ -7,8 +7,7 @@ import aiocron
 from backend.const import DEFAULT_CONTAINERS_CLEANUP_CRON_EXPR
 from backend.core.jobs.check.check_all import check_all_hosts
 from backend.core.jobs.cleanup.cleanup_containers import cleanup_all_stale_containers
-from backend.core.jobs.health.check_health import check_all_containers_health
-from backend.core.jobs.health.rotate_history import rotate_health_history
+from backend.core.jobs.health.monitor_health import run_health_monitor
 from backend.core.jobs.update.update_all import update_all_hosts
 from backend.enums.cron_jobs_enum import ECronJob
 from backend.modules.settings.settings_enum import ESettingKey
@@ -41,18 +40,12 @@ async def schedule_jobs_on_init():
         )
 
     health_crontab = SettingsStorage.get(ESettingKey.HEALTH_MONITOR_CRON_EXPR)
-    if health_crontab:
-
-        async def _health_wrapper():
-            await check_all_containers_health()
-            await rotate_health_history()
-
-        CronManager.schedule_job(
-            ECronJob.HEALTH_MONITOR,
-            health_crontab,
-            tz,
-            _health_wrapper,
-        )
+    CronManager.schedule_job(
+        ECronJob.HEALTH_MONITOR,
+        health_crontab,
+        tz,
+        run_health_monitor,
+    )
 
     CronManager.schedule_job(
         ECronJob.CLEANUP_CONTAINERS,

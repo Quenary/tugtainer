@@ -16,10 +16,11 @@ class SettingsBase(BaseModel):
 class SettingsPatchRequestItem(SettingsBase):
     @model_validator(mode="after")
     def validate_setting(self):
-        if self.key == ESettingKey.CHECK_CRONTAB_EXPR:
-            _ = validate_cron_expr(str(self.value))
-            return self
-        elif self.key == ESettingKey.UPDATE_CRONTAB_EXPR:
+        if self.key in (
+            ESettingKey.CHECK_CRONTAB_EXPR,
+            ESettingKey.UPDATE_CRONTAB_EXPR,
+            ESettingKey.HEALTH_MONITOR_CRON_EXPR,
+        ):
             _ = validate_cron_expr(str(self.value))
             return self
         elif self.key == ESettingKey.TIMEZONE:

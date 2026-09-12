@@ -58,3 +58,27 @@ async def test_test_notification_sends_sample_results(mocker: MockerFixture):
         body_template="body",
         urls="https://example.com/hook",
     )
+
+
+def test_settings_patch_health_monitor_cron_valid():
+    from backend.modules.settings.settings_enum import ESettingKey
+    from backend.modules.settings.settings_schemas import SettingsPatchRequestItem
+
+    item = SettingsPatchRequestItem(
+        key=ESettingKey.HEALTH_MONITOR_CRON_EXPR,
+        value="*/5 * * * *",
+    )
+    assert item.value == "*/5 * * * *"
+
+
+def test_settings_patch_health_monitor_cron_invalid():
+    from pydantic import ValidationError
+
+    from backend.modules.settings.settings_enum import ESettingKey
+    from backend.modules.settings.settings_schemas import SettingsPatchRequestItem
+
+    with pytest.raises(ValidationError):
+        _ = SettingsPatchRequestItem(
+            key=ESettingKey.HEALTH_MONITOR_CRON_EXPR,
+            value="invalid-cron",
+        )
