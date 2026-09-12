@@ -4,7 +4,9 @@ from zoneinfo import ZoneInfo, available_timezones
 
 import aiocron
 
+from backend.const import DEFAULT_CONTAINERS_CLEANUP_CRON_EXPR
 from backend.core.jobs.check.check_all import check_all_hosts
+from backend.core.jobs.cleanup.cleanup_containers import cleanup_all_stale_containers
 from backend.core.jobs.health.check_health import check_all_containers_health
 from backend.core.jobs.health.rotate_history import rotate_health_history
 from backend.core.jobs.update.update_all import update_all_hosts
@@ -51,6 +53,13 @@ async def schedule_jobs_on_init():
             tz,
             _health_wrapper,
         )
+
+    CronManager.schedule_job(
+        ECronJob.CLEANUP_CONTAINERS,
+        DEFAULT_CONTAINERS_CLEANUP_CRON_EXPR,
+        tz,
+        cleanup_all_stale_containers,
+    )
 
 
 class CronManager:

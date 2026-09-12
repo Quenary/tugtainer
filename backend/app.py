@@ -11,6 +11,9 @@ from backend.core.agent_client import (
     load_agents_on_init,
 )
 from backend.core.cron_manager import schedule_jobs_on_init
+from backend.core.jobs.cleanup.cleanup_containers import (
+    cleanup_all_stale_containers,
+)
 from backend.core.jobs.jobs_log import install_job_log_handler
 from backend.core.socket_manager import socket_manager
 from backend.exception import TugAgentClientError
@@ -63,6 +66,10 @@ async def lifespan(app: FastAPI):
     await load_agents_on_init()
     await SettingsStorage.load_all()
     await schedule_jobs_on_init()
+    try:
+        await cleanup_all_stale_containers()
+    except Exception:
+        logging.exception("Failed to run stale containers cleanup on startup")
     yield  # App
     # Code to run on shutdown
     await AgentClientManager.remove_all()
