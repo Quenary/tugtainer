@@ -22,12 +22,8 @@ def upgrade() -> None:
     """Upgrade schema."""
     with op.batch_alter_table("containers") as batch_op:
         batch_op.drop_column("notified_available_digests")
-        batch_op.add_column(
-            sa.Column("local_digests", sa.JSON(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("remote_digests", sa.JSON(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("local_digests", sa.JSON(), nullable=True))
+        batch_op.add_column(sa.Column("remote_digests", sa.JSON(), nullable=True))
 
 
 def downgrade() -> None:
@@ -36,7 +32,5 @@ def downgrade() -> None:
         batch_op.drop_column("local_digests")
         batch_op.drop_column("remote_digests")
         batch_op.add_column(
-            sa.Column(
-                "notified_available_digests", sa.JSON(), nullable=True
-            )
+            sa.Column("notified_available_digests", sa.JSON(), nullable=True)
         )

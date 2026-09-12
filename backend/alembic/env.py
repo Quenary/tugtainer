@@ -7,6 +7,7 @@ from sqlalchemy.engine import Connection
 from backend.db.base_model import BaseModel
 from backend.db.session import async_engine
 from backend.modules.containers.containers_model import *  # noqa: F403
+from backend.modules.health.health_model import *  # noqa: F403
 from backend.modules.hosts.hosts_model import *  # noqa: F403
 from backend.modules.settings.settings_model import *  # noqa: F403
 
@@ -49,6 +50,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -57,7 +59,9 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection: Connection) -> None:
     context.configure(
-        connection=connection, target_metadata=target_metadata
+        connection=connection,
+        target_metadata=target_metadata,
+        render_as_batch=True,
     )
 
     with context.begin_transaction():

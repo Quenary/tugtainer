@@ -13,9 +13,7 @@ from shared.schemas.container_schemas import ExecContainerRequestBodySchema
 logger: Final = logging.getLogger("update_hooks")
 
 
-async def get_hooks_map(
-    host_id: int, names: list[str]
-) -> dict[str, ContainerHooks]:
+async def get_hooks_map(host_id: int, names: list[str]) -> dict[str, ContainerHooks]:
     """
     Load hooks configuration for the given containers from db in one query.
     Names with no db row are simply absent from the result.
@@ -30,8 +28,7 @@ async def get_hooks_map(
             )
         )
         return {
-            row.name: ContainerHooks.model_validate(row.hooks or {})
-            for row in rows
+            row.name: ContainerHooks.model_validate(row.hooks or {}) for row in rows
         }
 
 

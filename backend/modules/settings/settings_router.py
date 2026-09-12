@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.cron_manager import CronManager
 from backend.core.jobs.check.check_all import check_all_hosts
+from backend.core.jobs.health.monitor_health import run_health_monitor
 from backend.core.jobs.update.update_all import update_all_hosts
 from backend.core.notifications_core import send_job_notification
 from backend.db.session import get_async_session
@@ -103,6 +104,14 @@ async def change_system_settings(
         update_cron_item,
         tz,
         update_all_hosts,
+    )
+
+    health_cron_item = _get(ESettingKey.HEALTH_MONITOR_CRON_EXPR)
+    CronManager.schedule_job(
+        ECronJob.HEALTH_MONITOR,
+        health_cron_item,
+        tz,
+        run_health_monitor,
     )
 
     return {"status": "updated", "count": len(data)}

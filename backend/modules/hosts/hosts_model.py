@@ -7,6 +7,10 @@ from backend.db.base_model import BaseModel
 
 if TYPE_CHECKING:
     from backend.modules.containers.containers_model import ContainersModel
+    from backend.modules.health.health_model import (
+        ContainerHealthHistory,
+        ContainerHealthState,
+    )
 
 
 class HostsModel(BaseModel):
@@ -60,6 +64,16 @@ class HostsModel(BaseModel):
 
     containers: Mapped[list["ContainersModel"]] = relationship(
         "ContainersModel",
+        back_populates="host",
+        cascade="all, delete-orphan",
+    )
+    health_states: Mapped[list["ContainerHealthState"]] = relationship(
+        "ContainerHealthState",
+        back_populates="host",
+        cascade="all, delete-orphan",
+    )
+    health_history: Mapped[list["ContainerHealthHistory"]] = relationship(
+        "ContainerHealthHistory",
         back_populates="host",
         cascade="all, delete-orphan",
     )

@@ -19,6 +19,7 @@ Automatic updates are disabled by default. You can enable only what you need.
 - [api](#api)
 - [env](#env)
 - [check and update](./docs/CHECK_AND_UPDATE.md)
+- [healthcheck monitoring](./docs/HEALTHCHECK_MONITOR.md)
 - [screenshots](./docs/SCREENSHOTS.md)
 - [contributing](./docs/CONTRIBUTING.md)
 - [security](./docs/SECURITY.md)
@@ -32,6 +33,7 @@ Automatic updates are disabled by default. You can enable only what you need.
 - Notifications to a wide range of services
 - Per-container config (check only or auto-update)
 - Automatic/manual check and update
+- Healthcheck monitoring with auto-restarts and notifications
 - Automatic/manual image pruning
 - Linked containers support (compose and custom)
 - Private registries support

@@ -55,9 +55,7 @@ def upgrade() -> None:
             existing_type=sa.String(),
             nullable=False,
         )
-        batch_op.add_column(
-            sa.Column("secret", sa.String(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("secret", sa.String(), nullable=True))
         batch_op.add_column(
             sa.Column(
                 "timeout",
@@ -67,16 +65,12 @@ def upgrade() -> None:
                 server_default=sa.text("5"),
             )
         )
-    op.execute(
-        sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'")
-    )
+    op.execute(sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'"))
     # add local agent if it doesn't exist
     # this is possible when using socket-proxy
     # so host entry was not added in the previous migration.
     load_dotenv()
-    local_agent_enabled = (
-        os.getenv("AGENT_ENABLED", "true").lower() == "true"
-    )
+    local_agent_enabled = os.getenv("AGENT_ENABLED", "true").lower() == "true"
     if local_agent_enabled:
         op.execute(
             sa.text(
@@ -103,6 +97,7 @@ def upgrade() -> None:
             ).bindparams(secret=agent_secret)
         )
 
+
 def downgrade() -> None:
     with op.batch_alter_table("hosts") as batch_op:
         batch_op.drop_column("secret")
@@ -113,30 +108,14 @@ def downgrade() -> None:
             existing_type=sa.String(),
             nullable=True,
         )
-        batch_op.add_column(
-            sa.Column("config", sa.String(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("context", sa.String(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("tls", sa.Boolean(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("tlscacert", sa.String(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("tlscert", sa.String(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("tlskey", sa.String(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("tlsverify", sa.Boolean(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("client_binary", sa.String(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("config", sa.String(), nullable=True))
+        batch_op.add_column(sa.Column("context", sa.String(), nullable=True))
+        batch_op.add_column(sa.Column("tls", sa.Boolean(), nullable=True))
+        batch_op.add_column(sa.Column("tlscacert", sa.String(), nullable=True))
+        batch_op.add_column(sa.Column("tlscert", sa.String(), nullable=True))
+        batch_op.add_column(sa.Column("tlskey", sa.String(), nullable=True))
+        batch_op.add_column(sa.Column("tlsverify", sa.Boolean(), nullable=True))
+        batch_op.add_column(sa.Column("client_binary", sa.String(), nullable=True))
         batch_op.add_column(
             sa.Column(
                 "client_call",
@@ -144,9 +123,7 @@ def downgrade() -> None:
                 nullable=True,
             )
         )
-        batch_op.add_column(
-            sa.Column("client_type", sa.String(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("client_type", sa.String(), nullable=True))
     op.execute(
         sa.text(
             "INSERT INTO settings (key, value, value_type) VALUES ('DOCKER_TIMEOUT', '15', 'int')"

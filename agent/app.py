@@ -37,9 +37,7 @@ app.include_router(common_router)
 
 
 @app.exception_handler(asyncio.TimeoutError)
-async def timeout_exception_handler(
-    request: Request, exc: asyncio.TimeoutError
-):
+async def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError):
     raise HTTPException(
         500,
         "Timeout error. The problem is most likely related to connecting to the docker host.",

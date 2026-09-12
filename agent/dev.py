@@ -15,9 +15,7 @@ if __name__ == "__main__":
             reload=True,
             reload_dirs=[
                 os.path.dirname(__file__),
-                os.path.join(
-                    os.path.dirname(__file__), "..", "shared"
-                ),
+                os.path.join(os.path.dirname(__file__), "..", "shared"),
             ],
             log_level=log_level,
         )

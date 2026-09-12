@@ -7,6 +7,4 @@ class EndpointLoggingFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         message = record.getMessage()
-        return not any(
-            endpoint in message for endpoint in self._exclude
-        )
+        return not any(endpoint in message for endpoint in self._exclude)

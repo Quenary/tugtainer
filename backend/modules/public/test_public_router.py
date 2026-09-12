@@ -36,9 +36,7 @@ async def test_is_update_available(
 
     cast(Any, is_update_available).cache.clear()
 
-    mocker.patch(
-        "builtins.open", mocker.mock_open(read_data=current_version)
-    )
+    mocker.patch("builtins.open", mocker.mock_open(read_data=current_version))
     mocker.patch(
         f"{module_path}.fetch_latest_release",
         return_value={
@@ -116,9 +114,7 @@ async def test_get_update_count(
     fake_client = mocker.Mock()
     fake_container = mocker.Mock()
     fake_container.name = "container1"
-    fake_client.container.list = mocker.AsyncMock(
-        return_value=[fake_container]
-    )
+    fake_client.container.list = mocker.AsyncMock(return_value=[fake_container])
     mocker.patch(
         f"{module_path}.AgentClientManager.get_host_client",
         return_value=fake_client,
@@ -127,3 +123,51 @@ async def test_get_update_count(
     response = client.get("/public/update_count")
     assert response.status_code == 200
     assert response.json() == {"total_updates": 1}
+
+
+@pytest.mark.asyncio
+async def test_health_success(mocker: MockerFixture):
+    from backend.enums.cron_jobs_enum import ECronJob
+
+    fake_session = mocker.Mock()
+    fake_session.execute = mocker.AsyncMock()
+
+    async def fake_get_async_session():
+        yield fake_session
+
+    app.dependency_overrides[get_async_session] = fake_get_async_session
+    mocker.patch(
+        f"{module_path}.CronManager.get_jobs",
+        return_value=[job.value for job in ECronJob],
+    )
+
+    response = client.get("/public/health")
+    assert response.status_code == 200
+    assert response.json() == "OK"
+
+
+@pytest.mark.asyncio
+async def test_health_missing_cron_job(mocker: MockerFixture):
+    from backend.enums.cron_jobs_enum import ECronJob
+
+    fake_session = mocker.Mock()
+    fake_session.execute = mocker.AsyncMock()
+
+    async def fake_get_async_session():
+        yield fake_session
+
+    app.dependency_overrides[get_async_session] = fake_get_async_session
+    # omit CLEANUP_CONTAINERS
+    running_jobs = [
+        ECronJob.CHECK_CONTAINERS,
+        ECronJob.UPDATE_CONTAINERS,
+        ECronJob.HEALTH_MONITOR,
+    ]
+    mocker.patch(
+        f"{module_path}.CronManager.get_jobs",
+        return_value=running_jobs,
+    )
+
+    response = client.get("/public/health")
+    assert response.status_code == 500
+    assert f"Cron job '{ECronJob.CLEANUP_CONTAINERS}' not running" in response.text

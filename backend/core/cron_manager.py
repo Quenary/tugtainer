@@ -4,7 +4,10 @@ from zoneinfo import ZoneInfo, available_timezones
 
 import aiocron
 
+from backend.const import DEFAULT_CONTAINERS_CLEANUP_CRON_EXPR
 from backend.core.jobs.check.check_all import check_all_hosts
+from backend.core.jobs.cleanup.cleanup_containers import cleanup_all_stale_containers
+from backend.core.jobs.health.monitor_health import run_health_monitor
 from backend.core.jobs.update.update_all import update_all_hosts
 from backend.enums.cron_jobs_enum import ECronJob
 from backend.modules.settings.settings_enum import ESettingKey
@@ -18,12 +21,8 @@ async def schedule_jobs_on_init():
     Schedule container check and update on app init
     """
     tz = SettingsStorage.get(ESettingKey.TIMEZONE)
-    check_crontab = SettingsStorage.get(
-        ESettingKey.CHECK_CRONTAB_EXPR
-    )
-    update_crontab = SettingsStorage.get(
-        ESettingKey.UPDATE_CRONTAB_EXPR
-    )
+    check_crontab = SettingsStorage.get(ESettingKey.CHECK_CRONTAB_EXPR)
+    update_crontab = SettingsStorage.get(ESettingKey.UPDATE_CRONTAB_EXPR)
 
     if check_crontab:
         CronManager.schedule_job(
@@ -39,6 +38,21 @@ async def schedule_jobs_on_init():
             tz,
             update_all_hosts,
         )
+
+    health_crontab = SettingsStorage.get(ESettingKey.HEALTH_MONITOR_CRON_EXPR)
+    CronManager.schedule_job(
+        ECronJob.HEALTH_MONITOR,
+        health_crontab,
+        tz,
+        run_health_monitor,
+    )
+
+    CronManager.schedule_job(
+        ECronJob.CLEANUP_CONTAINERS,
+        DEFAULT_CONTAINERS_CLEANUP_CRON_EXPR,
+        tz,
+        cleanup_all_stale_containers,
+    )
 
 
 class CronManager:
@@ -72,9 +86,7 @@ class CronManager:
         cls._jobs[name] = aiocron.crontab(
             cron_expr, func=func, args=args, kwargs=kwargs, tz=_tz
         )
-        logging.info(
-            f"[CronManager] Job '{name}' scheduled with '{cron_expr}'"
-        )
+        logging.info(f"[CronManager] Job '{name}' scheduled with '{cron_expr}'")
 
     @classmethod
     def cancel_job(cls, name: str):

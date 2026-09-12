@@ -14,9 +14,7 @@ def validate_cron_expr(expr: str) -> str:
     try:
         CronSim(expr, datetime.now())
     except CronSimError as e:
-        raise ValueError(
-            f"Invalid cron expression: {expr}. Details: {e}"
-        ) from None
+        raise ValueError(f"Invalid cron expression: {expr}. Details: {e}") from None
     return expr
 
 

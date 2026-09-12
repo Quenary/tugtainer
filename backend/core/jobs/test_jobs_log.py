@@ -9,7 +9,9 @@ from backend.modules.hosts.hosts_model import HostsModel
 
 
 def _tracker(host_id: int = 99021) -> HostJobTracker:
-    return HostJobTracker(cast(HostsModel, SimpleNamespace(id=host_id, name="log-test")))
+    return HostJobTracker(
+        cast(HostsModel, SimpleNamespace(id=host_id, name="log-test"))
+    )
 
 
 def test_capture_records_only_with_context(monkeypatch):

@@ -1,4 +1,3 @@
-
 from python_on_whales.components.container.models import (
     ContainerDevice,
 )
@@ -19,8 +18,6 @@ def map_devices_to_list(
             continue
 
         permissions = dev.cgroup_permissions or "rwm"
-        res.append(
-            f"{dev.path_on_host}:{dev.path_in_container}:{permissions}"
-        )
+        res.append(f"{dev.path_on_host}:{dev.path_in_container}:{permissions}")
 
     return res

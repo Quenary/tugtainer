@@ -31,7 +31,11 @@ async def test_send_notification_revalidates_urls_before_dispatch():
 
     assert validate.await_args_list == [
         (
-            (url, Config.NOTIFICATION_ALLOW_NETWORKS, Config.NOTIFICATION_ALLOW_ENDPOINTS),
+            (
+                url,
+                Config.NOTIFICATION_ALLOW_NETWORKS,
+                Config.NOTIFICATION_ALLOW_ENDPOINTS,
+            ),
             {},
         )
         for url in urls

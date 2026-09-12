@@ -1,0 +1,116 @@
+<p-toolbar>
+  <ng-template #start>
+    <p-button
+      icon="pi pi-refresh"
+      [loading]="healthResource.isLoading()"
+      text
+      rounded
+      (onClick)="healthResource.reload()"></p-button>
+
+    <div class="filters">
+      <p-select
+        appendTo="body"
+        [options]="statusOptions"
+        [ngModel]="status()"
+        (ngModelChange)="onStatusChange($event)"
+        [showClear]="true"
+        [placeholder]="'CONTAINERS.STATUS_FILTER' | translate">
+        <ng-template
+          #selectedItem
+          let-selectedOption>
+          @if (selectedOption) {
+            <p-tag
+              [severity]="healthSeverity[selectedOption] || 'info'"
+              [value]="selectedOption"></p-tag>
+          }
+        </ng-template>
+        <ng-template
+          #item
+          let-option>
+          <p-tag
+            [severity]="healthSeverity[option] || 'info'"
+            [value]="option"></p-tag>
+        </ng-template>
+      </p-select>
+    </div>
+  </ng-template>
+</p-toolbar>
+
+<p-table
+  [value]="healthResource.value()?.items || []"
+  [lazy]="true"
+  (onLazyLoad)="onLazyLoad($event)"
+  [paginator]="true"
+  [rows]="healthResource.value()?.limit || 25"
+  [first]="(page() - 1) * limit()"
+  [totalRecords]="healthResource.value()?.total || 0"
+  [loading]="healthResource.isLoading()"
+  [rowsPerPageOptions]="[25, 50, 100]"
+  [scrollable]="true"
+  scrollHeight="flex"
+  [rowTrackBy]="item => item.id"
+  paginatorDropdownAppendTo="body"
+  class="p-datatable-sm">
+  <ng-template #header>
+    <tr>
+      <th>{{ 'HEALTH_HISTORY.TABLE.DATE' | translate }}</th>
+      <th
+        class="name-col"
+        >{{ 'HEALTH_HISTORY.TABLE.CONTAINER' | translate }}</th
+      >
+      <th>{{ 'HEALTH_HISTORY.TABLE.STATUS' | translate }}</th>
+      <th>{{ 'HEALTH_HISTORY.TABLE.RESTARTED' | translate }}</th>
+      <th>{{ 'HEALTH_HISTORY.TABLE.NOTIFIED' | translate }}</th>
+    </tr>
+  </ng-template>
+
+  <ng-template
+    #body
+    let-item>
+    <tr>
+      <td>{{ item.created_at | date: 'short' }}</td>
+      <td class="name-col">
+        <a [routerLink]="['../containers', item.container_name]">
+          <p-button
+            text
+            icon="pi pi-external-link"
+            rounded></p-button>
+          {{ item.container_name }}
+        </a>
+      </td>
+      <td>
+        <p-tag [severity]="healthSeverity[item.status] || 'info'">
+          {{ item.status }}
+        </p-tag>
+      </td>
+      <td>
+        @if (item.restarted) {
+          <i
+            class="pi pi-check"
+            style="color: green"></i>
+        } @else {
+          <i
+            class="pi pi-minus"
+            style="color: gray"></i>
+        }
+      </td>
+      <td>
+        @if (item.notified) {
+          <i
+            class="pi pi-check"
+            style="color: green"></i>
+        } @else {
+          <i
+            class="pi pi-minus"
+            style="color: gray"></i>
+        }
+      </td>
+    </tr>
+  </ng-template>
+
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="5">{{ 'GENERAL.NO_DATA' | translate }}</td>
+    </tr>
+  </ng-template>
+</p-table>

@@ -34,9 +34,7 @@ def test_no_healthcheck_without_image_disables():
 
 
 def test_no_healthcheck_matching_empty_image_is_omitted():
-    assert (
-        map_healthcheck_to_kwargs(None, None, inherit_matching=True) == {}
-    )
+    assert map_healthcheck_to_kwargs(None, None, inherit_matching=True) == {}
 
 
 def test_no_healthcheck_against_image_disables():
@@ -59,22 +57,18 @@ def test_matching_test_keeps_overridden_interval():
     container = _hc(test=EXEC_TEST, interval=60 * NS)
     image = _hc(test=EXEC_TEST, interval=30 * NS)
 
-    assert map_healthcheck_to_kwargs(
-        container, image, inherit_matching=True
-    ) == {"health_interval": 60}
+    assert map_healthcheck_to_kwargs(container, image, inherit_matching=True) == {
+        "health_interval": 60
+    }
 
 
 def test_overridden_exec_form_is_flattened():
     container = _hc(test=EXEC_TEST)
     image = _hc(test=["CMD", "/other", "health"])
 
-    result = map_healthcheck_to_kwargs(
-        container, image, inherit_matching=True
-    )
+    result = map_healthcheck_to_kwargs(container, image, inherit_matching=True)
     assert result["healthcheck"] is True
-    assert result["health_cmd"] == (
-        "/beszel health --url http://127.0.0.1:8090"
-    )
+    assert result["health_cmd"] == ("/beszel health --url http://127.0.0.1:8090")
 
 
 def test_without_image_compare_keeps_current_mapping():

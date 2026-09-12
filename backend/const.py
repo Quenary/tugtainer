@@ -40,6 +40,24 @@ DEFAULT_NOTIFICATION_TEMPLATE = """\
 
 {% endfor %}
 """
+
+DEFAULT_HEALTH_MONITOR_CRON_EXPR = "*/3 * * * *"
+DEFAULT_HEALTH_MONITOR_N_TO_RESTART = "-1"
+DEFAULT_HEALTH_MONITOR_N_TO_NTFY = "3"
+DEFAULT_HEALTH_MONITOR_RESTART_ATTEMPTS = "3"
+DEFAULT_HEALTH_MONITOR_HISTORY_DAYS = "7"
+DEFAULT_CONTAINERS_CLEANUP_CRON_EXPR = "0 */12 * * *"
+
+DEFAULT_HEALTH_MONITOR_NTFY_BODY_TMPL = """\
+{% for host, checks in groups.items() %}
+## Host: {{ host }}
+{% for check in checks %}
+- {{ check.container.name }} {{ check.container.config.image }} is {{ check.status }}
+{% endfor %}
+
+{% endfor %}
+"""
+
 RESTRICTED_NETWORKS = {
     # IPv4 Loopback and Local Host
     ip_network("127.0.0.0/8"),  # IPv4 loopback addresses (localhost)

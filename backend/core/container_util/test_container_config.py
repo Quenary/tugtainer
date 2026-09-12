@@ -127,9 +127,7 @@ def test_healthcheck_dropped_when_matching_image():
     container = ContainerInspectResult(
         config=ContainerConfig(image="test_image", healthcheck=_EXEC_HC)
     )
-    image = ImageInspectResult(
-        config=ContainerConfig(healthcheck=_EXEC_HC)
-    )
+    image = ImageInspectResult(config=ContainerConfig(healthcheck=_EXEC_HC))
 
     res, _ = get_container_config(container, image=image, docker_version=None)
 
@@ -194,9 +192,7 @@ def test_uts_userns_ns_mode_normalization(
 ):
     container = ContainerInspectResult(
         config=ContainerConfig(image="test_image"),
-        host_config=ContainerHostConfig(
-            uts_mode=uts_mode, userns_mode=userns_mode
-        ),
+        host_config=ContainerHostConfig(uts_mode=uts_mode, userns_mode=userns_mode),
     )
 
     res, _ = get_container_config(container, image=None, docker_version=None)

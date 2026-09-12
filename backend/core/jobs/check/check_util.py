@@ -39,14 +39,9 @@ def sort_containers_by_checked_at(
     return sorted(
         containers,
         key=lambda c: (
-            (c_db := containers_db_map.get(cast(str, c.name)))
-            is not None
+            (c_db := containers_db_map.get(cast(str, c.name))) is not None
             and c_db.checked_at is not None,
-            (
-                c_db.checked_at
-                if c_db and c_db.checked_at
-                else datetime.min
-            ),
+            (c_db.checked_at if c_db and c_db.checked_at else datetime.min),
         ),
     )
 
@@ -61,12 +56,10 @@ async def get_image_remote_digest(
     :param local_digest: local digest to utilize If-None-Match 304 response
     :return: new image digest if any or local_digest
     """
-    logger:Final = logging.getLogger('get_image_remote_digest')
+    logger: Final = logging.getLogger("get_image_remote_digest")
     registry, repo, tag = parse_image_spec(spec)
 
-    insecure_registries = SettingsStorage.get(
-        ESettingKey.INSECURE_REGISTRIES
-    )
+    insecure_registries = SettingsStorage.get(ESettingKey.INSECURE_REGISTRIES)
     logger.debug(f"Insecure Registries: {insecure_registries}")
 
     insecure = is_insecure_registry(registry, insecure_registries)
@@ -103,9 +96,7 @@ async def get_image_remote_digest(
         resp.raise_for_status()
         if resp.status == 304:
             return local_digest
-        return resp.headers.get(
-            "Docker-Content-Digest"
-        ) or resp.headers.get("Etag")
+        return resp.headers.get("Docker-Content-Digest") or resp.headers.get("Etag")
 
     async def _do_request(
         session: aiohttp.ClientSession,
@@ -113,15 +104,11 @@ async def get_image_remote_digest(
         headers: dict,
         ssl: bool = True,
     ):
-        async with session.head(
-            url, headers=headers, ssl=ssl
-        ) as resp:
+        async with session.head(url, headers=headers, ssl=ssl) as resp:
             logger.debug(resp)
 
             if resp.status in (401, 403):
-                logger.info(
-                    f"Registry responded with {resp.status}, trying auth"
-                )
+                logger.info(f"Registry responded with {resp.status}, trying auth")
 
                 auth_header = resp.headers.get("WWW-Authenticate", "")
                 auth_applied = False
@@ -136,9 +123,7 @@ async def get_image_remote_digest(
                         ssl,
                         insecure,
                     )
-                    headers["Authorization"] = (
-                        f"Bearer {bearer_token}"
-                    )
+                    headers["Authorization"] = f"Bearer {bearer_token}"
                     auth_applied = True
                 elif basic_token:
                     logger.info("Fallback to Basic auth")
@@ -146,9 +131,7 @@ async def get_image_remote_digest(
                     auth_applied = True
 
                 if auth_applied:
-                    async with session.head(
-                        url, headers=headers, ssl=ssl
-                    ) as resp2:
+                    async with session.head(url, headers=headers, ssl=ssl) as resp2:
                         return _on_resp(resp2)
 
             return _on_resp(resp)
@@ -163,9 +146,7 @@ async def get_image_remote_digest(
 
             try:
                 attempt_headers = dict(headers)
-                return await _do_request(
-                    session, url, attempt_headers, ssl
-                )
+                return await _do_request(session, url, attempt_headers, ssl)
             except (
                 aiohttp.ClientSSLError,
                 aiohttp.ClientConnectorError,
@@ -185,11 +166,7 @@ def parse_image_spec(spec: str) -> tuple[str, str, str]:
     """
     tag = "latest"
 
-    if (
-        ":" in spec
-        and "/" in spec
-        and spec.rfind(":") > spec.rfind("/")
-    ):
+    if ":" in spec and "/" in spec and spec.rfind(":") > spec.rfind("/"):
         spec, tag = spec.rsplit(":", 1)
     elif ":" in spec and spec.count(":") == 1 and "/" not in spec:
         spec, tag = spec.rsplit(":", 1)
@@ -237,9 +214,7 @@ def _validate_bearer_realm(realm: str, insecure: bool) -> None:
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise ValueError(f"Invalid Bearer realm URL: {realm}")
     if parsed.scheme == "http" and not insecure:
-        raise ValueError(
-            "HTTP Bearer realm is only allowed for insecure registries"
-        )
+        raise ValueError("HTTP Bearer realm is only allowed for insecure registries")
 
 
 async def get_registry_bearer_token(
@@ -263,16 +238,11 @@ async def get_registry_bearer_token(
     """
 
     parts = auth_header.replace("Bearer ", "")
-    items = dict(
-        item.split("=", 1)
-        for item in parts.replace('"', "").split(",")
-    )
+    items = dict(item.split("=", 1) for item in parts.replace('"', "").split(","))
 
     realm = items.get("realm")
     if not realm:
-        raise ValueError(
-            "Bearer realm is missing from WWW-Authenticate header"
-        )
+        raise ValueError("Bearer realm is missing from WWW-Authenticate header")
     _validate_bearer_realm(realm, insecure)
 
     service = items.get("service")
