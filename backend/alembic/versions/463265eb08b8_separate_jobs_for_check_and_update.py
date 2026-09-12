@@ -26,9 +26,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Upgrade schema."""
     op.execute(
-        sa.text(
-            "UPDATE settings SET key = :new_key WHERE key == :old_key"
-        ).bindparams(
+        sa.text("UPDATE settings SET key = :new_key WHERE key == :old_key").bindparams(
             new_key=ESettingKey.CHECK_CRONTAB_EXPR.value,
             old_key="CRONTAB_EXPR",
         )
@@ -66,26 +64,16 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     op.execute(
-        sa.text(
-            "UPDATE settings SET key = :new_key WHERE key == :old_key"
-        ).bindparams(
+        sa.text("UPDATE settings SET key = :new_key WHERE key == :old_key").bindparams(
             new_key="CRONTAB_EXPR",
             old_key=ESettingKey.CHECK_CRONTAB_EXPR.value,
         )
     )
     delete_text = "DELETE FROM settings WHERE key == :key"
     op.execute(
-        sa.text(delete_text).bindparams(
-            key=ESettingKey.UPDATE_CRONTAB_EXPR.value
-        )
+        sa.text(delete_text).bindparams(key=ESettingKey.UPDATE_CRONTAB_EXPR.value)
     )
+    op.execute(sa.text(delete_text).bindparams(key=ESettingKey.PULL_BEFORE_CHECK.value))
     op.execute(
-        sa.text(delete_text).bindparams(
-            key=ESettingKey.PULL_BEFORE_CHECK.value
-        )
-    )
-    op.execute(
-        sa.text(delete_text).bindparams(
-            key=ESettingKey.REGISTRY_REQ_DELAY.value
-        )
+        sa.text(delete_text).bindparams(key=ESettingKey.REGISTRY_REQ_DELAY.value)
     )

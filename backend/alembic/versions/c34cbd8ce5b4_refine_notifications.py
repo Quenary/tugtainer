@@ -28,9 +28,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     with op.batch_alter_table("containers") as batch_op:
         batch_op.add_column(
-            sa.Column(
-                "notified_available_digests", sa.JSON(), nullable=True
-            )
+            sa.Column("notified_available_digests", sa.JSON(), nullable=True)
         )
 
     conn = op.get_bind()

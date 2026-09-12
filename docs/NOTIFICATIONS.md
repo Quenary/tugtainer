@@ -22,36 +22,29 @@ Jinja2 context schema:
           "container": {
             "id": "string",
             "image": "string",
-            "...other docker container inspect keys, in snake_case": {},
+            "...other docker container inspect keys, in snake_case": {}
           },
           "local_image": {
             "id": "string",
-            "repo_digests": [
-              "digest1",
-              "digest2",
-            ],
-            "...other docker image inspect keys, in snake_case": {},
+            "repo_digests": ["digest1", "digest2"],
+            "...other docker image inspect keys, in snake_case": {}
           },
           "remote_image": {
-            "...same schema as local_image": {},
+            "...same schema as local_image": {}
           },
-          "local_digests": [
-            "platform-specific image digests",
-          ],
-          "remote_digests": [
-            "platform-specific image digests",
-          ],
+          "local_digests": ["platform-specific image digests"],
+          "remote_digests": ["platform-specific image digests"],
           "previous_image_digests": [
-            "digests of the image the container was running before the update",
+            "digests of the image the container was running before the update"
           ],
           "previous_image_tags": [
-            "tags of the image the container was running before the update",
+            "tags of the image the container was running before the update"
           ],
           "previous_image_version": "version from the previous image labels, or None",
           "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
         }
       ],
-      "prune_result": "string",
+      "prune_result": "string"
     }
   ]
 }
@@ -66,6 +59,31 @@ Jinja2 context schema:
 - `rolled_back`: Tugtainer failed to recreate the container, but restored it using the previous image.
 - `failed`: Tugtainer failed to recreate the container.
 
-A notification is sent only when the body is not empty. For example, if every container has an `available(notified)` result, the default template produces an empty body and no notification is sent.
+A notification is sent only when the body is not empty. For example, if every container has an "available(notified)" result, the default template produces an empty body and no notification is sent.
+
+The default template is defined in [backend/const.py](../backend/const.py).
+
+## Health Monitor Notifications
+
+Tugtainer can also send notifications when containers are detected as unhealthy.
+
+Jinja2 context schema:
+
+```json
+{
+  "groups": {
+    "<host_name>": [
+      {
+        "container": {
+          "id": "string",
+          "name": "string",
+          "...other docker container inspect keys, in snake_case": {}
+        },
+        "status": "unhealthy|healthy|starting"
+      }
+    ]
+  }
+}
+```
 
 The default template is defined in [backend/const.py](../backend/const.py).

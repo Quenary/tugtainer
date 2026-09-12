@@ -192,6 +192,7 @@ export class SettingsFormComponent {
     switch (key) {
       case ESettingKey.CHECK_CRONTAB_EXPR:
       case ESettingKey.UPDATE_CRONTAB_EXPR:
+      case ESettingKey.HEALTH_MONITOR_CRON_EXPR:
         return [Validators.required, this.cronValidator];
       case ESettingKey.TIMEZONE:
         return [Validators.required, this.timezoneValidator];

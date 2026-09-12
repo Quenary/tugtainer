@@ -104,6 +104,17 @@ export const routes: Routes = [
               },
             ],
           },
+          {
+            path: 'health',
+            title: titleTranslate('NAV.HEALTH_HISTORY'),
+            data: {
+              breadcrumb: 'HEALTH_HISTORY',
+            } satisfies IRouteData,
+            loadComponent: () =>
+              import('./features/health-history/health-history.component').then(
+                (c) => c.HealthHistoryComponent,
+              ),
+          },
         ],
       },
     ],

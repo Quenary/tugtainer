@@ -85,9 +85,7 @@ def command_validator(cmd: list[str]) -> list[str]:
 
         if part.startswith("-"):
             if positional:
-                raise ValueError(
-                    f"Flag {part} must come before positional args"
-                )
+                raise ValueError(f"Flag {part} must come before positional args")
             if part not in flags:
                 raise ValueError(f"Unknown flag: {part}")
 

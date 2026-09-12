@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, ConfigDict
 
 
@@ -7,8 +6,6 @@ class IsUpdateAvailableResponseBodySchema(BaseModel):
     release_url: str
 
     model_config = ConfigDict(from_attributes=True)
-
-
 
 
 class TotalUpdateCountResponseBodySchema(BaseModel):

@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends
 
 from agent.auth import verify_signature
@@ -12,6 +11,7 @@ router = APIRouter(
     dependencies=[Depends(verify_signature)],
 )
 
+
 @router.post(
     "/disconnect",
     description="Disconnect container from network",
@@ -20,7 +20,5 @@ async def disconnect(
     body: NetworkDisconnectBodySchema,
 ):
     await asyncall(
-        lambda: DOCKER.network.disconnect(
-            **body.model_dump(exclude_unset=True)
-        )
+        lambda: DOCKER.network.disconnect(**body.model_dump(exclude_unset=True))
     )

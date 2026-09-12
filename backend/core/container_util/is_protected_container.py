@@ -10,8 +10,6 @@ def is_protected_container(container: ContainerInspectResult) -> bool:
     return bool(
         container.config
         and container.config.labels
-        and container.config.labels.get(
-            TUGTAINER_PROTECTED_LABEL, "false"
-        ).lower()
+        and container.config.labels.get(TUGTAINER_PROTECTED_LABEL, "false").lower()
         == "true"
     )

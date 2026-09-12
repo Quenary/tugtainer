@@ -105,6 +105,22 @@ async def change_system_settings(
         update_all_hosts,
     )
 
+    health_cron_item = _get(ESettingKey.HEALTH_MONITOR_CRON_EXPR)
+    if health_cron_item:
+        from backend.core.jobs.health.check_health import check_all_containers_health
+        from backend.core.jobs.health.rotate_history import rotate_health_history
+
+        async def _health_wrapper():
+            await check_all_containers_health()
+            await rotate_health_history()
+
+        CronManager.schedule_job(
+            ECronJob.HEALTH_MONITOR,
+            health_cron_item,
+            tz,
+            _health_wrapper,
+        )
+
     return {"status": "updated", "count": len(data)}
 
 

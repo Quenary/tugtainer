@@ -22,9 +22,7 @@ async def test_resolver_returns_validated_ipv4_and_ipv6():
     ):
         ipv4 = await resolver.resolve("agent.example.com", 9413, socket.AF_INET)
         ipv6 = await resolver.resolve("AGENT.example.com", 9413, socket.AF_INET6)
-        any_family = await resolver.resolve(
-            "agent.example.com", 9413, socket.AF_UNSPEC
-        )
+        any_family = await resolver.resolve("agent.example.com", 9413, socket.AF_UNSPEC)
     await resolver.close()
 
     assert ipv4 == [
@@ -139,9 +137,7 @@ async def test_resolve_host_ips_reads_getaddrinfo():
             ("172.18.0.4", 0),
         ),
     )
-    with patch(
-        "backend.util.pinned_ip_resolver.asyncio.get_running_loop"
-    ) as mock_loop:
+    with patch("backend.util.pinned_ip_resolver.asyncio.get_running_loop") as mock_loop:
         loop = mock_loop.return_value
         loop.getaddrinfo = AsyncMock(return_value=gai)
         result = await resolve_host_ips("tugtainer-agent")

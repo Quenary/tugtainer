@@ -14,9 +14,10 @@ GENERAL:
   'OFF': Выкл
   SUCCESS: Успешно
   ERROR: Ошибка
-  IN_PROGRESS: В процессе
+  IN_PROGRESS: Выполняется
   REFRESH: Обновить
   AUTO: Авто
+  NO_DATA: Нет данных
 THEMES:
   LIGHT: Светлая
   DARK: Тёмная
@@ -26,12 +27,14 @@ NAV:
   CONTAINERS: Tugtainer. Контейнеры.
   IMAGES: Tugtainer. Образы.
   SETTINGS: Tugtainer. Настройки.
+  HEALTH_HISTORY: Tugtainer. Мониторинг Healthcheck.
 BREADCRUMBS:
   HOSTS: Хосты
   DASHBOARD: Дашборд
   CONTAINERS: Контейнеры
   IMAGES: Образы
   SETTINGS: Настройки
+  HEALTH_HISTORY: Мониторинг Healthcheck
 INSPECT:
   LABEL: Inspect
   JSON: JSON
@@ -95,13 +98,14 @@ HOSTS:
   DASHBOARD:
     CONTAINERS: Контейнеры
     AVAILABLE: Доступно
-    RUNNING: Запущены
-    EXITED: Остановлены
+    RUNNING: Запущен
+    EXITED: Остановлен
     HEALTHY: Healthy
     UNHEALTHY: Unhealthy
     IMAGES: Образы
     UNUSED: Неиспользуемые
     DANGLING: Dangling
+    HEALTH: Мониторинг Healthcheck
   CARD:
     DELETE_CONFIRM: Удалить этот хост?
     HELP:
@@ -142,9 +146,9 @@ HOSTS:
       TIMEOUT_HINT: Таймаут в секундах для обычно быстрых запросов к агенту.
         Не влияет на потенциально долгие запросы, например создание контейнера
         или pull образа.
-      CONTAINER_HC_TIMEOUT: Таймаут healthcheck контейнера
+      CONTAINER_HC_TIMEOUT: Таймаут Healthcheck контейнера
       CONTAINER_HC_TIMEOUT_HINT:
-        Таймаут в секундах ожидания healthcheck во время обновления
+        Таймаут в секундах ожидания Healthcheck во время обновления
         перед началом отката.
 CONTAINERS:
   SEARCH_PLACEHOLDER: Имя или ID
@@ -176,9 +180,9 @@ CONTAINERS:
     Переопределить глобальную задержку для этого контейнера (в секундах).
     Пусто = использовать глобальную настройку. Пример: 86400 = 1 день.
     Ручные обновления игнорируют задержку.
-  HEALTHCHECK_TIMEOUT: Таймаут проверки состояния, в секундах
+  HEALTHCHECK_TIMEOUT: Таймаут Healthcheck, в секундах
   HEALTHCHECK_TIMEOUT_HINT: |-
-    Переопределить таймаут проверки состояния для этого контейнера (в секундах).
+    Переопределить таймаут Healthcheck для этого контейнера (в секундах).
     Пусто = использовать настройку хоста.
   PREVIOUS_IMAGE: Предыдущий образ
   PREVIOUS_IMAGE_HINT: |-
@@ -320,4 +324,39 @@ SETTINGS:
         Настройка влияет только на HEAD-запрос (проверка обновлений).
         Для pull нужно изменить /etc/docker/daemon.json на хосте.
         Полезно при использовании кастомного registry.
+    HEALTH_MONITOR_CRON_EXPR:
+      LABEL: Crontab-выражение мониторинга Healthcheck
+      HINT: |-
+        Crontab-выражение для периодической проверки Healthcheck, например
+        '*/3 * * * *' — каждые 3 минуты.
+
+        Нажмите для подробностей.
+      LINK: https://crontab.guru/
+    HEALTH_MONITOR_NTFY_BODY_TMPL:
+      LABEL: Шаблон уведомления мониторинга Healthcheck
+      HINT: |-
+        Jinja2-шаблон уведомления мониторинга Healthcheck.
+
+        Нажмите для подробностей.
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
+    HEALTH_MONITOR_N_TO_RESTART:
+      LABEL: Число сбоев Healthcheck до перезапуска
+      HINT: Количество последовательных Unhealthy-проверок перед попыткой перезапуска контейнера. Меньше 0 — не перезапускать.
+    HEALTH_MONITOR_N_TO_NTFY:
+      LABEL: Число сбоев Healthcheck до уведомления
+      HINT: Количество последовательных Unhealthy-проверок перед отправкой уведомления. Меньше 0 — не отправлять.
+    HEALTH_MONITOR_RESTART_ATTEMPTS:
+      LABEL: Максимум попыток перезапуска
+      HINT: Максимальное количество попыток перезапуска Unhealthy контейнера.
+    HEALTH_MONITOR_HISTORY_DAYS:
+      LABEL: Срок хранения истории Healthcheck, дней
+      HINT: Количество дней хранения записей истории проверок Healthcheck. Меньше 0 — не удалять.
     SEND_TEST_NOTIFICATION: Отправить тестовое уведомление
+
+HEALTH_HISTORY:
+  TABLE:
+    DATE: Дата
+    CONTAINER: Контейнер
+    STATUS: Статус
+    RESTARTED: Перезапущен
+    NOTIFIED: Уведомление

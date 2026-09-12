@@ -14,11 +14,7 @@ module_path = "backend.docker_config"
         (False, {}),
         (
             True,
-            {
-                "https://index.docker.io/v1/": {
-                    "auth": "base64_encoded_auth"
-                }
-            },
+            {"https://index.docker.io/v1/": {"auth": "base64_encoded_auth"}},
         ),
     ],
 )
@@ -59,21 +55,13 @@ def test_docker_config(
         ),
         # dockerhub special case (registry-1)
         (
-            {
-                "https://index.docker.io/v1/": {
-                    "auth": "dockerhub_token"
-                }
-            },
+            {"https://index.docker.io/v1/": {"auth": "dockerhub_token"}},
             "registry-1.docker.io",
             "dockerhub_token",
         ),
         # dockerhub special case (docker.io)
         (
-            {
-                "https://index.docker.io/v1/": {
-                    "auth": "dockerhub_token"
-                }
-            },
+            {"https://index.docker.io/v1/": {"auth": "dockerhub_token"}},
             "docker.io",
             "dockerhub_token",
         ),

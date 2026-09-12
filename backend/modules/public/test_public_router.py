@@ -36,9 +36,7 @@ async def test_is_update_available(
 
     cast(Any, is_update_available).cache.clear()
 
-    mocker.patch(
-        "builtins.open", mocker.mock_open(read_data=current_version)
-    )
+    mocker.patch("builtins.open", mocker.mock_open(read_data=current_version))
     mocker.patch(
         f"{module_path}.fetch_latest_release",
         return_value={
@@ -116,9 +114,7 @@ async def test_get_update_count(
     fake_client = mocker.Mock()
     fake_container = mocker.Mock()
     fake_container.name = "container1"
-    fake_client.container.list = mocker.AsyncMock(
-        return_value=[fake_container]
-    )
+    fake_client.container.list = mocker.AsyncMock(return_value=[fake_container])
     mocker.patch(
         f"{module_path}.AgentClientManager.get_host_client",
         return_value=fake_client,

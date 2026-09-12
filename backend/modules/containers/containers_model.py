@@ -16,6 +16,10 @@ from backend.db.base_model import BaseModel
 from backend.util.now import now
 
 if TYPE_CHECKING:
+    from backend.modules.health.health_model import (
+        ContainerHealthHistory,
+        ContainerHealthState,
+    )
     from backend.modules.hosts.hosts_model import HostsModel
 
 
@@ -119,3 +123,13 @@ class ContainersModel(BaseModel):
     )
 
     host: Mapped["HostsModel"] = relationship("HostsModel", back_populates="containers")
+    health_state: Mapped["ContainerHealthState | None"] = relationship(
+        "ContainerHealthState",
+        back_populates="container",
+        cascade="all, delete-orphan",
+    )
+    health_history: Mapped[list["ContainerHealthHistory"]] = relationship(
+        "ContainerHealthHistory",
+        back_populates="container",
+        cascade="all, delete-orphan",
+    )

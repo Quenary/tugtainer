@@ -103,6 +103,18 @@
         </label>
       </p-iftalabel>
     }
+    @case (ESettingKey.HEALTH_MONITOR_NTFY_BODY_TMPL) {
+      <p-iftalabel style="width: 100%">
+        <textarea
+          pTextarea
+          rows="15"
+          id="value-{{ key }}"
+          [formControl]="control"></textarea>
+        <label for="value-{{ key }}">
+          {{ keyTranslates()?.[key]?.LABEL ?? key }}
+        </label>
+      </p-iftalabel>
+    }
     @default {
       @switch (value_type) {
         @case ('bool') {

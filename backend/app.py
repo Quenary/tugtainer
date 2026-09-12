@@ -20,6 +20,9 @@ from backend.modules.auth.auth_router import (
 from backend.modules.containers.containers_router import (
     containers_router as containers_router,
 )
+from backend.modules.health.health_router import (
+    health_router as health_router,
+)
 from backend.modules.hosts.hosts_router import (
     hosts_router as hosts_router,
 )
@@ -72,6 +75,7 @@ app.include_router(public_router)
 app.include_router(settings_router)
 app.include_router(images_router)
 app.include_router(hosts_router)
+app.include_router(health_router)
 
 if Config.ALLOW_ORIGINS:
     app.add_middleware(

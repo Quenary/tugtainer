@@ -23,9 +23,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.create_table(
         "hosts",
-        sa.Column(
-            "id", sa.Integer(), primary_key=True, autoincrement=True
-        ),
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("name", sa.String(), nullable=False, unique=True),
         sa.Column(
             "enabled",
@@ -60,19 +58,13 @@ def upgrade() -> None:
         print(
             "Local docker socket detected, adding default 'local' docker host entry to 'hosts' table"
         )
-        op.execute(
-            sa.text(
-                "INSERT INTO hosts (name, enabled) VALUES ('local', TRUE)"
-            )
-        )
+        op.execute(sa.text("INSERT INTO hosts (name, enabled) VALUES ('local', TRUE)"))
 
     op.drop_table("containers")
 
     op.create_table(
         "containers",
-        sa.Column(
-            "id", sa.Integer(), primary_key=True, autoincrement=True
-        ),
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("name", sa.String(), nullable=False, index=True),
         sa.Column(
             "check_enabled",
@@ -114,9 +106,7 @@ def upgrade() -> None:
         ),
     )
 
-    op.execute(
-        sa.text("DELETE FROM settings WHERE key = 'PRUNE_IMAGES'")
-    )
+    op.execute(sa.text("DELETE FROM settings WHERE key = 'PRUNE_IMAGES'"))
 
     op.execute(
         sa.text(
@@ -185,6 +175,4 @@ def downgrade() -> None:
             "INSERT INTO settings (key, value, value_type) VALUES ('PRUNE_IMAGES', 'FALSE', 'bool')"
         )
     )
-    op.execute(
-        sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'")
-    )
+    op.execute(sa.text("DELETE FROM settings WHERE key = 'DOCKER_TIMEOUT'"))

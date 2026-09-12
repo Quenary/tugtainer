@@ -68,6 +68,42 @@ class SettingsStorage:
     @overload
     def get(
         cls,
+        key: Literal[ESettingKey.HEALTH_MONITOR_CRON_EXPR],
+    ) -> str: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
+        key: Literal[ESettingKey.HEALTH_MONITOR_NTFY_BODY_TMPL],
+    ) -> str: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
+        key: Literal[ESettingKey.HEALTH_MONITOR_N_TO_RESTART],
+    ) -> int: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
+        key: Literal[ESettingKey.HEALTH_MONITOR_N_TO_NTFY],
+    ) -> int: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
+        key: Literal[ESettingKey.HEALTH_MONITOR_RESTART_ATTEMPTS],
+    ) -> int: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
+        key: Literal[ESettingKey.HEALTH_MONITOR_HISTORY_DAYS],
+    ) -> int: ...
+    @classmethod
+    @overload
+    def get(
+        cls,
         key: ESettingKey,
     ) -> Any: ...
     @classmethod

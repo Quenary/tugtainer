@@ -66,18 +66,12 @@ class DockerConfig:
         try:
             if self.path.exists():
                 with open(self.path) as f:
-                    logging.info(
-                        f"Docker config loaded successfully from {self.path}"
-                    )
+                    logging.info(f"Docker config loaded successfully from {self.path}")
                     self.data = json.load(f)
             else:
-                logging.warning(
-                    f"Missing docker config file: {self.path}"
-                )
+                logging.warning(f"Missing docker config file: {self.path}")
         except Exception:
-            logging.exception(
-                f"Error loading docker config file: {self.path}"
-            )
+            logging.exception(f"Error loading docker config file: {self.path}")
         self.auths = self.data.get("auths", {})
 
     def get_basic_token(self, registry: str) -> str | None:

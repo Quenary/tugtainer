@@ -17,6 +17,7 @@ GENERAL:
   IN_PROGRESS: In progress
   REFRESH: Refresh
   AUTO: Auto
+  NO_DATA: No data
 THEMES:
   LIGHT: Light
   DARK: Dark
@@ -26,12 +27,14 @@ NAV:
   CONTAINERS: Tugtainer. Containers.
   IMAGES: Tugtainer. Images.
   SETTINGS: Tugtainer. Settings.
+  HEALTH_HISTORY: Tugtainer. Healthcheck Monitoring.
 BREADCRUMBS:
   HOSTS: Hosts
   DASHBOARD: Dashboard
   CONTAINERS: Containers
   IMAGES: Images
   SETTINGS: Settings
+  HEALTH_HISTORY: Healthcheck Monitoring
 INSPECT:
   LABEL: Inspect
   JSON: JSON
@@ -102,6 +105,7 @@ HOSTS:
     IMAGES: Images
     UNUSED: Unused
     DANGLING: Dangling
+    HEALTH: Healthcheck Monitoring
   CARD:
     DELETE_CONFIRM: Do you want to delete this host?
     HELP:
@@ -318,4 +322,39 @@ SETTINGS:
         This setting affects only HEAD request (check for update).
         For pull you have to modify /etc/docker/daemon.json at host machine.
         This can be useful if you use a custom registry.
+    HEALTH_MONITOR_CRON_EXPR:
+      LABEL: Healthcheck monitor Crontab expression
+      HINT: |-
+        Crontab expression for periodic healthcheck job e.g.
+        '*/3 * * * *' for every 3 minutes.
+
+        Click for more info.
+      LINK: https://crontab.guru/
+    HEALTH_MONITOR_NTFY_BODY_TMPL:
+      LABEL: Healthcheck monitor notification template
+      HINT: |-
+        Jinja2 template of healthcheck monitor notification body.
+
+        Click for more info.
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
+    HEALTH_MONITOR_N_TO_RESTART:
+      LABEL: Unhealthy checks before restart
+      HINT: Number of consecutive unhealthy checks before attempting container restart. Less than 0 — do not restart.
+    HEALTH_MONITOR_N_TO_NTFY:
+      LABEL: Unhealthy checks before notification
+      HINT: Number of consecutive unhealthy checks before sending a notification. Less than 0 — do not send notifications.
+    HEALTH_MONITOR_RESTART_ATTEMPTS:
+      LABEL: Max restart attempts
+      HINT: Maximum number of restart attempts for an unhealthy container.
+    HEALTH_MONITOR_HISTORY_DAYS:
+      LABEL: Healthcheck history retention, in days
+      HINT: Number of days to keep healthcheck history records. Less than 0 — keep indefinitely.
     SEND_TEST_NOTIFICATION: Send test notification
+
+HEALTH_HISTORY:
+  TABLE:
+    DATE: Date
+    CONTAINER: Container
+    STATUS: Status
+    RESTARTED: Restarted
+    NOTIFIED: Notified

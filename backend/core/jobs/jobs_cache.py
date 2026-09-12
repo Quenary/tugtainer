@@ -6,7 +6,7 @@ from cachetools import TTLCache
 _CACHE = TTLCache(maxsize=256, ttl=600)
 
 
-class JobStateCache[T:Mapping[Any, Any]]:
+class JobStateCache[T: Mapping[Any, Any]]:
     """
     Helper for host/global job state.
     If data argument is passed, the cache will be replaced.

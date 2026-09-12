@@ -17,6 +17,7 @@ GENERAL:
   IN_PROGRESS: 진행 중
   REFRESH: 새로고침
   AUTO: 자동
+  NO_DATA: 데이터 없음
 THEMES:
   LIGHT: 라이트
   DARK: 다크
@@ -26,12 +27,14 @@ NAV:
   CONTAINERS: Tugtainer. 컨테이너.
   IMAGES: Tugtainer. 이미지.
   SETTINGS: Tugtainer. 설정.
+  HEALTH_HISTORY: Tugtainer. Healthcheck 모니터링.
 BREADCRUMBS:
   HOSTS: 호스트
   DASHBOARD: 대시보드
   CONTAINERS: 컨테이너
   IMAGES: 이미지
   SETTINGS: 설정
+  HEALTH_HISTORY: Healthcheck 모니터링
 INSPECT:
   LABEL: 상세 정보
   JSON: JSON
@@ -97,11 +100,12 @@ HOSTS:
     AVAILABLE: 사용 가능
     RUNNING: 실행 중
     EXITED: 종료됨
-    HEALTHY: 정상
-    UNHEALTHY: 비정상
+    HEALTHY: Healthy
+    UNHEALTHY: Unhealthy
     IMAGES: 이미지
     UNUSED: 미사용
-    DANGLING: 댕글링
+    DANGLING: Dangling
+    HEALTH: Healthcheck 모니터링
   CARD:
     DELETE_CONFIRM: 이 호스트를 삭제하시겠습니까?
     HELP:
@@ -140,8 +144,9 @@ HOSTS:
       TIMEOUT_HINT:
         일반적으로 빠르게 처리되는 에이전트 요청의 타임아웃(초)입니다.
         컨테이너 생성이나 이미지 풀과 같이 오래 걸릴 수 있는 요청에는 영향을 주지 않습니다.
-      CONTAINER_HC_TIMEOUT: 컨테이너 헬스체크 타임아웃
-      CONTAINER_HC_TIMEOUT_HINT: 업데이트 중 헬스체크가 롤백을 시작하기 전까지
+      CONTAINER_HC_TIMEOUT: 컨테이너 Healthcheck 타임아웃
+      CONTAINER_HC_TIMEOUT_HINT:
+        업데이트 중 Healthcheck가 롤백을 시작하기 전까지
         대기할 시간(초)입니다.
 CONTAINERS:
   SEARCH_PLACEHOLDER: 이름 또는 ID
@@ -156,7 +161,7 @@ CONTAINERS:
   UPDATE_AVAILABLE: 업데이트 가능
   STATUS: 상태
   PORTS: 포트
-  HEALTH: 상태 확인
+  HEALTH: Health
   CHECK_ENABLED: 자동 확인
   CHECK_HINT: |-
     자동으로 확인합니다.
@@ -172,9 +177,9 @@ CONTAINERS:
   DELAY_UPDATE_FOR_HINT: |-
     이 컨테이너에 대한 전역 지연 재정의(초). 비우면 전역 설정을 사용합니다.
     예: 86400 = 1일. 수동 업데이트는 지연을 무시합니다.
-  HEALTHCHECK_TIMEOUT: 상태 확인 시간 제한(초)
+  HEALTHCHECK_TIMEOUT: Healthcheck 타임아웃(초)
   HEALTHCHECK_TIMEOUT_HINT: |-
-    이 컨테이너의 기본 상태 확인 시간 제한을 재정의합니다(초).
+    이 컨테이너의 기본 Healthcheck 타임아웃을 재정의합니다(초).
     비워두면 호스트 설정을 사용합니다.
   PREVIOUS_IMAGE: 이전 이미지
   PREVIOUS_IMAGE_HINT: |-
@@ -314,4 +319,39 @@ SETTINGS:
         이 설정은 HEAD 요청(업데이트 확인)에만 영향을 줍니다.
         풀(pull)의 경우 호스트 머신의 /etc/docker/daemon.json을 직접 수정해야 합니다.
         사용자 지정 레지스트리를 사용할 때 유용할 수 있습니다.
+    HEALTH_MONITOR_CRON_EXPR:
+      LABEL: Healthcheck 모니터링 Crontab 표현식
+      HINT: |-
+        주기적인 Healthcheck 확인 작업을 위한 Crontab 표현식입니다. 예:
+        3분마다 실행하려면 '*/3 * * * *'.
+
+        자세한 내용은 클릭하여 확인하세요.
+      LINK: https://crontab.guru/
+    HEALTH_MONITOR_NTFY_BODY_TMPL:
+      LABEL: Healthcheck 모니터링 알림 템플릿
+      HINT: |-
+        Healthcheck 모니터링 알림 본문의 Jinja2 템플릿입니다.
+
+        자세한 내용은 클릭하여 확인하세요.
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
+    HEALTH_MONITOR_N_TO_RESTART:
+      LABEL: 재시작 전 Healthcheck 실패 횟수
+      HINT: 컨테이너 재시작을 시도하기 전 연속 Unhealthy 확인 횟수입니다. 0 미만이면 재시작하지 않습니다.
+    HEALTH_MONITOR_N_TO_NTFY:
+      LABEL: 알림 전송 전 Healthcheck 실패 횟수
+      HINT: 알림을 전송하기 전 연속 Unhealthy 확인 횟수입니다. 0 미만이면 알림을 보내지 않습니다.
+    HEALTH_MONITOR_RESTART_ATTEMPTS:
+      LABEL: 최대 재시작 시도 횟수
+      HINT: Unhealthy 컨테이너의 최대 재시작 시도 횟수입니다.
+    HEALTH_MONITOR_HISTORY_DAYS:
+      LABEL: Healthcheck 기록 보관 기간(일)
+      HINT: Healthcheck 확인 기록을 보관할 일수입니다. 0 미만이면 삭제하지 않고 영구 보관합니다.
     SEND_TEST_NOTIFICATION: 테스트 알림 보내기
+
+HEALTH_HISTORY:
+  TABLE:
+    DATE: 날짜
+    CONTAINER: 컨테이너
+    STATUS: 상태
+    RESTARTED: 다시 시작됨
+    NOTIFIED: 알림 됨

@@ -35,14 +35,10 @@ def map_mounts_to_arg(
                 "consistent",
             ]:
                 if consistency_mode in mode_parts:
-                    mount_list.append(
-                        f"consistency={consistency_mode}"
-                    )
+                    mount_list.append(f"consistency={consistency_mode}")
                     break
             if mount.propagation:
-                mount_list.append(
-                    f"bind-propagation={mount.propagation}"
-                )
+                mount_list.append(f"bind-propagation={mount.propagation}")
 
         if type == "volume":
             if mount.name:

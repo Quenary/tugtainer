@@ -21,9 +21,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Upgrade schema."""
     with op.batch_alter_table("containers") as batch_op:
-        batch_op.add_column(
-            sa.Column("image_id", sa.String(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("image_id", sa.String(), nullable=True))
 
 
 def downgrade() -> None:

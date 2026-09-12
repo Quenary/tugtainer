@@ -5,6 +5,8 @@ from zoneinfo import ZoneInfo, available_timezones
 import aiocron
 
 from backend.core.jobs.check.check_all import check_all_hosts
+from backend.core.jobs.health.check_health import check_all_containers_health
+from backend.core.jobs.health.rotate_history import rotate_health_history
 from backend.core.jobs.update.update_all import update_all_hosts
 from backend.enums.cron_jobs_enum import ECronJob
 from backend.modules.settings.settings_enum import ESettingKey
@@ -18,12 +20,8 @@ async def schedule_jobs_on_init():
     Schedule container check and update on app init
     """
     tz = SettingsStorage.get(ESettingKey.TIMEZONE)
-    check_crontab = SettingsStorage.get(
-        ESettingKey.CHECK_CRONTAB_EXPR
-    )
-    update_crontab = SettingsStorage.get(
-        ESettingKey.UPDATE_CRONTAB_EXPR
-    )
+    check_crontab = SettingsStorage.get(ESettingKey.CHECK_CRONTAB_EXPR)
+    update_crontab = SettingsStorage.get(ESettingKey.UPDATE_CRONTAB_EXPR)
 
     if check_crontab:
         CronManager.schedule_job(
@@ -38,6 +36,20 @@ async def schedule_jobs_on_init():
             update_crontab,
             tz,
             update_all_hosts,
+        )
+
+    health_crontab = SettingsStorage.get(ESettingKey.HEALTH_MONITOR_CRON_EXPR)
+    if health_crontab:
+
+        async def _health_wrapper():
+            await check_all_containers_health()
+            await rotate_health_history()
+
+        CronManager.schedule_job(
+            ECronJob.HEALTH_MONITOR,
+            health_crontab,
+            tz,
+            _health_wrapper,
         )
 
 
@@ -72,9 +84,7 @@ class CronManager:
         cls._jobs[name] = aiocron.crontab(
             cron_expr, func=func, args=args, kwargs=kwargs, tz=_tz
         )
-        logging.info(
-            f"[CronManager] Job '{name}' scheduled with '{cron_expr}'"
-        )
+        logging.info(f"[CronManager] Job '{name}' scheduled with '{cron_expr}'")
 
     @classmethod
     def cancel_job(cls, name: str):

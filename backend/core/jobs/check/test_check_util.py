@@ -279,9 +279,7 @@ async def test_get_image_remote_digest_does_not_treat_lookalike_as_insecure(
         return_value=SimpleNamespace(get_basic_token=lambda _: None),
     )
 
-    result = await get_image_remote_digest(
-        "localhost.attacker.com/test/image:test"
-    )
+    result = await get_image_remote_digest("localhost.attacker.com/test/image:test")
 
     assert result == digest
     assert session.head.call_args.args[0] == (
@@ -338,10 +336,7 @@ async def test_get_registry_bearer_token_sends_basic_without_redirects():
 
     result = await get_registry_bearer_token(
         session,
-        (
-            'Bearer realm="https://auth.docker.io/token",'
-            'service="registry.docker.io"'
-        ),
+        ('Bearer realm="https://auth.docker.io/token",service="registry.docker.io"'),
         "library/nginx",
         basic_token="secret",
         ssl=True,
@@ -353,9 +348,7 @@ async def test_get_registry_bearer_token_sends_basic_without_redirects():
     assert kwargs["allow_redirects"] is False
     assert kwargs["headers"]["Authorization"] == "Basic secret"
     assert kwargs["ssl"] is True
-    assert session.get.call_args.args[0].startswith(
-        "https://auth.docker.io/token?"
-    )
+    assert session.get.call_args.args[0].startswith("https://auth.docker.io/token?")
 
 
 @pytest.mark.asyncio
@@ -392,9 +385,7 @@ async def test_get_registry_bearer_token_allows_http_realm_when_insecure():
     )
 
     assert result == "tok"
-    assert session.get.call_args.args[0].startswith(
-        "http://registry.local/token?"
-    )
+    assert session.get.call_args.args[0].startswith("http://registry.local/token?")
     assert session.get.call_args.kwargs["allow_redirects"] is False
 
 
@@ -407,9 +398,7 @@ async def test_get_registry_bearer_token_allows_http_realm_when_insecure():
         ("Bearer service=registry.docker.io", "Bearer realm is missing"),
     ],
 )
-async def test_get_registry_bearer_token_rejects_invalid_realm(
-    auth_header, match
-):
+async def test_get_registry_bearer_token_rejects_invalid_realm(auth_header, match):
     session = MagicMock()
     session.get = MagicMock()
 

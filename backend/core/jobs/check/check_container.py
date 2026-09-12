@@ -150,8 +150,7 @@ async def run_check_container_job(
                 result_lit = None
                 update_available = bool(c_db.update_available) if c_db else False
             elif any(
-                all(rd not in ld for ld in local_digests)
-                for rd in remote_digests
+                all(rd not in ld for ld in local_digests) for rd in remote_digests
             ):
                 # Remote digest missing from local digests → update available
                 if c_db and c_db.remote_digests == remote_digests:

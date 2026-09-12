@@ -17,6 +17,7 @@ GENERAL:
   IN_PROGRESS: 进行中
   REFRESH: 刷新
   AUTO: 自动
+  NO_DATA: 暂无数据
 THEMES:
   LIGHT: 浅色
   DARK: 深色
@@ -26,12 +27,14 @@ NAV:
   CONTAINERS: Tugtainer. 容器。
   IMAGES: Tugtainer. 镜像。
   SETTINGS: Tugtainer. 设置。
+  HEALTH_HISTORY: Tugtainer. Healthcheck 监控。
 BREADCRUMBS:
   HOSTS: 主机
   DASHBOARD: 仪表盘
   CONTAINERS: 容器
   IMAGES: 镜像
   SETTINGS: 设置
+  HEALTH_HISTORY: Healthcheck 监控
 INSPECT:
   LABEL: 检查
   JSON: JSON
@@ -97,11 +100,12 @@ HOSTS:
     AVAILABLE: 可用
     RUNNING: 运行中
     EXITED: 已退出
-    HEALTHY: 健康
-    UNHEALTHY: 不健康
+    HEALTHY: Healthy
+    UNHEALTHY: Unhealthy
     IMAGES: 镜像
     UNUSED: 未使用
     DANGLING: 悬空
+    HEALTH: Healthcheck 监控
   CARD:
     DELETE_CONFIRM: 确定删除这个主机吗？
     HELP:
@@ -137,8 +141,8 @@ HOSTS:
       TIMEOUT: Agent 超时时间
       TIMEOUT_HINT: 常规短耗时 Agent 请求的超时时间（秒）。
         不影响创建容器或拉取镜像等可能较长的请求。
-      CONTAINER_HC_TIMEOUT: 容器健康检查超时
-      CONTAINER_HC_TIMEOUT_HINT: 更新期间等待健康检查的超时时间（秒），
+      CONTAINER_HC_TIMEOUT: 容器 Healthcheck 超时
+      CONTAINER_HC_TIMEOUT_HINT: 更新期间等待 Healthcheck 的超时时间（秒），
         超时后将开始回滚。
 CONTAINERS:
   SEARCH_PLACEHOLDER: 名称或 ID
@@ -153,7 +157,7 @@ CONTAINERS:
   UPDATE_AVAILABLE: 有可用更新
   STATUS: 状态
   PORTS: 端口
-  HEALTH: 健康
+  HEALTH: Health
   CHECK_ENABLED: 自动检查
   CHECK_HINT: |-
     自动检查。
@@ -169,9 +173,9 @@ CONTAINERS:
   DELAY_UPDATE_FOR_HINT: |-
     覆盖此容器的全局延迟（秒）。空 = 使用全局设置。
     示例：86400 = 1天。手动更新将忽略延迟。
-  HEALTHCHECK_TIMEOUT: 容器健康检查超时，以秒为单位
+  HEALTHCHECK_TIMEOUT: 容器 Healthcheck 超时，以秒为单位
   HEALTHCHECK_TIMEOUT_HINT: |-
-    覆盖此容器的全局健康检查超时（秒）。
+    覆盖此容器的全局 Healthcheck 超时（秒）。
     空 = 使用全局设置。
   PREVIOUS_IMAGE: 上一个镜像
   PREVIOUS_IMAGE_HINT: |-
@@ -309,4 +313,39 @@ SETTINGS:
         此设置仅影响 HEAD 请求（检查更新）。
         拉取镜像需在宿主机修改 /etc/docker/daemon.json。
         如果您使用自定义 registry，此选项可能有用。
+    HEALTH_MONITOR_CRON_EXPR:
+      LABEL: Healthcheck 监控 Crontab 表达式
+      HINT: |-
+        用于定期 Healthcheck 监控任务的 Crontab 表达式，例如
+        '*/3 * * * *' 表示每 3 分钟一次。
+
+        点击了解更多信息。
+      LINK: https://crontab.guru/
+    HEALTH_MONITOR_NTFY_BODY_TMPL:
+      LABEL: Healthcheck 监控通知模板
+      HINT: |-
+        Healthcheck 监控通知正文的 Jinja2 模板。
+
+        点击了解更多信息。
+      LINK: https://github.com/Quenary/tugtainer/blob/main/docs/NOTIFICATIONS.md
+    HEALTH_MONITOR_N_TO_RESTART:
+      LABEL: 重启前 Healthcheck 失败次数
+      HINT: 尝试重启容器前连续检测为 Unhealthy 的次数。小于 0 则不重启。
+    HEALTH_MONITOR_N_TO_NTFY:
+      LABEL: 发送通知前 Healthcheck 失败次数
+      HINT: 发送通知前连续检测为 Unhealthy 的次数。小于 0 则不发送通知。
+    HEALTH_MONITOR_RESTART_ATTEMPTS:
+      LABEL: 最大重启尝试次数
+      HINT: Unhealthy 容器的最大重启尝试次数。
+    HEALTH_MONITOR_HISTORY_DAYS:
+      LABEL: Healthcheck 历史保留天数
+      HINT: 保留 Healthcheck 历史记录的天数。小于 0 则永久保留。
     SEND_TEST_NOTIFICATION: 发送测试通知
+
+HEALTH_HISTORY:
+  TABLE:
+    DATE: 日期
+    CONTAINER: 容器
+    STATUS: 状态
+    RESTARTED: 已重启
+    NOTIFIED: 已通知

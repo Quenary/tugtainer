@@ -4,6 +4,4 @@ from python_on_whales.components.container.models import (
 
 
 def is_running_container(container: ContainerInspectResult) -> bool:
-    return bool(
-        container.state and container.state.status == "running"
-    )
+    return bool(container.state and container.state.status == "running")
