@@ -11,6 +11,9 @@ from backend.const import (
     DOCKER_COMPOSE_DEPENDS_ON_LABEL,
     TUGTAINER_DEPENDS_ON_LABEL,
 )
+from backend.core.container_util.container_labels import (
+    get_container_auto_update_label,
+)
 from backend.core.container_util.get_service_name import get_service_name
 from backend.core.container_util.is_protected_container import is_protected_container
 from backend.core.container_util.is_running_container import is_running_container
@@ -91,7 +94,11 @@ async def build_update_job_plan(
         for c in containers:
             c_name = cast(str, c.name)
             c_db = containers_db.get(c_name)
-            if not (c_db and c_db.update_available and c_db.update_enabled):
+            lbl = get_container_auto_update_label(c)
+            auto_update_enabled = (
+                lbl if lbl is not None else bool(c_db and c_db.update_enabled)
+            )
+            if not (c_db and c_db.update_available and auto_update_enabled):
                 continue
             effective_delay = (
                 c_db.delay_update_for

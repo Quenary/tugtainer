@@ -8,6 +8,9 @@ from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 
+from backend.core.container_util.container_labels import (
+    get_container_auto_check_label,
+)
 from backend.docker_config import DockerConfig, normalize_registry_host
 from backend.modules.containers.containers_model import (
     ContainersModel,
@@ -22,6 +25,11 @@ def filter_containers_by_check_enabled(
 ) -> list[ContainerInspectResult]:
     _containers: list[ContainerInspectResult] = []
     for c in containers:
+        lbl = get_container_auto_check_label(c)
+        if lbl is not None:
+            if lbl:
+                _containers.append(c)
+            continue
         c_db = containers_db_map.get(cast(str, c.name))
         if c_db and c_db.check_enabled:
             _containers.append(c)

@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 from python_on_whales.components.container.models import (
+    ContainerConfig,
     ContainerInspectResult,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -323,3 +324,34 @@ async def test_control_containers_protected_forbidden(mocker: MockerFixture):
     assert response.status_code == 403
     assert response.json()["detail"] == "Protected container not allowed"
     agent_client_mock.container.stop.assert_not_called()
+
+
+def test_containers_list_item_auto_labels():
+    from backend.const import (
+        TUGTAINER_AUTO_CHECK_LABEL,
+        TUGTAINER_AUTO_UPDATE_LABEL,
+    )
+
+    docker_cont = ContainerInspectResult(
+        id="c1",
+        name="test-cont",
+        config=ContainerConfig(
+            labels={
+                TUGTAINER_AUTO_CHECK_LABEL: "true",
+                TUGTAINER_AUTO_UPDATE_LABEL: "false",
+            }
+        ),
+    )
+    db_cont = ContainersModel(
+        id=1,
+        host_id=1,
+        name="test-cont",
+        check_enabled=False,
+        update_enabled=True,
+    )
+
+    item = ContainersListItem.from_sources(1, docker_cont, db_cont)
+    assert item.auto_check_label is True
+    assert item.auto_update_label is False
+    assert item.check_enabled is False
+    assert item.update_enabled is True

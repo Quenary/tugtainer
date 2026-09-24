@@ -208,6 +208,10 @@ CONTAINERS:
   PROTECTED_CONTAINER_HINT:
     This container labeled with dev.quenary.tugtainer.protected
     and cannot be updated from the app.
+  AUTO_CHECK_LABEL_HINT: |-
+    Check for updates is configured via container label dev.quenary.tugtainer.auto_check.
+  AUTO_UPDATE_LABEL_HINT: |-
+    Auto-update is configured via container label dev.quenary.tugtainer.auto_update.
   GENERAL:
     LABEL: General
   LOGS:

@@ -18,13 +18,13 @@
   - Containers of a host are processed as a single set;
   - A dependency graph is built for that host from:
     - Compose dependencies (`com.docker.compose.depends_on` for containers with the same `com.docker.compose.project` and `com.docker.compose.project.config_files`)
-    - Custom dependencies ([dev.quenary.tugtainer.depends_on](../README.md#custom-labels))
+    - Custom dependencies ([dev.quenary.tugtainer.depends_on](CUSTOM_LABELS.md#devquenarytugtainerdepends_onmy_postgresmy_redis))
   - Dependencies are directional: if container A depends on B, B is started before A and stopped after A;
   - Containers without dependencies are treated as independent nodes
 
 - ### Process
   1. The dependency graph is built:
-     - [protected](../README.md#custom-labels) containers are skipped;
+     - [protected](CUSTOM_LABELS.md#devquenarytugtainerprotectedtrue) containers are skipped;
      - not `running` containers are skipped by default (can be changed in the settings);
   2. A set of **updatable** containers is calculated:
      - an updatable container has an **available** update and is either **selected for auto-update** or included by a **manual** run;

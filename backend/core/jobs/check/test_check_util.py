@@ -1,9 +1,14 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
+from python_on_whales.components.container.models import (
+    ContainerConfig,
+    ContainerInspectResult,
+)
 
 from backend.core.jobs.check.check_util import (
     filter_containers_by_check_enabled,
@@ -100,9 +105,53 @@ def test_filter_containers_by_check_enabled_keeps_only_enabled():
         "disabled": SimpleNamespace(check_enabled=False),
     }
 
-    filtered = filter_containers_by_check_enabled(containers, db_map)
+    filtered = filter_containers_by_check_enabled(
+        cast(Any, containers), cast(Any, db_map)
+    )
 
     assert [c.name for c in filtered] == ["enabled"]
+
+
+def test_filter_containers_by_check_enabled_respects_auto_check_label():
+    from backend.const import TUGTAINER_AUTO_CHECK_LABEL
+
+    containers = [
+        # Label true overrides DB false
+        ContainerInspectResult(
+            id="c1",
+            name="label_true_db_false",
+            config=ContainerConfig(labels={TUGTAINER_AUTO_CHECK_LABEL: "true"}),
+        ),
+        # Label false overrides DB true
+        ContainerInspectResult(
+            id="c2",
+            name="label_false_db_true",
+            config=ContainerConfig(labels={TUGTAINER_AUTO_CHECK_LABEL: "false"}),
+        ),
+        # Label absent, DB true
+        ContainerInspectResult(
+            id="c3",
+            name="no_label_db_true",
+            config=ContainerConfig(labels={}),
+        ),
+        # Label absent, DB false
+        ContainerInspectResult(
+            id="c4",
+            name="no_label_db_false",
+            config=ContainerConfig(labels={}),
+        ),
+    ]
+    db_map = {
+        "label_true_db_false": SimpleNamespace(check_enabled=False),
+        "label_false_db_true": SimpleNamespace(check_enabled=True),
+        "no_label_db_true": SimpleNamespace(check_enabled=True),
+        "no_label_db_false": SimpleNamespace(check_enabled=False),
+    }
+
+    filtered = filter_containers_by_check_enabled(
+        cast(Any, containers), cast(Any, db_map)
+    )
+    assert [c.name for c in filtered] == ["label_true_db_false", "no_label_db_true"]
 
 
 def test_sort_containers_by_checked_at_orders_earliest_first():
@@ -117,7 +166,9 @@ def test_sort_containers_by_checked_at_orders_earliest_first():
         "never": SimpleNamespace(checked_at=None),
     }
 
-    sorted_containers = sort_containers_by_checked_at(containers, db_map)
+    sorted_containers = sort_containers_by_checked_at(
+        cast(Any, containers), cast(Any, db_map)
+    )
 
     assert [c.name for c in sorted_containers] == [
         "never",
