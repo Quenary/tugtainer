@@ -10,7 +10,7 @@
 
 **Scheduled** process includes all enabled hosts and all containers **selected for auto-check**.
 
-**Manual** process includes all containers despite the auto-check toggle, a single container, or a selected set of containers.
+**Manual** process includes all containers despite the auto-check toggle (Check all across all hosts or on a host), a single container, or a selected set of containers.
 
 ## Update process
 
@@ -18,13 +18,13 @@
   - Containers of a host are processed as a single set;
   - A dependency graph is built for that host from:
     - Compose dependencies (`com.docker.compose.depends_on` for containers with the same `com.docker.compose.project` and `com.docker.compose.project.config_files`)
-    - Custom dependencies ([dev.quenary.tugtainer.depends_on](../README.md#custom-labels))
+    - Custom dependencies ([dev.quenary.tugtainer.depends_on](CUSTOM_LABELS.md#devquenarytugtainerdepends_onmy_postgresmy_redis))
   - Dependencies are directional: if container A depends on B, B is started before A and stopped after A;
   - Containers without dependencies are treated as independent nodes
 
 - ### Process
   1. The dependency graph is built:
-     - [protected](../README.md#custom-labels) containers are skipped;
+     - [protected](CUSTOM_LABELS.md#devquenarytugtainerprotectedtrue) containers are skipped;
      - not `running` containers are skipped by default (can be changed in the settings);
   2. A set of **updatable** containers is calculated:
      - an updatable container has an **available** update and is either **selected for auto-update** or included by a **manual** run;
@@ -41,7 +41,7 @@
 
 **Scheduled** process runs on all enabled hosts for containers **selected for auto-update**.
 
-**Manual** process updates all containers with an available update despite the auto-update toggle (Check all / Update all on a host), a single container, or a selected set of containers. Dependents of those containers are still included in `affected` and are stopped/started with the plan. Select several rows in the containers table to check or update them together.
+**Manual** process updates all containers with an available update despite the auto-update toggle (Check all / Update all on a host, or Update all across all hosts), a single container, or a selected set of containers. Dependents of those containers are still included in `affected` and are stopped/started with the plan. Select several rows in the containers table to check or update them together.
 
 Check and update jobs on the **same host** run one after another (a check of A and B cannot overlap an update of C and D). Jobs on different hosts can run at the same time.
 

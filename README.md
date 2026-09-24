@@ -13,7 +13,8 @@ Automatic updates are disabled by default. You can enable only what you need.
 - [main features](#main-features)
 - [deploy](#deploy)
 - [private registries](#private-registries)
-- [custom labels](#custom-labels)
+- [custom labels](./docs/CUSTOM_LABELS.md)
+- [hooks](./docs/HOOKS.md)
 - [notifications](./docs/NOTIFICATIONS.md)
 - [auth](#auth)
 - [api](#api)
@@ -136,52 +137,6 @@ To use private registries, you have to mount docker config to Tugtainer or Tugta
   ```
 - Mount the config to the Tugtainer (Agent) as a read-only volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
 - That's all you need to do, Docker CLI will take care of the rest.
-
-## Custom labels:
-
-- dev.quenary.tugtainer.protected=true
-
-  This label indicates that the container cannot be stopped. This means that even if there is a new image for the container, it cannot be updated from the app. This label is primarily used for **tugtainer** itself and **tugtainer-agent**, as well as for **socket-proxy** in the provided docker-compose files.
-
-- dev.quenary.tugtainer.depends_on="my_postgres,my_redis"
-
-  This label is an alternative to the docker compose label. It allows you to declare that a container depends on another container, even if they are not in the same compose project. List of container names, separated by commas.
-
-## Hooks:
-
-You can configure shell commands to run inside a container at points of the
-update lifecycle: `pre_update`, `post_update`, `pre_stop`, `pre_rollback`,
-`post_rollback`. Each command runs as `sh -c "<command>"` inside the target
-container via the agent.
-
-Tugtainer has no built-in database/service-specific backup logic — writing
-the actual backup/notification commands (e.g. `pg_dump`) and managing where
-their output goes is entirely up to you.
-
-This feature is off by default and requires two things to be true at once:
-
-- `ALLOW_HOOKS=true` on the Tugtainer backend (feature gate — hides the UI
-  form and stops the backend from ever calling the agent's exec endpoint
-  when false).
-- `ALLOW_EXEC=true` on the Tugtainer-Agent for the specific host you want to
-  run hooks on (defense in depth — an agent that hasn't opted in refuses to
-  execute commands even if asked).
-
-Failure semantics:
-
-- A failing `pre_update` or `pre_stop` hook aborts that container's update —
-  the container is left running as-is, same as any other pre-flight check
-  failure.
-- `post_update`, `pre_rollback` and `post_rollback` hook failures are
-  report-only (logged) and never block anything — by the time these run,
-  either the update already succeeded or a rollback is already underway and
-  must complete regardless.
-- `pre_rollback` runs while the failed container is still alive, right
-  before Tugtainer stops it to roll back.
-
-The hooks form is hidden in the UI for protected containers (see
-[Custom labels](#custom-labels)), since protected containers are never
-updated by the app.
 
 ## Auth
 

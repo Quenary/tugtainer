@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import timedelta
+from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import AsyncMock
 
@@ -18,6 +19,7 @@ class DummyContainer:
     def __init__(self, name, labels=None):
         self.name = name
         self.labels = labels or {}
+        self.config = SimpleNamespace(labels=labels or {})
 
 
 class DummyDB:
@@ -315,3 +317,60 @@ async def test_build_update_job_plan_delay_update_for(
         cast(Any, [DummyContainer(name=c) for c in manual_for]),
     )
     assert plan.to_update == expected_to_update
+
+
+@pytest.mark.asyncio
+async def test_build_update_job_plan_respects_auto_update_label(mocker):
+    from backend.const import TUGTAINER_AUTO_UPDATE_LABEL
+
+    containers = [
+        # Label true overrides DB update_enabled=False
+        DummyContainer(
+            name="lbl_true_db_false",
+            labels={TUGTAINER_AUTO_UPDATE_LABEL: "true"},
+        ),
+        # Label false overrides DB update_enabled=True
+        DummyContainer(
+            name="lbl_false_db_true",
+            labels={TUGTAINER_AUTO_UPDATE_LABEL: "false"},
+        ),
+        # Label absent, DB True
+        DummyContainer(
+            name="no_lbl_db_true",
+            labels={},
+        ),
+        # Label absent, DB False
+        DummyContainer(
+            name="no_lbl_db_false",
+            labels={},
+        ),
+    ]
+
+    db_items = [
+        DummyDB("lbl_true_db_false", update_available=True, update_enabled=False),
+        DummyDB("lbl_false_db_true", update_available=True, update_enabled=True),
+        DummyDB("no_lbl_db_true", update_available=True, update_enabled=True),
+        DummyDB("no_lbl_db_false", update_available=True, update_enabled=False),
+    ]
+
+    deps = {c.name: set() for c in containers}
+    _patch_common(mocker, db_items, deps)
+
+    host = mocker.Mock()
+    host.id = 1
+
+    # 1. Scheduled run (manual_for is empty)
+    scheduled_plan = await build_update_job_plan(
+        host,
+        cast(Any, containers),
+        cast(Any, []),
+    )
+    assert scheduled_plan.to_update == {"lbl_true_db_false", "no_lbl_db_true"}
+
+    # 2. Manual run bypasses auto_update label (e.g. user manually triggered update on lbl_false_db_true)
+    manual_plan = await build_update_job_plan(
+        host,
+        cast(Any, containers),
+        cast(Any, [DummyContainer(name="lbl_false_db_true")]),
+    )
+    assert "lbl_false_db_true" in manual_plan.to_update

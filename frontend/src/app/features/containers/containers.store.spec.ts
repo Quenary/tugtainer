@@ -333,44 +333,59 @@ describe('ContainersStore', () => {
     });
   });
 
-  describe('controlContainer', () => {
+  describe('controlContainers', () => {
     beforeEach(() => {
       store.loadList();
     });
 
-    it('should control container', () => {
+    it('should control multiple containers', () => {
       const updated: IContainerEntity = {
         ...mockContainerItem,
         status: EContainerStatus.exited,
       };
-      containersApiServiceMock.controlContainer.mockReturnValue(
-        of({
-          item: updated,
-          inspect: mockContainerInspect,
-        }),
+      containersApiServiceMock.controlContainers.mockReturnValue(of([updated]));
+
+      store.controlContainers({
+        names: ['nginx'],
+        command: 'stop',
+      });
+
+      expect(containersApiServiceMock.controlContainers).toHaveBeenCalledWith(
+        1,
+        'stop',
+        ['nginx'],
       );
+      expect(store.entityMap()['nginx'].status).toBe(EContainerStatus.exited);
+    });
+
+    it('should control single container through controlContainer adapter', () => {
+      const updated: IContainerEntity = {
+        ...mockContainerItem,
+        status: EContainerStatus.exited,
+      };
+      containersApiServiceMock.controlContainers.mockReturnValue(of([updated]));
 
       store.controlContainer({
         containerName: 'nginx',
         command: 'stop',
       });
 
-      expect(containersApiServiceMock.controlContainer).toHaveBeenCalledWith(
+      expect(containersApiServiceMock.controlContainers).toHaveBeenCalledWith(
         1,
         'stop',
-        'nginx',
+        ['nginx'],
       );
       expect(store.entityMap()['nginx'].status).toBe(EContainerStatus.exited);
     });
 
     it('should show error on control failure', () => {
       const error = new Error('Control failed');
-      containersApiServiceMock.controlContainer.mockReturnValue(
+      containersApiServiceMock.controlContainers.mockReturnValue(
         throwError(() => error),
       );
 
-      store.controlContainer({
-        containerName: 'nginx',
+      store.controlContainers({
+        names: ['nginx'],
         command: 'restart',
       });
 

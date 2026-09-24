@@ -7,6 +7,10 @@ from python_on_whales.components.container.models import (
     PortBinding,
 )
 
+from backend.core.container_util.container_labels import (
+    get_container_auto_check_label,
+    get_container_auto_update_label,
+)
 from backend.core.container_util.get_container_health_status_str import (
     get_container_health_status_str,
 )
@@ -45,6 +49,8 @@ class ContainersListItem(BaseModel):
     protected: (
         bool  # Whether container labeled with dev.quenary.tugtainer.protected=true
     )
+    auto_check_label: bool | None = None  # From dev.quenary.tugtainer.auto_check
+    auto_update_label: bool | None = None  # From dev.quenary.tugtainer.auto_update
     host_id: int  # host id is also stored in db, but it must be always defined
     # Those keys stored in db, but might be undefined for new containers
     id: int | None = None  # id of the row
@@ -91,6 +97,8 @@ class ContainersListItem(BaseModel):
             "exit_code": docker_cont.state.exit_code if docker_cont.state else None,
             "health": get_container_health_status_str(docker_cont),
             "protected": is_protected_container(docker_cont),
+            "auto_check_label": get_container_auto_check_label(docker_cont),
+            "auto_update_label": get_container_auto_update_label(docker_cont),
             "current_version": get_version_from_labels(
                 docker_cont.config.labels if docker_cont.config else None
             ),

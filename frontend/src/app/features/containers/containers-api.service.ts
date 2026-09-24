@@ -92,20 +92,20 @@ export class ContainersApiService extends BaseApiService<'/containers'> {
   }
 
   /**
-   * Control container state with basic commands
+   * Control multiple containers state with basic commands
    * @param hostId
    * @param command
-   * @param containerNameOrId
+   * @param names
    * @returns
    */
-  controlContainer(
+  controlContainers(
     hostId: number,
     command: TControlContainerCommand,
-    containerNameOrId: string,
-  ): Observable<IContainerInfo> {
-    return this.httpClient.post<IContainerInfo>(
-      `${this.basePath}/${hostId}/${command}/${containerNameOrId}`,
-      {},
+    names: string[],
+  ): Observable<IContainerListItem[]> {
+    return this.httpClient.post<IContainerListItem[]>(
+      `${this.basePath}/${hostId}/${command}`,
+      { names },
     );
   }
 

@@ -110,7 +110,7 @@ export const HostsStore = signalStore(
        */
       anyForUpdate: computed(() => {
         const hosts = store.entities();
-        return hosts.some((h) => h.available_updates_count ?? 0 > 0);
+        return hosts.some((h) => (h.available_updates_count ?? 0) > 0);
       }),
       /**
        * If global action (check) is active

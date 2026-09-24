@@ -1,7 +1,6 @@
 {
-  "python.terminal.activateEnvironment": true,
-  "python.venvPath": ".venv",
-  "python.languageServer": "None",
+  "editor.semanticHighlighting.enabled": true,
+
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,
@@ -9,22 +8,43 @@
       "source.organizeImports.ruff": "explicit"
     }
   },
+  "python.terminal.activateEnvironment": true,
+  "python.venvPath": "${workspaceFolder}/.venv",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.extraPaths": ["${workspaceFolder}"],
+  "python.autoComplete.extraPaths": ["${workspaceFolder}"],
+  "python.languageServer": "None",
+  "basedpyright.analysis.extraPaths": ["${workspaceFolder}"],
+  "basedpyright.analysis.typeCheckingMode": "basic",
+  "basedpyright.analysis.autoFormatStrings": false,
+  "ruff.path": ["${workspaceFolder}/.venv/bin/ruff"],
+  "ruff.configuration": "pyproject.toml",
+  "mypy.runUsingActiveInterpreter": true,
+  "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
+  "mypy.configFile": "pyproject.toml",
+
   "[html]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
+
   "[scss]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
+
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.tsdk.path": "${workspaceFolder}/frontend/node_modules/typescript/lib",
+
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
+
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true

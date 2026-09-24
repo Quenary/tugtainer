@@ -209,6 +209,10 @@ CONTAINERS:
   PROTECTED_CONTAINER_HINT:
     Контейнер помечен меткой dev.quenary.tugtainer.protected
     и не может быть обновлён из приложения.
+  AUTO_CHECK_LABEL_HINT: |-
+    Проверка обновлений настроена через лейбл контейнера dev.quenary.tugtainer.auto_check.
+  AUTO_UPDATE_LABEL_HINT: |-
+    Автообновление настроено через лейбл контейнера dev.quenary.tugtainer.auto_update.
   GENERAL:
     LABEL: Общее
   LOGS:

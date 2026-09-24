@@ -201,6 +201,10 @@ CONTAINERS:
   PROTECTED: 受保护
   PROTECTED_CONTAINER_HINT: 此容器标记为 dev.quenary.tugtainer.protected，
     无法从此应用更新。
+  AUTO_CHECK_LABEL_HINT: |-
+    检查更新已通过容器标签 dev.quenary.tugtainer.auto_check 配置。
+  AUTO_UPDATE_LABEL_HINT: |-
+    自动更新已通过容器标签 dev.quenary.tugtainer.auto_update 配置。
   GENERAL:
     LABEL: 常规
   LOGS:

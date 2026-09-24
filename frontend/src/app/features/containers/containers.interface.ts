@@ -23,6 +23,8 @@ export interface IContainerListItem {
   status: EContainerStatus;
   health: string;
   protected: boolean;
+  auto_check_label?: boolean | null;
+  auto_update_label?: boolean | null;
   check_enabled: boolean;
   update_enabled: boolean;
   update_available: boolean;

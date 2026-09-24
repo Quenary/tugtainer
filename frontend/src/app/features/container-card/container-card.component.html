@@ -73,20 +73,40 @@
           <p-divider></p-divider>
 
           <app-boolean-field>
-            <p-toggle-switch
-              inputId="container-check-enabled"
-              [ngModel]="_item.check_enabled"
-              (ngModelChange)="patchContainer({ check_enabled: $event })"></p-toggle-switch>
+            @if (
+              _item.auto_check_label !== null && _item.auto_check_label !== undefined
+            ) {
+              <p-tag
+                [severity]="_item.auto_check_label ? 'success' : 'secondary'"
+                [icon]="_item.auto_check_label ? 'pi pi-check' : 'pi pi-times'"
+                [value]="(_item.auto_check_label ? 'GENERAL.ON' : 'GENERAL.OFF') | translate"
+                [pTooltip]="'CONTAINERS.AUTO_CHECK_LABEL_HINT' | translate" />
+            } @else {
+              <p-toggle-switch
+                inputId="container-check-enabled"
+                [ngModel]="_item.check_enabled"
+                (ngModelChange)="patchContainer({ check_enabled: $event })"></p-toggle-switch>
+            }
             <label for="container-check-enabled">
               {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
             </label>
           </app-boolean-field>
           @if (!_item.protected) {
             <app-boolean-field>
-              <p-toggle-switch
-                inputId="container-update-enabled"
-                [ngModel]="_item.update_enabled"
-                (ngModelChange)="patchContainer({ update_enabled: $event })"></p-toggle-switch>
+              @if (
+                _item.auto_update_label !== null && _item.auto_update_label !== undefined
+              ) {
+                <p-tag
+                  [severity]="_item.auto_update_label ? 'success' : 'secondary'"
+                  [icon]="_item.auto_update_label ? 'pi pi-check' : 'pi pi-times'"
+                  [value]="(_item.auto_update_label ? 'GENERAL.ON' : 'GENERAL.OFF') | translate"
+                  [pTooltip]="'CONTAINERS.AUTO_UPDATE_LABEL_HINT' | translate" />
+              } @else {
+                <p-toggle-switch
+                  inputId="container-update-enabled"
+                  [ngModel]="_item.update_enabled"
+                  (ngModelChange)="patchContainer({ update_enabled: $event })"></p-toggle-switch>
+              }
               <label for="container-update-enabled">
                 {{ 'CONTAINERS.UPDATE_ENABLED' | translate }}
               </label>

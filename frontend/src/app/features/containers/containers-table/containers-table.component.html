@@ -43,21 +43,27 @@
     </div>
   </ng-template>
   <ng-template #end>
-    <p-button-group>
-      <p-button
-        icon="pi pi-check-square"
-        [disabled]="!selected().length"
-        [label]="'CONTAINERS.CHECK' | translate"
-        (onClick)="onCheckSelected()">
-      </p-button>
-      <p-button
-        icon="pi pi-check-square"
-        severity="success"
-        [disabled]="!updatableSelected().length"
-        [label]="'CONTAINERS.UPDATE' | translate"
-        (onClick)="onUpdateSelected()">
-      </p-button>
-    </p-button-group>
+    <div style="display: flex; gap: 0.5rem; align-items: center">
+      <app-multi-container-actions
+        [containers]="selected()"
+        (OnCommand)="onBulkCommand($event)" />
+
+      <p-button-group>
+        <p-button
+          icon="pi pi-check-square"
+          [disabled]="!selected().length"
+          [label]="'CONTAINERS.CHECK' | translate"
+          (onClick)="onCheckSelected()">
+        </p-button>
+        <p-button
+          icon="pi pi-check-square"
+          severity="success"
+          [disabled]="!updatableSelected().length"
+          [label]="'CONTAINERS.UPDATE' | translate"
+          (onClick)="onUpdateSelected()">
+        </p-button>
+      </p-button-group>
+    </div>
   </ng-template>
 </p-toolbar>
 
@@ -181,25 +187,45 @@
           [value]="container.health"></p-tag>
       </td>
       <td>
-        <p-togglebutton
-          severity="success"
-          [ngModel]="container.check_enabled"
-          (ngModelChange)="onCheckEnabledChange($event, container)"
-          [onLabel]="'GENERAL.ON' | translate"
-          [offLabel]="'GENERAL.OFF' | translate"
-          [onIcon]="'pi pi-check-circle'"
-          [offIcon]="'pi pi-circle-off'" />
-      </td>
-      <td>
-        @if (!container.protected) {
+        @if (
+          container.auto_check_label !== null && container.auto_check_label !== undefined
+        ) {
+          <p-tag
+            [severity]="container.auto_check_label ? 'success' : 'secondary'"
+            [icon]="container.auto_check_label ? 'pi pi-check' : 'pi pi-times'"
+            [value]="(container.auto_check_label ? 'GENERAL.ON' : 'GENERAL.OFF') | translate"
+            [pTooltip]="'CONTAINERS.AUTO_CHECK_LABEL_HINT' | translate" />
+        } @else {
           <p-togglebutton
-            [disabled]="!container.check_enabled"
-            [ngModel]="container.update_enabled"
-            (ngModelChange)="onUpdateEnabledChange($event, container)"
+            severity="success"
+            [ngModel]="container.check_enabled"
+            (ngModelChange)="onCheckEnabledChange($event, container)"
             [onLabel]="'GENERAL.ON' | translate"
             [offLabel]="'GENERAL.OFF' | translate"
             [onIcon]="'pi pi-check-circle'"
             [offIcon]="'pi pi-circle-off'" />
+        }
+      </td>
+      <td>
+        @if (!container.protected) {
+          @if (
+            container.auto_update_label !== null && container.auto_update_label !== undefined
+          ) {
+            <p-tag
+              [severity]="container.auto_update_label ? 'success' : 'secondary'"
+              [icon]="container.auto_update_label ? 'pi pi-check' : 'pi pi-times'"
+              [value]="(container.auto_update_label ? 'GENERAL.ON' : 'GENERAL.OFF') | translate"
+              [pTooltip]="'CONTAINERS.AUTO_UPDATE_LABEL_HINT' | translate" />
+          } @else {
+            <p-togglebutton
+              [disabled]="!container.check_enabled"
+              [ngModel]="container.update_enabled"
+              (ngModelChange)="onUpdateEnabledChange($event, container)"
+              [onLabel]="'GENERAL.ON' | translate"
+              [offLabel]="'GENERAL.OFF' | translate"
+              [onIcon]="'pi pi-check-circle'"
+              [offIcon]="'pi pi-circle-off'" />
+          }
         }
       </td>
       <td style="padding-right: 0">
