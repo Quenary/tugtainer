@@ -11,7 +11,9 @@ import {
   entityConfig,
   removeAllEntities,
   setEntities,
+  updateEntities,
   updateEntity,
+  upsertEntities,
   withEntities,
 } from '@ngrx/signals/entities';
 import {
@@ -335,22 +337,22 @@ export const ContainersStore = signalStore(
       ),
     );
 
-    const controlContainer = rxMethod<{
-      containerName: string;
+    const controlContainers = rxMethod<{
+      names: string[];
       command: TControlContainerCommand;
     }>(
       pipe(
-        switchMap(({ containerName, command }) => {
+        switchMap(({ names, command }) => {
           const hostId = store.hostId();
-          if (!hostId) {
+          if (!hostId || !names.length) {
             return EMPTY;
           }
 
           patchState(
             store,
-            updateEntity(
+            updateEntities(
               {
-                id: containerName,
+                ids: names,
                 changes: {
                   loading: command,
                 },
@@ -359,19 +361,13 @@ export const ContainersStore = signalStore(
             ),
           );
           return containersApiService
-            .controlContainer(hostId, command, containerName)
+            .controlContainers(hostId, command, names)
             .pipe(
               tapResponse({
-                next: (info) => {
+                next: (items) => {
                   patchState(
                     store,
-                    updateEntity(
-                      {
-                        id: containerName,
-                        changes: info.item,
-                      },
-                      containersEntityConfig,
-                    ),
+                    upsertEntities(items, containersEntityConfig),
                   );
                 },
                 error: (error) => {
@@ -380,9 +376,9 @@ export const ContainersStore = signalStore(
                 finalize: () => {
                   patchState(
                     store,
-                    updateEntity(
+                    updateEntities(
                       {
-                        id: containerName,
+                        ids: names,
                         changes: {
                           loading: null,
                         },
@@ -396,6 +392,15 @@ export const ContainersStore = signalStore(
         }),
       ),
     );
+
+    const controlContainer = (args: {
+      containerName: string;
+      command: TControlContainerCommand;
+    }) =>
+      controlContainers({
+        names: [args.containerName],
+        command: args.command,
+      });
 
     return {
       select,
@@ -437,6 +442,10 @@ export const ContainersStore = signalStore(
        * Patch specified container
        */
       patchContainer,
+      /**
+       * Control specified containers
+       */
+      controlContainers,
       /**
        * Control specified container
        */

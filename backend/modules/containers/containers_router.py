@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable
+from inspect import iscoroutinefunction
 from typing import Any, Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -310,44 +311,57 @@ ControlContainerCommand = Literal[
 
 
 @containers_router.post(
-    path="/{host_id}/{command}/{container_name_or_id}",
-    description="Control container state with basic commands",
-    response_model=ContainerGetResponseBody,
+    path="/{host_id}/{command}",
+    description="Control multiple containers state with basic commands",
+    response_model=list[ContainersListItem],
 )
-async def control_container(
+async def control_containers(
     host_id: int,
     command: ControlContainerCommand,
-    container_name_or_id: str,
+    body: ContainerNamesRequestBody,
     session: AsyncSession = Depends(get_async_session),
-):
+) -> list[ContainersListItem]:
+    if not body.names:
+        return []
+
     host = await get_host(host_id, session)
     _raise_for_host_status(host)
 
     client = AgentClientManager.get_host_client(host)
-    inspect = await client.container.inspect(container_name_or_id)
-    _raise_for_protected_container(inspect)
-
     _command: Callable[[str], Awaitable[Any]] = getattr(client.container, command)
-    if not asyncio.iscoroutinefunction(_command):
+    if not iscoroutinefunction(_command):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Command not allowed")
-    await _command(container_name_or_id)
 
-    inspect = await client.container.inspect(container_name_or_id)
-    stmt = (
-        select(ContainersModel)
-        .where(
-            ContainersModel.host_id == host_id,
-            ContainersModel.name == inspect.name,
-        )
-        .limit(1)
+    inspect_results = await asyncio.gather(
+        *[client.container.inspect(name) for name in body.names]
+    )
+    for inspect in inspect_results:
+        _raise_for_protected_container(inspect)
+
+    semaphore = asyncio.Semaphore(4)
+
+    async def _run_command(c_name: str) -> None:
+        async with semaphore:
+            await _command(c_name)
+
+    await asyncio.gather(*[_run_command(name) for name in body.names])
+
+    updated_inspects = await asyncio.gather(
+        *[client.container.inspect(name) for name in body.names]
+    )
+
+    stmt = select(ContainersModel).where(
+        ContainersModel.host_id == host_id,
+        ContainersModel.name.in_(body.names),
     )
     result = await session.execute(stmt)
-    db_item = result.scalar_one_or_none()
-    return ContainerGetResponseBody(
-        item=ContainersListItem.from_sources(
+    db_items = {item.name: item for item in result.scalars().all()}
+
+    return [
+        ContainersListItem.from_sources(
             host_id,
-            inspect,
-            db_item,
-        ),
-        inspect=inspect,
-    )
+            insp,
+            db_items.get(cast(str, insp.name)),
+        )
+        for insp in updated_inspects
+    ]

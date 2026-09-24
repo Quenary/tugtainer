@@ -28,6 +28,7 @@ import { DialogModule } from 'primeng/dialog';
 import { RouterLink } from '@angular/router';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
+import { MultiContainerActionsComponent } from '@shared/components/multi-container-actions/multi-container-actions.component';
 import { ContainersStore, IContainerEntity } from '../containers.store';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -55,6 +56,7 @@ const statusesStorageKey = 'tugtainer-containers-statuses';
     RouterLink,
     ToolbarModule,
     ContainerActionsComponent,
+    MultiContainerActionsComponent,
     ButtonGroupModule,
     MultiSelectModule,
   ],
@@ -189,5 +191,20 @@ export class ContainersTableComponent {
       containerName: container.name,
       command,
     });
+  }
+
+  protected onBulkCommand(event: {
+    command: TControlContainerCommand;
+    containers: IContainerEntity[];
+  }): void {
+    const names = event.containers.map((c) => c.name);
+    if (!names.length) {
+      return;
+    }
+    this.containersStore.controlContainers({
+      names,
+      command: event.command,
+    });
+    this.selected.set([]);
   }
 }

@@ -43,21 +43,27 @@
     </div>
   </ng-template>
   <ng-template #end>
-    <p-button-group>
-      <p-button
-        icon="pi pi-check-square"
-        [disabled]="!selected().length"
-        [label]="'CONTAINERS.CHECK' | translate"
-        (onClick)="onCheckSelected()">
-      </p-button>
-      <p-button
-        icon="pi pi-check-square"
-        severity="success"
-        [disabled]="!updatableSelected().length"
-        [label]="'CONTAINERS.UPDATE' | translate"
-        (onClick)="onUpdateSelected()">
-      </p-button>
-    </p-button-group>
+    <div style="display: flex; gap: 0.5rem; align-items: center">
+      <app-multi-container-actions
+        [containers]="selected()"
+        (OnCommand)="onBulkCommand($event)" />
+
+      <p-button-group>
+        <p-button
+          icon="pi pi-check-square"
+          [disabled]="!selected().length"
+          [label]="'CONTAINERS.CHECK' | translate"
+          (onClick)="onCheckSelected()">
+        </p-button>
+        <p-button
+          icon="pi pi-check-square"
+          severity="success"
+          [disabled]="!updatableSelected().length"
+          [label]="'CONTAINERS.UPDATE' | translate"
+          (onClick)="onUpdateSelected()">
+        </p-button>
+      </p-button-group>
+    </div>
   </ng-template>
 </p-toolbar>
 

@@ -20,6 +20,7 @@ import {
 import { SettingsStore } from 'src/app/features/settings/settings.store';
 import { IHostEntity } from 'src/app/features/hosts/hosts.store';
 import { isContainerBusy } from '@shared/interfaces/jobs.interface';
+import { canExecuteContainerCommand } from '@shared/functions/container-action-rules.function';
 
 /**
  * Container action buttons and common logic
@@ -80,6 +81,24 @@ export class ContainerActionsComponent {
     }
     return isContainerBusy(host?.jobState, item?.name);
   });
+  protected readonly canStart = computed<boolean>(() =>
+    canExecuteContainerCommand(this.item(), 'start'),
+  );
+  protected readonly canStop = computed<boolean>(() =>
+    canExecuteContainerCommand(this.item(), 'stop'),
+  );
+  protected readonly canRestart = computed<boolean>(() =>
+    canExecuteContainerCommand(this.item(), 'restart'),
+  );
+  protected readonly canKill = computed<boolean>(() =>
+    canExecuteContainerCommand(this.item(), 'kill'),
+  );
+  protected readonly canPause = computed<boolean>(() =>
+    canExecuteContainerCommand(this.item(), 'pause'),
+  );
+  protected readonly canUnpause = computed<boolean>(() =>
+    canExecuteContainerCommand(this.item(), 'unpause'),
+  );
   /**
    * Whether to update only running containers
    */
