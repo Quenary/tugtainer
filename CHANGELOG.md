@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v1.42.0 (2026-09-24)
+
+### Bug Fixes
+
+- **backend**: Manual `update all` updates all available containers
+  ([`5e60f86`](https://github.com/Quenary/tugtainer/commit/5e60f86e30f68746c249238d6de4dc4b8d86ade3))
+
+### Features
+
+- Auto_check and auto_update custom labels
+  ([`b066106`](https://github.com/Quenary/tugtainer/commit/b0661066ccdf05a1abe78714b3e152880f8ac0a2))
+
+- Batch container commands
+  ([`28ab8b0`](https://github.com/Quenary/tugtainer/commit/28ab8b092915f5736c5ba4ac624f0df033f7b9ec))
+
+
 ## v1.41.0 (2026-09-12)
 
 ### Bug Fixes
