@@ -299,6 +299,28 @@ describe('HostsStore', () => {
     });
   });
 
+  describe('updateAll', () => {
+    it('should update all hosts', () => {
+      containersApiServiceMock.updateAll.mockReturnValue(of(undefined));
+
+      store.updateAll();
+
+      expect(containersApiServiceMock.updateAll).toHaveBeenCalled();
+      expect(dialogServiceMock.open).toHaveBeenCalled();
+    });
+
+    it('should show error on updateAll failure', () => {
+      const error = new Error('Update failed');
+      containersApiServiceMock.updateAll.mockReturnValue(
+        throwError(() => error),
+      );
+
+      store.updateAll();
+
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
+    });
+  });
+
   describe('checkHost', () => {
     beforeEach(() => {
       store.loadList();

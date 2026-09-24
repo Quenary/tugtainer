@@ -241,7 +241,7 @@ async def check_container(
     description="Run general update process.",
 )
 async def update_all():
-    asyncio.create_task(update_all_hosts())
+    asyncio.create_task(update_all_hosts(True))
 
 
 @containers_router.post(

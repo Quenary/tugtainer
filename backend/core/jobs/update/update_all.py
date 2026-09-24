@@ -12,11 +12,13 @@ from backend.db.session import async_session_maker
 from backend.modules.hosts.hosts_model import HostsModel
 
 
-async def update_all_hosts() -> None:
+async def update_all_hosts(
+    manual: bool = False,
+) -> None:
     """
     Main func for scheduled/manual update of all containers
-    marked for it, for all specified docker hosts.
-    Should not raises errors, only logging.
+    for all specified docker hosts.
+    :param manual: manual update includes all containers with available updates
     """
     logger: Final = logging.getLogger("update_all_hosts")
 
@@ -38,7 +40,7 @@ async def update_all_hosts() -> None:
                     host,
                     "update",
                     names=None,
-                    manual=False,
+                    manual=manual,
                     wait=True,
                 )
                 if runtime.job:

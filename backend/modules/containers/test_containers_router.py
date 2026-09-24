@@ -202,3 +202,23 @@ async def test_patch_container_hooks_allowed_when_enabled(
 
     assert response.status_code == 200
     assert response.json()["hooks"]["pre_update"] == ["echo hi"]
+
+
+def test_update_all_endpoint(mocker: MockerFixture):
+    mock_update_all = mocker.patch(
+        f"{base_module}.update_all_hosts",
+        mocker.AsyncMock(),
+    )
+    response = client.post("/containers/update")
+    assert response.status_code == 200
+    mock_update_all.assert_called_once_with(True)
+
+
+def test_check_all_endpoint(mocker: MockerFixture):
+    mock_check_all = mocker.patch(
+        f"{base_module}.check_all_hosts",
+        mocker.AsyncMock(),
+    )
+    response = client.post("/containers/check")
+    assert response.status_code == 200
+    mock_check_all.assert_called_once_with(True)
