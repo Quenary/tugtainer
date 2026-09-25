@@ -9,7 +9,6 @@ from agent.api import (
     common_router,
     container_router,
     image_router,
-    manifest_router,
     network_router,
     public_router,
     service_router,
@@ -32,7 +31,6 @@ app.include_router(public_router)
 app.include_router(container_router)
 app.include_router(image_router)
 app.include_router(command_router)
-app.include_router(manifest_router)
 app.include_router(network_router)
 app.include_router(common_router)
 app.include_router(service_router)

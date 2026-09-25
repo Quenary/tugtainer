@@ -36,7 +36,6 @@ from shared.schemas.image_schemas import (
     PullImageRequestBodySchema,
     TagImageRequestBodySchema,
 )
-from shared.schemas.manifest_schema import ManifestInspectSchema
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 from shared.schemas.service_schemas import (
     ServiceListItemSchema,
@@ -84,7 +83,6 @@ class AgentClient:
         self.container: Final = AgentClientContainer(self)
         self.image: Final = AgentClientImage(self)
         self.command: Final = AgentClientCommand(self)
-        self.manifest: Final = AgentClientManifest(self)
         self.network: Final = AgentClientNetwork(self)
         self.common: Final = AgentClientCommon(self)
         self.service: Final = AgentClientService(self)
@@ -207,20 +205,6 @@ class AgentClientPublic:
 
     async def access(self):
         return await self._agent_client._request("GET", "/api/public/access")
-
-
-class AgentClientManifest:
-    def __init__(self, agent_client: AgentClient):
-        self._agent_client = agent_client
-
-    async def inspect(self, spec_or_digest: str) -> ManifestInspectSchema:
-        data = await self._agent_client._request(
-            "GET",
-            "/api/manifest/inspect",
-            params={"spec_or_digest": spec_or_digest},
-            timeout=self._agent_client._long_timeout,
-        )
-        return ManifestInspectSchema.model_validate(data)
 
 
 class AgentClientContainer:
