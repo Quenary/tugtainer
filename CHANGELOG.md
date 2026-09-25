@@ -1,12 +1,20 @@
 # CHANGELOG
 
 
+## v1.43.0 (2026-09-25)
+
+
 ## v1.42.0 (2026-09-24)
 
 ### Bug Fixes
 
 - **backend**: Manual `update all` updates all available containers
   ([`5e60f86`](https://github.com/Quenary/tugtainer/commit/5e60f86e30f68746c249238d6de4dc4b8d86ade3))
+
+### Documentation
+
+- Move documentation sections from README to dedicated files
+  ([`b64567f`](https://github.com/Quenary/tugtainer/commit/b64567f7e23b63de0f0b1cb1e89ff9aab9ceb39c))
 
 ### Features
 
@@ -15,6 +23,9 @@
 
 - Batch container commands
   ([`28ab8b0`](https://github.com/Quenary/tugtainer/commit/28ab8b092915f5736c5ba4ac624f0df033f7b9ec))
+
+- Swarm support
+  ([`3ab7cbf`](https://github.com/Quenary/tugtainer/commit/3ab7cbffc8f191b9183ec57947792f53b2b79b34))
 
 
 ## v1.41.0 (2026-09-12)
