@@ -12,12 +12,12 @@ Automatic updates are disabled by default. You can enable only what you need.
 
 - [main features](#main-features)
 - [deploy](#deploy)
-- [private registries](#private-registries)
+- [private registries](./docs/PRIVATE_REGISTRIES.md)
 - [custom labels](./docs/CUSTOM_LABELS.md)
 - [hooks](./docs/HOOKS.md)
 - [notifications](./docs/NOTIFICATIONS.md)
-- [auth](#auth)
-- [api](#api)
+- [auth](./docs/AUTH.md)
+- [api](./docs/API.md)
 - [env](#env)
 - [check and update](./docs/CHECK_AND_UPDATE.md)
 - [healthcheck monitoring](./docs/HEALTHCHECK_MONITOR.md)
@@ -120,48 +120,6 @@ Automatic updates are disabled by default. You can enable only what you need.
     - **Container controls (start/stop/restart)**: `ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `ALLOW_PAUSE`, `ALLOW_UNPAUSE`
     - **Docker Swarm feature**: `SERVICES`, `TASKS`, `NODES`, `SWARM`
   - Set the env var DOCKER_HOST="tcp://my-socket-proxy:port" on the Tugtainer(-agent) container(s);
-
-## Private registries
-
-To use private registries, you have to mount docker config to Tugtainer or Tugtainer Agent, depending on where the container with the private image is located.
-
-- Create the config using one of the methods on the host machine
-  - Log into the registry `docker login <registry>`
-  - Manually
-  ```json
-  {
-    "auths": {
-      "<registry>": {
-        "auth": "base64 encoded 'username:password_or_token'"
-      }
-    }
-  }
-  ```
-- Mount the config to the Tugtainer (Agent) as a read-only volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
-- That's all you need to do, Docker CLI will take care of the rest.
-
-## Auth
-
-The app uses password authorization by default. The password is stored in a file in encrypted form.
-
-Alternatively, you can use an OpenID Connect provider instead of a password.
-
-Auth cookies are not domain-specific and not HTTPS-only. All of this can be configured using env variables.
-
-## API
-
-The backend API is served under the `/api` base path.
-
-- Swagger UI: `/api/docs`
-- Redoc UI: `/api/redoc`
-
-### Public endpoints
-
-- `GET /api/public/health`
-- `GET /api/public/version`
-- `GET /api/public/summary` (requires `ENABLE_PUBLIC_API=true`)
-- `GET /api/public/update_count` (requires `ENABLE_PUBLIC_API=true`)
-- `GET /api/public/is_update_available` (requires `ENABLE_PUBLIC_API=true`)
 
 ## Env:
 
