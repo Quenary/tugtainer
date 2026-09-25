@@ -5,6 +5,7 @@ import { authGuard } from './core/guards/auth-guard';
 import { first, Observable } from 'rxjs';
 import { ContainersStore } from './features/containers/containers.store';
 import { ImagesStore } from './features/images/images.store';
+import { ServicesStore } from './features/services/services.store';
 import { IRouteData } from '@shared/interfaces/route-data.interface';
 
 const titleTranslate = (titleKey: string) => (): Observable<string> => {
@@ -103,6 +104,18 @@ export const routes: Routes = [
                   ),
               },
             ],
+          },
+          {
+            path: 'services',
+            title: titleTranslate('NAV.SERVICES'),
+            data: {
+              breadcrumb: 'SERVICES',
+            } satisfies IRouteData,
+            loadComponent: () =>
+              import('./features/services/services.component').then(
+                (c) => c.ServicesComponent,
+              ),
+            providers: [ServicesStore],
           },
           {
             path: 'health',

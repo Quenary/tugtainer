@@ -4,6 +4,7 @@ from sqlalchemy import Boolean, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db.base_model import BaseModel
+from backend.modules.services.services_model import SwarmServicesModel
 
 if TYPE_CHECKING:
     from backend.modules.containers.containers_model import ContainersModel
@@ -61,6 +62,13 @@ class HostsModel(BaseModel):
     container_hc_timeout: Mapped[int] = mapped_column(
         Integer, nullable=False, default=60, server_default=text("60")
     )
+    is_swarm: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("FALSE"),
+    )
+    swarm_cluster_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     containers: Mapped[list["ContainersModel"]] = relationship(
         "ContainersModel",
@@ -74,6 +82,11 @@ class HostsModel(BaseModel):
     )
     health_history: Mapped[list["ContainerHealthHistory"]] = relationship(
         "ContainerHealthHistory",
+        back_populates="host",
+        cascade="all, delete-orphan",
+    )
+    services: Mapped[list["SwarmServicesModel"]] = relationship(
+        "SwarmServicesModel",
         back_populates="host",
         cascade="all, delete-orphan",
     )

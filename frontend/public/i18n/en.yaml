@@ -18,6 +18,7 @@ GENERAL:
   REFRESH: Refresh
   AUTO: Auto
   NO_DATA: No data
+  ACTIONS: Actions
 THEMES:
   LIGHT: Light
   DARK: Dark
@@ -25,6 +26,7 @@ NAV:
   AUTH: Tugtainer. Authorization.
   HOSTS: Tugtainer. Hosts.
   CONTAINERS: Tugtainer. Containers.
+  SERVICES: Tugtainer. Swarm Services.
   IMAGES: Tugtainer. Images.
   SETTINGS: Tugtainer. Settings.
   HEALTH_HISTORY: Tugtainer. Healthcheck Monitoring.
@@ -32,6 +34,7 @@ BREADCRUMBS:
   HOSTS: Hosts
   DASHBOARD: Dashboard
   CONTAINERS: Containers
+  SERVICES: Services
   IMAGES: Images
   SETTINGS: Settings
   HEALTH_HISTORY: Healthcheck Monitoring
@@ -75,6 +78,8 @@ ACTIONS:
   UPDATE_ALL: Update all
   JOB_CHECK: Checking
   JOB_UPDATE: Updating
+  JOB_CHECK_SERVICES: Checking services
+  JOB_UPDATE_SERVICES: Updating services
   JOB_LOG: Journal
   ACTION_COMPLETED: Action completed
   PRUNE: Prune
@@ -97,6 +102,7 @@ HOSTS:
     ONLY_AVAILABLE: Only available
   DASHBOARD:
     CONTAINERS: Containers
+    SERVICES: Swarm Services
     AVAILABLE: Available
     RUNNING: Running
     EXITED: Exited
@@ -362,3 +368,9 @@ HEALTH_HISTORY:
     STATUS: Status
     RESTARTED: Restarted
     NOTIFIED: Notified
+
+SERVICES:
+  NAME: Name
+  IMAGE: Image
+  REPLICAS: Replicas
+  SEARCH_PLACEHOLDER: Search by name or image

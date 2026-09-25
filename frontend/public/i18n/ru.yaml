@@ -18,6 +18,7 @@ GENERAL:
   REFRESH: Обновить
   AUTO: Авто
   NO_DATA: Нет данных
+  ACTIONS: Действия
 THEMES:
   LIGHT: Светлая
   DARK: Тёмная
@@ -25,6 +26,7 @@ NAV:
   AUTH: Tugtainer. Авторизация.
   HOSTS: Tugtainer. Хосты.
   CONTAINERS: Tugtainer. Контейнеры.
+  SERVICES: Tugtainer. Swarm Сервисы.
   IMAGES: Tugtainer. Образы.
   SETTINGS: Tugtainer. Настройки.
   HEALTH_HISTORY: Tugtainer. Мониторинг Healthcheck.
@@ -32,6 +34,7 @@ BREADCRUMBS:
   HOSTS: Хосты
   DASHBOARD: Дашборд
   CONTAINERS: Контейнеры
+  SERVICES: Сервисы
   IMAGES: Образы
   SETTINGS: Настройки
   HEALTH_HISTORY: Мониторинг Healthcheck
@@ -75,6 +78,8 @@ ACTIONS:
   UPDATE_ALL: Обновить все
   JOB_CHECK: Проверка
   JOB_UPDATE: Обновление
+  JOB_CHECK_SERVICES: Проверка сервисов
+  JOB_UPDATE_SERVICES: Обновление сервисов
   JOB_LOG: Журнал
   ACTION_COMPLETED: Действие выполнено
   PRUNE: Очистить
@@ -97,6 +102,7 @@ HOSTS:
     ONLY_AVAILABLE: Только с обновлениями
   DASHBOARD:
     CONTAINERS: Контейнеры
+    SERVICES: Swarm Сервисы
     AVAILABLE: Доступно
     RUNNING: Запущен
     EXITED: Остановлен
@@ -364,3 +370,9 @@ HEALTH_HISTORY:
     STATUS: Статус
     RESTARTED: Перезапущен
     NOTIFIED: Уведомление
+
+SERVICES:
+  NAME: Имя
+  IMAGE: Образ
+  REPLICAS: Реплики
+  SEARCH_PLACEHOLDER: Поиск по имени или образу

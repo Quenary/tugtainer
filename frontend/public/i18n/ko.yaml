@@ -18,6 +18,7 @@ GENERAL:
   REFRESH: 새로고침
   AUTO: 자동
   NO_DATA: 데이터 없음
+  ACTIONS: 작업
 THEMES:
   LIGHT: 라이트
   DARK: 다크
@@ -25,6 +26,7 @@ NAV:
   AUTH: Tugtainer. 인증.
   HOSTS: Tugtainer. 호스트.
   CONTAINERS: Tugtainer. 컨테이너.
+  SERVICES: Tugtainer. Swarm 서비스.
   IMAGES: Tugtainer. 이미지.
   SETTINGS: Tugtainer. 설정.
   HEALTH_HISTORY: Tugtainer. Healthcheck 모니터링.
@@ -32,6 +34,7 @@ BREADCRUMBS:
   HOSTS: 호스트
   DASHBOARD: 대시보드
   CONTAINERS: 컨테이너
+  SERVICES: 서비스
   IMAGES: 이미지
   SETTINGS: 설정
   HEALTH_HISTORY: Healthcheck 모니터링
@@ -75,6 +78,8 @@ ACTIONS:
   UPDATE_ALL: 전체 업데이트
   JOB_CHECK: 확인
   JOB_UPDATE: 업데이트
+  JOB_CHECK_SERVICES: 서비스 확인
+  JOB_UPDATE_SERVICES: 서비스 업데이트
   JOB_LOG: 로그
   ACTION_COMPLETED: 작업 완료
   PRUNE: 정리
@@ -97,6 +102,7 @@ HOSTS:
     ONLY_AVAILABLE: 사용 가능한 것만
   DASHBOARD:
     CONTAINERS: 컨테이너
+    SERVICES: Swarm 서비스
     AVAILABLE: 사용 가능
     RUNNING: 실행 중
     EXITED: 종료됨
@@ -359,3 +365,9 @@ HEALTH_HISTORY:
     STATUS: 상태
     RESTARTED: 다시 시작됨
     NOTIFIED: 알림 됨
+
+SERVICES:
+  NAME: 이름
+  IMAGE: 이미지
+  REPLICAS: 복제본
+  SEARCH_PLACEHOLDER: 이름 또는 이미지로 검색

@@ -56,6 +56,10 @@ interface IHostsStore {
    * Update images list signal
    */
   updateImagesList: Date | null;
+  /**
+   * Update services list signal
+   */
+  updateServicesList: Date | null;
 }
 
 export interface IHostEntity extends IHostInfo {
@@ -76,6 +80,7 @@ export const HostsStore = signalStore(
     selectedId: null,
     updateContainersList: null,
     updateImagesList: null,
+    updateServicesList: null,
   })),
   withComputed((store) => {
     const globalCheckActive = computed<boolean>(() => {
@@ -140,6 +145,8 @@ export const HostsStore = signalStore(
       patchState(store, { updateContainersList: new Date() });
     const _updateImagesList = () =>
       patchState(store, { updateImagesList: new Date() });
+    const _updateServicesList = () =>
+      patchState(store, { updateServicesList: new Date() });
 
     const loadList = rxMethod<void>(
       pipe(
@@ -348,6 +355,7 @@ export const HostsStore = signalStore(
         loadList();
         _updateContainersList();
         _updateImagesList();
+        _updateServicesList();
       }
     };
 

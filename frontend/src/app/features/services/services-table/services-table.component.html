@@ -1,0 +1,240 @@
+<p-toolbar>
+  <ng-template #start>
+    <p-button
+      icon="pi pi-refresh"
+      [loading]="servicesStore.loading()"
+      text
+      rounded
+      (onClick)="servicesStore.loadList()"></p-button>
+
+    <div class="filters">
+      <p-iconfield iconPosition="left">
+        <p-inputicon>
+          <i class="pi pi-search"></i>
+        </p-inputicon>
+        <input
+          #searchInput
+          id="{{ servicesStore.hostId() }}-services-search"
+          pInputText
+          type="text"
+          (input)="dt.filterGlobal($event.target.value, 'contains')"
+          [placeholder]="'SERVICES.SEARCH_PLACEHOLDER' | translate" />
+      </p-iconfield>
+
+      <p-button
+        icon="pi pi-check-circle"
+        [label]="'CONTAINERS.ONLY_AVAILABLE' | translate"
+        text
+        [severity]="onlyAvailable() ? 'success' : 'secondary'"
+        (onClick)="onlyAvailable.set(!onlyAvailable())">
+      </p-button>
+    </div>
+  </ng-template>
+
+  <ng-template #end>
+    <div style="display: flex; gap: 0.5rem; align-items: center">
+      @if (hasHostJobsDialog()) {
+        <p-button
+          severity="success"
+          text
+          [label]="'ACTIONS.PROGRESS' | translate"
+          (onClick)="hostsStore.openJobProgressDialog({ hostId: hostsStore.selectedId()! })">
+        </p-button>
+      }
+
+      <p-button-group>
+        <p-button
+          icon="pi pi-check-square"
+          [disabled]="!selected().length"
+          [label]="'CONTAINERS.CHECK' | translate"
+          (onClick)="onCheckSelected()">
+        </p-button>
+        <p-button
+          icon="pi pi-check-square"
+          severity="success"
+          [disabled]="!updatableSelected().length"
+          [label]="'CONTAINERS.UPDATE' | translate"
+          (onClick)="onUpdateSelected()">
+        </p-button>
+      </p-button-group>
+    </div>
+  </ng-template>
+</p-toolbar>
+
+<p-table
+  #dt
+  [globalFilterFields]="['name', 'image']"
+  dataKey="name"
+  sortMode="multiple"
+  [multiSortMeta]="[
+    { field: 'update_available', order: -1 },
+    { field: 'name', order: 1 },
+  ]"
+  [scrollable]="true"
+  scrollHeight="flex"
+  [value]="filteredList()"
+  [rowTrackBy]="item => item.id"
+  [selection]="selected()"
+  (selectionChange)="selected.set($event)"
+  selectionMode="multiple">
+  <ng-template #header>
+    <tr>
+      <th class="selection-col">
+        <p-tableHeaderCheckbox />
+      </th>
+      <th
+        class="name-col"
+        pSortableColumn="name">
+        {{ 'SERVICES.NAME' | translate }}
+        <p-sortIcon field="name"></p-sortIcon>
+      </th>
+      <th
+        class="image-col"
+        pSortableColumn="image">
+        {{ 'SERVICES.IMAGE' | translate }}
+        <p-sortIcon field="image"></p-sortIcon>
+      </th>
+      <th
+        pSortableColumn="replicas_running"
+        style="width: 12%">
+        {{ 'SERVICES.REPLICAS' | translate }}
+        <p-sortIcon field="replicas_running"></p-sortIcon>
+      </th>
+      <th
+        pSortableColumn="check_enabled"
+        style="width: 10%">
+        {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
+        <i
+          class="pi pi-question-circle"
+          style="margin: 0 0.5rem"
+          [pTooltip]="'CONTAINERS.CHECK_HINT' | translate"
+          tooltipPosition="left"></i>
+        <p-sortIcon field="check_enabled"></p-sortIcon>
+      </th>
+      <th
+        pSortableColumn="update_enabled"
+        style="width: 10%">
+        {{ 'CONTAINERS.UPDATE_ENABLED' | translate }}
+        <i
+          class="pi pi-question-circle"
+          style="margin: 0 0.5rem"
+          [pTooltip]="'CONTAINERS.UPDATE_HINT' | translate"
+          tooltipPosition="left"></i>
+        <p-sortIcon field="update_enabled"></p-sortIcon>
+      </th>
+      <th style="width: 14%">
+        {{ 'GENERAL.ACTIONS' | translate }}
+      </th>
+    </tr>
+  </ng-template>
+
+  <ng-template
+    #body
+    let-service>
+    <tr>
+      <td class="selection-col">
+        <p-tableCheckbox [value]="service" />
+      </td>
+      <td class="name-col">
+        <span style="font-weight: 600">{{ service.name }}</span>
+        @if (service.update_available) {
+          <p-tag
+            severity="success"
+            icon="pi pi-check-circle"
+            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"></p-tag>
+        }
+        @if (service.update_status_state) {
+          <p-tag
+            [severity]="ServiceUpdateStatusSeverity[service.update_status_state] ?? 'secondary'"
+            [value]="service.update_status_state"
+            [pTooltip]="service.update_status_message">
+          </p-tag>
+        }
+      </td>
+      <td class="image-col">
+        <span
+          class="image-text"
+          [pTooltip]="service.image"
+          tooltipPosition="top"
+          >{{ service.image }}</span
+        >
+      </td>
+      <td>
+        @if (service.mode === 'global') {
+          <p-tag
+            severity="info"
+            [value]="'global (' + service.replicas_running + ')'">
+          </p-tag>
+        } @else {
+          <p-tag
+            [severity]="service.replicas_running === service.replicas_desired ? 'success' : 'warn'"
+            [value]="service.replicas_running + '/' + (service.replicas_desired ?? '?')">
+          </p-tag>
+        }
+      </td>
+      <td>
+        <p-togglebutton
+          severity="success"
+          [ngModel]="service.check_enabled"
+          (ngModelChange)="onCheckEnabledChange($event, service)"
+          [onLabel]="'GENERAL.ON' | translate"
+          [offLabel]="'GENERAL.OFF' | translate"
+          [onIcon]="'pi pi-check-circle'"
+          [offIcon]="'pi pi-circle-off'" />
+      </td>
+      <td>
+        <p-togglebutton
+          [disabled]="!service.check_enabled"
+          [ngModel]="service.update_enabled"
+          (ngModelChange)="onUpdateEnabledChange($event, service)"
+          [onLabel]="'GENERAL.ON' | translate"
+          [offLabel]="'GENERAL.OFF' | translate"
+          [onIcon]="'pi pi-check-circle'"
+          [offIcon]="'pi pi-circle-off'" />
+      </td>
+      <td>
+        <p-button-group>
+          <p-button
+            [loading]="service.loading === 'check'"
+            [disabled]="service.loading"
+            icon="pi pi-search"
+            [pTooltip]="'CONTAINERS.CHECK' | translate"
+            (onClick)="onCheck(service)">
+          </p-button>
+          <p-button
+            [loading]="service.loading === 'update'"
+            [disabled]="service.loading || !service.update_available"
+            icon="pi pi-sync"
+            severity="success"
+            [pTooltip]="'CONTAINERS.UPDATE' | translate"
+            (onClick)="onUpdate(service)">
+          </p-button>
+          <p-button
+            icon="pi pi-align-left"
+            severity="secondary"
+            [pTooltip]="'CONTAINERS.LOGS.LABEL' | translate"
+            (onClick)="openLogs(service)">
+          </p-button>
+        </p-button-group>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog
+  [visible]="!!logsService()"
+  (visibleChange)="!$event && logsService.set(null)"
+  (onHide)="logsService.set(null)"
+  [modal]="true"
+  [style]="{ width: '75vw', maxWidth: '1000px' }"
+  [header]="(logsService()?.name ?? '') + ' ' + ('CONTAINERS.LOGS.LABEL' | translate)">
+  <div style="margin-bottom: 0.5rem; display: flex; justify-content: flex-end">
+    <p-button
+      icon="pi pi-refresh"
+      [loading]="logsResource.isLoading()"
+      text
+      rounded
+      (onClick)="logsResource.reload()"></p-button>
+  </div>
+  <pre class="service-logs-pre">{{ logsResource.value() }}</pre>
+</p-dialog>

@@ -152,6 +152,19 @@
       </div>
     </p-card>
 
+    @if (hostsStore.selected()?.is_swarm) {
+      <p-card
+        class="dashboard-item"
+        routerLink="services">
+        <div class="dashboard-item-content">
+          <i class="dashboard-item-content-icon pi pi-server"></i>
+          <span class="dashboard-item-content-text">
+            {{'HOSTS.DASHBOARD.SERVICES' | translate}}
+          </span>
+        </div>
+      </p-card>
+    }
+
     <p-card
       class="dashboard-item"
       routerLink="health">

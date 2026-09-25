@@ -21,7 +21,7 @@ DEFAULT_NOTIFICATION_TEMPLATE = """\
   {% if items %}
 ### {{ title }}:
     {% for item in items %}
-- {{item.container.name}} {{item.container.config.image}}
+- {{item.name}} {{item.image}}
     {% endfor %}
   {% endif %}
 {% endfor %}

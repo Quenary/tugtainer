@@ -23,6 +23,8 @@ export interface IHostInfo extends IHostBase {
   id: number;
   has_secret: boolean;
   available_updates_count: number;
+  is_swarm?: boolean;
+  swarm_cluster_id?: string | null;
 }
 
 export interface IHostStatus {

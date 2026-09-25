@@ -1,9 +1,9 @@
 from typing import Literal, TypedDict
 
-from backend.core.jobs.jobs_results import ContainerJobResult
+from backend.core.jobs.jobs_results import JobItemResult
 from backend.enums.job_status_enum import EJobStatus
 
-JobKind = Literal["check", "update"]
+JobKind = Literal["check", "update", "check_services", "update_services"]
 
 
 class JobBase(TypedDict, total=False):
@@ -13,10 +13,10 @@ class JobBase(TypedDict, total=False):
 
 
 class ContainerJob(TypedDict, total=False):
-    """Slot of a single container inside a job."""
+    """Slot of a single container or service inside a job."""
 
     status: EJobStatus
-    result: ContainerJobResult | None
+    result: JobItemResult | None
 
 
 class Job(JobBase, total=False):

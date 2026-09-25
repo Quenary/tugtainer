@@ -79,3 +79,56 @@ async def test_annotate_available_updates_count(
         session.execute.assert_not_called()
     else:
         session.execute.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_annotate_available_updates_count_with_swarm_hosts(mocker: MockerFixture):
+    h1 = MagicMock()
+    h1.id = 1
+    h1.is_swarm = False
+
+    h2 = MagicMock()
+    h2.id = 2
+    h2.is_swarm = True
+
+    hosts = [h1, h2]
+
+    # First execute: container updates (host 1 has 2, host 2 has 1)
+    container_result = MagicMock()
+    container_result.all.return_value = [(1, 2), (2, 1)]
+
+    # Second execute: swarm service updates (host 2 has 3 service updates)
+    service_result = MagicMock()
+    service_result.all.return_value = [(2, 3)]
+
+    session = mocker.AsyncMock()
+    session.execute = mocker.AsyncMock(side_effect=[container_result, service_result])
+
+    await annotate_available_updates_count(hosts, session)  # type: ignore[arg-type]
+
+    assert h1.available_updates_count == 2
+    assert h2.available_updates_count == 4  # 1 container + 3 services
+    assert session.execute.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_annotate_available_updates_count_swarm_only_services(
+    mocker: MockerFixture,
+):
+    h = MagicMock()
+    h.id = 5
+    h.is_swarm = True
+
+    container_result = MagicMock()
+    container_result.all.return_value = []  # 0 container updates
+
+    service_result = MagicMock()
+    service_result.all.return_value = [(5, 4)]  # 4 service updates
+
+    session = mocker.AsyncMock()
+    session.execute = mocker.AsyncMock(side_effect=[container_result, service_result])
+
+    await annotate_available_updates_count([h], session)  # type: ignore[arg-type]
+
+    assert h.available_updates_count == 4
+    assert session.execute.call_count == 2

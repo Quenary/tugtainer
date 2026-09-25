@@ -160,10 +160,68 @@ async def test_sequential_jobs_accumulate_completed(mocker) -> None:
 
     state = HostJobTracker(host).get()
     assert state is not None
-    assert state["status"] == EJobStatus.DONE
-    assert state["current"] is None
-    assert len(state["completed"]) == 2
-    assert state["completed"][0]["kind"] == "check"
-    assert state["completed"][0]["names"] == ["a", "b"]
-    assert state["completed"][1]["kind"] == "update"
-    assert state["completed"][1]["names"] == ["c", "d"]
+    assert state.get("status") == EJobStatus.DONE
+    assert state.get("current") is None
+    completed = state.get("completed") or []
+    assert len(completed) == 2
+    assert completed[0].get("kind") == "check"
+    assert completed[0].get("names") == ["a", "b"]
+    assert completed[1].get("kind") == "update"
+    assert completed[1].get("names") == ["c", "d"]
+
+
+@pytest.mark.asyncio
+async def test_jobs_coordinator_handles_swarm_services_jobs(mocker) -> None:
+    coord = HostJobCoordinator()
+    host = cast(Any, SimpleNamespace(id=99014, name="swarm-host", is_swarm=True))
+
+    called_jobs: list[tuple[str, list[str] | None]] = []
+
+    async def mock_check_services(
+        _host, _client, manual=False, names=None, tracker=None
+    ):
+        called_jobs.append(("check_services", list(names) if names else None))
+        return True
+
+    async def mock_update_services(
+        _host, _client, manual=False, names=None, tracker=None
+    ):
+        called_jobs.append(("update_services", list(names) if names else None))
+        return True
+
+    mocker.patch(
+        "backend.core.jobs.check.check_services.run_check_services_job",
+        side_effect=mock_check_services,
+    )
+    mocker.patch(
+        "backend.core.jobs.update.update_services.run_update_services_job",
+        side_effect=mock_update_services,
+    )
+    mocker.patch(
+        "backend.core.jobs.jobs_coordinator.AgentClientManager.get_host_client",
+        return_value=mocker.Mock(),
+    )
+
+    check_job = await coord.submit(
+        host, "check_services", names=["svc1"], manual=True, wait=False
+    )
+    update_job = await coord.submit(
+        host, "update_services", names=["svc2", "svc3"], manual=True, wait=False
+    )
+    await check_job.done.wait()
+    await update_job.done.wait()
+
+    assert called_jobs == [
+        ("check_services", ["svc1"]),
+        ("update_services", ["svc2", "svc3"]),
+    ]
+
+    state = HostJobTracker(host).get()
+    assert state is not None
+    assert state.get("status") == EJobStatus.DONE
+    completed = state.get("completed") or []
+    assert len(completed) == 2
+    assert completed[0].get("kind") == "check_services"
+    assert completed[0].get("names") == ["svc1"]
+    assert completed[1].get("kind") == "update_services"
+    assert completed[1].get("names") == ["svc2", "svc3"]

@@ -29,6 +29,7 @@ Automatic updates are disabled by default. You can enable only what you need.
 
 - Web UI with authentication
 - Multiple hosts support
+- Docker Swarm support (managers auto-detection, services check, rolling updates, and logs)
 - Socket proxy support
 - Crontab scheduling
 - Notifications to a wide range of services
@@ -117,6 +118,7 @@ Automatic updates are disabled by default. You can enable only what you need.
     - **Update feature**: `NETWORKS`
     - **Logs feature**: `ALLOW_LOGS`
     - **Container controls (start/stop/restart)**: `ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `ALLOW_PAUSE`, `ALLOW_UNPAUSE`
+    - **Docker Swarm feature**: `SERVICES`, `TASKS`, `NODES`, `SWARM`
   - Set the env var DOCKER_HOST="tcp://my-socket-proxy:port" on the Tugtainer(-agent) container(s);
 
 ## Private registries
@@ -127,13 +129,13 @@ To use private registries, you have to mount docker config to Tugtainer or Tugta
   - Log into the registry `docker login <registry>`
   - Manually
   ```json
-    {
-      "auths": {
-        "<registry>": {
-          "auth": "base64 encoded 'username:password_or_token'"
-        }
+  {
+    "auths": {
+      "<registry>": {
+        "auth": "base64 encoded 'username:password_or_token'"
       }
     }
+  }
   ```
 - Mount the config to the Tugtainer (Agent) as a read-only volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
 - That's all you need to do, Docker CLI will take care of the rest.
@@ -160,7 +162,6 @@ The backend API is served under the `/api` base path.
 - `GET /api/public/summary` (requires `ENABLE_PUBLIC_API=true`)
 - `GET /api/public/update_count` (requires `ENABLE_PUBLIC_API=true`)
 - `GET /api/public/is_update_available` (requires `ENABLE_PUBLIC_API=true`)
-
 
 ## Env:
 

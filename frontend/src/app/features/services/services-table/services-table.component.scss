@@ -1,0 +1,62 @@
+@use 'mixins' as m;
+
+:host {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+
+  p-toolbar {
+    border-color: transparent;
+    @include m.scrollable-toolbar;
+
+    .filters {
+      @include m.nowrap-inline;
+    }
+  }
+
+  p-table {
+    @include m.p-table;
+  }
+
+  th.selection-col,
+  td.selection-col {
+    width: 3rem;
+    max-width: 3rem;
+  }
+
+  th.name-col,
+  td.name-col {
+    width: 20%;
+    max-width: 20vw;
+  }
+
+  th.image-col,
+  td.image-col {
+    width: 25%;
+    max-width: 22vw;
+    overflow: hidden;
+  }
+
+  .image-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: monospace;
+    font-size: 0.85rem;
+  }
+
+  .service-logs-pre {
+    background-color: var(--p-surface-900);
+    color: var(--p-surface-100);
+    padding: 1rem;
+    border-radius: var(--p-content-border-radius);
+    overflow: auto;
+    max-height: 60vh;
+    font-family: monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+}

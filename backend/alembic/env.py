@@ -9,6 +9,7 @@ from backend.db.session import async_engine
 from backend.modules.containers.containers_model import *  # noqa: F403
 from backend.modules.health.health_model import *  # noqa: F403
 from backend.modules.hosts.hosts_model import *  # noqa: F403
+from backend.modules.services.services_model import *  # noqa: F403
 from backend.modules.settings.settings_model import *  # noqa: F403
 
 # this is the Alembic Config object, which provides

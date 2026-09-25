@@ -72,5 +72,25 @@ async def annotate_available_updates_count(
     )
     result = await session.execute(stmt)
     counts = {host_id: cnt for host_id, cnt in result.all()}
+
+    swarm_host_ids = [h.id for h in hosts if getattr(h, "is_swarm", None) is True]
+    if swarm_host_ids:
+        from backend.modules.services.services_model import SwarmServicesModel
+
+        svc_stmt = (
+            select(
+                SwarmServicesModel.host_id,
+                func.count(SwarmServicesModel.id),
+            )
+            .where(
+                SwarmServicesModel.host_id.in_(swarm_host_ids),
+                SwarmServicesModel.update_available.is_(True),
+            )
+            .group_by(SwarmServicesModel.host_id)
+        )
+        svc_result = await session.execute(svc_stmt)
+        for host_id, cnt in svc_result.all():
+            counts[host_id] = counts.get(host_id, 0) + cnt
+
     for host in hosts:
         host.available_updates_count = counts.get(host.id, 0)

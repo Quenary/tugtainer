@@ -131,3 +131,41 @@ async def test_request_disables_ssl_even_with_ca(
     await client._request("GET", "/api/public/health")
 
     assert session.request.call_args.kwargs["ssl"] is False
+
+
+@pytest.mark.asyncio
+async def test_agent_client_swarm_info_and_service(mocker: MockerFixture):
+    client = AgentClient(id=1, url="http://127.0.0.1:8001")
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(
+            side_effect=[
+                {"cluster_id": "c1", "node_id": "n1", "is_manager": True},
+                [
+                    {
+                        "id": "s1",
+                        "name": "nginx",
+                        "image": "nginx:latest",
+                        "replicas": {"running": 1, "desired": 1},
+                    }
+                ],
+                "s1",
+            ]
+        ),
+    )
+
+    info = await client.common.swarm_info()
+    assert info.is_manager is True
+    assert info.cluster_id == "c1"
+
+    services = await client.service.list()
+    assert len(services) == 1
+    assert services[0].name == "nginx"
+
+    from shared.schemas.service_schemas import ServiceUpdateRequestBody
+
+    updated_id = await client.service.update(
+        ServiceUpdateRequestBody(service_id="s1", image="nginx:alpine")
+    )
+    assert updated_id == "s1"

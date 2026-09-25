@@ -66,6 +66,16 @@ async def create(
     await session.refresh(new_host)
     if new_host.enabled:
         await AgentClientManager.set_client(new_host)
+        try:
+            client = AgentClientManager.get_host_client(new_host)
+            swarm_info = await client.common.swarm_info()
+            if swarm_info.is_manager:
+                new_host.is_swarm = True
+                new_host.swarm_cluster_id = swarm_info.cluster_id
+                await session.commit()
+                await session.refresh(new_host)
+        except Exception:
+            pass
     host_dto = HostInfo.model_validate(new_host)
     await annotate_available_updates_count([host_dto], session)
     return host_dto
@@ -149,6 +159,17 @@ async def get_status(
     try:
         _ = await client.public.health()
         _ = await client.public.access()
+        try:
+            swarm_info = await client.common.swarm_info()
+            if (
+                host.is_swarm != swarm_info.is_manager
+                or host.swarm_cluster_id != swarm_info.cluster_id
+            ):
+                host.is_swarm = swarm_info.is_manager
+                host.swarm_cluster_id = swarm_info.cluster_id
+                await session.commit()
+        except Exception:
+            pass
         return HostStatusResponseBody(id=id, ok=True)
     except HTTPException:
         raise

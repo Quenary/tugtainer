@@ -62,8 +62,15 @@ class HostUpdate(HostBase):
 class HostInfo(HostBase):
     id: int
     has_secret: bool
+    is_swarm: bool = False
+    swarm_cluster_id: str | None = None
     available_updates_count: int = 0
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("is_swarm", mode="before")
+    @classmethod
+    def validate_is_swarm(cls, value: bool | None) -> bool:
+        return bool(value)
 
 
 class HostStatusResponseBody(BaseModel):

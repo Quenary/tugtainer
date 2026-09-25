@@ -115,11 +115,15 @@ export class JobsProgressDialogComponent {
   protected readonly kindKey: Record<TJobKind, string> = {
     update: 'ACTIONS.JOB_UPDATE',
     check: 'ACTIONS.JOB_CHECK',
+    update_services: 'ACTIONS.JOB_UPDATE_SERVICES',
+    check_services: 'ACTIONS.JOB_CHECK_SERVICES',
   };
 
   protected readonly kindSeverity: Record<TJobKind, TagSeverity> = {
     update: 'success',
     check: 'info',
+    update_services: 'success',
+    check_services: 'info',
   };
 
   protected readonly statusSeverity: Record<EJobStatus, TagSeverity> = {

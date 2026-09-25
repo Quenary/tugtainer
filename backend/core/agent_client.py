@@ -38,6 +38,11 @@ from shared.schemas.image_schemas import (
 )
 from shared.schemas.manifest_schema import ManifestInspectSchema
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
+from shared.schemas.service_schemas import (
+    ServiceListItemSchema,
+    ServiceUpdateRequestBody,
+    SwarmInfoSchema,
+)
 from shared.util.custom_json_dumps import custom_json_dumps
 from shared.util.signature import get_signature_headers
 
@@ -82,6 +87,7 @@ class AgentClient:
         self.manifest: Final = AgentClientManifest(self)
         self.network: Final = AgentClientNetwork(self)
         self.common: Final = AgentClientCommon(self)
+        self.service: Final = AgentClientService(self)
 
     async def close_session(self):
         async with self._session_lock:
@@ -413,6 +419,57 @@ class AgentClientCommon:
             "/api/common/version",
         )
         return DockerVersionScheme.model_validate(data)
+
+    async def swarm_info(self) -> SwarmInfoSchema:
+        data = await self._agent_client._request(
+            "GET",
+            "/api/common/swarm-info",
+        )
+        return SwarmInfoSchema.model_validate(data)
+
+
+class AgentClientService:
+    def __init__(self, agent_client: AgentClient):
+        self._agent_client = agent_client
+
+    async def list(self) -> list[ServiceListItemSchema]:
+        data = await self._agent_client._request(
+            "GET",
+            "/api/service/list",
+        )
+        if not data:
+            return []
+        return [ServiceListItemSchema.model_validate(s) for s in data]
+
+    async def inspect(self, name_or_id: str) -> dict:
+        data = await self._agent_client._request(
+            "GET",
+            f"/api/service/inspect/{name_or_id}",
+        )
+        return data or {}
+
+    async def update(self, body: ServiceUpdateRequestBody) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            "/api/service/update",
+            body,
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data)
+
+    async def logs(
+        self,
+        name_or_id: str,
+        tail: int = 100,
+        timestamps: bool = False,
+    ) -> str:
+        data = await self._agent_client._request(
+            "GET",
+            f"/api/service/logs/{name_or_id}",
+            params={"tail": str(tail), "timestamps": str(timestamps).lower()},
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data) if data else ""
 
 
 async def load_agents_on_init():
