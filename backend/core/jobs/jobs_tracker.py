@@ -2,7 +2,7 @@ import asyncio
 from typing import Final, cast
 
 from backend.core.jobs.jobs_cache import JobStateCache
-from backend.core.jobs.jobs_results import ContainerJobResult
+from backend.core.jobs.jobs_results import JobItemResult
 from backend.core.jobs.jobs_schemas import (
     ContainerJob,
     HostState,
@@ -101,7 +101,7 @@ class HostJobTracker:
         self,
         name: str,
         status: EJobStatus,
-        result: ContainerJobResult | None = None,
+        result: JobItemResult | None = None,
     ) -> None:
         state = self._cache.get() or {}
         current = cast(Job, dict(state.get("current") or {}))

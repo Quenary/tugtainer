@@ -1,4 +1,4 @@
-import { IContainerJobResult } from './jobs-result.interface';
+import { TJobItemResult } from './jobs-result.interface';
 
 export enum EJobStatus {
   PREPARING = 'PREPARING',
@@ -9,7 +9,8 @@ export enum EJobStatus {
   ERROR = 'ERROR',
 }
 
-export type TJobKind = 'check' | 'update';
+export type TJobKind =
+  'check' | 'update' | 'check_services' | 'update_services';
 
 export interface IJobBase {
   kind?: TJobKind | null;
@@ -19,7 +20,7 @@ export interface IJobBase {
 
 export interface IContainerJob {
   status: EJobStatus;
-  result?: IContainerJobResult;
+  result?: TJobItemResult;
 }
 
 export interface IJob extends IJobBase {

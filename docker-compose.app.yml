@@ -27,6 +27,11 @@ services:
       ALLOW_RESTARTS: 1
       ALLOW_PAUSE: 1
       ALLOW_UNPAUSE: 1
+      # Uncomment if using swarm:
+      # SERVICES: 1
+      # TASKS: 1
+      # NODES: 1
+      # SWARM: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped

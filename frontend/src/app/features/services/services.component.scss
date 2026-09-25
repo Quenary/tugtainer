@@ -1,0 +1,5 @@
+@use 'mixins' as m;
+
+:host {
+  @include m.main-component;
+}

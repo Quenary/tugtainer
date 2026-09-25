@@ -123,7 +123,9 @@ class HostJobCoordinator:
 
     async def _run(self, host: HostsModel) -> None:
         from backend.core.jobs.check.check_host import run_check_host_job
+        from backend.core.jobs.check.check_services import run_check_services_job
         from backend.core.jobs.update.update_host import run_update_host_job
+        from backend.core.jobs.update.update_services import run_update_services_job
 
         tracker = HostJobTracker(host)
         client = AgentClientManager.get_host_client(host)
@@ -153,7 +155,7 @@ class HostJobCoordinator:
                                 names=names_list,
                                 tracker=tracker,
                             )
-                        else:
+                        elif runtime.kind == "update":
                             ok = await run_update_host_job(
                                 host,
                                 client,
@@ -163,6 +165,28 @@ class HostJobCoordinator:
                                 names=names_list,
                                 tracker=tracker,
                             )
+                        elif runtime.kind == "check_services":
+                            ok = await run_check_services_job(
+                                host,
+                                client,
+                                manual=runtime.manual
+                                if runtime.names is None
+                                else True,
+                                names=names_list,
+                                tracker=tracker,
+                            )
+                        elif runtime.kind == "update_services":
+                            ok = await run_update_services_job(
+                                host,
+                                client,
+                                manual=runtime.manual
+                                if runtime.names is None
+                                else True,
+                                names=names_list,
+                                tracker=tracker,
+                            )
+                        else:
+                            ok = False
                     runtime.job = await self._record_job_end(
                         host,
                         tracker,

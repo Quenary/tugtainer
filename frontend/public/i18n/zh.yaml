@@ -18,6 +18,7 @@ GENERAL:
   REFRESH: 刷新
   AUTO: 自动
   NO_DATA: 暂无数据
+  ACTIONS: 操作
 THEMES:
   LIGHT: 浅色
   DARK: 深色
@@ -25,6 +26,7 @@ NAV:
   AUTH: Tugtainer. 授权。
   HOSTS: Tugtainer. 主机。
   CONTAINERS: Tugtainer. 容器。
+  SERVICES: Tugtainer. Swarm 服务。
   IMAGES: Tugtainer. 镜像。
   SETTINGS: Tugtainer. 设置。
   HEALTH_HISTORY: Tugtainer. Healthcheck 监控。
@@ -32,6 +34,7 @@ BREADCRUMBS:
   HOSTS: 主机
   DASHBOARD: 仪表盘
   CONTAINERS: 容器
+  SERVICES: 服务
   IMAGES: 镜像
   SETTINGS: 设置
   HEALTH_HISTORY: Healthcheck 监控
@@ -75,6 +78,8 @@ ACTIONS:
   UPDATE_ALL: 全部更新
   JOB_CHECK: 检查
   JOB_UPDATE: 更新
+  JOB_CHECK_SERVICES: 检查服务
+  JOB_UPDATE_SERVICES: 更新服务
   JOB_LOG: 日志
   ACTION_COMPLETED: 操作完成
   PRUNE: 清理
@@ -97,6 +102,7 @@ HOSTS:
     ONLY_AVAILABLE: 仅显示有更新
   DASHBOARD:
     CONTAINERS: 容器
+    SERVICES: Swarm 服务
     AVAILABLE: 可用
     RUNNING: 运行中
     EXITED: 已退出
@@ -353,3 +359,9 @@ HEALTH_HISTORY:
     STATUS: 状态
     RESTARTED: 已重启
     NOTIFIED: 已通知
+
+SERVICES:
+  NAME: 名称
+  IMAGE: 镜像
+  REPLICAS: 副本
+  SEARCH_PLACEHOLDER: 按名称或镜像搜索

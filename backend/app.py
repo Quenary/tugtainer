@@ -35,6 +35,9 @@ from backend.modules.images.images_router import (
 from backend.modules.public.public_router import (
     public_router as public_router,
 )
+from backend.modules.services.services_router import (
+    services_router as services_router,
+)
 from backend.modules.settings.settings_router import (
     settings_router as settings_router,
 )
@@ -83,6 +86,7 @@ app.include_router(settings_router)
 app.include_router(images_router)
 app.include_router(hosts_router)
 app.include_router(health_router)
+app.include_router(services_router)
 
 if Config.ALLOW_ORIGINS:
     app.add_middleware(

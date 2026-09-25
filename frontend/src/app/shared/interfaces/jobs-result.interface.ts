@@ -21,6 +21,17 @@ export interface IContainerJobResult {
   remote_digests: string[];
 }
 
+export interface IServiceJobResult {
+  service_name: string;
+  service_image: string;
+  result: TContainerJobOutcome;
+  service_id?: string | null;
+  local_digests: string[];
+  remote_digests: string[];
+}
+
+export type TJobItemResult = IContainerJobResult | IServiceJobResult;
+
 export const ContainerJobOutcomeSeverity: Record<
   TContainerJobOutcome,
   TagSeverity

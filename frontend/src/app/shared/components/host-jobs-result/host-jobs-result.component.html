@@ -1,12 +1,13 @@
 @if (job(); as j) {
   <section class="results">
-    @for (slot of containerSlots(); track slot.result.container.Id) {
+    @for (item of items(); track item.id) {
       <div class="results-item">
-        <span>{{ slot.result.container.Name }}</span>
-        <p-tag
-          [severity]="ContainerJobOutcomeSeverity[slot.result.result] ?? 'contrast'">
-          {{ slot.result.result }}
-        </p-tag>
+        <span>{{ item.name }}</span>
+        @if (item.result) {
+          <p-tag [severity]="item.severity">
+            {{ item.result }}
+          </p-tag>
+        }
       </div>
     }
   </section>

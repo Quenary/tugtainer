@@ -92,3 +92,30 @@ so it is deliberately not attempted.
 
 The values are shown on the container card and are available in the
 [notification templates](./NOTIFICATIONS.md).
+
+## Docker Swarm support
+
+Tugtainer supports managing and updating services on Docker Swarm clusters.
+
+### Host auto-detection
+
+- When adding a host or during background health monitoring, Tugtainer checks whether the host agent is running in Docker Swarm manager mode (`info.swarm.control_available`).
+- If detected as a Swarm manager, a **Swarm Services** card is displayed on the host dashboard, providing access to the services table.
+
+### Check process for Swarm services
+
+1. **Image inspection & digest resolution**:
+   - In Docker Swarm, `service.image` often contains a pinned digest resolved at deployment time (e.g. `repo/image:tag@sha256:<digest>`). If present, Tugtainer extracts this digest directly, avoiding unnecessary layer downloads on the manager node.
+   - If no digest is in the specification, Tugtainer attempts to inspect the image locally on the manager node to retrieve its `repo_digests`.
+   - If the image is not cached on the manager node (e.g., service tasks are distributed across worker nodes), pulling the image is only attempted if `PULL_BEFORE_CHECK` is explicitly enabled in settings.
+2. **Local images protection**:
+   - If no repository digests can be determined (for instance, images built locally without registry digests), the service is safely skipped from remote registry querying.
+3. **Registry query & comparison**:
+   - Tugtainer queries the remote registry for the latest digest of the base image tag.
+   - If the remote digest differs from the current digest, the service is **marked as available** for update.
+
+### Update process for Swarm services
+
+1. Swarm services are updated through the agent using Docker's service update mechanism (`docker service update --image <image>`).
+2. Docker Swarm orchestrates rolling updates, container recreation across worker nodes, and health monitoring according to the service's update configuration.
+3. Update progress, state transitions (such as `updating`, `completed`, or `rollback_completed`), and service logs are accessible in real-time through the UI and WebSocket progress dialogs.
