@@ -6,33 +6,36 @@ import {
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  BehaviorSubject,
+  Observable,
   catchError,
-  first,
-  of,
+  finalize,
   switchMap,
-  tap,
   throwError,
   timeout,
+  shareReplay,
+  of,
 } from 'rxjs';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 
-const ignoreList = ['/login', '/refresh'];
-
-const ignore = (req: HttpRequest<unknown>): boolean => {
-  return ignoreList.some((item) => req.url.includes(item));
+const isIgnored = (req: HttpRequest<unknown>): boolean => {
+  return /^[^?#]*\/(?:login|refresh)\/?(?:[?#].*)?$/.test(req.url);
 };
 
 const isRefreshable = (req: HttpRequest<unknown>, error: unknown): boolean => {
   return (
     error instanceof HttpErrorResponse &&
     error.status === 401 &&
-    req &&
-    !ignore(req)
+    !isIgnored(req)
   );
 };
 
-const isRefreshing$ = new BehaviorSubject<boolean>(false);
+let refresh$: Observable<unknown> | null = null;
+
+let loggingOut = false;
+
+const shouldLogout = (req: HttpRequest<unknown>, error: unknown): boolean => {
+  return !loggingOut && isRefreshable(req, error);
+};
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authApiService = inject(AuthApiService);
@@ -40,36 +43,33 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error) => {
-      if (isRefreshable(req, error)) {
-        if (!isRefreshing$.getValue()) {
-          isRefreshing$.next(true);
-          authApiService
-            .refresh()
-            .pipe(
-              catchError(() => of(null)),
-              tap(() => isRefreshing$.next(false)),
-            )
-            .subscribe();
-        }
+      if (!isRefreshable(req, error)) {
+        return throwError(() => error);
+      }
 
-        return isRefreshing$.pipe(
-          first((flag) => !flag),
-          timeout(10000),
+      if (!refresh$) {
+        refresh$ = authApiService.refresh().pipe(
+          timeout(10_000),
           catchError(() => of(null)),
-          switchMap(() => {
-            return next(req.clone()).pipe(
-              catchError((error) => {
-                if (isRefreshable(req, error)) {
-                  router.navigate(['/auth']);
-                }
-                return throwError(() => error);
-              }),
-            );
-          }),
+          finalize(() => (refresh$ = null)),
+          shareReplay(1),
         );
       }
 
-      return throwError(() => error);
+      return refresh$.pipe(
+        switchMap(() =>
+          next(req.clone()).pipe(
+            catchError((error) => {
+              if (shouldLogout(req, error)) {
+                loggingOut = true;
+                router.navigate(['/auth']).finally(() => (loggingOut = false));
+              }
+
+              return throwError(() => error);
+            }),
+          ),
+        ),
+      );
     }),
   );
 };
