@@ -2,6 +2,7 @@ import {
   Component,
   inject,
   signal,
+  computed,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import {
@@ -12,10 +13,9 @@ import {
 } from '@angular/router';
 import { Toast } from '@openng/optimus-ui/toast';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { combineLatest, filter, map, Observable, startWith } from 'rxjs';
+import { filter, map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from '@openng/optimus-ui/api';
-import { AsyncPipe } from '@angular/common';
 import { Button } from '@openng/optimus-ui/button';
 import { Tag } from '@openng/optimus-ui/tag';
 import { Dialog } from '@openng/optimus-ui/dialog';
@@ -31,7 +31,6 @@ import { MenuComponent } from '@shared/components/menu/menu.component';
   imports: [
     RouterOutlet,
     Toast,
-    AsyncPipe,
     Button,
     TranslatePipe,
     Tag,
@@ -55,47 +54,25 @@ export class App {
    */
   protected readonly showNewVersionDialog = signal<boolean>(false);
   /**
+   * Emits after each successful navigation so breadcrumbs can be recomputed
+   * from the activated route tree.
+   */
+  private readonly navigationEnd = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+    ),
+  );
+  private readonly breadcrumbLabels = toSignal(
+    this.translateService.stream('BREADCRUMBS'),
+    { initialValue: {} as Record<string, string> },
+  );
+  /**
    * Breadcrumbs list
    */
-  protected readonly breadcrumbs$: Observable<MenuItem[]> = combineLatest([
-    this.router.events.pipe(
-      filter((ev) => ev instanceof NavigationEnd),
-      map(() => this.activatedRoute),
-      startWith(this.activatedRoute),
-    ),
-    this.translateService.stream('BREADCRUMBS'),
-  ]).pipe(
-    map(([ar, t]) => {
-      const breadcrumbs: MenuItem[] = [];
-
-      let fisrtChild = ar.firstChild?.snapshot;
-      let url = '';
-
-      while (fisrtChild) {
-        const routeUrl = fisrtChild.url
-          .map((segment) => segment.path)
-          .filter(Boolean)
-          .join('/');
-
-        url = routeUrl ? `${url}/${routeUrl}` : url;
-        const data = fisrtChild.data as IRouteData;
-        const breadcrumb = data?.['breadcrumb'];
-        const breadcrumbIcon = data?.['breadcrumbIcon'];
-
-        if (breadcrumb || breadcrumbIcon) {
-          breadcrumbs.push({
-            label: t[breadcrumb],
-            icon: breadcrumbIcon,
-            routerLink: url,
-          });
-        }
-
-        fisrtChild = fisrtChild.firstChild;
-      }
-
-      return breadcrumbs;
-    }),
-  );
+  protected readonly breadcrumbs = computed(() => {
+    this.navigationEnd();
+    return this.buildBreadcrumbs(this.activatedRoute, this.breadcrumbLabels());
+  });
 
   protected readonly isToolbarVisible = toSignal<boolean>(
     this.router.events.pipe(
@@ -113,5 +90,38 @@ export class App {
   protected openReleaseNotes(): void {
     const url = this.appStore.update().release_url;
     window.open(url, '_blank');
+  }
+
+  private buildBreadcrumbs(
+    route: ActivatedRoute,
+    labels: Record<string, string>,
+  ): MenuItem[] {
+    const breadcrumbs: MenuItem[] = [];
+    let current = route.firstChild;
+    let url = '';
+
+    while (current) {
+      const routeUrl = current.snapshot.url
+        .map((segment) => segment.path)
+        .filter(Boolean)
+        .join('/');
+
+      url = routeUrl ? `${url}/${routeUrl}` : url;
+      const data = current.snapshot.routeConfig?.data as IRouteData | undefined;
+      const breadcrumb = data?.breadcrumb;
+      const breadcrumbIcon = data?.breadcrumbIcon;
+
+      if (breadcrumb || breadcrumbIcon) {
+        breadcrumbs.push({
+          label: breadcrumb ? labels[breadcrumb] : undefined,
+          icon: breadcrumbIcon,
+          routerLink: url,
+        });
+      }
+
+      current = current.firstChild;
+    }
+
+    return breadcrumbs;
   }
 }

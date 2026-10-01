@@ -36,7 +36,7 @@
     <div class="content-right-head">
       <p-breadcrumb
         [style]="{'--p-breadcrumb-background': 'transparent'}"
-        [model]="breadcrumbs$ | async"
+        [model]="breadcrumbs()"
         [home]="{icon:'pi pi-home', routerLink:'/'}">
       </p-breadcrumb>
 
