@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v1.44.0 (2026-10-01)
+
+### Bug Fixes
+
+- Preserve --init and --pid on update
+  ([`8f1d5cd`](https://github.com/Quenary/tugtainer/commit/8f1d5cd8941f83ee8ea83262257270ce778db965))
+
+### Documentation
+
+- Migrate from primeng adr
+  ([`b7a68ee`](https://github.com/Quenary/tugtainer/commit/b7a68ee0c58c122ac597eb3a641b223559ab52d6))
+
+### Features
+
+- Hide container with `dev.quenary.tugtainer.hidden` label
+  ([`6ead27a`](https://github.com/Quenary/tugtainer/commit/6ead27a936b2e8a569c7e4945dd753f4c261dc00))
+
+- Show the version of a pending digest update
+  ([`bc3e0c7`](https://github.com/Quenary/tugtainer/commit/bc3e0c77a6709576b7fefaa86bcd33d27dd3b21a))
+
+- Sync AGENT_SECRET for local agent, log warning on missing AGENT_SECRET
+  ([`af3507c`](https://github.com/Quenary/tugtainer/commit/af3507cd38cfb4e9a52c46900c1876981001b36d))
+
+- **security**: Initial password setup with one-time code
+  ([`9516129`](https://github.com/Quenary/tugtainer/commit/9516129b1c5db7febd668dbf93d0b6e9e71d55e0))
+
+
 ## v1.43.0 (2026-09-25)
 
 
