@@ -2,13 +2,18 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi import HTTPException
 from pytest_mock import MockerFixture
 
 from backend.const import LOCAL_AGENT_URL
+from backend.exception import TugUrlValidationError, TugUrlValidationSSRFError
 from backend.modules.hosts.hosts_util import (
     annotate_available_updates_count,
+    get_host,
     sync_local_agent_secret,
+    validate_agent_url_against_ssrf,
 )
+from backend.testing import patch_async_session
 
 
 @pytest.mark.asyncio
@@ -143,13 +148,7 @@ def _session_with_hosts(mocker: MockerFixture, hosts: list):
     db_result.scalars.return_value.all.return_value = hosts
     session.execute = AsyncMock(return_value=db_result)
     session.commit = AsyncMock()
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(
-        "backend.modules.hosts.hosts_util.async_session_maker",
-        return_value=session_cm,
-    )
+    patch_async_session(mocker, "backend.modules.hosts.hosts_util", session)
     return session
 
 
@@ -204,3 +203,42 @@ async def test_sync_local_agent_secret_noop_when_unsafe(
     await sync_local_agent_secret()
 
     session_maker.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_host_missing_raises_404() -> None:
+    session = AsyncMock()
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = None
+    session.execute = AsyncMock(return_value=result)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_host(1, session)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Docker host not found in database"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error", "detail_contains"),
+    [
+        (TugUrlValidationSSRFError("restricted"), "AGENT_ALLOW_NETWORKS"),
+        (TugUrlValidationError("bad url"), "bad url"),
+    ],
+)
+async def test_validate_agent_url_maps_to_422(
+    mocker: MockerFixture,
+    error: Exception,
+    detail_contains: str,
+) -> None:
+    mocker.patch(
+        "backend.modules.hosts.hosts_util.validate_url_against_ssrf",
+        new=AsyncMock(side_effect=error),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await validate_agent_url_against_ssrf("http://agent.example")
+
+    assert exc_info.value.status_code == 422
+    assert detail_contains in str(exc_info.value.detail)

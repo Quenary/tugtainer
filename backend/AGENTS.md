@@ -84,9 +84,13 @@ Domain errors subclass `TugException` in `exception.py`. Raise `HTTPException` a
 
 ## Tests
 
-Tests sit next to the code as `test_*.py`. Async tests use `@pytest.mark.asyncio`. Patch with `pytest-mock` (`mocker.patch`) and `AsyncMock`. Router tests build `TestClient(app)`, replace `is_authorized_req` and `get_async_session` through `app.dependency_overrides`, and stub `AgentClientManager`. Clear overrides in the test teardown so later tests do not inherit them.
+Tests sit next to the code as `test_*.py`. Async tests use `@pytest.mark.asyncio`. Patch with `pytest-mock` (`mocker.patch`) and `AsyncMock`. Router tests build `TestClient(app)`, replace `is_authorized_req` and `get_async_session` through `app.dependency_overrides`, and stub `AgentClientManager`. `backend/modules/conftest.py` restores overrides after each test.
 
 Import `backend` and `shared` as top-level packages. Run pytest from the repo root (`python -m pytest`, or a path under `backend/`).
+
+- Shared factories live in `backend/testing.py` (`patch_async_session`, `make_service`). Fixtures live in `conftest.py`.
+- Parametrize near-duplicate cases. Do not add tests for trivial getters.
+- Type helpers where it stays simple. Match ruff and mypy.
 
 ## Style
 

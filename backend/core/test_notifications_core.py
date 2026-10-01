@@ -103,29 +103,28 @@ async def test_send_notification_skips_when_urls_undefined():
 
 
 @pytest.mark.asyncio
-async def test_send_job_notification_skips_when_urls_undefined():
+@pytest.mark.parametrize(
+    ("stored", "override"),
+    [
+        ("", None),
+        ("https://example", "  \n  "),
+    ],
+)
+async def test_send_job_notification_skips_without_urls(
+    stored: str, override: str | None
+):
+    kwargs: dict[str, str] = {} if override is None else {"urls": override}
     with (
         patch(
             "backend.core.notifications_core.SettingsStorage.get",
-            return_value="",
+            return_value=stored,
         ),
         patch(
             "backend.core.notifications_core.send_notification",
             new_callable=AsyncMock,
         ) as send,
     ):
-        await send_job_notification([])
-
-    send.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_send_job_notification_skips_when_urls_are_blank():
-    with patch(
-        "backend.core.notifications_core.send_notification",
-        new_callable=AsyncMock,
-    ) as send:
-        await send_job_notification([], urls="  \n  ")
+        await send_job_notification([], **kwargs)
 
     send.assert_not_called()
 

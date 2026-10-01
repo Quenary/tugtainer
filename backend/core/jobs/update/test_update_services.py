@@ -5,19 +5,9 @@ import pytest
 from pytest_mock import MockerFixture
 
 from backend.core.jobs.update.update_services import run_update_services_job
-from shared.schemas.service_schemas import ServiceListItemSchema, ServiceReplicasSchema
+from backend.testing import make_service, patch_async_session
 
 base_module = "backend.core.jobs.update.update_services"
-
-
-def _make_service(name: str) -> ServiceListItemSchema:
-    return ServiceListItemSchema(
-        id=f"id-{name}",
-        name=name,
-        image=f"repo/{name}:latest",
-        mode="replicated",
-        replicas=ServiceReplicasSchema(running=1, desired=1),
-    )
 
 
 @pytest.mark.asyncio
@@ -25,16 +15,13 @@ async def test_run_update_services_job_filters_by_names(mocker: MockerFixture):
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
 
-    s1 = _make_service("svc-a")
-    s2 = _make_service("svc-b")
-    s3 = _make_service("svc-c")
+    s1 = make_service("svc-a")
+    s2 = make_service("svc-b")
+    s3 = make_service("svc-c")
     client.service.list = AsyncMock(return_value=[s1, s2, s3])
 
     session = MagicMock()
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
     mocker.patch(f"{base_module}.get_host_services", AsyncMock(return_value=[]))
 
     updated: list[str] = []
@@ -66,9 +53,9 @@ async def test_run_update_services_job_auto_mode_filters_eligible(
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
 
-    s1 = _make_service("svc-enabled-available")
-    s2 = _make_service("svc-disabled")
-    s3 = _make_service("svc-no-update")
+    s1 = make_service("svc-enabled-available")
+    s2 = make_service("svc-disabled")
+    s3 = make_service("svc-no-update")
     client.service.list = AsyncMock(return_value=[s1, s2, s3])
 
     db1 = SimpleNamespace(
@@ -82,10 +69,7 @@ async def test_run_update_services_job_auto_mode_filters_eligible(
     )
 
     session = MagicMock()
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
     mocker.patch(
         f"{base_module}.get_host_services", AsyncMock(return_value=[db1, db2, db3])
     )
@@ -116,15 +100,12 @@ async def test_run_update_services_job_manual_all(mocker: MockerFixture):
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
 
-    s1 = _make_service("svc-1")
-    s2 = _make_service("svc-2")
+    s1 = make_service("svc-1")
+    s2 = make_service("svc-2")
     client.service.list = AsyncMock(return_value=[s1, s2])
 
     session = MagicMock()
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
     mocker.patch(f"{base_module}.get_host_services", AsyncMock(return_value=[]))
 
     updated: list[str] = []

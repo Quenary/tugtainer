@@ -10,6 +10,7 @@ from backend.core.jobs.cleanup.cleanup_containers import (
     cleanup_host_stale_containers,
 )
 from backend.modules.hosts.hosts_model import HostsModel
+from backend.testing import patch_async_session
 
 base_module = "backend.core.jobs.cleanup.cleanup_containers"
 
@@ -155,10 +156,7 @@ async def test_cleanup_all_stale_containers(
     db_result_mock.scalars.return_value.all.return_value = [host1, host2]
     session.execute.return_value = db_result_mock
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
 
     cleanup_host_mock = mocker.patch(
         f"{base_module}.cleanup_host_stale_containers", new_callable=AsyncMock

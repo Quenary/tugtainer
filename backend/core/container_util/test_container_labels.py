@@ -43,51 +43,34 @@ def test_parse_bool_label(raw, expected):
     assert parse_bool_label(raw) == expected
 
 
-def test_get_container_auto_check_label():
-    assert get_container_auto_check_label(None) is None
-
-    c_none = ContainerInspectResult(
-        id="c1",
-        config=ContainerConfig(labels={}),
+@pytest.mark.parametrize(
+    "getter",
+    [get_container_auto_check_label, get_container_auto_update_label],
+)
+def test_auto_label_missing(getter):
+    assert getter(None) is None
+    assert getter(ContainerInspectResult(id="c1")) is None
+    assert (
+        getter(ContainerInspectResult(id="c1", config=ContainerConfig(labels={})))
+        is None
     )
-    assert get_container_auto_check_label(c_none) is None
 
-    c_no_config = ContainerInspectResult(id="c1")
-    assert get_container_auto_check_label(c_no_config) is None
 
-    c_true = ContainerInspectResult(
+@pytest.mark.parametrize(
+    ("getter", "label", "raw", "expected"),
+    [
+        (get_container_auto_check_label, TUGTAINER_AUTO_CHECK_LABEL, "true", True),
+        (get_container_auto_check_label, TUGTAINER_AUTO_CHECK_LABEL, "false", False),
+        (get_container_auto_update_label, TUGTAINER_AUTO_UPDATE_LABEL, "true", True),
+        (get_container_auto_update_label, TUGTAINER_AUTO_UPDATE_LABEL, "0", False),
+    ],
+)
+def test_auto_label_value(getter, label: str, raw: str, expected: bool):
+    container = ContainerInspectResult(
         id="c1",
-        config=ContainerConfig(labels={TUGTAINER_AUTO_CHECK_LABEL: "true"}),
+        config=ContainerConfig(labels={label: raw}),
     )
-    assert get_container_auto_check_label(c_true) is True
-
-    c_false = ContainerInspectResult(
-        id="c1",
-        config=ContainerConfig(labels={TUGTAINER_AUTO_CHECK_LABEL: "false"}),
-    )
-    assert get_container_auto_check_label(c_false) is False
-
-
-def test_get_container_auto_update_label():
-    assert get_container_auto_update_label(None) is None
-
-    c_none = ContainerInspectResult(
-        id="c1",
-        config=ContainerConfig(labels={}),
-    )
-    assert get_container_auto_update_label(c_none) is None
-
-    c_true = ContainerInspectResult(
-        id="c1",
-        config=ContainerConfig(labels={TUGTAINER_AUTO_UPDATE_LABEL: "true"}),
-    )
-    assert get_container_auto_update_label(c_true) is True
-
-    c_false = ContainerInspectResult(
-        id="c1",
-        config=ContainerConfig(labels={TUGTAINER_AUTO_UPDATE_LABEL: "0"}),
-    )
-    assert get_container_auto_update_label(c_false) is False
+    assert getter(container) is expected
 
 
 @pytest.mark.parametrize(

@@ -1,15 +1,20 @@
 import ssl
 from unittest.mock import AsyncMock, MagicMock
 
+import aiohttp
 import pytest
+from aiohttp import ClientResponseError
+from multidict import CIMultiDict, CIMultiDictProxy
 from pytest_mock import MockerFixture
 from python_on_whales.components.container.models import (
     ContainerConfig,
     ContainerInspectResult,
 )
+from yarl import URL
 
 from backend.const import LOCAL_AGENT_URL, TUGTAINER_HIDDEN_LABEL
 from backend.core.agent_client import AgentClient, build_agent_ssl
+from backend.exception import TugAgentClientError
 from backend.modules.hosts.test_hosts_schemas import TEST_CA_PEM
 from backend.util.pinned_ip_resolver import PinnedIpResolver
 from shared.schemas.container_schemas import GetContainerListBodySchema
@@ -55,6 +60,8 @@ async def test_request_keeps_hostname_and_disables_redirects(
     assert args[1] == "https://agent.example.com:9413/api/public/health"
     assert kwargs["allow_redirects"] is False
     assert kwargs["ssl"] is True
+    assert "x-tugtainer-timestamp" in kwargs["headers"]
+    assert "x-tugtainer-signature" in kwargs["headers"]
 
 
 @pytest.mark.asyncio
@@ -98,71 +105,62 @@ async def test_container_list_returns_hidden_container_from_agent(
     )
 
 
-def test_build_agent_ssl_default_verify():
-    assert build_agent_ssl(True) is True
-    assert build_agent_ssl(True, None) is True
+@pytest.mark.parametrize(
+    ("verify", "ca", "expected_type"),
+    [
+        (True, None, bool),
+        (False, TEST_CA_PEM, bool),
+        (True, TEST_CA_PEM, ssl.SSLContext),
+    ],
+)
+def test_build_agent_ssl(verify: bool, ca: str | None, expected_type: type):
+    result = build_agent_ssl(verify, ca)
+    assert isinstance(result, expected_type)
+    if expected_type is bool:
+        assert result is verify
 
 
-def test_build_agent_ssl_disabled_ignores_ca():
-    assert build_agent_ssl(False, TEST_CA_PEM) is False
-
-
-def test_build_agent_ssl_with_ca_returns_context():
-    context = build_agent_ssl(True, TEST_CA_PEM)
-    assert isinstance(context, ssl.SSLContext)
-
-
-@pytest.mark.asyncio
-async def test_request_uses_ssl_context_when_ca_set(
-    mocker: MockerFixture,
-):
+def _request_session(mocker: MockerFixture, body: str = "{}"):
     mocker.patch(
         "backend.core.agent_client.validate_agent_url_against_ssrf",
         new=AsyncMock(return_value=set()),
     )
-    cm = _mock_response(mocker)
+    cm = _mock_response(mocker, body)
     session = MagicMock()
     session.closed = False
     session.request = MagicMock(return_value=cm)
+    return session, cm
 
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("ssl_verify", "expected_ssl"),
+    [
+        (True, "context"),
+        (False, False),
+    ],
+)
+async def test_request_ssl_follows_host_settings(
+    mocker: MockerFixture,
+    ssl_verify: bool,
+    expected_ssl: str | bool,
+):
+    session, _cm = _request_session(mocker)
     client = AgentClient(
         id=1,
         url="https://agent.example.com:9413",
-        ssl=True,
+        ssl=ssl_verify,
         ssl_ca=TEST_CA_PEM,
     )
     mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
 
     await client._request("GET", "/api/public/health")
 
-    kwargs = session.request.call_args.kwargs
-    assert isinstance(kwargs["ssl"], ssl.SSLContext)
-
-
-@pytest.mark.asyncio
-async def test_request_disables_ssl_even_with_ca(
-    mocker: MockerFixture,
-):
-    mocker.patch(
-        "backend.core.agent_client.validate_agent_url_against_ssrf",
-        new=AsyncMock(return_value=set()),
-    )
-    cm = _mock_response(mocker)
-    session = MagicMock()
-    session.closed = False
-    session.request = MagicMock(return_value=cm)
-
-    client = AgentClient(
-        id=1,
-        url="https://agent.example.com:9413",
-        ssl=False,
-        ssl_ca=TEST_CA_PEM,
-    )
-    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
-
-    await client._request("GET", "/api/public/health")
-
-    assert session.request.call_args.kwargs["ssl"] is False
+    ssl_arg = session.request.call_args.kwargs["ssl"]
+    if expected_ssl == "context":
+        assert isinstance(ssl_arg, ssl.SSLContext)
+    else:
+        assert ssl_arg is False
 
 
 @pytest.mark.asyncio
@@ -201,3 +199,105 @@ async def test_agent_client_swarm_info_and_service(mocker: MockerFixture):
         ServiceUpdateRequestBody(service_id="s1", image="nginx:alpine")
     )
     assert updated_id == "s1"
+
+
+def _response_error(status_code: int = 500) -> ClientResponseError:
+    url = URL("https://agent.example.com/api/public/health")
+    headers: CIMultiDictProxy[str] = CIMultiDictProxy(CIMultiDict())
+    return ClientResponseError(
+        aiohttp.RequestInfo(url, "GET", headers, url),
+        (),
+        status=status_code,
+        message="err",
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        ("", None),
+        ("not-json", "not-json"),
+    ],
+)
+async def test_request_parses_empty_and_non_json_bodies(
+    mocker: MockerFixture,
+    body: str,
+    expected: str | None,
+):
+    session, _cm = _request_session(mocker, body)
+    client = AgentClient(id=1, url="https://agent.example.com")
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+
+    assert await client._request("GET", "/api/public/health") == expected
+    headers = session.request.call_args.kwargs["headers"]
+    assert "x-tugtainer-timestamp" in headers
+    assert "x-tugtainer-signature" not in headers
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error_body",
+    [{"detail": "denied"}, "plain failure"],
+)
+async def test_request_maps_http_error(
+    mocker: MockerFixture, error_body: dict[str, str] | str
+):
+    session, cm = _request_session(mocker)
+    resp = cm.__aenter__.return_value
+    resp.status = 500
+    resp.raise_for_status.side_effect = _response_error()
+    if isinstance(error_body, dict):
+        resp.json = AsyncMock(return_value=error_body)
+    else:
+        resp.json = AsyncMock(side_effect=ValueError("not json"))
+        resp.text = AsyncMock(return_value=error_body)
+
+    client = AgentClient(id=1, url="https://agent.example.com", secret="secret")
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+
+    with pytest.raises(TugAgentClientError) as exc_info:
+        await client._request("GET", "/api/public/health")
+
+    assert exc_info.value.status == 500
+    rendered = str(exc_info.value)
+    if isinstance(error_body, dict):
+        assert "denied" in rendered
+    else:
+        assert error_body in rendered
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error", "status_code", "closes_session"),
+    [
+        (TimeoutError(), 408, False),
+        (aiohttp.ClientConnectionError("refused"), 502, True),
+    ],
+)
+async def test_request_maps_transport_errors(
+    mocker: MockerFixture,
+    error: Exception,
+    status_code: int,
+    closes_session: bool,
+):
+    mocker.patch(
+        "backend.core.agent_client.validate_agent_url_against_ssrf",
+        new=AsyncMock(return_value=set()),
+    )
+    cm = AsyncMock()
+    cm.__aenter__.side_effect = error
+    session = MagicMock()
+    session.request = MagicMock(return_value=cm)
+    client = AgentClient(id=1, url="https://agent.example.com", secret="secret")
+    close = mocker.patch.object(client, "close_session", new=AsyncMock())
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+
+    with pytest.raises(TugAgentClientError) as exc_info:
+        await client._request("GET", "/api/public/health")
+
+    assert exc_info.value.status == status_code
+    if closes_session:
+        close.assert_awaited_once()
+    else:
+        close.assert_not_awaited()

@@ -10,6 +10,7 @@ from python_on_whales.components.container.models import (
 
 from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.core.jobs.check.check_host import run_check_host_job
+from backend.testing import patch_async_session
 
 base_module = "backend.core.jobs.check.check_host"
 
@@ -30,10 +31,7 @@ async def test_run_check_host_job_filters_by_names(mocker: MockerFixture):
     client.container.list = AsyncMock(return_value=[a, b, c])
 
     session = MagicMock()
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
     mocker.patch(f"{base_module}.get_host_containers", AsyncMock(return_value=[]))
 
     called: list[str] = []
@@ -70,10 +68,7 @@ async def test_run_check_host_job_skips_hidden(mocker: MockerFixture):
     client.container.list = AsyncMock(return_value=[visible, hidden])
 
     session = MagicMock()
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
     mocker.patch(f"{base_module}.get_host_containers", AsyncMock(return_value=[]))
 
     called: list[str] = []
