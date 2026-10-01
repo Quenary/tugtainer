@@ -1,9 +1,20 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from jinja2.sandbox import SandboxedEnvironment
+from python_on_whales.components.container.models import (
+    ContainerConfig,
+    ContainerInspectResult,
+)
 
 from backend.config import Config
+from backend.const import DEFAULT_NOTIFICATION_TEMPLATE
+from backend.core.jobs.jobs_results import (
+    ContainerJobResult,
+    JobNotificationResult,
+)
 from backend.core.notifications_core import (
+    any_worthy,
     send_job_notification,
     send_notification,
 )
@@ -117,3 +128,28 @@ async def test_send_job_notification_skips_when_urls_are_blank():
         await send_job_notification([], urls="  \n  ")
 
     send.assert_not_called()
+
+
+def test_default_template_appends_pending_version_when_present():
+    env = SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
+    env.filters["any_worthy"] = any_worthy
+    template = env.from_string(DEFAULT_NOTIFICATION_TEMPLATE)
+    item = ContainerJobResult(
+        container=ContainerInspectResult(
+            name="web",
+            config=ContainerConfig(image="nginx:latest"),
+        ),
+        result="available",
+        image_spec="nginx:latest",
+        current_version="2.3.6",
+        available_version="2.3.7",
+    )
+    results = [JobNotificationResult(host_id=1, host_name="home", items=[item])]
+
+    with_version = template.render(results=results)
+    assert "web nginx:latest 2.3.6 -> 2.3.7" in with_version
+
+    item.available_version = None
+    without_version = template.render(results=results)
+    assert "web nginx:latest" in without_version
+    assert "->" not in without_version

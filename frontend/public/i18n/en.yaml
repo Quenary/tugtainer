@@ -202,6 +202,11 @@ CONTAINERS:
   CURRENT_VERSION_HINT: |-
     Version reported by the labels of the current image.
     It is a hint from the image publisher.
+  AVAILABLE_VERSION: Available version
+  AVAILABLE_VERSION_HINT: |-
+    Version reported by the labels of the image that is available to update to.
+    It is a hint from the image publisher. Shown when a digest update is pending.
+  AVAILABLE_CREATED: Available image created
   UPDATE: Update
   UPDATE_DISABLED_HINTS:
     PROTECTED: The protected container cannot be updated from the app.

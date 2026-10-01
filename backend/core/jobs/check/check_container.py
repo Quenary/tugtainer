@@ -32,8 +32,12 @@ from backend.modules.containers.containers_util import (
     insert_or_update_container,
 )
 from backend.modules.hosts.hosts_model import HostsModel
+from backend.modules.images.image_digest_util import (
+    cache_available_image_metadata,
+)
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+from backend.util.get_version_from_labels import get_version_from_labels
 from backend.util.jitter import jitter
 from backend.util.now import now
 from shared.schemas.image_schemas import (
@@ -139,6 +143,9 @@ async def run_check_container_job(
 
             result.remote_digests = remote_digests
             logger.info(f"Remote digests is {remote_digests}")
+            result.current_version = get_version_from_labels(
+                local_image.config.labels if local_image.config else None
+            )
 
             result_lit: ContainerJobOutcome
             update_available: bool
@@ -163,6 +170,18 @@ async def run_check_container_job(
                 update_available = False
             logger.info(f"Check result is {result_lit}")
             result.result = result_lit
+
+            if update_available and remote_digests:
+                meta = await cache_available_image_metadata(
+                    session,
+                    image_spec,
+                    remote_digests[0],
+                    pulled_image=result.remote_image,
+                    local_image=local_image,
+                )
+                if meta:
+                    result.available_version = meta.version
+                    result.available_created = meta.created
 
             result_db: Final[ContainerInsertOrUpdateData] = {
                 "update_available": update_available,

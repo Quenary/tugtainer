@@ -136,6 +136,27 @@ export class ContainerCardComponent implements OnDestroy {
     return (digests.length ? digests : tags).join('\n');
   });
   /**
+   * Whether the card has derived fields to separate from the editable ones:
+   * versions, check timestamps, and the previous image.
+   */
+  protected readonly hasComputedFields = computed(() => {
+    const item = this.containersStore.selected();
+    const previousImage = this.previousImage();
+    if (!item) {
+      return false;
+    }
+    return Boolean(
+      item.current_version ||
+      (item.update_available &&
+        (item.available_version || item.available_created)) ||
+      item.previous_image_version ||
+      item.checked_at ||
+      item.remote_digests_changed_at ||
+      item.updated_at ||
+      previousImage,
+    );
+  });
+  /**
    * Previous image textarea rows count
    */
   protected readonly previousImageRows = computed<number>(() =>

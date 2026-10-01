@@ -196,6 +196,11 @@ CONTAINERS:
   CURRENT_VERSION_HINT: |-
     当前镜像标签中记录的版本。
     这是镜像发布者提供的提示。
+  AVAILABLE_VERSION: 可用版本
+  AVAILABLE_VERSION_HINT: |-
+    可更新到的镜像标签中记录的版本。
+    这是镜像发布者提供的提示，在存在摘要更新时显示。
+  AVAILABLE_CREATED: 可用镜像构建时间
   UPDATE: 更新
   UPDATE_DISABLED_HINTS:
     PROTECTED: 受保护的容器无法从此应用更新。

@@ -23,6 +23,11 @@ from backend.db.session import get_async_session
 from backend.modules.auth.auth_util import is_authorized_req
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_util import get_host
+from backend.modules.images.image_digest_model import ImageDigestModel
+from backend.modules.images.image_digest_util import (
+    load_image_digests,
+    pending_image_digest,
+)
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
     GetContainerLogsRequestBody,
@@ -45,6 +50,32 @@ containers_router = APIRouter(
     tags=["containers"],
     dependencies=[Depends(is_authorized_req)],
 )
+
+
+def _pending_digest(
+    db_cont: ContainersModel | None,
+    cache: dict[str, ImageDigestModel],
+) -> ImageDigestModel | None:
+    return pending_image_digest(
+        bool(db_cont.update_available) if db_cont else False,
+        db_cont.remote_digests if db_cont else None,
+        cache,
+    )
+
+
+async def _digest_cache(
+    session: AsyncSession,
+    rows: list[ContainersModel | None],
+) -> dict[str, ImageDigestModel]:
+    return await load_image_digests(
+        session,
+        [
+            digest
+            for row in rows
+            if row is not None and row.remote_digests
+            for digest in row.remote_digests
+        ],
+    )
 
 
 def _raise_for_host_status(host: HostsModel):
@@ -78,15 +109,22 @@ async def containers_list(
     result = await session.execute(
         select(ContainersModel).where(ContainersModel.host_id == host_id)
     )
-    containers_db = result.scalars().all()
+    containers_db = list(result.scalars().all())
+    cache = await _digest_cache(session, containers_db)
     _list: list[ContainersListItem] = []
     for c in containers:
         _db_item = next(
             (item for item in containers_db if item.name == c.name),
             None,
         )
-        _item = ContainersListItem.from_sources(host_id, c, _db_item)
-        _list.append(_item)
+        _list.append(
+            ContainersListItem.from_sources(
+                host_id,
+                c,
+                _db_item,
+                _pending_digest(_db_item, cache),
+            )
+        )
     return _list
 
 
@@ -127,11 +165,13 @@ async def get_container(
     )
     result = await session.execute(stmt)
     db_item = result.scalar_one_or_none()
+    cache = await _digest_cache(session, [db_item])
     return ContainerGetResponseBody(
         item=ContainersListItem.from_sources(
             host_id,
             inspect,
             db_item,
+            _pending_digest(db_item, cache),
         ),
         inspect=inspect,
     )
@@ -165,7 +205,13 @@ async def patch_container_data(
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
     d_cont = await client.container.inspect(db_cont.name)
-    return ContainersListItem.from_sources(host_id, d_cont, db_cont)
+    cache = await _digest_cache(session, [db_cont])
+    return ContainersListItem.from_sources(
+        host_id,
+        d_cont,
+        db_cont,
+        _pending_digest(db_cont, cache),
+    )
 
 
 @containers_router.get(
@@ -356,12 +402,14 @@ async def control_containers(
     )
     result = await session.execute(stmt)
     db_items = {item.name: item for item in result.scalars().all()}
+    cache = await _digest_cache(session, list(db_items.values()))
 
     return [
         ContainersListItem.from_sources(
             host_id,
             insp,
             db_items.get(cast(str, insp.name)),
+            _pending_digest(db_items.get(cast(str, insp.name)), cache),
         )
         for insp in updated_inspects
     ]

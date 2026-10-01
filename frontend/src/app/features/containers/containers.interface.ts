@@ -41,6 +41,10 @@ export interface IContainerListItem {
   previous_image_tags: string[] | null;
   previous_image_version: string | null;
   current_version: string | null;
+  /** Version label of a pending digest update, when the registry config has one. */
+  available_version: string | null;
+  /** Build time of a pending digest update. */
+  available_created: string | null;
   created_at: string;
   modified_at: string;
   exit_code: number;

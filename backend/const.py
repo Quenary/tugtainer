@@ -21,7 +21,7 @@ DEFAULT_NOTIFICATION_TEMPLATE = """\
   {% if items %}
 ### {{ title }}:
     {% for item in items %}
-- {{item.name}} {{item.image}}
+- {{item.name}} {{item.image}}{% if item.available_version %}{% if item.current_version %} {{item.current_version}} ->{% endif %} {{item.available_version}}{% endif %}
     {% endfor %}
   {% endif %}
 {% endfor %}

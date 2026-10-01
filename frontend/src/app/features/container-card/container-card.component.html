@@ -44,7 +44,9 @@
                 class="general-content-state-tag"
                 severity="success"
                 icon="pi pi-check-circle"
-                [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"></p-tag>
+                [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"
+                [pTooltip]="_item.available_version"
+                [tooltipDisabled]="!_item.available_version"></p-tag>
             }
             <p-tag
               class="general-content-state-tag"
@@ -151,29 +153,9 @@
             </label>
           </p-ifta-label>
 
-          <p-divider></p-divider>
-
-          <p-ifta-label>
-            <input
-              id="container-name"
-              pInputText
-              readonly
-              [value]="_item.name" />
-            <label for="container-name">
-              {{ 'CONTAINERS.NAME' | translate }}
-            </label>
-          </p-ifta-label>
-
-          <p-ifta-label>
-            <input
-              id="container-image"
-              pInputText
-              readonly
-              [value]="_item.image" />
-            <label for="container-image">
-              {{ 'CONTAINERS.IMAGE' | translate }}
-            </label>
-          </p-ifta-label>
+          @if (hasComputedFields()) {
+            <p-divider></p-divider>
+          }
 
           @if (_item.current_version; as _currentVersion) {
             <p-ifta-label>
@@ -196,33 +178,63 @@
             </p-ifta-label>
           }
 
-          <p-ifta-label style="width: 100%">
-            <textarea
-              fluid
-              style="resize: none"
-              id="container-id"
-              pTextarea
-              readonly
-              rows="2"
-              [value]="_item.container_id"></textarea>
-            <label for="container-id">
-              {{ 'CONTAINERS.CONTAINER_ID' | translate }}
-            </label>
-          </p-ifta-label>
+          @if (
+            _item.update_available && _item.available_version;
+            as _availableVersion
+          ) {
+            <p-ifta-label>
+              <p-iconfield>
+                <input
+                  fluid
+                  id="container-available-version"
+                  pInputText
+                  readonly
+                  [value]="_availableVersion" />
+                <p-inputicon
+                  class="pi pi-question-circle"
+                  [pTooltip]="
+                    'CONTAINERS.AVAILABLE_VERSION_HINT' | translate
+                  "></p-inputicon>
+              </p-iconfield>
+              <label for="container-available-version">
+                {{ 'CONTAINERS.AVAILABLE_VERSION' | translate }}
+              </label>
+            </p-ifta-label>
+          }
 
-          <p-ifta-label style="width: 100%">
-            <textarea
-              fluid
-              style="resize: none"
-              id="container-ports"
-              pTextarea
-              readonly
-              [rows]="itemPortsRows()"
-              [value]="itemPorts()"></textarea>
-            <label for="container-ports">
-              {{ 'CONTAINERS.PORTS' | translate }}
-            </label>
-          </p-ifta-label>
+          @if (_item.update_available && _item.available_created) {
+            <p-ifta-label>
+              <input
+                id="container-available-created"
+                pInputText
+                readonly
+                [value]="_item.available_created | dayjs" />
+              <label for="container-available-created">
+                {{ 'CONTAINERS.AVAILABLE_CREATED' | translate }}
+              </label>
+            </p-ifta-label>
+          }
+
+          @if (_item.previous_image_version; as _previousImageVersion) {
+            <p-ifta-label>
+              <p-iconfield>
+                <input
+                  fluid
+                  id="container-previous-image-version"
+                  pInputText
+                  readonly
+                  [value]="_previousImageVersion" />
+                <p-inputicon
+                  class="pi pi-question-circle"
+                  [pTooltip]="
+                    'CONTAINERS.PREVIOUS_IMAGE_VERSION_HINT' | translate
+                  "></p-inputicon>
+              </p-iconfield>
+              <label for="container-previous-image-version">
+                {{ 'CONTAINERS.PREVIOUS_IMAGE_VERSION' | translate }}
+              </label>
+            </p-ifta-label>
+          }
 
           <p-ifta-label>
             <input
@@ -274,26 +286,57 @@
             </p-ifta-label>
           }
 
-          @if (_item.previous_image_version; as _previousImageVersion) {
-            <p-ifta-label>
-              <p-iconfield>
-                <input
-                  fluid
-                  id="container-previous-image-version"
-                  pInputText
-                  readonly
-                  [value]="_previousImageVersion" />
-                <p-inputicon
-                  class="pi pi-question-circle"
-                  [pTooltip]="
-                    'CONTAINERS.PREVIOUS_IMAGE_VERSION_HINT' | translate
-                  "></p-inputicon>
-              </p-iconfield>
-              <label for="container-previous-image-version">
-                {{ 'CONTAINERS.PREVIOUS_IMAGE_VERSION' | translate }}
-              </label>
-            </p-ifta-label>
-          }
+          <p-divider></p-divider>
+
+          <p-ifta-label>
+            <input
+              id="container-name"
+              pInputText
+              readonly
+              [value]="_item.name" />
+            <label for="container-name">
+              {{ 'CONTAINERS.NAME' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label>
+            <input
+              id="container-image"
+              pInputText
+              readonly
+              [value]="_item.image" />
+            <label for="container-image">
+              {{ 'CONTAINERS.IMAGE' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label style="width: 100%">
+            <textarea
+              fluid
+              style="resize: none"
+              id="container-id"
+              pTextarea
+              readonly
+              rows="2"
+              [value]="_item.container_id"></textarea>
+            <label for="container-id">
+              {{ 'CONTAINERS.CONTAINER_ID' | translate }}
+            </label>
+          </p-ifta-label>
+
+          <p-ifta-label style="width: 100%">
+            <textarea
+              fluid
+              style="resize: none"
+              id="container-ports"
+              pTextarea
+              readonly
+              [rows]="itemPortsRows()"
+              [value]="itemPorts()"></textarea>
+            <label for="container-ports">
+              {{ 'CONTAINERS.PORTS' | translate }}
+            </label>
+          </p-ifta-label>
         </section>
       }
     </p-accordion-content>

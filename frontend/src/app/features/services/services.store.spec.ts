@@ -42,6 +42,8 @@ describe('ServicesStore', () => {
     check_enabled: true,
     update_enabled: true,
     update_available: false,
+    available_version: null,
+    available_created: null,
     checked_at: null,
     updated_at: null,
     update_status_state: null,

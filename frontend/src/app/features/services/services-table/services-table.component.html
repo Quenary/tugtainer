@@ -141,7 +141,9 @@
           <p-tag
             severity="success"
             icon="pi pi-check-circle"
-            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"></p-tag>
+            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"
+            [pTooltip]="service.available_version"
+            [tooltipDisabled]="!service.available_version"></p-tag>
         }
         @if (service.update_status_state) {
           <p-tag

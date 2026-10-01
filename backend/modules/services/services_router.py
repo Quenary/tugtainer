@@ -9,6 +9,7 @@ from backend.db.session import get_async_session
 from backend.modules.auth.auth_util import is_authorized_req
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_util import get_host
+from backend.modules.images.image_digest_util import load_image_digests
 from backend.modules.services.services_schemas import (
     ServiceListItem,
     ServicePatchBody,
@@ -49,8 +50,17 @@ async def list_services(
     client = AgentClientManager.get_host_client(host)
     agent_services = await client.service.list()
     db_services = await get_host_services(session, host_id)
+    cache = await load_image_digests(
+        session,
+        [
+            digest
+            for item in db_services
+            if item.remote_digests
+            for digest in item.remote_digests
+        ],
+    )
 
-    return merge_service_items(agent_services, db_services)
+    return merge_service_items(agent_services, db_services, cache)
 
 
 @services_router.patch(
@@ -93,7 +103,8 @@ async def patch_service(
     await session.commit()
     await session.refresh(db_item)
 
-    merged = merge_service_items([target_svc], [db_item])
+    cache = await load_image_digests(session, db_item.remote_digests or [])
+    merged = merge_service_items([target_svc], [db_item], cache)
     return merged[0]
 
 

@@ -41,6 +41,9 @@ Jinja2 context schema:
             "tags of the image the container was running before the update"
           ],
           "previous_image_version": "version from the previous image labels, or None",
+          "current_version": "version from the running image labels, or None",
+          "available_version": "version from the pending image labels, or None",
+          "available_created": "build time of the pending image, or None",
           "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
         }
       ],
@@ -61,7 +64,7 @@ Jinja2 context schema:
 
 A notification is sent only when the body is not empty. For example, if every container has an "available(notified)" result, the default template produces an empty body and no notification is sent.
 
-The default template is defined in [backend/const.py](../backend/const.py).
+The default template is defined in [backend/const.py](../backend/const.py). When `available_version` is set, a line includes it, and also `current_version -> available_version` when the running image has a version label. A template already saved in settings is left as-is; the new wording applies to the built-in default.
 
 ## Health Monitor Notifications
 

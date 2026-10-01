@@ -33,6 +33,8 @@ const createContainer = (
     previous_image_tags: null,
     previous_image_version: null,
     current_version: null,
+    available_version: null,
+    available_created: null,
     created_at: '',
     modified_at: '',
     hooks: null,

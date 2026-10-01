@@ -1,3 +1,4 @@
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -41,6 +42,10 @@ def mock_session(mocker: MockerFixture):
     session_cm.__aenter__ = AsyncMock(return_value=session)
     session_cm.__aexit__ = AsyncMock(return_value=None)
     mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    mocker.patch(
+        f"{base_module}.cache_available_image_metadata",
+        AsyncMock(return_value=None),
+    )
     return session
 
 
@@ -98,6 +103,43 @@ async def test_check_service_local_image_update_available(
     assert result.local_digests == ["nginx@sha256:old_digest"]
     assert result.remote_digests == ["sha256:new_digest"]
     assert mock_session.commit.called
+
+
+@pytest.mark.asyncio
+async def test_check_service_records_resolved_available_version(
+    mocker: MockerFixture, mock_session: MagicMock
+):
+    host = SimpleNamespace(id=1, name="test-host")
+    client = MagicMock()
+    service = _make_service(name="web", image="nginx:alpine")
+    local_img = MagicMock()
+    local_img.id = "sha256:local123"
+    local_img.repo_digests = ["nginx@sha256:old_digest"]
+    local_img.config = SimpleNamespace(
+        labels={"org.opencontainers.image.version": "2.3.6"}
+    )
+    client.image.inspect = AsyncMock(return_value=local_img)
+    mocker.patch(
+        f"{base_module}.get_image_remote_digest",
+        AsyncMock(return_value="sha256:new_digest"),
+    )
+    mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
+    created = datetime(2024, 5, 1)
+    cache = mocker.patch(
+        f"{base_module}.cache_available_image_metadata",
+        AsyncMock(return_value=SimpleNamespace(version="2.3.7", created=created)),
+    )
+
+    result = await run_check_service_job(
+        client,
+        host,  # type: ignore[arg-type]
+        service,
+    )
+
+    assert result.current_version == "2.3.6"
+    assert result.available_version == "2.3.7"
+    assert result.available_created == created
+    cache.assert_awaited_once()
 
 
 @pytest.mark.asyncio

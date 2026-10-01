@@ -16,6 +16,7 @@ from backend.core.container_util.get_container_health_status_str import (
 )
 from backend.core.container_util.is_protected_container import is_protected_container
 from backend.modules.containers.containers_model import ContainersModel
+from backend.modules.images.image_digest_model import ImageDigestModel
 from backend.util.get_version_from_labels import get_version_from_labels
 
 if TYPE_CHECKING:
@@ -73,6 +74,9 @@ class ContainersListItem(BaseModel):
     previous_image_digests: list[str] | None = None
     previous_image_tags: list[str] | None = None
     previous_image_version: str | None = None
+    # Pending digest update, resolved from the image_digests cache.
+    available_version: str | None = None
+    available_created: datetime | None = None
     created_at: datetime | None = None  # Date of creation of db entry
     modified_at: datetime | None = None  # Date ofmodification db entry
     hooks: ContainerHooks | None = None  # Update lifecycle hooks
@@ -84,6 +88,7 @@ class ContainersListItem(BaseModel):
         host_id: int,
         docker_cont: "ContainerInspectResult",
         db_cont: "ContainersModel | None",
+        image_digest: ImageDigestModel | None = None,
     ) -> "ContainersListItem":
         data = {
             "host_id": host_id,
@@ -123,6 +128,9 @@ class ContainersListItem(BaseModel):
                     "hooks": ContainerHooks.model_validate(db_cont.hooks or {}),
                 }
             )
+            if db_cont.update_available and image_digest is not None:
+                data["available_version"] = image_digest.version
+                data["available_created"] = image_digest.created
         return cls.model_validate(data)
 
 

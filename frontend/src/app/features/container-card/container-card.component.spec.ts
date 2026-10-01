@@ -102,6 +102,38 @@ describe('ContainerCardComponent', () => {
     expect(component['previousImageRows']()).toBe(2);
   });
 
+  it('should show computed fields when a check timestamp is set', () => {
+    selectContainer({ checked_at: '2024-05-01T00:00:00' });
+
+    expect(component['hasComputedFields']()).toBe(true);
+  });
+
+  it('should show computed fields for a pending available version', () => {
+    selectContainer({
+      update_available: true,
+      available_version: '2.3.7',
+    });
+
+    expect(component['hasComputedFields']()).toBe(true);
+  });
+
+  it('should hide computed fields when nothing was derived', () => {
+    selectContainer({
+      current_version: null,
+      update_available: false,
+      available_version: null,
+      available_created: null,
+      previous_image_version: null,
+      previous_image_digests: null,
+      previous_image_tags: null,
+      checked_at: null,
+      remote_digests_changed_at: null,
+      updated_at: null,
+    });
+
+    expect(component['hasComputedFields']()).toBe(false);
+  });
+
   it('should have no previous image when nothing was recorded', () => {
     selectContainer({
       previous_image_digests: null,

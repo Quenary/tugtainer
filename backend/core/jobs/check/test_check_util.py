@@ -11,11 +11,16 @@ from python_on_whales.components.container.models import (
 )
 
 from backend.core.jobs.check.check_util import (
+    ImagePlatform,
     filter_containers_by_check_enabled,
     get_image_remote_digest,
     get_registry_bearer_token,
+    get_remote_image_metadata,
     is_insecure_registry,
+    metadata_from_config_blob,
+    next_manifest_step,
     parse_image_spec,
+    parse_oci_created,
     sort_containers_by_checked_at,
 )
 
@@ -462,3 +467,211 @@ async def test_get_registry_bearer_token_rejects_invalid_realm(auth_header, matc
         )
 
     session.get.assert_not_called()
+
+
+def test_parse_oci_created_truncates_fractional_seconds():
+    parsed = parse_oci_created("2015-10-31T22:22:56.015925234Z")
+
+    assert parsed == datetime(2015, 10, 31, 22, 22, 56, 15925)
+    assert parsed is not None
+    assert parsed.tzinfo is None
+
+
+def test_metadata_from_config_blob_reads_version_and_created():
+    meta = metadata_from_config_blob(
+        {
+            "created": "2024-05-01T00:00:00Z",
+            "config": {
+                "Labels": {"org.opencontainers.image.version": " 2.3.7 "},
+            },
+        }
+    )
+
+    assert meta.version == "2.3.7"
+    assert meta.created == datetime(2024, 5, 1)
+
+
+def test_metadata_from_config_blob_keeps_created_when_label_is_missing():
+    meta = metadata_from_config_blob({"created": "2024-05-01T00:00:00Z", "config": {}})
+
+    assert meta.version is None
+    assert meta.created == datetime(2024, 5, 1)
+
+
+def test_next_manifest_step_reads_config_digest_from_image_manifest():
+    step = next_manifest_step(
+        {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {"digest": "sha256:cfg"},
+        }
+    )
+
+    assert step == ("config", "sha256:cfg")
+
+
+def test_next_manifest_step_picks_matching_platform_and_skips_unknown():
+    document = {
+        "mediaType": "application/vnd.oci.image.index.v1+json",
+        "manifests": [
+            {
+                "digest": "sha256:unknown",
+                "platform": {"os": "unknown", "architecture": "unknown"},
+            },
+            {
+                "digest": "sha256:arm",
+                "platform": {"architecture": "arm64", "os": "linux", "variant": "v8"},
+            },
+            {
+                "digest": "sha256:amd",
+                "platform": {"architecture": "amd64", "os": "linux"},
+            },
+        ],
+    }
+
+    assert next_manifest_step(
+        document, ImagePlatform(os="linux", architecture="arm64", variant="v8")
+    ) == ("manifest", "sha256:arm")
+
+
+def test_next_manifest_step_uses_the_only_usable_index_entry():
+    document = {
+        "manifests": [
+            {
+                "digest": "sha256:only",
+                "platform": {"architecture": "amd64", "os": "linux"},
+            }
+        ]
+    }
+
+    assert next_manifest_step(document, None) == ("manifest", "sha256:only")
+
+
+def test_next_manifest_step_does_not_guess_among_several_platforms():
+    document = {
+        "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+        "manifests": [
+            {
+                "digest": "sha256:amd",
+                "platform": {"architecture": "amd64", "os": "linux"},
+            },
+            {
+                "digest": "sha256:arm",
+                "platform": {"architecture": "arm64", "os": "linux"},
+            },
+        ],
+    }
+
+    assert next_manifest_step(document, None) is None
+
+
+def _mock_json_response(status: int, payload: object, headers: dict | None = None):
+    resp = MagicMock()
+    resp.status = status
+    resp.headers = headers or {}
+    resp.raise_for_status = MagicMock()
+    resp.json = AsyncMock(return_value=payload)
+    resp.__aenter__ = AsyncMock(return_value=resp)
+    resp.__aexit__ = AsyncMock(return_value=False)
+    return resp
+
+
+@pytest.mark.asyncio
+async def test_get_remote_image_metadata_follows_index_then_config_blob(
+    mocker: MockerFixture,
+):
+    index = _mock_json_response(
+        200,
+        {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "manifests": [
+                {
+                    "digest": "sha256:child",
+                    "platform": {"architecture": "amd64", "os": "linux"},
+                }
+            ],
+        },
+    )
+    child = _mock_json_response(
+        200,
+        {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {"digest": "sha256:config"},
+        },
+    )
+    blob = _mock_json_response(
+        200,
+        {
+            "created": "2024-05-01T00:00:00Z",
+            "config": {"Labels": {"org.opencontainers.image.version": "9.1.0"}},
+        },
+    )
+    session = MagicMock()
+    session.get = MagicMock(side_effect=[index, child, blob])
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+
+    mocker.patch(f"{module_path}.aiohttp.ClientSession", return_value=session)
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+    )
+
+    meta = await get_remote_image_metadata(
+        "ghcr.io/example/app:latest",
+        ImagePlatform(os="linux", architecture="amd64"),
+    )
+
+    assert meta.version == "9.1.0"
+    assert meta.created == datetime(2024, 5, 1)
+    urls = [call.args[0] for call in session.get.call_args_list]
+    assert urls == [
+        "https://ghcr.io/v2/example/app/manifests/latest",
+        "https://ghcr.io/v2/example/app/manifests/sha256:child",
+        "https://ghcr.io/v2/example/app/blobs/sha256:config",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_remote_image_metadata_reuses_bearer_token_for_the_blob(
+    mocker: MockerFixture,
+):
+    unauthorized = _mock_json_response(
+        401,
+        {},
+        {
+            "WWW-Authenticate": 'Bearer realm="https://auth.example/token",service="ghcr"'
+        },
+    )
+    manifest = _mock_json_response(
+        200,
+        {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {"digest": "sha256:config"},
+        },
+    )
+    blob = _mock_json_response(200, {"created": "2024-05-01T00:00:00Z", "config": {}})
+    session = MagicMock()
+    session.get = MagicMock(side_effect=[unauthorized, manifest, blob])
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+
+    mocker.patch(f"{module_path}.aiohttp.ClientSession", return_value=session)
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+    )
+    token = mocker.patch(
+        f"{module_path}.get_registry_bearer_token",
+        AsyncMock(return_value="tok"),
+    )
+
+    meta = await get_remote_image_metadata("ghcr.io/example/app:latest")
+
+    assert meta.version is None
+    assert meta.created == datetime(2024, 5, 1)
+    token.assert_awaited_once()
+    blob_headers = session.get.call_args_list[2].kwargs["headers"]
+    assert blob_headers["Authorization"] == "Bearer tok"
+    assert "application/vnd.oci.image.config.v1+json" in blob_headers["Accept"]
