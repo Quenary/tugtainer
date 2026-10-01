@@ -20,6 +20,7 @@ from backend.exception import TugAgentClientError
 from backend.modules.auth.auth_router import (
     auth_router as auth_router,
 )
+from backend.modules.auth.auth_util import AUTH_PASSWORD_PROVIDER
 from backend.modules.containers.containers_router import (
     containers_router as containers_router,
 )
@@ -67,6 +68,7 @@ uvicorn_logger.addFilter(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Code to run on startup
+    AUTH_PASSWORD_PROVIDER.issue_setup_code()
     await sync_local_agent_secret()
     await load_agents_on_init()
     await SettingsStorage.load_all()

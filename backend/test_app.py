@@ -23,6 +23,10 @@ async def test_lifespan_startup_order_and_shutdown(mocker):
 
         return _
 
+    mocker.patch(
+        "backend.app.AUTH_PASSWORD_PROVIDER.issue_setup_code",
+        side_effect=lambda: order.append("setup"),
+    )
     mocker.patch("backend.app.sync_local_agent_secret", side_effect=track("sync"))
     mocker.patch("backend.app.load_agents_on_init", side_effect=track("agents"))
     mocker.patch("backend.app.SettingsStorage.load_all", side_effect=track("settings"))
@@ -36,7 +40,7 @@ async def test_lifespan_startup_order_and_shutdown(mocker):
     )
 
     async with lifespan(app):
-        assert order == ["sync", "agents", "settings", "schedule", "cleanup"]
+        assert order == ["setup", "sync", "agents", "settings", "schedule", "cleanup"]
         remove_all.assert_not_awaited()
 
     remove_all.assert_awaited_once()
@@ -44,6 +48,7 @@ async def test_lifespan_startup_order_and_shutdown(mocker):
 
 @pytest.mark.asyncio
 async def test_lifespan_continues_when_cleanup_fails(mocker):
+    mocker.patch("backend.app.AUTH_PASSWORD_PROVIDER.issue_setup_code")
     for name in (
         "sync_local_agent_secret",
         "load_agents_on_init",

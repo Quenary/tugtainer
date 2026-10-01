@@ -7,7 +7,7 @@ import { DebugElement, provideZonelessChangeDetection } from '@angular/core';
 import { provideTranslateService } from '@ngx-translate/core';
 import { of, throwError } from 'rxjs';
 import { By } from '@angular/platform-browser';
-import { NewPasswordFormComponent } from '@shared/components/new-password-form/new-password-form.component';
+import { AuthRegisterComponent } from './auth-register/auth-register.component';
 import { AuthFormComponent } from './auth-form/auth-form.component';
 import { Mocked } from 'vitest';
 import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
@@ -74,8 +74,8 @@ describe('AuthComponent', () => {
     authApiServiceMock.isPasswordSet.mockReturnValue(of(false));
     fixture.detectChanges();
     await fixture.whenStable();
-    const newPasswordForm = de.query(By.directive(NewPasswordFormComponent));
-    expect(newPasswordForm).toBeTruthy();
+    const registerForm = de.query(By.directive(AuthRegisterComponent));
+    expect(registerForm).toBeTruthy();
   });
 
   it('should display oidc button if enabled', async () => {

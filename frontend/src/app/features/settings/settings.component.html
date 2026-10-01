@@ -4,10 +4,7 @@
       {{ 'SETTINGS.SECTIONS.CHANGE_PASSWORD' | translate }}
     </p-accordion-header>
     <p-accordion-content>
-      <app-new-password-form
-        [isLoading]="isLoading()"
-        [fluidButton]="false"
-        (OnSubmit)="onSubmitNewPassword($event)"></app-new-password-form>
+      <app-settings-change-password></app-settings-change-password>
     </p-accordion-content>
   </p-accordion-panel>
 

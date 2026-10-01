@@ -69,6 +69,8 @@ AUTH:
     - 대문자 최소 1자
     - 숫자 최소 1자
   SIGNIN_WITH_OIDC: OIDC로 로그인
+  SETUP_CODE: 설정 코드
+  SETUP_HINT: 일회용 설정 코드가 컨테이너 로그에 기록되었습니다. 5분 동안 유효합니다. 만료되었다면 컨테이너를 다시 시작하세요.
 ACTIONS:
   RESULT: 결과
   PROGRESS: 진행

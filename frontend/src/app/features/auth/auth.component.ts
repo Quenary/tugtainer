@@ -10,8 +10,7 @@ import {
 import { Router } from '@angular/router';
 import { catchError, finalize, firstValueFrom, retry, throwError } from 'rxjs';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
-import { ISetPasswordBody } from 'src/app/features/auth/auth.interface';
-import { NewPasswordFormComponent } from '@shared/components/new-password-form/new-password-form.component';
+import { AuthRegisterComponent } from './auth-register/auth-register.component';
 import { AuthFormComponent } from './auth-form/auth-form.component';
 import { LogoComponent } from '@shared/components/logo/logo.component';
 import { ToastService } from 'src/app/core/services/toast.service';
@@ -23,7 +22,7 @@ import { AutoFocusModule } from 'primeng/autofocus';
 @Component({
   selector: 'app-auth',
   imports: [
-    NewPasswordFormComponent,
+    AuthRegisterComponent,
     AuthFormComponent,
     LogoComponent,
     ButtonModule,
@@ -124,20 +123,8 @@ export class AuthComponent {
     });
   }
 
-  protected onSubmitNewPassword($event: ISetPasswordBody): void {
-    this.isLoading.set(true);
-    this.authApiService
-      .setPassword($event)
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: () => {
-          this.toastService.success();
-          this.isPasswordSet.reload();
-        },
-        error: (error) => {
-          this.toastService.error(error);
-        },
-      });
+  protected onRegistered(): void {
+    this.isPasswordSet.reload();
   }
 
   protected onSubmitLogin(password: string): void {

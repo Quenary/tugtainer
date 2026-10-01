@@ -9,6 +9,7 @@ TUGTAINER_AUTO_UPDATE_LABEL = "dev.quenary.tugtainer.auto_update"
 DOCKER_COMPOSE_DEPENDS_ON_LABEL = "com.docker.compose.depends_on"
 LOCAL_AGENT_URL = "http://127.0.0.1:8001"
 LOCAL_AGENT_ENDPOINT = urlsplit(LOCAL_AGENT_URL).netloc
+SETUP_CODE_TTL_MIN = 5
 DEFAULT_NOTIFICATION_TEMPLATE = """\
 {% set groups = {
   "updated": "Updated",

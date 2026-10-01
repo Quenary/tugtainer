@@ -1,7 +1,26 @@
 import { test as base, type APIRequestContext } from '@playwright/test';
+import { getDocker } from '../shared/util/docker.util';
 
 /** Meets backend password_validator (upper + lower + digit). */
 export const TEST_PASSWORD = 'TestPass1';
+
+const SETUP_CODE_CONTAINER = 'tests-tugtainer';
+
+/** One-time code logged by the app container on startup. */
+async function readSetupCode(): Promise<string> {
+  const logs = await getDocker()
+    .getContainer(SETUP_CODE_CONTAINER)
+    .logs({ stdout: true, stderr: true });
+  const text = Buffer.isBuffer(logs) ? logs.toString('utf8') : String(logs);
+  const match = text.match(/Initial setup code: ([A-Za-z0-9_-]+)/);
+  if (!match) {
+    throw new Error(
+      `Setup code not found in logs of ${SETUP_CODE_CONTAINER}. ` +
+        'Restart the test app if the code expired.',
+    );
+  }
+  return match[1];
+}
 
 /**
  * Ensure the API request context has an authenticated session cookie.
@@ -20,6 +39,7 @@ export async function login(request: APIRequestContext): Promise<void> {
       data: {
         password: TEST_PASSWORD,
         confirm_password: TEST_PASSWORD,
+        setup_code: await readSetupCode(),
       },
     });
     // 401: another parallel worker already set the password.

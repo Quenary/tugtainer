@@ -1,0 +1,21 @@
+:host {
+  .form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 16px;
+
+    .setup-hint,
+    .form-field,
+    app-password-field,
+    .form-button {
+      width: 100%;
+    }
+
+    .setup-hint {
+      margin: 0;
+    }
+  }
+}

@@ -69,6 +69,8 @@ AUTH:
     - At least one uppercase
     - At least one numeric
   SIGNIN_WITH_OIDC: Sign-in with OIDC
+  SETUP_CODE: Setup code
+  SETUP_HINT: A one-time setup code was written to the container logs. It is valid for 5 minutes. If it expired, restart the container.
 ACTIONS:
   RESULT: Result
   PROGRESS: Progress
