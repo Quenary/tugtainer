@@ -29,6 +29,7 @@ from backend.modules.health.health_router import (
 from backend.modules.hosts.hosts_router import (
     hosts_router as hosts_router,
 )
+from backend.modules.hosts.hosts_util import sync_local_agent_secret
 from backend.modules.images.images_router import (
     images_router as images_router,
 )
@@ -66,6 +67,7 @@ uvicorn_logger.addFilter(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Code to run on startup
+    await sync_local_agent_secret()
     await load_agents_on_init()
     await SettingsStorage.load_all()
     await schedule_jobs_on_init()

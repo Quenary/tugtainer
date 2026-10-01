@@ -13,6 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 from dotenv import load_dotenv
 
+from backend.const import LOCAL_AGENT_URL
+
 # revision identifiers, used by Alembic.
 revision: str = "74c15c1c767e"
 down_revision: str | Sequence[str] | None = "b8dc3f40419f"
@@ -25,18 +27,18 @@ def upgrade() -> None:
     op.execute(
         sa.text(
             """
-            UPDATE hosts SET host = 'http://127.0.0.1:8001'
+            UPDATE hosts SET host = :url
             WHERE host IS NULL OR host = ''
             """
-        )
+        ).bindparams(url=LOCAL_AGENT_URL)
     )
     op.execute(
         sa.text(
             """
             UPDATE hosts SET host = 'http://unknown'
-            WHERE host != 'http://127.0.0.1:8001'
+            WHERE host != :url
             """
-        )
+        ).bindparams(url=LOCAL_AGENT_URL)
     )
     with op.batch_alter_table("hosts", schema=None) as batch_op:
         batch_op.drop_column("config")
@@ -76,12 +78,12 @@ def upgrade() -> None:
             sa.text(
                 """
                 INSERT INTO hosts (name, url)
-                SELECT 'local', 'http://127.0.0.1:8001'
+                SELECT 'local', :url
                 WHERE NOT EXISTS (
                     SELECT 1 FROM hosts
                 )
                 """
-            )
+            ).bindparams(url=LOCAL_AGENT_URL)
         )
     # update secret of local agent
     # the agent could have been added earlier,
@@ -92,9 +94,9 @@ def upgrade() -> None:
             sa.text(
                 """
                 UPDATE hosts SET secret = :secret
-                WHERE url == 'http://127.0.0.1:8001'
+                WHERE url == :url
                 """
-            ).bindparams(secret=agent_secret)
+            ).bindparams(secret=agent_secret, url=LOCAL_AGENT_URL)
         )
 
 

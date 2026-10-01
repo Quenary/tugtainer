@@ -8,7 +8,7 @@ from python_on_whales.components.container.models import (
     ContainerInspectResult,
 )
 
-from backend.const import TUGTAINER_HIDDEN_LABEL
+from backend.const import LOCAL_AGENT_URL, TUGTAINER_HIDDEN_LABEL
 from backend.core.agent_client import AgentClient, build_agent_ssl
 from backend.modules.hosts.test_hosts_schemas import TEST_CA_PEM
 from backend.util.pinned_ip_resolver import PinnedIpResolver
@@ -167,7 +167,7 @@ async def test_request_disables_ssl_even_with_ca(
 
 @pytest.mark.asyncio
 async def test_agent_client_swarm_info_and_service(mocker: MockerFixture):
-    client = AgentClient(id=1, url="http://127.0.0.1:8001")
+    client = AgentClient(id=1, url=LOCAL_AGENT_URL)
     mocker.patch.object(
         client,
         "_request",

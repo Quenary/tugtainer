@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, status
 from python_on_whales import DockerException
@@ -26,7 +27,24 @@ uvicorn_logger = logging.getLogger("uvicorn.access")
 uvicorn_logger.setLevel(Config.LOG_LEVEL)
 uvicorn_logger.addFilter(EndpointLoggingFilter(["/public/health"]))
 
-app = FastAPI(root_path="/api")
+
+def warn_if_agent_secret_missing() -> None:
+    """Warn when the agent will reject requests because no secret is configured."""
+    if Config.AGENT_SECRET or Config.ALLOW_UNAUTHENTICATED_AGENT:
+        return
+    logging.warning(
+        "AGENT_SECRET is not set. Requests to this agent will be rejected. "
+        "Set AGENT_SECRET, or set ALLOW_UNAUTHENTICATED_AGENT=true for development."
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    warn_if_agent_secret_missing()
+    yield
+
+
+app = FastAPI(root_path="/api", lifespan=lifespan)
 app.include_router(public_router)
 app.include_router(container_router)
 app.include_router(image_router)

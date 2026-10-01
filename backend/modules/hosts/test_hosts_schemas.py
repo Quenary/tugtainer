@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 import backend.modules.containers.containers_model  # noqa: F401
 import backend.modules.health.health_model  # noqa: F401
+from backend.const import LOCAL_AGENT_URL
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_schemas import HostCreate, HostInfo, HostUpdate
 
@@ -66,7 +67,7 @@ def test_host_info_reports_missing_secret():
         enabled=True,
         prune=False,
         prune_all=False,
-        url="http://127.0.0.1:8001",
+        url=LOCAL_AGENT_URL,
         secret="",
         ssl=True,
         timeout=5,

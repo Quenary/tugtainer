@@ -1,10 +1,13 @@
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
 
+from backend.const import LOCAL_AGENT_URL
 from backend.modules.hosts.hosts_util import (
     annotate_available_updates_count,
+    sync_local_agent_secret,
 )
 
 
@@ -132,3 +135,72 @@ async def test_annotate_available_updates_count_swarm_only_services(
 
     assert h.available_updates_count == 4
     assert session.execute.call_count == 2
+
+
+def _session_with_hosts(mocker: MockerFixture, hosts: list):
+    session = AsyncMock()
+    db_result = MagicMock()
+    db_result.scalars.return_value.all.return_value = hosts
+    session.execute = AsyncMock(return_value=db_result)
+    session.commit = AsyncMock()
+    session_cm = MagicMock()
+    session_cm.__aenter__ = AsyncMock(return_value=session)
+    session_cm.__aexit__ = AsyncMock(return_value=None)
+    mocker.patch(
+        "backend.modules.hosts.hosts_util.async_session_maker",
+        return_value=session_cm,
+    )
+    return session
+
+
+@pytest.mark.asyncio
+async def test_sync_local_agent_secret_updates_only_local_host(mocker: MockerFixture):
+    local = SimpleNamespace(name="local", url=LOCAL_AGENT_URL, secret="old")
+    session = _session_with_hosts(mocker, [local])
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_SECRET", "new-secret")
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_ENABLED", True)
+    info = mocker.patch("backend.modules.hosts.hosts_util.logging.info")
+
+    await sync_local_agent_secret()
+
+    assert local.secret == "new-secret"
+    session.commit.assert_awaited_once()
+    info.assert_called_once()
+    assert "new-secret" not in str(info.call_args)
+    clause = session.execute.await_args.args[0].whereclause
+    assert clause.left.name == "url"
+    assert clause.right.value == LOCAL_AGENT_URL
+
+
+@pytest.mark.asyncio
+async def test_sync_local_agent_secret_skips_unchanged(mocker: MockerFixture):
+    local = SimpleNamespace(name="local", url=LOCAL_AGENT_URL, secret="same")
+    session = _session_with_hosts(mocker, [local])
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_SECRET", "same")
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_ENABLED", True)
+
+    await sync_local_agent_secret()
+
+    assert local.secret == "same"
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "secret, enabled",
+    [
+        (None, True),
+        ("", True),
+        ("new-secret", False),
+    ],
+)
+async def test_sync_local_agent_secret_noop_when_unsafe(
+    mocker: MockerFixture, secret, enabled
+):
+    session_maker = mocker.patch("backend.modules.hosts.hosts_util.async_session_maker")
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_SECRET", secret)
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_ENABLED", enabled)
+
+    await sync_local_agent_secret()
+
+    session_maker.assert_not_called()

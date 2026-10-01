@@ -1,4 +1,5 @@
 from ipaddress import ip_network
+from urllib.parse import urlsplit
 
 TUGTAINER_DEPENDS_ON_LABEL = "dev.quenary.tugtainer.depends_on"
 TUGTAINER_PROTECTED_LABEL = "dev.quenary.tugtainer.protected"
@@ -6,6 +7,8 @@ TUGTAINER_HIDDEN_LABEL = "dev.quenary.tugtainer.hidden"
 TUGTAINER_AUTO_CHECK_LABEL = "dev.quenary.tugtainer.auto_check"
 TUGTAINER_AUTO_UPDATE_LABEL = "dev.quenary.tugtainer.auto_update"
 DOCKER_COMPOSE_DEPENDS_ON_LABEL = "com.docker.compose.depends_on"
+LOCAL_AGENT_URL = "http://127.0.0.1:8001"
+LOCAL_AGENT_ENDPOINT = urlsplit(LOCAL_AGENT_URL).netloc
 DEFAULT_NOTIFICATION_TEMPLATE = """\
 {% set groups = {
   "updated": "Updated",
