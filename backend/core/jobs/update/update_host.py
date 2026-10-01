@@ -7,6 +7,7 @@ from python_on_whales.components.container.models import (
 )
 
 from backend.core.agent_client import AgentClient
+from backend.core.container_util.container_labels import exclude_hidden_containers
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.core.jobs.update.update_job_executor import execute_update_job
 from backend.core.jobs.update.update_job_plan_builder import build_update_job_plan
@@ -45,8 +46,8 @@ async def run_update_host_job(
             logger.exception("Failed to get docker version")
             docker_version = None
 
-        containers: list[ContainerInspectResult] = await client.container.list(
-            GetContainerListBodySchema(all=True)
+        containers: list[ContainerInspectResult] = exclude_hidden_containers(
+            await client.container.list(GetContainerListBodySchema(all=True))
         )
         if names is not None:
             name_set = set(names)

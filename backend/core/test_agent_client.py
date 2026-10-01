@@ -3,10 +3,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
+from python_on_whales.components.container.models import (
+    ContainerConfig,
+    ContainerInspectResult,
+)
 
+from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.core.agent_client import AgentClient, build_agent_ssl
 from backend.modules.hosts.test_hosts_schemas import TEST_CA_PEM
 from backend.util.pinned_ip_resolver import PinnedIpResolver
+from shared.schemas.container_schemas import GetContainerListBodySchema
 
 
 def _mock_response(mocker: MockerFixture, body: str = "{}"):
@@ -64,6 +70,32 @@ async def test_session_uses_pinned_resolver_without_dns_cache():
         assert connector._resolver._hostname == "agent.example.com"
     finally:
         await client.close_session()
+
+
+@pytest.mark.asyncio
+async def test_container_list_returns_hidden_container_from_agent(
+    mocker: MockerFixture,
+):
+    hidden = ContainerInspectResult(
+        id="h1",
+        name="hidden",
+        config=ContainerConfig(labels={TUGTAINER_HIDDEN_LABEL: "true"}),
+    )
+    client = AgentClient(id=1, url="https://agent.example.com", secret="secret")
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=[hidden.model_dump(mode="json")]),
+    )
+
+    result = await client.container.list(GetContainerListBodySchema(all=True))
+
+    assert [item.name for item in result] == ["hidden"]
+    assert (
+        result[0].config is not None
+        and result[0].config.labels is not None
+        and result[0].config.labels[TUGTAINER_HIDDEN_LABEL] == "true"
+    )
 
 
 def test_build_agent_ssl_default_verify():

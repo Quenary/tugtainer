@@ -13,6 +13,7 @@ from backend.const import (
     DEFAULT_HEALTH_MONITOR_RESTART_ATTEMPTS,
 )
 from backend.core.agent_client import AgentClientManager
+from backend.core.container_util.container_labels import exclude_hidden_containers
 from backend.core.container_util.get_container_health_status_str import (
     get_container_health_status_str,
 )
@@ -99,8 +100,8 @@ async def _do_check_host_health(host_id: int) -> None:
     client: Final = AgentClientManager.get_host_client(host)
     try:
         # Get all containers from agent
-        agent_containers: Final = await client.container.list(
-            GetContainerListBodySchema(all=True)
+        agent_containers: Final = exclude_hidden_containers(
+            await client.container.list(GetContainerListBodySchema(all=True))
         )
     except Exception:
         logger.exception(f"Failed to fetch containers from host {host_id}")

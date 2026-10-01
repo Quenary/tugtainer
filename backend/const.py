@@ -2,6 +2,7 @@ from ipaddress import ip_network
 
 TUGTAINER_DEPENDS_ON_LABEL = "dev.quenary.tugtainer.depends_on"
 TUGTAINER_PROTECTED_LABEL = "dev.quenary.tugtainer.protected"
+TUGTAINER_HIDDEN_LABEL = "dev.quenary.tugtainer.hidden"
 TUGTAINER_AUTO_CHECK_LABEL = "dev.quenary.tugtainer.auto_check"
 TUGTAINER_AUTO_UPDATE_LABEL = "dev.quenary.tugtainer.auto_update"
 DOCKER_COMPOSE_DEPENDS_ON_LABEL = "com.docker.compose.depends_on"

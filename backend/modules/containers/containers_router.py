@@ -12,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import Config
 from backend.core.agent_client import AgentClientManager
-from backend.core.container_util.is_protected_container import is_protected_container
+from backend.core.container_util.container_labels import (
+    exclude_hidden_containers,
+    get_container_hidden_label,
+    get_container_protected_label,
+)
 from backend.core.jobs.check.check_all import check_all_hosts
 from backend.core.jobs.jobs_cache import JobStateCache
 from backend.core.jobs.jobs_coordinator import host_job_coordinator
@@ -84,9 +88,18 @@ def _raise_for_host_status(host: HostsModel):
         raise HTTPException(409, "Host disabled")
 
 
+def _raise_for_hidden_container(container: ContainerInspectResult):
+    """Raise not-found if the container is outside the application scope."""
+    if get_container_hidden_label(container) is True:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Container not found",
+        )
+
+
 def _raise_for_protected_container(container: ContainerInspectResult):
     """Raise an error if container is protected"""
-    if is_protected_container(container):
+    if get_container_protected_label(container) is True:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
             "Protected container not allowed",
@@ -105,7 +118,9 @@ async def containers_list(
     host = await get_host(host_id, session)
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
-    containers = await client.container.list(GetContainerListBodySchema(all=True))
+    containers = exclude_hidden_containers(
+        await client.container.list(GetContainerListBodySchema(all=True))
+    )
     result = await session.execute(
         select(ContainersModel).where(ContainersModel.host_id == host_id)
     )
@@ -155,6 +170,7 @@ async def get_container(
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
     inspect = await client.container.inspect(container_name_or_id)
+    _raise_for_hidden_container(inspect)
     stmt = (
         select(ContainersModel)
         .where(
@@ -205,6 +221,7 @@ async def patch_container_data(
     _raise_for_host_status(host)
     client = AgentClientManager.get_host_client(host)
     d_cont = await client.container.inspect(db_cont.name)
+    _raise_for_hidden_container(d_cont)
     cache = await _digest_cache(session, [db_cont])
     return ContainersListItem.from_sources(
         host_id,
@@ -232,7 +249,9 @@ async def _enqueue_host_job(
     resolved = names if names else None
     if resolved:
         client = AgentClientManager.get_host_client(host)
-        containers = await client.container.list(GetContainerListBodySchema(all=True))
+        containers = exclude_hidden_containers(
+            await client.container.list(GetContainerListBodySchema(all=True))
+        )
         existing = {c.name for c in containers}
         found = [n for n in resolved if n in existing]
         if not found:
@@ -345,6 +364,8 @@ async def logs(
     _raise_for_host_status(host)
 
     client = AgentClientManager.get_host_client(host)
+    inspect = await client.container.inspect(container_name_or_id)
+    _raise_for_hidden_container(inspect)
     return await client.container.logs(
         container_name_or_id,
         body,
@@ -382,6 +403,7 @@ async def control_containers(
         *[client.container.inspect(name) for name in body.names]
     )
     for inspect in inspect_results:
+        _raise_for_hidden_container(inspect)
         _raise_for_protected_container(inspect)
 
     semaphore = asyncio.Semaphore(4)

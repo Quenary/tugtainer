@@ -13,9 +13,9 @@ from backend.const import (
 )
 from backend.core.container_util.container_labels import (
     get_container_auto_update_label,
+    get_container_protected_label,
 )
 from backend.core.container_util.get_service_name import get_service_name
-from backend.core.container_util.is_protected_container import is_protected_container
 from backend.core.container_util.is_running_container import is_running_container
 from backend.db.session import async_session_maker
 from backend.modules.containers.containers_model import (
@@ -72,13 +72,13 @@ async def build_update_job_plan(
     containers = [
         c
         for c in containers
-        if not is_protected_container(c)
+        if get_container_protected_label(c) is not True
         and (is_running_container(c) or not update_only_running)
     ]
     manual_for = [
         c
         for c in manual_for
-        if not is_protected_container(c)
+        if get_container_protected_label(c) is not True
         and (is_running_container(c) or not update_only_running)
     ]
 

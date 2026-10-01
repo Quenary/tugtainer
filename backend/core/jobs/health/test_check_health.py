@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.core.jobs.health.check_health import (
     HealthMonitorNotificationBatchItem,
     _do_check_host_health,
@@ -70,6 +71,42 @@ async def test_do_check_host_health_inserts_missing_container(mocker: MockerFixt
 
     assert session.add.call_count >= 2  # State and History
     session.commit.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_do_check_host_health_skips_hidden_container(mocker: MockerFixture):
+    host = SimpleNamespace(id=1, name="host1", enabled=True, container_hc_timeout=60)
+
+    session = AsyncMock()
+    session.get.return_value = host
+
+    db_containers_mock = MagicMock()
+    db_containers_mock.scalars.return_value.all.return_value = []
+    session.execute.return_value = db_containers_mock
+
+    session_cm = MagicMock()
+    session_cm.__aenter__ = AsyncMock(return_value=session)
+    session_cm.__aexit__ = AsyncMock(return_value=None)
+    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+
+    client_manager_mock = mocker.patch(f"{base_module}.AgentClientManager")
+    host_client = MagicMock()
+    hidden = SimpleNamespace(
+        id="c1",
+        name="hidden",
+        state=SimpleNamespace(health=SimpleNamespace()),
+        config=SimpleNamespace(labels={TUGTAINER_HIDDEN_LABEL: "true"}),
+    )
+    host_client.container.list = AsyncMock(return_value=[hidden])
+    client_manager_mock.get_host_client.return_value = host_client
+
+    mocker.patch(f"{base_module}.SettingsStorage.get", return_value="1")
+    insert_mock = AsyncMock()
+    mocker.patch(f"{base_module}.insert_or_update_container", insert_mock)
+
+    await _do_check_host_health(1)
+
+    insert_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

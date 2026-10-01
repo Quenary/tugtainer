@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import Config
 from backend.core.agent_client import AgentClientManager
+from backend.core.container_util.container_labels import exclude_hidden_containers
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.containers.containers_schemas import ContainersListItem
 from backend.modules.hosts.hosts_model import HostsModel
@@ -56,9 +57,10 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
 
     try:
         client: Final = AgentClientManager.get_host_client(host)
-        containers: Final = await client.container.list(
+        all_containers: Final = await client.container.list(
             GetContainerListBodySchema(all=True)
         )
+        containers: Final = exclude_hidden_containers(all_containers)
 
         containers_db: Final = (
             (
@@ -124,7 +126,7 @@ async def get_host_summary(host: HostsModel, session: AsyncSession) -> HostSumma
                     by_update_available_auto_check[avail_key] += 1
 
         images: Final = await client.image.list(GetImageListBodySchema(all=True))
-        used_images: Final[set[str]] = {c.image for c in containers if c.image}
+        used_images: Final[set[str]] = {c.image for c in all_containers if c.image}
 
         total_images: Final = len(images)
         unused_images: int = 0

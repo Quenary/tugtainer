@@ -10,11 +10,11 @@ from python_on_whales.components.container.models import (
 from backend.core.container_util.container_labels import (
     get_container_auto_check_label,
     get_container_auto_update_label,
+    get_container_protected_label,
 )
 from backend.core.container_util.get_container_health_status_str import (
     get_container_health_status_str,
 )
-from backend.core.container_util.is_protected_container import is_protected_container
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.images.image_digest_model import ImageDigestModel
 from backend.util.get_version_from_labels import get_version_from_labels
@@ -47,9 +47,7 @@ class ContainersListItem(BaseModel):
     status: str | None
     exit_code: int | None
     health: str | None
-    protected: (
-        bool  # Whether container labeled with dev.quenary.tugtainer.protected=true
-    )
+    protected: bool  # Whether dev.quenary.tugtainer.protected is enabled
     auto_check_label: bool | None = None  # From dev.quenary.tugtainer.auto_check
     auto_update_label: bool | None = None  # From dev.quenary.tugtainer.auto_update
     host_id: int  # host id is also stored in db, but it must be always defined
@@ -101,7 +99,7 @@ class ContainersListItem(BaseModel):
             "status": docker_cont.state.status if docker_cont.state else None,
             "exit_code": docker_cont.state.exit_code if docker_cont.state else None,
             "health": get_container_health_status_str(docker_cont),
-            "protected": is_protected_container(docker_cont),
+            "protected": get_container_protected_label(docker_cont) is True,
             "auto_check_label": get_container_auto_check_label(docker_cont),
             "auto_update_label": get_container_auto_update_label(docker_cont),
             "current_version": get_version_from_labels(

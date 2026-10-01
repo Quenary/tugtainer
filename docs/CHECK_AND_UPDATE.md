@@ -33,6 +33,7 @@ When the digests differ, Tugtainer also resolves a human-readable version and th
 
 - ### Process
   1. The dependency graph is built:
+     - [hidden](CUSTOM_LABELS.md#devquenarytugtainerhiddentrue) containers are excluded before the graph is built;
      - [protected](CUSTOM_LABELS.md#devquenarytugtainerprotectedtrue) containers are skipped;
      - not `running` containers are skipped by default (can be changed in the settings);
   2. A set of **updatable** containers is calculated:

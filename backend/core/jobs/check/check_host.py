@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from backend.core.agent_client import AgentClient
+from backend.core.container_util.container_labels import exclude_hidden_containers
 from backend.core.jobs.check.check_container import run_check_container_job
 from backend.core.jobs.check.check_util import (
     filter_containers_by_check_enabled,
@@ -40,7 +41,9 @@ async def run_check_host_job(
 
     try:
         logger.info("Starting check job")
-        containers = await client.container.list(GetContainerListBodySchema(all=True))
+        containers = exclude_hidden_containers(
+            await client.container.list(GetContainerListBodySchema(all=True))
+        )
         async with async_session_maker() as session:
             containers_db: Final = await get_host_containers(
                 session,
