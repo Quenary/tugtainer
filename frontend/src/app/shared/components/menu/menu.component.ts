@@ -11,15 +11,13 @@ import { finalize, map } from 'rxjs';
 import { LogoComponent } from '../logo/logo.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { RippleModule } from '@openng/optimus-ui/ripple';
-import { SelectModule } from '@openng/optimus-ui/select';
-import { MenuModule } from '@openng/optimus-ui/menu';
+import { Button } from '@openng/optimus-ui/button';
+import { Menu } from '@openng/optimus-ui/menu';
 import { AppStore } from 'src/app/app.store';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 import { HostsStore } from 'src/app/features/hosts/hosts.store';
-import { BadgeModule } from '@openng/optimus-ui/badge';
-import { ProgressSpinnerModule } from '@openng/optimus-ui/progressspinner';
+import { Badge } from '@openng/optimus-ui/badge';
+import { ProgressSpinner } from '@openng/optimus-ui/progressspinner';
 import { supportedLocales } from 'src/app/app.consts';
 import { localeLabels, TAppLang } from 'src/app/core/services/locale.service';
 
@@ -28,15 +26,12 @@ import { localeLabels, TAppLang } from 'src/app/core/services/locale.service';
   imports: [
     LogoComponent,
     TranslatePipe,
-    ButtonModule,
+    Button,
     RouterLink,
     RouterLinkActive,
-    RippleModule,
-    SelectModule,
-    MenuModule,
-    RouterLink,
-    BadgeModule,
-    ProgressSpinnerModule,
+    Menu,
+    Badge,
+    ProgressSpinner,
   ],
   templateUrl: './menu.component.html',
   styleUrl: './menu.component.scss',

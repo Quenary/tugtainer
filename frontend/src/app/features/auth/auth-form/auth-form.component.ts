@@ -12,20 +12,21 @@ import {
 } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { PasswordModule } from '@openng/optimus-ui/password';
-import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
-import { AutoFocusModule } from '@openng/optimus-ui/autofocus';
+import { ButtonLabel, Button } from '@openng/optimus-ui/button';
+import { Password } from '@openng/optimus-ui/password';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { AutoFocus } from '@openng/optimus-ui/autofocus';
 
 @Component({
   selector: 'app-auth-form',
   imports: [
     TranslatePipe,
     ReactiveFormsModule,
-    ButtonModule,
-    PasswordModule,
-    IftaLabelModule,
-    AutoFocusModule,
+    ButtonLabel,
+    Button,
+    Password,
+    IftaLabel,
+    AutoFocus,
   ],
   templateUrl: './auth-form.component.html',
   styleUrl: './auth-form.component.scss',

@@ -18,10 +18,10 @@ import {
   createPasswordControls,
   passwordMatchValidator,
 } from '@shared/forms/password-form';
-import { AutoFocusModule } from '@openng/optimus-ui/autofocus';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
-import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { AutoFocus } from '@openng/optimus-ui/autofocus';
+import { ButtonLabel, Button } from '@openng/optimus-ui/button';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { InputText } from '@openng/optimus-ui/inputtext';
 import { finalize, map } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
@@ -32,10 +32,11 @@ import { AuthApiService } from 'src/app/features/auth/auth-api.service';
     TranslatePipe,
     ReactiveFormsModule,
     PasswordFieldComponent,
-    ButtonModule,
-    IftaLabelModule,
-    InputTextModule,
-    AutoFocusModule,
+    ButtonLabel,
+    Button,
+    IftaLabel,
+    InputText,
+    AutoFocus,
   ],
   templateUrl: './auth-register.component.html',
   styleUrl: './auth-register.component.scss',

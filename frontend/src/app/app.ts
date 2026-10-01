@@ -10,19 +10,18 @@ import {
   Router,
   RouterOutlet,
 } from '@angular/router';
-import { ToastModule } from '@openng/optimus-ui/toast';
+import { Toast } from '@openng/optimus-ui/toast';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { combineLatest, filter, map, Observable, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MenuItem } from '@openng/optimus-ui/api';
 import { AsyncPipe } from '@angular/common';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { TagModule } from '@openng/optimus-ui/tag';
-import { DialogModule } from '@openng/optimus-ui/dialog';
+import { Button } from '@openng/optimus-ui/button';
+import { Tag } from '@openng/optimus-ui/tag';
+import { Dialog } from '@openng/optimus-ui/dialog';
 import { DeployGuidelineUrl } from './app.consts';
-import { SelectModule } from '@openng/optimus-ui/select';
 import { FormsModule } from '@angular/forms';
-import { BreadcrumbModule } from '@openng/optimus-ui/breadcrumb';
+import { Breadcrumb } from '@openng/optimus-ui/breadcrumb';
 import { IRouteData } from '@shared/interfaces/route-data.interface';
 import { AppStore } from './app.store';
 import { MenuComponent } from '@shared/components/menu/menu.component';
@@ -31,16 +30,14 @@ import { MenuComponent } from '@shared/components/menu/menu.component';
   selector: 'app-root',
   imports: [
     RouterOutlet,
-    ToastModule,
+    Toast,
     AsyncPipe,
-    ButtonModule,
+    Button,
     TranslatePipe,
-    TagModule,
-    DialogModule,
-    SelectModule,
-    AsyncPipe,
+    Tag,
+    Dialog,
     FormsModule,
-    BreadcrumbModule,
+    Breadcrumb,
     MenuComponent,
   ],
   templateUrl: './app.html',

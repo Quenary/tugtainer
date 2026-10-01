@@ -9,17 +9,17 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { catchError, map, of } from 'rxjs';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { ButtonGroupModule } from '@openng/optimus-ui/buttongroup';
-import { DialogModule } from '@openng/optimus-ui/dialog';
-import { IconFieldModule } from '@openng/optimus-ui/iconfield';
-import { InputIconModule } from '@openng/optimus-ui/inputicon';
-import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { Button } from '@openng/optimus-ui/button';
+import { ButtonGroup } from '@openng/optimus-ui/buttongroup';
+import { Dialog } from '@openng/optimus-ui/dialog';
+import { IconField } from '@openng/optimus-ui/iconfield';
+import { InputIcon } from '@openng/optimus-ui/inputicon';
+import { InputText } from '@openng/optimus-ui/inputtext';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
-import { ToggleButtonModule } from '@openng/optimus-ui/togglebutton';
-import { TooltipModule } from '@openng/optimus-ui/tooltip';
-import { ToolbarModule } from '@openng/optimus-ui/toolbar';
+import { Tag } from '@openng/optimus-ui/tag';
+import { ToggleButton } from '@openng/optimus-ui/togglebutton';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
+import { Toolbar } from '@openng/optimus-ui/toolbar';
 import { shouldIncludeHostToJobsDialog } from '@shared/interfaces/jobs.interface';
 import { TagSeverity } from '@shared/types/tag-severity.type';
 import { ToastService } from 'src/app/core/services/toast.service';
@@ -41,17 +41,17 @@ export const ServiceUpdateStatusSeverity: Record<string, TagSeverity> = {
   imports: [
     TableModule,
     TranslatePipe,
-    ToggleButtonModule,
+    ToggleButton,
     FormsModule,
-    TagModule,
-    ButtonModule,
-    ButtonGroupModule,
-    IconFieldModule,
-    InputTextModule,
-    InputIconModule,
-    TooltipModule,
-    DialogModule,
-    ToolbarModule,
+    Tag,
+    Button,
+    ButtonGroup,
+    IconField,
+    InputText,
+    InputIcon,
+    Tooltip,
+    Dialog,
+    Toolbar,
   ],
   templateUrl: './services-table.component.html',
   styleUrl: './services-table.component.scss',

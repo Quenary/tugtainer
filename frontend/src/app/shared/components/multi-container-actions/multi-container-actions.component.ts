@@ -9,7 +9,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslateService } from '@ngx-translate/core';
 import { MenuItem } from '@openng/optimus-ui/api';
-import { SplitButtonModule } from '@openng/optimus-ui/splitbutton';
+import { SplitButton } from '@openng/optimus-ui/splitbutton';
 import { TControlContainerCommand } from 'src/app/features/containers/containers.interface';
 import { IContainerEntity } from 'src/app/features/containers/containers.store';
 import { filterContainersForCommand } from '@shared/functions/container-action-rules.function';
@@ -37,7 +37,7 @@ export const MULTI_CONTAINER_COMMAND_ICONS: Record<
 
 @Component({
   selector: 'app-multi-container-actions',
-  imports: [SplitButtonModule],
+  imports: [SplitButton],
   templateUrl: './multi-container-actions.component.html',
   styleUrl: './multi-container-actions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

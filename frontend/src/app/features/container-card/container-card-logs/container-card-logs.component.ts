@@ -8,11 +8,11 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { DatePickerModule } from '@openng/optimus-ui/datepicker';
-import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
-import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
-import { ToggleSwitchModule } from '@openng/optimus-ui/toggleswitch';
+import { Button } from '@openng/optimus-ui/button';
+import { DatePicker } from '@openng/optimus-ui/datepicker';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { InputNumber } from '@openng/optimus-ui/inputnumber';
+import { ToggleSwitch } from '@openng/optimus-ui/toggleswitch';
 import { catchError, debounceTime, firstValueFrom, of, startWith } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { ContainersApiService } from 'src/app/features/containers/containers-api.service';
@@ -23,14 +23,14 @@ import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 @Component({
   selector: 'app-container-card-logs',
   imports: [
-    InputNumberModule,
-    ButtonModule,
+    InputNumber,
+    Button,
     TranslatePipe,
-    IftaLabelModule,
+    IftaLabel,
     ReactiveFormsModule,
-    DatePickerModule,
+    DatePicker,
     BooleanFieldComponent,
-    ToggleSwitchModule,
+    ToggleSwitch,
   ],
   templateUrl: './container-card-logs.component.html',
   styleUrl: './container-card-logs.component.scss',

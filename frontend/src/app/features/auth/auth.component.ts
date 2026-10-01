@@ -14,10 +14,10 @@ import { AuthRegisterComponent } from './auth-register/auth-register.component';
 import { AuthFormComponent } from './auth-form/auth-form.component';
 import { LogoComponent } from '@shared/components/logo/logo.component';
 import { ToastService } from 'src/app/core/services/toast.service';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { DividerModule } from '@openng/optimus-ui/divider';
+import { Button } from '@openng/optimus-ui/button';
+import { Divider } from '@openng/optimus-ui/divider';
 import { TranslatePipe } from '@ngx-translate/core';
-import { AutoFocusModule } from '@openng/optimus-ui/autofocus';
+import { AutoFocus } from '@openng/optimus-ui/autofocus';
 
 @Component({
   selector: 'app-auth',
@@ -25,11 +25,11 @@ import { AutoFocusModule } from '@openng/optimus-ui/autofocus';
     AuthRegisterComponent,
     AuthFormComponent,
     LogoComponent,
-    ButtonModule,
-    DividerModule,
+    Button,
+    Divider,
     TranslatePipe,
-    DividerModule,
-    AutoFocusModule,
+    Divider,
+    AutoFocus,
   ],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',

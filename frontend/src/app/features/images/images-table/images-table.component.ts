@@ -3,16 +3,14 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ConfirmationService } from '@openng/optimus-ui/api';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { DialogModule } from '@openng/optimus-ui/dialog';
-import { IconFieldModule } from '@openng/optimus-ui/iconfield';
-import { InputIconModule } from '@openng/optimus-ui/inputicon';
-import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { Button } from '@openng/optimus-ui/button';
+import { IconField } from '@openng/optimus-ui/iconfield';
+import { InputIcon } from '@openng/optimus-ui/inputicon';
+import { InputText } from '@openng/optimus-ui/inputtext';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
-import { ToggleSwitchModule } from '@openng/optimus-ui/toggleswitch';
-import { ToolbarModule } from '@openng/optimus-ui/toolbar';
-import { TooltipModule } from '@openng/optimus-ui/tooltip';
+import { Tag } from '@openng/optimus-ui/tag';
+import { Toolbar } from '@openng/optimus-ui/toolbar';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 import { ImagesStore } from '../images.store';
 import { RouterLink } from '@angular/router';
@@ -21,19 +19,17 @@ import { RouterLink } from '@angular/router';
   selector: 'app-images-table',
   imports: [
     TableModule,
-    ButtonModule,
+    Button,
     TranslatePipe,
-    TagModule,
-    IconFieldModule,
-    InputTextModule,
-    InputIconModule,
+    Tag,
+    IconField,
+    InputText,
+    InputIcon,
     DayjsPipe,
-    TooltipModule,
+    Tooltip,
     DecimalPipe,
-    DialogModule,
-    ToggleSwitchModule,
     FormsModule,
-    ToolbarModule,
+    Toolbar,
     RouterLink,
   ],
   providers: [ConfirmationService],

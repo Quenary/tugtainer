@@ -1,20 +1,20 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { AutoFocusModule } from '@openng/optimus-ui/autofocus';
+import { AutoFocus } from '@openng/optimus-ui/autofocus';
 import { Divider } from '@openng/optimus-ui/divider';
-import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
-import { PasswordModule } from '@openng/optimus-ui/password';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { Password } from '@openng/optimus-ui/password';
 
 @Component({
   selector: 'app-password-field',
   imports: [
     TranslatePipe,
     ReactiveFormsModule,
-    PasswordModule,
-    IftaLabelModule,
+    Password,
+    IftaLabel,
     Divider,
-    AutoFocusModule,
+    AutoFocus,
   ],
   templateUrl: './password-field.component.html',
   styleUrl: './password-field.component.scss',

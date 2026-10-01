@@ -8,9 +8,9 @@ import {
   output,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { ButtonGroupModule } from '@openng/optimus-ui/buttongroup';
-import { TooltipModule } from '@openng/optimus-ui/tooltip';
+import { Button } from '@openng/optimus-ui/button';
+import { ButtonGroup } from '@openng/optimus-ui/buttongroup';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
 import { TControlContainerCommand } from 'src/app/features/containers/containers.interface';
 import { ESettingKey } from 'src/app/features/settings/settings.interface';
 import {
@@ -27,7 +27,7 @@ import { canExecuteContainerCommand } from '@shared/functions/container-action-r
  */
 @Component({
   selector: 'app-container-actions',
-  imports: [ButtonGroupModule, ButtonModule, TranslatePipe, TooltipModule],
+  imports: [ButtonGroup, Button, TranslatePipe, Tooltip],
   templateUrl: './container-actions.component.html',
   styleUrl: './container-actions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

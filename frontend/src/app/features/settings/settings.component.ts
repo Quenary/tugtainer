@@ -2,8 +2,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { SettingsChangePasswordComponent } from './settings-change-password/settings-change-password.component';
 import { SettingsFormComponent } from './settings-form/settings-form.component';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DividerModule } from '@openng/optimus-ui/divider';
-import { AccordionModule } from '@openng/optimus-ui/accordion';
+import {
+  AccordionPanel,
+  AccordionHeader,
+  AccordionContent,
+  Accordion,
+} from '@openng/optimus-ui/accordion';
 
 @Component({
   selector: 'app-settings',
@@ -11,8 +15,10 @@ import { AccordionModule } from '@openng/optimus-ui/accordion';
     SettingsChangePasswordComponent,
     TranslatePipe,
     SettingsFormComponent,
-    DividerModule,
-    AccordionModule,
+    AccordionPanel,
+    AccordionHeader,
+    AccordionContent,
+    Accordion,
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',

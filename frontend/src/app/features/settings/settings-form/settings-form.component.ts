@@ -26,19 +26,18 @@ import {
 } from '../settings.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
-import { ButtonModule } from '@openng/optimus-ui/button';
-import { InputTextModule } from '@openng/optimus-ui/inputtext';
-import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
-import { TooltipModule } from '@openng/optimus-ui/tooltip';
-import { FluidModule } from '@openng/optimus-ui/fluid';
+import { ButtonLabel, Button } from '@openng/optimus-ui/button';
+import { InputText } from '@openng/optimus-ui/inputtext';
+import { InputNumber } from '@openng/optimus-ui/inputnumber';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   AutoCompleteCompleteEvent,
-  AutoCompleteModule,
+  AutoComplete,
 } from '@openng/optimus-ui/autocomplete';
-import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
-import { TextareaModule } from '@openng/optimus-ui/textarea';
-import { ToggleSwitchModule } from '@openng/optimus-ui/toggleswitch';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { Textarea } from '@openng/optimus-ui/textarea';
+import { ToggleSwitch } from '@openng/optimus-ui/toggleswitch';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { SettingsStore } from '../settings.store';
 
@@ -46,17 +45,17 @@ import { SettingsStore } from '../settings.store';
   selector: 'app-settings-form',
   imports: [
     ReactiveFormsModule,
-    ButtonModule,
-    InputTextModule,
-    InputNumberModule,
+    ButtonLabel,
+    Button,
+    InputText,
+    InputNumber,
     TranslatePipe,
-    TooltipModule,
-    FluidModule,
+    Tooltip,
     NgTemplateOutlet,
-    AutoCompleteModule,
-    ToggleSwitchModule,
-    IftaLabelModule,
-    TextareaModule,
+    AutoComplete,
+    ToggleSwitch,
+    IftaLabel,
+    Textarea,
     BooleanFieldComponent,
   ],
   templateUrl: './settings-form.component.html',

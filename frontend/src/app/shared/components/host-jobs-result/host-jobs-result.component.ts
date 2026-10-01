@@ -10,7 +10,7 @@ import {
   TContainerJobOutcome,
 } from '@shared/interfaces/jobs-result.interface';
 import { TagSeverity } from '@shared/types/tag-severity.type';
-import { TagModule } from '@openng/optimus-ui/tag';
+import { Tag } from '@openng/optimus-ui/tag';
 
 export interface IHostJobResultItem {
   id: string;
@@ -21,7 +21,7 @@ export interface IHostJobResultItem {
 
 @Component({
   selector: 'app-host-jobs-result',
-  imports: [TagModule],
+  imports: [Tag],
   templateUrl: './host-jobs-result.component.html',
   styleUrl: './host-jobs-result.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
