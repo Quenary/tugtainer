@@ -1,4 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import {
   ActivatedRoute,
   NavigationEnd,
@@ -39,6 +44,7 @@ import { MenuComponent } from '@shared/components/menu/menu.component';
     MenuComponent,
   ],
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.scss',
 })
 export class App {

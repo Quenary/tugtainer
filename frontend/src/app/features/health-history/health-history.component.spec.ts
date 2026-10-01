@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HealthHistoryComponent } from './health-history.component';
 import { HostsStore } from '../hosts/hosts.store';
-import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import { signal, WritableSignal } from '@angular/core';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { HealthHistoryApiService } from './health-history-api.service';
@@ -26,9 +26,10 @@ describe('HealthHistoryComponent', () => {
     );
 
     await TestBed.configureTestingModule({
-      imports: [HealthHistoryComponent, TranslateModule.forRoot()],
+      imports: [HealthHistoryComponent],
       providers: [
         provideRouter([]),
+        provideTranslateService(),
         { provide: HostsStore, useValue: hostsStoreMock },
         {
           provide: HealthHistoryApiService,

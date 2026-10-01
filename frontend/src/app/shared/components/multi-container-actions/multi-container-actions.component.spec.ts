@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import { MultiContainerActionsComponent } from './multi-container-actions.component';
 import { EContainerStatus } from 'src/app/features/containers/containers.interface';
 import { IContainerEntity } from 'src/app/features/containers/containers.store';
@@ -49,7 +49,8 @@ describe('MultiContainerActionsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MultiContainerActionsComponent, TranslateModule.forRoot()],
+      imports: [MultiContainerActionsComponent],
+      providers: [provideTranslateService()],
     }).compileComponents();
 
     translateService = TestBed.inject(TranslateService);

@@ -16,6 +16,7 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@env/*": ["src/environments/*"],
