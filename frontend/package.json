@@ -48,11 +48,11 @@
     "@ngrx/signals": "^22.0.1",
     "@ngx-translate/core": "^18.0.0",
     "@ngx-translate/http-loader": "^18.0.0",
-    "@primeuix/themes": "^2.0.3",
+    "@openng/icons": "^1.0.0",
+    "@openng/optimus-ui": "^2.0.2",
+    "@openng/optimus-ui-themes": "^2.0.2",
     "cron-validate": "^1.5.3",
     "dayjs": "^1.11.23",
-    "primeicons": "^7.0.0",
-    "primeng": "^21.1.10",
     "rxjs": "~7.8.0",
     "socket.io-client": "^4.8.4",
     "tslib": "^2.8.1",
@@ -73,15 +73,5 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "8.71.0",
     "vitest": "^5.0.3"
-  },
-  "overrides": {
-    "primeng": {
-      "@angular/cdk": "$@angular/cdk",
-      "@angular/common": "$@angular/common",
-      "@angular/core": "$@angular/core",
-      "@angular/forms": "$@angular/forms",
-      "@angular/platform-browser": "$@angular/platform-browser",
-      "@angular/router": "$@angular/router"
-    }
   }
 }

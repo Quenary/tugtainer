@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { SettingsChangePasswordComponent } from './settings-change-password/settings-change-password.component';
 import { SettingsFormComponent } from './settings-form/settings-form.component';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DividerModule } from 'primeng/divider';
-import { AccordionModule } from 'primeng/accordion';
+import { DividerModule } from '@openng/optimus-ui/divider';
+import { AccordionModule } from '@openng/optimus-ui/accordion';
 
 @Component({
   selector: 'app-settings',

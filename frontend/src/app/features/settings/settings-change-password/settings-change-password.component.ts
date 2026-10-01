@@ -9,7 +9,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PasswordFieldComponent } from '@shared/components/password-field/password-field.component';
 import { createPasswordForm } from '@shared/forms/password-form';
-import { ButtonModule } from 'primeng/button';
+import { ButtonModule } from '@openng/optimus-ui/button';
 import { finalize, map } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';

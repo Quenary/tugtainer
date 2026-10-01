@@ -8,19 +8,19 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { ButtonGroupModule } from 'primeng/buttongroup';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { ButtonGroupModule } from '@openng/optimus-ui/buttongroup';
+import { IconFieldModule } from '@openng/optimus-ui/iconfield';
+import { InputIconModule } from '@openng/optimus-ui/inputicon';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { TableModule } from '@openng/optimus-ui/table';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { ToolbarModule } from '@openng/optimus-ui/toolbar';
 import { HostStatusComponent } from '@shared/components/host-status/host-status.component';
 import { HostsStore, IHostEntity } from '../hosts.store';
-import { TooltipModule } from 'primeng/tooltip';
-import { DialogModule } from 'primeng/dialog';
-import { BadgeModule } from 'primeng/badge';
+import { TooltipModule } from '@openng/optimus-ui/tooltip';
+import { DialogModule } from '@openng/optimus-ui/dialog';
+import { BadgeModule } from '@openng/optimus-ui/badge';
 
 const onlyAvailableStorageKey = 'tugtainer-hosts-only-available';
 

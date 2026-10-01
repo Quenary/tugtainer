@@ -4,9 +4,9 @@ import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { HostsStore } from '../hosts/hosts.store';
 import { ImagesStore } from '../images/images.store';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { provideTranslateService } from '@ngx-translate/core';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 import { ResizeObserverMock } from '@testing/mocks/resize-observer.mock';
 

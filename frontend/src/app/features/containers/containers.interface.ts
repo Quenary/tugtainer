@@ -118,7 +118,7 @@ export enum EContainerStatus {
   dead = 'dead',
 }
 /**
- * Mapping of container status to primeng severity color
+ * Mapping of container status to tag severity color
  */
 export const EContainerStatusSeverity: Record<EContainerStatus, TagSeverity> = {
   [EContainerStatus.created]: 'contrast',
@@ -130,7 +130,7 @@ export const EContainerStatusSeverity: Record<EContainerStatus, TagSeverity> = {
   [EContainerStatus.dead]: 'danger',
 };
 /**
- * Mapping of container health status to primeng severity color
+ * Mapping of container health status to tag severity color
  */
 export const EContainerHealthSeverity: Record<string, TagSeverity> = {
   healthy: 'success',

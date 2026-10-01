@@ -9,11 +9,11 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
-import { TableLazyLoadEvent, TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { SelectModule } from '@openng/optimus-ui/select';
+import { TableLazyLoadEvent, TableModule } from '@openng/optimus-ui/table';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { ToolbarModule } from '@openng/optimus-ui/toolbar';
 import { firstValueFrom } from 'rxjs';
 import { EContainerHealthSeverity } from '../containers/containers.interface';
 import { HostsStore } from '../hosts/hosts.store';

@@ -10,7 +10,7 @@ import {
   TContainerJobOutcome,
 } from '@shared/interfaces/jobs-result.interface';
 import { TagSeverity } from '@shared/types/tag-severity.type';
-import { TagModule } from 'primeng/tag';
+import { TagModule } from '@openng/optimus-ui/tag';
 
 export interface IHostJobResultItem {
   id: string;

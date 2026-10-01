@@ -4,9 +4,9 @@ import { HostsDashboardComponent } from './hosts-dashboard.component';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { HostsStore } from '../hosts.store';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { provideTranslateService } from '@ngx-translate/core';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 
 describe('HostsDashboardComponent', () => {

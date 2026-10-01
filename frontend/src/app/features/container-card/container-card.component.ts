@@ -15,21 +15,21 @@ import {
   IContainerPatchBody,
   TControlContainerCommand,
 } from 'src/app/features/containers/containers.interface';
-import { AccordionModule } from 'primeng/accordion';
+import { AccordionModule } from '@openng/optimus-ui/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { TextareaModule } from 'primeng/textarea';
-import { ToolbarModule } from 'primeng/toolbar';
-import { ButtonModule } from 'primeng/button';
-import { ToggleButtonModule } from 'primeng/togglebutton';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
+import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
+import { IconFieldModule } from '@openng/optimus-ui/iconfield';
+import { InputIconModule } from '@openng/optimus-ui/inputicon';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
+import { ToolbarModule } from '@openng/optimus-ui/toolbar';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { ToggleButtonModule } from '@openng/optimus-ui/togglebutton';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { ToggleSwitchModule } from '@openng/optimus-ui/toggleswitch';
 import { FormsModule } from '@angular/forms';
 import { ContainerCardLogsComponent } from './container-card-logs/container-card-logs.component';
 import { ContainerCardHooksComponent } from './container-card-hooks/container-card-hooks.component';
@@ -40,7 +40,7 @@ import { ContainersStore } from '../containers/containers.store';
 import { InspectComponent } from '@shared/components/inspect/inspect.component';
 import { SettingsStore } from '../settings/settings.store';
 import { ESettingKey } from '../settings/settings.interface';
-import { DividerModule } from 'primeng/divider';
+import { DividerModule } from '@openng/optimus-ui/divider';
 
 @Component({
   selector: 'app-container-card',

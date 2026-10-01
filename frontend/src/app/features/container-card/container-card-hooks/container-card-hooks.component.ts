@@ -7,9 +7,9 @@ import {
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
 import { IContainerHooks } from 'src/app/features/containers/containers.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 

@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { SkeletonModule } from 'primeng/skeleton';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
+import { SkeletonModule } from '@openng/optimus-ui/skeleton';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { IHostEntity } from 'src/app/features/hosts/hosts.store';
 
 @Component({

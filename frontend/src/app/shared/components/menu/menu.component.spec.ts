@@ -5,11 +5,11 @@ import { AppStore } from 'src/app/app.store';
 import { provideTranslateService } from '@ngx-translate/core';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 import { provideRouter, Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { HostsStore } from 'src/app/features/hosts/hosts.store';
 import { signal } from '@angular/core';
 import { of, Subject } from 'rxjs';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 import { getAuthApiServiceMock } from '@testing/mocks/auth-api.service.mock';
 

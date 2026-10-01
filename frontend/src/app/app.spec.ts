@@ -18,7 +18,7 @@ import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
 import { AppStore } from './app.store';
 import { DeepSignal } from '@ngrx/signals';
 import { MenuComponent } from '@shared/components/menu/menu.component';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 
 @Component({
   selector: 'app-test-comp',

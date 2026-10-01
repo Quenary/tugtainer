@@ -18,10 +18,10 @@ import {
   createPasswordControls,
   passwordMatchValidator,
 } from '@shared/forms/password-form';
-import { AutoFocusModule } from 'primeng/autofocus';
-import { ButtonModule } from 'primeng/button';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { InputTextModule } from 'primeng/inputtext';
+import { AutoFocusModule } from '@openng/optimus-ui/autofocus';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { finalize, map } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';

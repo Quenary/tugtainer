@@ -26,19 +26,19 @@ import {
 } from '../settings.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import cronValidate from 'cron-validate';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { TooltipModule } from 'primeng/tooltip';
-import { FluidModule } from 'primeng/fluid';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
+import { TooltipModule } from '@openng/optimus-ui/tooltip';
+import { FluidModule } from '@openng/optimus-ui/fluid';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   AutoCompleteCompleteEvent,
   AutoCompleteModule,
-} from 'primeng/autocomplete';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { TextareaModule } from 'primeng/textarea';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
+} from '@openng/optimus-ui/autocomplete';
+import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
+import { ToggleSwitchModule } from '@openng/optimus-ui/toggleswitch';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { SettingsStore } from '../settings.store';
 

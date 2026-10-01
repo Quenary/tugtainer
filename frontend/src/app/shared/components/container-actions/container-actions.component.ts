@@ -8,9 +8,9 @@ import {
   output,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { ButtonGroupModule } from 'primeng/buttongroup';
-import { TooltipModule } from 'primeng/tooltip';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { ButtonGroupModule } from '@openng/optimus-ui/buttongroup';
+import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { TControlContainerCommand } from 'src/app/features/containers/containers.interface';
 import { ESettingKey } from 'src/app/features/settings/settings.interface';
 import {

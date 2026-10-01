@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { HostsStore } from '../hosts/hosts.store';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ContainerCardComponent } from './container-card.component';
 import {
@@ -10,7 +10,7 @@ import {
   IContainerEntity,
 } from '../containers/containers.store';
 import { IContainerInfo } from '../containers/containers.interface';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 
 describe('ContainerCardComponent', () => {

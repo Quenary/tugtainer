@@ -8,13 +8,13 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToggleButtonModule } from 'primeng/togglebutton';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { IconFieldModule } from '@openng/optimus-ui/iconfield';
+import { InputIconModule } from '@openng/optimus-ui/inputicon';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { TableModule } from '@openng/optimus-ui/table';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { ToggleButtonModule } from '@openng/optimus-ui/togglebutton';
 import {
   IContainerListItem,
   EContainerStatus,
@@ -22,16 +22,16 @@ import {
   EContainerHealthSeverity,
   TControlContainerCommand,
 } from 'src/app/features/containers/containers.interface';
-import { Tooltip } from 'primeng/tooltip';
-import { FieldsetModule } from 'primeng/fieldset';
-import { DialogModule } from 'primeng/dialog';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
+import { FieldsetModule } from '@openng/optimus-ui/fieldset';
+import { DialogModule } from '@openng/optimus-ui/dialog';
 import { RouterLink } from '@angular/router';
-import { ToolbarModule } from 'primeng/toolbar';
+import { ToolbarModule } from '@openng/optimus-ui/toolbar';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
 import { MultiContainerActionsComponent } from '@shared/components/multi-container-actions/multi-container-actions.component';
 import { ContainersStore, IContainerEntity } from '../containers.store';
-import { ButtonGroupModule } from 'primeng/buttongroup';
-import { MultiSelectModule } from 'primeng/multiselect';
+import { ButtonGroupModule } from '@openng/optimus-ui/buttongroup';
+import { MultiSelectModule } from '@openng/optimus-ui/multiselect';
 import { SettingsStore } from 'src/app/features/settings/settings.store';
 import { ESettingKey } from 'src/app/features/settings/settings.interface';
 

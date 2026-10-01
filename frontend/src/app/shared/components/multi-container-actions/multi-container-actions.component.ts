@@ -8,8 +8,8 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslateService } from '@ngx-translate/core';
-import { MenuItem } from 'primeng/api';
-import { SplitButtonModule } from 'primeng/splitbutton';
+import { MenuItem } from '@openng/optimus-ui/api';
+import { SplitButtonModule } from '@openng/optimus-ui/splitbutton';
 import { TControlContainerCommand } from 'src/app/features/containers/containers.interface';
 import { IContainerEntity } from 'src/app/features/containers/containers.store';
 import { filterContainersForCommand } from '@shared/functions/container-action-rules.function';

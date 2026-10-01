@@ -9,14 +9,14 @@ import { InspectComponent } from '@shared/components/inspect/inspect.component';
 import { ImagesStore } from '../images/images.store';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AccordionModule } from 'primeng/accordion';
+import { AccordionModule } from '@openng/optimus-ui/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ToolbarModule } from 'primeng/toolbar';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { TextareaModule } from 'primeng/textarea';
-import { InputTextModule } from 'primeng/inputtext';
+import { ToolbarModule } from '@openng/optimus-ui/toolbar';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { ImageCardGeneralComponent } from './image-card-general/image-card-general.component';
 
 @Component({

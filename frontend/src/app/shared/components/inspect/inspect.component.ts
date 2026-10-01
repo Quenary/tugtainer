@@ -6,9 +6,9 @@ import {
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { isPremitive } from '@shared/functions/is-premitive.function';
-import { TreeNode } from 'primeng/api';
-import { TabsModule } from 'primeng/tabs';
-import { TreeModule } from 'primeng/tree';
+import { TreeNode } from '@openng/optimus-ui/api';
+import { TabsModule } from '@openng/optimus-ui/tabs';
+import { TreeModule } from '@openng/optimus-ui/tree';
 
 @Component({
   selector: 'app-inspect',

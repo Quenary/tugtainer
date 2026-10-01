@@ -13,13 +13,13 @@ import {
   isHostBusy,
   TJobKind,
 } from '@shared/interfaces/jobs.interface';
-import { DynamicDialogConfig } from 'primeng/dynamicdialog';
+import { DynamicDialogConfig } from '@openng/optimus-ui/dynamicdialog';
 import { TranslatePipe } from '@ngx-translate/core';
-import { TagModule } from 'primeng/tag';
-import { AccordionModule } from 'primeng/accordion';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { AccordionModule } from '@openng/optimus-ui/accordion';
 import { HostJobsResultComponent } from '../host-jobs-result/host-jobs-result.component';
 import { TagSeverity } from '@shared/types/tag-severity.type';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ProgressSpinnerModule } from '@openng/optimus-ui/progressspinner';
 
 export interface IJobsProgressHostData {
   hostId: number;

@@ -3,7 +3,7 @@ import { HealthHistoryComponent } from './health-history.component';
 import { HostsStore } from '../hosts/hosts.store';
 import { provideTranslateService } from '@ngx-translate/core';
 import { signal, WritableSignal } from '@angular/core';
-import { TableLazyLoadEvent } from 'primeng/table';
+import { TableLazyLoadEvent } from '@openng/optimus-ui/table';
 import { HealthHistoryApiService } from './health-history-api.service';
 import { of } from 'rxjs';
 import { Mocked } from 'vitest';

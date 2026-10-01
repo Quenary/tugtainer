@@ -12,10 +12,10 @@ import {
 } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ERegexp } from 'src/app/app.consts';
-import { ButtonModule } from 'primeng/button';
-import { PasswordModule } from 'primeng/password';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { AutoFocusModule } from 'primeng/autofocus';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { PasswordModule } from '@openng/optimus-ui/password';
+import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
+import { AutoFocusModule } from '@openng/optimus-ui/autofocus';
 
 @Component({
   selector: 'app-auth-form',

@@ -8,11 +8,11 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { DatePickerModule } from '@openng/optimus-ui/datepicker';
+import { IftaLabelModule } from '@openng/optimus-ui/iftalabel';
+import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
+import { ToggleSwitchModule } from '@openng/optimus-ui/toggleswitch';
 import { catchError, debounceTime, firstValueFrom, of, startWith } from 'rxjs';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { ContainersApiService } from 'src/app/features/containers/containers-api.service';

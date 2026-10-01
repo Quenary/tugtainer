@@ -10,19 +10,19 @@ import {
   Router,
   RouterOutlet,
 } from '@angular/router';
-import { ToastModule } from 'primeng/toast';
+import { ToastModule } from '@openng/optimus-ui/toast';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { combineLatest, filter, map, Observable, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { MenuItem } from 'primeng/api';
+import { MenuItem } from '@openng/optimus-ui/api';
 import { AsyncPipe } from '@angular/common';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { DialogModule } from 'primeng/dialog';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { TagModule } from '@openng/optimus-ui/tag';
+import { DialogModule } from '@openng/optimus-ui/dialog';
 import { DeployGuidelineUrl } from './app.consts';
-import { SelectModule } from 'primeng/select';
+import { SelectModule } from '@openng/optimus-ui/select';
 import { FormsModule } from '@angular/forms';
-import { BreadcrumbModule } from 'primeng/breadcrumb';
+import { BreadcrumbModule } from '@openng/optimus-ui/breadcrumb';
 import { IRouteData } from '@shared/interfaces/route-data.interface';
 import { AppStore } from './app.store';
 import { MenuComponent } from '@shared/components/menu/menu.component';

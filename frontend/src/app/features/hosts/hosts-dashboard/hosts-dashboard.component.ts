@@ -13,18 +13,18 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs';
 import { HostsStore } from '../hosts.store';
 import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
-import { CardModule } from 'primeng/card';
+import { CardModule } from '@openng/optimus-ui/card';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { TagModule } from 'primeng/tag';
+import { TagModule } from '@openng/optimus-ui/tag';
 import { HostStatusComponent } from '@shared/components/host-status/host-status.component';
-import { ButtonModule } from 'primeng/button';
-import { ButtonGroupModule } from 'primeng/buttongroup';
-import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { ButtonGroupModule } from '@openng/optimus-ui/buttongroup';
+import { ConfirmPopupModule } from '@openng/optimus-ui/confirmpopup';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { FormsModule } from '@angular/forms';
-import { TooltipModule } from 'primeng/tooltip';
-import { ConfirmationService } from 'primeng/api';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { TooltipModule } from '@openng/optimus-ui/tooltip';
+import { ConfirmationService } from '@openng/optimus-ui/api';
+import { ToggleSwitchModule } from '@openng/optimus-ui/toggleswitch';
 import { shouldIncludeHostToJobsDialog } from '@shared/interfaces/jobs.interface';
 
 @Component({
