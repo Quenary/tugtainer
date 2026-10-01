@@ -11,6 +11,7 @@ from backend.core.jobs.update.update_hooks import (
 from backend.enums.hook_name_enum import EHookName
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.containers.containers_schemas import ContainerHooks
+from backend.testing import patch_async_session
 from shared.schemas.container_schemas import ExecContainerRequestBodySchema
 
 base_module = "backend.core.jobs.update.update_hooks"
@@ -81,11 +82,7 @@ async def test_get_hooks_map_builds_map_from_db_rows(mocker: MockerFixture):
 
     session_mock = AsyncMock()
     session_mock.scalars.return_value = [row_with_hooks, row_without_hooks]
-
-    session_cm = mocker.MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session_mock)
-    session_cm.__aexit__ = AsyncMock(return_value=False)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session_mock)
 
     result = await get_hooks_map(1, ["with-hooks", "without-hooks"])
 

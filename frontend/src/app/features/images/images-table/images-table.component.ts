@@ -2,17 +2,15 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ConfirmationService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { ToolbarModule } from 'primeng/toolbar';
-import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmationService } from '@openng/optimus-ui/api';
+import { Button } from '@openng/optimus-ui/button';
+import { IconField } from '@openng/optimus-ui/iconfield';
+import { InputIcon } from '@openng/optimus-ui/inputicon';
+import { InputText } from '@openng/optimus-ui/inputtext';
+import { TableModule } from '@openng/optimus-ui/table';
+import { Tag } from '@openng/optimus-ui/tag';
+import { Toolbar } from '@openng/optimus-ui/toolbar';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 import { ImagesStore } from '../images.store';
 import { RouterLink } from '@angular/router';
@@ -21,19 +19,17 @@ import { RouterLink } from '@angular/router';
   selector: 'app-images-table',
   imports: [
     TableModule,
-    ButtonModule,
+    Button,
     TranslatePipe,
-    TagModule,
-    IconFieldModule,
-    InputTextModule,
-    InputIconModule,
+    Tag,
+    IconField,
+    InputText,
+    InputIcon,
     DayjsPipe,
-    TooltipModule,
+    Tooltip,
     DecimalPipe,
-    DialogModule,
-    ToggleSwitchModule,
     FormsModule,
-    ToolbarModule,
+    Toolbar,
     RouterLink,
   ],
   providers: [ConfirmationService],

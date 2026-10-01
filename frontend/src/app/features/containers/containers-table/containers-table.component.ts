@@ -8,13 +8,13 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToggleButtonModule } from 'primeng/togglebutton';
+import { Button } from '@openng/optimus-ui/button';
+import { IconField } from '@openng/optimus-ui/iconfield';
+import { InputIcon } from '@openng/optimus-ui/inputicon';
+import { InputText } from '@openng/optimus-ui/inputtext';
+import { TableModule } from '@openng/optimus-ui/table';
+import { Tag } from '@openng/optimus-ui/tag';
+import { ToggleButton } from '@openng/optimus-ui/togglebutton';
 import {
   IContainerListItem,
   EContainerStatus,
@@ -22,16 +22,14 @@ import {
   EContainerHealthSeverity,
   TControlContainerCommand,
 } from 'src/app/features/containers/containers.interface';
-import { Tooltip } from 'primeng/tooltip';
-import { FieldsetModule } from 'primeng/fieldset';
-import { DialogModule } from 'primeng/dialog';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
 import { RouterLink } from '@angular/router';
-import { ToolbarModule } from 'primeng/toolbar';
+import { Toolbar } from '@openng/optimus-ui/toolbar';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
 import { MultiContainerActionsComponent } from '@shared/components/multi-container-actions/multi-container-actions.component';
 import { ContainersStore, IContainerEntity } from '../containers.store';
-import { ButtonGroupModule } from 'primeng/buttongroup';
-import { MultiSelectModule } from 'primeng/multiselect';
+import { ButtonGroup } from '@openng/optimus-ui/buttongroup';
+import { MultiSelect } from '@openng/optimus-ui/multiselect';
 import { SettingsStore } from 'src/app/features/settings/settings.store';
 import { ESettingKey } from 'src/app/features/settings/settings.interface';
 
@@ -43,22 +41,20 @@ const statusesStorageKey = 'tugtainer-containers-statuses';
   imports: [
     TableModule,
     TranslatePipe,
-    ToggleButtonModule,
+    ToggleButton,
     FormsModule,
-    TagModule,
-    ButtonModule,
-    IconFieldModule,
-    InputTextModule,
-    InputIconModule,
+    Tag,
+    Button,
+    IconField,
+    InputText,
+    InputIcon,
     Tooltip,
-    FieldsetModule,
-    DialogModule,
     RouterLink,
-    ToolbarModule,
+    Toolbar,
     ContainerActionsComponent,
     MultiContainerActionsComponent,
-    ButtonGroupModule,
-    MultiSelectModule,
+    ButtonGroup,
+    MultiSelect,
   ],
   templateUrl: './containers-table.component.html',
   styleUrl: './containers-table.component.scss',

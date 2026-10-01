@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { HostsStore } from '../hosts/hosts.store';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ContainerCardComponent } from './container-card.component';
 import {
@@ -10,7 +10,7 @@ import {
   IContainerEntity,
 } from '../containers/containers.store';
 import { IContainerInfo } from '../containers/containers.interface';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 
 describe('ContainerCardComponent', () => {
@@ -49,22 +49,24 @@ describe('ContainerCardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should select container', () => {
-    const selectSpy = vi.spyOn(containersStore, 'select');
-    const loadSelectedSpy = vi.spyOn(containersStore, 'loadSelected');
-    activatedRouteParams.next({ containerNameOrId: 'test' });
+  describe('selection', () => {
+    it('selects the container from the route', () => {
+      const selectSpy = vi.spyOn(containersStore, 'select');
+      const loadSelectedSpy = vi.spyOn(containersStore, 'loadSelected');
+      activatedRouteParams.next({ containerNameOrId: 'test' });
 
-    expect(selectSpy).toHaveBeenCalledWith('test');
-    expect(selectSpy).toHaveBeenCalledTimes(1);
-    expect(loadSelectedSpy).toHaveBeenCalledTimes(1);
-  });
+      expect(selectSpy).toHaveBeenCalledWith('test');
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+      expect(loadSelectedSpy).toHaveBeenCalledTimes(1);
+    });
 
-  it('should de-select container', () => {
-    const selectSpy = vi.spyOn(containersStore, 'select');
-    fixture.destroy();
+    it('clears the selection on destroy', () => {
+      const selectSpy = vi.spyOn(containersStore, 'select');
+      fixture.destroy();
 
-    expect(selectSpy).toHaveBeenCalledWith(null);
-    expect(selectSpy).toHaveBeenCalledTimes(1);
+      expect(selectSpy).toHaveBeenCalledWith(null);
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   const selectContainer = (item: Partial<IContainerEntity>) =>
@@ -72,69 +74,107 @@ describe('ContainerCardComponent', () => {
       .spyOn(containersStore, 'selected')
       .mockReturnValue(item as IContainerEntity);
 
-  it('should prefer the previous image digests over its tags', () => {
-    selectContainer({
-      previous_image_digests: ['nginx@sha256:abc'],
-      previous_image_tags: ['nginx:latest'],
+  describe('previousImage', () => {
+    it('prefers digests over tags', () => {
+      selectContainer({
+        previous_image_digests: ['nginx@sha256:abc'],
+        previous_image_tags: ['nginx:latest'],
+      });
+
+      expect(component['previousImage']()).toBe('nginx@sha256:abc');
     });
 
-    expect(component['previousImage']()).toBe('nginx@sha256:abc');
-  });
+    it('falls back to tags without digests', () => {
+      selectContainer({
+        previous_image_digests: [],
+        previous_image_tags: ['my-app:latest'],
+      });
 
-  it('should fall back to the previous image tags without digests', () => {
-    selectContainer({
-      previous_image_digests: [],
-      previous_image_tags: ['my-app:latest'],
+      expect(component['previousImage']()).toBe('my-app:latest');
     });
 
-    expect(component['previousImage']()).toBe('my-app:latest');
-  });
+    it('joins multiple references', () => {
+      selectContainer({
+        previous_image_digests: ['nginx@sha256:abc', 'nginx@sha256:def'],
+        previous_image_tags: null,
+      });
 
-  it('should join multiple previous image references', () => {
-    selectContainer({
-      previous_image_digests: ['nginx@sha256:abc', 'nginx@sha256:def'],
-      previous_image_tags: null,
+      expect(component['previousImage']()).toBe(
+        'nginx@sha256:abc\nnginx@sha256:def',
+      );
+      expect(component['previousImageRows']()).toBe(2);
     });
 
-    expect(component['previousImage']()).toBe(
-      'nginx@sha256:abc\nnginx@sha256:def',
-    );
-    expect(component['previousImageRows']()).toBe(2);
+    it('is empty when nothing was recorded', () => {
+      selectContainer({
+        previous_image_digests: null,
+        previous_image_tags: null,
+      });
+
+      expect(component['previousImage']()).toBe('');
+      expect(component['previousImageRows']()).toBe(2);
+    });
   });
 
-  it('should have no previous image when nothing was recorded', () => {
-    selectContainer({
-      previous_image_digests: null,
-      previous_image_tags: null,
+  describe('hasComputedFields', () => {
+    it('is shown when a check timestamp is set', () => {
+      selectContainer({ checked_at: '2024-05-01T00:00:00' });
+
+      expect(component['hasComputedFields']()).toBe(true);
     });
 
-    expect(component['previousImage']()).toBe('');
-    expect(component['previousImageRows']()).toBe(2);
+    it('is shown for a pending available version', () => {
+      selectContainer({
+        update_available: true,
+        available_version: '2.3.7',
+      });
+
+      expect(component['hasComputedFields']()).toBe(true);
+    });
+
+    it('is hidden when nothing was derived', () => {
+      selectContainer({
+        current_version: null,
+        update_available: false,
+        available_version: null,
+        available_created: null,
+        previous_image_version: null,
+        previous_image_digests: null,
+        previous_image_tags: null,
+        checked_at: null,
+        remote_digests_changed_at: null,
+        updated_at: null,
+      });
+
+      expect(component['hasComputedFields']()).toBe(false);
+    });
   });
 
-  it('should expose the source URL from inspect labels', () => {
-    vi.spyOn(containersStore, 'selectedInfo').mockReturnValue({
-      inspect: {
-        Config: {
-          Labels: {
-            'org.opencontainers.image.source': 'https://github.com/foo/bar',
+  describe('sourceUrl', () => {
+    it('reads the inspect label', () => {
+      vi.spyOn(containersStore, 'selectedInfo').mockReturnValue({
+        inspect: {
+          Config: {
+            Labels: {
+              'org.opencontainers.image.source': 'https://github.com/foo/bar',
+            },
           },
         },
-      },
-    } as unknown as IContainerInfo);
+      } as unknown as IContainerInfo);
 
-    expect(component['sourceUrl']()).toBe('https://github.com/foo/bar');
+      expect(component['sourceUrl']()).toBe('https://github.com/foo/bar');
+    });
+
+    it('is hidden without a source label', () => {
+      vi.spyOn(containersStore, 'selectedInfo').mockReturnValue({
+        inspect: { Config: { Labels: {} } },
+      } as unknown as IContainerInfo);
+
+      expect(component['sourceUrl']()).toBeNull();
+    });
   });
 
-  it('should hide the source URL when inspect has no source label', () => {
-    vi.spyOn(containersStore, 'selectedInfo').mockReturnValue({
-      inspect: { Config: { Labels: {} } },
-    } as unknown as IContainerInfo);
-
-    expect(component['sourceUrl']()).toBeNull();
-  });
-
-  it('should patch hooks for the selected container on save', () => {
+  it('patches hooks for the selected container on save', () => {
     vi.spyOn(containersStore, 'selected').mockReturnValue({
       name: 'test-container',
     } as IContainerEntity);

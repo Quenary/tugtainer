@@ -8,7 +8,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { ContainersApiService } from '../containers/containers-api.service';
 import { PublicApiService } from '../public/public-api.service';
 import { ImagesApiService } from '../images/images-api.service';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import {
   IHostCreate,
   IHostInfo,

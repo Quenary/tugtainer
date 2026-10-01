@@ -201,6 +201,30 @@ def test_uts_userns_ns_mode_normalization(
     assert res.userns == expected_userns
 
 
+# Related to #251: --init and --pid are dropped on recreate when unset here.
+@pytest.mark.parametrize(
+    "init, pid_mode, expected_init, expected_pid",
+    [
+        (True, "host", True, "host"),
+        (True, "container:abc123", True, "container:abc123"),
+        (False, "private", False, None),
+        (None, None, None, None),
+        (None, "", None, None),
+        (True, "private", True, None),
+    ],
+)
+def test_init_and_pid_preserved(init, pid_mode, expected_init, expected_pid):
+    container = ContainerInspectResult(
+        config=ContainerConfig(image="test_image"),
+        host_config=ContainerHostConfig(init=init, pid_mode=pid_mode),
+    )
+
+    res, _ = get_container_config(container, image=None, docker_version=None)
+
+    assert res.init == expected_init
+    assert res.pid == expected_pid
+
+
 # Docker CLI refuses only labels with empty or whitespaced keys,
 # anything else must be preserved (#193)
 def test_labels_rejected_by_cli_are_dropped():

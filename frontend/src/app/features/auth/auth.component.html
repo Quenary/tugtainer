@@ -7,11 +7,7 @@
         (OnSubmit)="onSubmitLogin($event)">
       </app-auth-form>
     } @else {
-      <app-new-password-form
-        [isLoading]="isLoading()"
-        [fluidButton]="true"
-        (OnSubmit)="onSubmitNewPassword($event)">
-      </app-new-password-form>
+      <app-auth-register (OnRegistered)="onRegistered()"> </app-auth-register>
     }
   }
 

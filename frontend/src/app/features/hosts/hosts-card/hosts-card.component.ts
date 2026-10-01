@@ -17,14 +17,16 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { AccordionModule } from 'primeng/accordion';
-import { AutoCompleteModule } from 'primeng/autocomplete';
-import { ButtonModule } from 'primeng/button';
-import { FieldsetModule } from 'primeng/fieldset';
-import { FluidModule } from 'primeng/fluid';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { InputTextModule } from 'primeng/inputtext';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import {
+  AccordionPanel,
+  AccordionHeader,
+  AccordionContent,
+  Accordion,
+} from '@openng/optimus-ui/accordion';
+import { Button } from '@openng/optimus-ui/button';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { InputText } from '@openng/optimus-ui/inputtext';
+import { ToggleSwitch } from '@openng/optimus-ui/toggleswitch';
 import {
   IHostCreate,
   IHostInfo,
@@ -32,46 +34,45 @@ import {
 } from 'src/app/features/hosts/hosts.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 import { RouterLink } from '@angular/router';
-import { ButtonGroup } from 'primeng/buttongroup';
-import { ConfirmPopupModule } from 'primeng/confirmpopup';
-import { ConfirmationService } from 'primeng/api';
-import { PasswordModule } from 'primeng/password';
-import { TooltipModule } from 'primeng/tooltip';
+import { ButtonGroup } from '@openng/optimus-ui/buttongroup';
+import { ConfirmPopup } from '@openng/optimus-ui/confirmpopup';
+import { ConfirmationService } from '@openng/optimus-ui/api';
+import { Password } from '@openng/optimus-ui/password';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
 import { DeployGuidelineUrl } from 'src/app/app.consts';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
+import { InputNumber } from '@openng/optimus-ui/inputnumber';
+import { IconField } from '@openng/optimus-ui/iconfield';
+import { InputIcon } from '@openng/optimus-ui/inputicon';
 import { BooleanFieldComponent } from '@shared/components/boolean-field/boolean-field.component';
 import { HostsStore } from '../hosts.store';
-import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
+import { Tag } from '@openng/optimus-ui/tag';
+import { Textarea } from '@openng/optimus-ui/textarea';
 import { distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-host-card',
   imports: [
-    AccordionModule,
+    AccordionPanel,
+    AccordionHeader,
+    AccordionContent,
+    Accordion,
     ReactiveFormsModule,
-    FieldsetModule,
-    IftaLabelModule,
-    ButtonModule,
-    AutoCompleteModule,
-    InputTextModule,
-    ToggleSwitchModule,
+    IftaLabel,
+    Button,
+    InputText,
+    ToggleSwitch,
     TranslatePipe,
-    FluidModule,
     RouterLink,
     ButtonGroup,
-    AutoCompleteModule,
-    ConfirmPopupModule,
-    PasswordModule,
-    TooltipModule,
-    InputNumberModule,
-    IconFieldModule,
-    InputIconModule,
+    ConfirmPopup,
+    Password,
+    Tooltip,
+    InputNumber,
+    IconField,
+    InputIcon,
     BooleanFieldComponent,
-    TagModule,
-    TextareaModule,
+    Tag,
+    Textarea,
   ],
   providers: [ConfirmationService],
   templateUrl: './hosts-card.component.html',

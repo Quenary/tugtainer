@@ -69,6 +69,8 @@ AUTH:
     - At least one uppercase
     - At least one numeric
   SIGNIN_WITH_OIDC: Sign-in with OIDC
+  SETUP_CODE: Setup code
+  SETUP_HINT: A one-time setup code was written to the container logs. It is valid for 5 minutes. If it expired, restart the container.
 ACTIONS:
   RESULT: Result
   PROGRESS: Progress
@@ -202,6 +204,11 @@ CONTAINERS:
   CURRENT_VERSION_HINT: |-
     Version reported by the labels of the current image.
     It is a hint from the image publisher.
+  AVAILABLE_VERSION: Available version
+  AVAILABLE_VERSION_HINT: |-
+    Version reported by the labels of the image that is available to update to.
+    It is a hint from the image publisher. Shown when a digest update is pending.
+  AVAILABLE_CREATED: Available image created
   UPDATE: Update
   UPDATE_DISABLED_HINTS:
     PROTECTED: The protected container cannot be updated from the app.

@@ -1,6 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
 
-@import 'primeicons/primeicons.css';
+@import '@openng/icons/openng-icons.css';
 
 html,
 body {
@@ -38,7 +38,7 @@ body {
     color: var(--p-button-text-primary-color);
   }
 
-  // Fix for primeng accordion in v21
+  // Fix for accordion content overflow in v21
   .p-accordioncontent-wrapper {
     display: block;
     overflow: hidden;

@@ -67,6 +67,9 @@ Automatic updates are disabled by default. You can enable only what you need.
   ```
 
 > [!IMPORTANT]
+> On the first start, copy the one-time setup code from the container logs (`docker logs tugtainer`) and set the password within 5 minutes. If the code expires, restart the container. See [auth](./docs/AUTH.md).
+
+> [!IMPORTANT]
 > Keep in mind that you **cannot update** an **agent** or a **socket-proxy** from within the app because they are used to communicate with the Docker CLI.
 > Avoid including these containers in a docker-compose that contains other containers you want to update automatically, as this will result in an error during the update.
 > To keep them updated, you can activate "check" only to receive notifications, and recreate them manually or from another tool, such as Portainer.

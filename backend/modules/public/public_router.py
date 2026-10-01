@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import Config
 from backend.core.agent_client import AgentClientManager
+from backend.core.container_util.container_labels import exclude_hidden_containers
 from backend.core.cron_manager import CronManager
 from backend.db.session import get_async_session
 from backend.enums.cron_jobs_enum import ECronJob
@@ -99,7 +100,9 @@ async def get_update_count(
     total_updates = 0
     for host in hosts:
         client = AgentClientManager.get_host_client(host)
-        containers = await client.container.list(GetContainerListBodySchema(all=True))
+        containers = exclude_hidden_containers(
+            await client.container.list(GetContainerListBodySchema(all=True))
+        )
         db_result = await session.execute(
             select(ContainersModel).where(ContainersModel.host_id == host.id)
         )

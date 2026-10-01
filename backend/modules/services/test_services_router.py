@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 
 from backend.app import app
+from backend.const import LOCAL_AGENT_URL
 from backend.core.agent_client import AgentClientManager
 from backend.modules.auth.auth_util import is_authorized_req
 from backend.modules.hosts.hosts_model import HostsModel
@@ -32,7 +33,7 @@ def mock_host():
         enabled=True,
         prune=False,
         prune_all=False,
-        url="http://127.0.0.1:8001",
+        url=LOCAL_AGENT_URL,
         is_swarm=True,
         swarm_cluster_id="cluster-1",
         timeout=5,

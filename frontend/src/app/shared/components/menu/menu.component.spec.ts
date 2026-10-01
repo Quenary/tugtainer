@@ -5,11 +5,11 @@ import { AppStore } from 'src/app/app.store';
 import { provideTranslateService } from '@ngx-translate/core';
 import { AuthApiService } from 'src/app/features/auth/auth-api.service';
 import { provideRouter, Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { HostsStore } from 'src/app/features/hosts/hosts.store';
 import { signal } from '@angular/core';
 import { of, Subject } from 'rxjs';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 import { getAuthApiServiceMock } from '@testing/mocks/auth-api.service.mock';
 
@@ -56,18 +56,22 @@ describe('MenuComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should update narrow state', () => {
-    breakpointObserverObserve.next({ matches: true } as BreakpointState);
-    expect(component['narrow']()).toBe(true);
+  describe('narrow', () => {
+    it('turns on when the breakpoint matches', () => {
+      breakpointObserverObserve.next({ matches: true } as BreakpointState);
+      expect(component['narrow']()).toBe(true);
+    });
 
-    breakpointObserverObserve.next({ matches: false } as BreakpointState);
-    expect(component['narrow']()).toBe(false);
+    it('turns off when the breakpoint does not match', () => {
+      breakpointObserverObserve.next({ matches: false } as BreakpointState);
+      expect(component['narrow']()).toBe(false);
+    });
 
-    component['narrow'].set(true);
-    expect(component['narrow']()).toBe(true);
-
-    breakpointObserverObserve.next({ matches: true } as BreakpointState);
-    expect(component['narrow']()).toBe(true);
+    it('keeps a local value when the breakpoint matches again', () => {
+      component['narrow'].set(true);
+      breakpointObserverObserve.next({ matches: true } as BreakpointState);
+      expect(component['narrow']()).toBe(true);
+    });
   });
 
   it('should logout and navigate', () => {

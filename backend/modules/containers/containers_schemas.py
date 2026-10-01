@@ -10,12 +10,13 @@ from python_on_whales.components.container.models import (
 from backend.core.container_util.container_labels import (
     get_container_auto_check_label,
     get_container_auto_update_label,
+    get_container_protected_label,
 )
 from backend.core.container_util.get_container_health_status_str import (
     get_container_health_status_str,
 )
-from backend.core.container_util.is_protected_container import is_protected_container
 from backend.modules.containers.containers_model import ContainersModel
+from backend.modules.images.image_digest_model import ImageDigestModel
 from backend.util.get_version_from_labels import get_version_from_labels
 
 if TYPE_CHECKING:
@@ -46,9 +47,7 @@ class ContainersListItem(BaseModel):
     status: str | None
     exit_code: int | None
     health: str | None
-    protected: (
-        bool  # Whether container labeled with dev.quenary.tugtainer.protected=true
-    )
+    protected: bool  # Whether dev.quenary.tugtainer.protected is enabled
     auto_check_label: bool | None = None  # From dev.quenary.tugtainer.auto_check
     auto_update_label: bool | None = None  # From dev.quenary.tugtainer.auto_update
     host_id: int  # host id is also stored in db, but it must be always defined
@@ -73,6 +72,9 @@ class ContainersListItem(BaseModel):
     previous_image_digests: list[str] | None = None
     previous_image_tags: list[str] | None = None
     previous_image_version: str | None = None
+    # Pending digest update, resolved from the image_digests cache.
+    available_version: str | None = None
+    available_created: datetime | None = None
     created_at: datetime | None = None  # Date of creation of db entry
     modified_at: datetime | None = None  # Date ofmodification db entry
     hooks: ContainerHooks | None = None  # Update lifecycle hooks
@@ -84,6 +86,7 @@ class ContainersListItem(BaseModel):
         host_id: int,
         docker_cont: "ContainerInspectResult",
         db_cont: "ContainersModel | None",
+        image_digest: ImageDigestModel | None = None,
     ) -> "ContainersListItem":
         data = {
             "host_id": host_id,
@@ -96,7 +99,7 @@ class ContainersListItem(BaseModel):
             "status": docker_cont.state.status if docker_cont.state else None,
             "exit_code": docker_cont.state.exit_code if docker_cont.state else None,
             "health": get_container_health_status_str(docker_cont),
-            "protected": is_protected_container(docker_cont),
+            "protected": get_container_protected_label(docker_cont) is True,
             "auto_check_label": get_container_auto_check_label(docker_cont),
             "auto_update_label": get_container_auto_update_label(docker_cont),
             "current_version": get_version_from_labels(
@@ -123,6 +126,9 @@ class ContainersListItem(BaseModel):
                     "hooks": ContainerHooks.model_validate(db_cont.hooks or {}),
                 }
             )
+            if db_cont.update_available and image_digest is not None:
+                data["available_version"] = image_digest.version
+                data["available_created"] = image_digest.created
         return cls.model_validate(data)
 
 

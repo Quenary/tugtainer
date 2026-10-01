@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { InspectComponent } from './inspect.component';
 import { ComponentRef } from '@angular/core';
 import { provideTranslateService } from '@ngx-translate/core';
-import { TreeNode } from 'primeng/api';
+import { TreeNode } from '@openng/optimus-ui/api';
 import { ResizeObserverMock } from '@testing/mocks/resize-observer.mock';
 
 describe('InspectComponent', () => {

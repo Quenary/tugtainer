@@ -14,13 +14,13 @@ import {
   provideTranslateService,
 } from '@ngx-translate/core';
 import { localeInitializer } from './core/initializers/locale-initializer';
-import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeuix/themes/aura';
-import { MessageService } from 'primeng/api';
-import { definePreset } from '@primeuix/themes';
+import { provideOptimus } from '@openng/optimus-ui/config';
+import Aura from '@openng/optimus-ui-themes/aura';
+import { MessageService } from '@openng/optimus-ui/api';
+import { definePreset } from '@openng/optimus-ui-themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
 import { getStoredLang, resolveLocale } from './core/services/locale.service';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -55,7 +55,7 @@ export const appConfig: ApplicationConfig = {
       provide: LOCALE_ID,
       useFactory: () => resolveLocale(getStoredLang()),
     },
-    providePrimeNG({
+    provideOptimus({
       theme: {
         preset: themePreset,
         options: {

@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,6 +10,7 @@ from python_on_whales.components.container.models import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app import app
+from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.core.agent_client import (
     AgentClient,
     AgentClientContainer,
@@ -77,6 +78,8 @@ async def test_get_container(mocker: MockerFixture):
     result_scalar_mock.id = 1
     result_scalar_mock.host_id = 1
     result_scalar_mock.name = "test-container"
+    result_scalar_mock.update_available = False
+    result_scalar_mock.remote_digests = None
 
     mock_result = mocker.Mock()
     mock_result.scalar_one_or_none.return_value = result_scalar_mock
@@ -160,6 +163,8 @@ async def test_patch_container_hooks_allowed_when_enabled(
     # name instead of a `.name` attribute; set it by assignment instead.
     db_cont_mock = mocker.Mock(spec=ContainersModel)
     db_cont_mock.name = "test-container"
+    db_cont_mock.update_available = False
+    db_cont_mock.remote_digests = None
     mocker.patch(
         f"{base_module}.insert_or_update_container",
         mocker.AsyncMock(return_value=db_cont_mock),
@@ -250,7 +255,7 @@ async def test_control_containers_success(mocker: MockerFixture):
         f"{base_module}.AgentClientManager.get_host_client",
         return_value=agent_client_mock,
     )
-    mocker.patch(f"{base_module}.is_protected_container", return_value=False)
+    mocker.patch(f"{base_module}.get_container_protected_label", return_value=False)
 
     mocker.patch(
         f"{base_module}.ContainersListItem.from_sources",
@@ -317,7 +322,7 @@ async def test_control_containers_protected_forbidden(mocker: MockerFixture):
         f"{base_module}.AgentClientManager.get_host_client",
         return_value=agent_client_mock,
     )
-    mocker.patch(f"{base_module}.is_protected_container", return_value=True)
+    mocker.patch(f"{base_module}.get_container_protected_label", return_value=True)
 
     response = client.post("/containers/1/stop", json={"names": ["c1"]})
 
@@ -326,32 +331,104 @@ async def test_control_containers_protected_forbidden(mocker: MockerFixture):
     agent_client_mock.container.stop.assert_not_called()
 
 
-def test_containers_list_item_auto_labels():
-    from backend.const import (
-        TUGTAINER_AUTO_CHECK_LABEL,
-        TUGTAINER_AUTO_UPDATE_LABEL,
+def _session_with_containers(containers: list[ContainersModel]) -> AsyncMock:
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = containers
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = mock_result
+    return session
+
+
+@pytest.mark.asyncio
+async def test_containers_list_excludes_hidden(mocker: MockerFixture):
+    host = mocker.Mock()
+    host.enabled = True
+    mocker.patch(f"{base_module}.get_host", mocker.AsyncMock(return_value=host))
+
+    visible = ContainerInspectResult(id="id-v", name="visible")
+    hidden = ContainerInspectResult(
+        id="id-h",
+        name="hidden",
+        config=ContainerConfig(labels={TUGTAINER_HIDDEN_LABEL: "yes"}),
+    )
+    agent_client_mock = mocker.Mock(spec=AgentClient)
+    agent_client_mock.container = mocker.Mock(spec=AgentClientContainer)
+    agent_client_mock.container.list = mocker.AsyncMock(return_value=[visible, hidden])
+    mocker.patch(
+        f"{base_module}.AgentClientManager.get_host_client",
+        return_value=agent_client_mock,
     )
 
-    docker_cont = ContainerInspectResult(
-        id="c1",
-        name="test-cont",
-        config=ContainerConfig(
-            labels={
-                TUGTAINER_AUTO_CHECK_LABEL: "true",
-                TUGTAINER_AUTO_UPDATE_LABEL: "false",
-            }
-        ),
+    async def override_session():
+        return _session_with_containers([])
+
+    app.dependency_overrides[get_async_session] = override_session
+
+    response = client.get("/containers/1/list")
+
+    assert response.status_code == 200
+    names = [item["name"] for item in response.json()]
+    assert names == ["visible"]
+
+
+@pytest.mark.asyncio
+async def test_get_container_hidden_not_found(mocker: MockerFixture):
+    host = mocker.Mock()
+    host.enabled = True
+    mocker.patch(f"{base_module}.get_host", mocker.AsyncMock(return_value=host))
+
+    agent_client_mock = mocker.Mock(spec=AgentClient)
+    agent_client_mock.container = mocker.Mock(spec=AgentClientContainer)
+    agent_client_mock.container.inspect = mocker.AsyncMock(
+        return_value=ContainerInspectResult(
+            id="id-h",
+            name="hidden",
+            config=ContainerConfig(labels={TUGTAINER_HIDDEN_LABEL: "1"}),
+        )
     )
-    db_cont = ContainersModel(
-        id=1,
-        host_id=1,
-        name="test-cont",
-        check_enabled=False,
-        update_enabled=True,
+    mocker.patch(
+        f"{base_module}.AgentClientManager.get_host_client",
+        return_value=agent_client_mock,
     )
 
-    item = ContainersListItem.from_sources(1, docker_cont, db_cont)
-    assert item.auto_check_label is True
-    assert item.auto_update_label is False
-    assert item.check_enabled is False
-    assert item.update_enabled is True
+    async def override_session():
+        return AsyncMock(spec=AsyncSession)
+
+    app.dependency_overrides[get_async_session] = override_session
+
+    response = client.get("/containers/1/hidden")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Container not found"
+
+
+@pytest.mark.asyncio
+async def test_control_containers_hidden_not_found(mocker: MockerFixture):
+    host = mocker.Mock()
+    host.enabled = True
+    mocker.patch(f"{base_module}.get_host", mocker.AsyncMock(return_value=host))
+
+    hidden = ContainerInspectResult(
+        id="id-h",
+        name="hidden",
+        config=ContainerConfig(labels={TUGTAINER_HIDDEN_LABEL: "on"}),
+    )
+    agent_client_mock = mocker.Mock(spec=AgentClient)
+    agent_client_mock.container = mocker.Mock(spec=AgentClientContainer)
+    agent_client_mock.container.inspect = mocker.AsyncMock(return_value=hidden)
+    agent_client_mock.container.stop = mocker.AsyncMock()
+    mocker.patch(
+        f"{base_module}.AgentClientManager.get_host_client",
+        return_value=agent_client_mock,
+    )
+
+    async def override_session():
+        return AsyncMock(spec=AsyncSession)
+
+    app.dependency_overrides[get_async_session] = override_session
+
+    response = client.post("/containers/1/stop", json={"names": ["hidden"]})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Container not found"
+    agent_client_mock.container.stop.assert_not_called()

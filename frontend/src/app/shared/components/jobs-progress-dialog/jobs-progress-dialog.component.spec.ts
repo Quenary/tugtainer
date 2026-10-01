@@ -6,7 +6,7 @@ import {
   IJobsProgressDialogSource,
   toJobsProgressDialogData,
 } from './jobs-progress-dialog.component';
-import { DynamicDialogConfig } from 'primeng/dynamicdialog';
+import { DynamicDialogConfig } from '@openng/optimus-ui/dynamicdialog';
 import { By } from '@angular/platform-browser';
 import { HostJobsResultComponent } from '../host-jobs-result/host-jobs-result.component';
 import { provideTranslateService } from '@ngx-translate/core';

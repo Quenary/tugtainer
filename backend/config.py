@@ -6,6 +6,7 @@ from typing import ClassVar
 
 from dotenv import load_dotenv
 
+from backend.const import LOCAL_AGENT_ENDPOINT
 from shared.util.file_env import apply_file_env
 
 
@@ -46,6 +47,8 @@ class Config:
     NOTIFICATION_ALLOW_ENDPOINTS: ClassVar[set[str]]
     AGENT_ALLOW_NETWORKS: ClassVar[set[IPv4Network | IPv6Network]]
     AGENT_ALLOW_ENDPOINTS: ClassVar[set[str]]
+    AGENT_SECRET: ClassVar[str | None]
+    AGENT_ENABLED: ClassVar[bool]
 
     @classmethod
     def load(cls):
@@ -132,10 +135,13 @@ class Config:
                 "NOTIFICATION_ALLOW_ENDPOINTS"
             )
             cls.AGENT_ALLOW_NETWORKS = _parse_networks("AGENT_ALLOW_NETWORKS")
-            agent_enabled = os.getenv("AGENT_ENABLED", "true").lower() == "true"
+            cls.AGENT_SECRET = os.getenv("AGENT_SECRET") or None
+            cls.AGENT_ENABLED = os.getenv("AGENT_ENABLED", "true").lower() == "true"
             agent_allow_endpoints = os.getenv("AGENT_ALLOW_ENDPOINTS")
             if agent_allow_endpoints is None:
-                agent_allow_endpoints = "127.0.0.1:8001" if agent_enabled else ""
+                agent_allow_endpoints = (
+                    LOCAL_AGENT_ENDPOINT if cls.AGENT_ENABLED else ""
+                )
             cls.AGENT_ALLOW_ENDPOINTS = _parse_set(agent_allow_endpoints)
 
 

@@ -13,13 +13,18 @@ import {
   isHostBusy,
   TJobKind,
 } from '@shared/interfaces/jobs.interface';
-import { DynamicDialogConfig } from 'primeng/dynamicdialog';
+import { DynamicDialogConfig } from '@openng/optimus-ui/dynamicdialog';
 import { TranslatePipe } from '@ngx-translate/core';
-import { TagModule } from 'primeng/tag';
-import { AccordionModule } from 'primeng/accordion';
+import { Tag } from '@openng/optimus-ui/tag';
+import {
+  AccordionPanel,
+  AccordionHeader,
+  AccordionContent,
+  Accordion,
+} from '@openng/optimus-ui/accordion';
 import { HostJobsResultComponent } from '../host-jobs-result/host-jobs-result.component';
 import { TagSeverity } from '@shared/types/tag-severity.type';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ProgressSpinner } from '@openng/optimus-ui/progressspinner';
 
 export interface IJobsProgressHostData {
   hostId: number;
@@ -68,12 +73,15 @@ export function toJobsProgressDialogData(
 @Component({
   selector: 'app-jobs-progress-dialog',
   imports: [
-    AccordionModule,
+    AccordionPanel,
+    AccordionHeader,
+    AccordionContent,
+    Accordion,
     HostJobsResultComponent,
     NgTemplateOutlet,
     TranslatePipe,
-    TagModule,
-    ProgressSpinnerModule,
+    Tag,
+    ProgressSpinner,
   ],
   templateUrl: './jobs-progress-dialog.component.html',
   styleUrl: './jobs-progress-dialog.component.scss',

@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import Config
+from backend.const import LOCAL_AGENT_URL
+from backend.db.session import async_session_maker
 from backend.exception import TugUrlValidationError, TugUrlValidationSSRFError
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.hosts.hosts_schemas import HostInfo
@@ -36,6 +40,37 @@ async def validate_agent_url_against_ssrf(url: str) -> set[ResolvedIp]:
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             str(e),
         ) from e
+
+
+async def sync_local_agent_secret() -> None:
+    """Copy ``AGENT_SECRET`` onto the built-in local host.
+
+    The migration writes the secret once. Later changes of the environment
+    variable would otherwise leave the database stale and break signed
+    requests. An empty secret is ignored so a missing variable cannot wipe a
+    value set in the UI. Nothing is changed when the built-in agent is
+    disabled, and hosts with any other URL are left untouched.
+    """
+    secret = Config.AGENT_SECRET
+    if not secret or not Config.AGENT_ENABLED:
+        return
+
+    async with async_session_maker() as session:
+        stmt = select(HostsModel).where(HostsModel.url == LOCAL_AGENT_URL)
+        result = await session.execute(stmt)
+        hosts = result.scalars().all()
+        changed = False
+        for host in hosts:
+            if host.secret == secret:
+                continue
+            host.secret = secret
+            changed = True
+            logging.info(
+                "Synchronized AGENT_SECRET for local agent host %s",
+                host.name,
+            )
+        if changed:
+            await session.commit()
 
 
 async def get_host(host_id: int, session: AsyncSession) -> HostsModel:

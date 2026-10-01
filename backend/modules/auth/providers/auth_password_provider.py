@@ -1,5 +1,9 @@
+import hmac
+import logging
 import os
-from datetime import timedelta
+import secrets
+import threading
+from datetime import UTC, datetime, timedelta
 from typing import Literal, cast
 
 import bcrypt
@@ -7,12 +11,53 @@ from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import PlainTextResponse
 
 from backend.config import Config
+from backend.const import SETUP_CODE_TTL_MIN
 
 from ..auth_schemas import PasswordSetRequestBody
 from .auth_provider import AuthProvider
 
+logger = logging.getLogger("auth_password")
+
 
 class AuthPasswordProvider(AuthProvider):
+    def __init__(self) -> None:
+        self._setup_code: str | None = None
+        self._setup_code_expires_at: datetime | None = None
+        self._setup_code_issued = False
+        self._setup_lock = threading.Lock()
+
+    def issue_setup_code(self) -> None:
+        """
+        Issue a one-time setup code when password auth is on and no hash exists.
+
+        A code is issued at most once per process. An expired code is not
+        replaced until the process starts again.
+        """
+        if Config.DISABLE_AUTH or Config.DISABLE_PASSWORD:
+            return
+        if self.is_password_set():
+            return
+
+        with self._setup_lock:
+            if self._setup_code_issued:
+                return
+            code = secrets.token_urlsafe(12)
+            self._setup_code = code
+            self._setup_code_expires_at = datetime.now(UTC) + timedelta(
+                minutes=SETUP_CODE_TTL_MIN
+            )
+            self._setup_code_issued = True
+
+        logger.warning(
+            "\n========================================================"
+            "\nInitial setup code: %s"
+            "\nValid for: %s minutes"
+            "\nRestart the container to generate a new code"
+            "\n========================================================",
+            code,
+            SETUP_CODE_TTL_MIN,
+        )
+
     async def is_enabled(self) -> bool:
         return not Config.DISABLE_AUTH and not Config.DISABLE_PASSWORD
 
@@ -135,19 +180,46 @@ class AuthPasswordProvider(AuthProvider):
     ) -> PlainTextResponse:
         """
         Set new password if there is no password yet or if user authorized.
+
+        The first password requires the one-time setup code. A later change
+        requires an authorized session and ignores the setup code.
         """
-
-        def write_and_return() -> PlainTextResponse:
-            password_hash: str = self._get_password_hash(payload.password)
-            self._write_password_hash(password_hash)
-            return PlainTextResponse(status_code=status.HTTP_201_CREATED)
-
         if not self._read_password_hash():
-            return write_and_return()
+            self._set_initial_password(payload)
+            return PlainTextResponse(status_code=status.HTTP_201_CREATED)
 
         # Just verify authorization; will raise HTTPException if invalid
         await self.is_authorized(request.cookies)
-        return write_and_return()
+        self._write_password_hash(self._get_password_hash(payload.password))
+        return PlainTextResponse(status_code=status.HTTP_201_CREATED)
+
+    def _set_initial_password(self, payload: PasswordSetRequestBody) -> None:
+        with self._setup_lock:
+            if self._read_password_hash():
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Password already set",
+                )
+            self._assert_setup_code(payload.setup_code)
+            self._write_password_hash(self._get_password_hash(payload.password))
+            self._setup_code = None
+            self._setup_code_expires_at = None
+
+    def _assert_setup_code(self, provided: str | None) -> None:
+        expected = self._setup_code
+        if not provided or not expected or not hmac.compare_digest(expected, provided):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid setup code",
+            )
+        expires_at = self._setup_code_expires_at
+        if expires_at is None or datetime.now(UTC) >= expires_at:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=(
+                    "Setup code expired. Restart the container to generate a new one."
+                ),
+            )
 
     def is_password_set(self) -> bool:
         """Check if a password is set"""

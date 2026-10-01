@@ -6,13 +6,19 @@ import {
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { isPremitive } from '@shared/functions/is-premitive.function';
-import { TreeNode } from 'primeng/api';
-import { TabsModule } from 'primeng/tabs';
-import { TreeModule } from 'primeng/tree';
+import { TreeNode } from '@openng/optimus-ui/api';
+import {
+  Tabs,
+  TabPanels,
+  TabPanel,
+  TabList,
+  Tab,
+} from '@openng/optimus-ui/tabs';
+import { Tree } from '@openng/optimus-ui/tree';
 
 @Component({
   selector: 'app-inspect',
-  imports: [TabsModule, TranslatePipe, TreeModule],
+  imports: [Tabs, TabPanels, TabPanel, TabList, Tab, TranslatePipe, Tree],
   templateUrl: './inspect.component.html',
   styleUrl: './inspect.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

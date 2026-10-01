@@ -8,6 +8,8 @@ export interface IServiceListItem {
   check_enabled: boolean;
   update_enabled: boolean;
   update_available: boolean;
+  available_version: string | null;
+  available_created: string | null;
   checked_at: string | null;
   updated_at: string | null;
   update_status_state: string | null;

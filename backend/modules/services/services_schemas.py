@@ -13,6 +13,8 @@ class ServiceListItem(BaseModel):
     check_enabled: bool = False
     update_enabled: bool = False
     update_available: bool = False
+    available_version: str | None = None
+    available_created: datetime | None = None
     checked_at: datetime | None = None
     updated_at: datetime | None = None
     update_status_state: str | None = None

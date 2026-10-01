@@ -169,7 +169,9 @@
           <p-tag
             severity="success"
             icon="pi pi-check-circle"
-            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"></p-tag>
+            [value]="'CONTAINERS.UPDATE_AVAILABLE' | translate"
+            [pTooltip]="container.available_version"
+            [tooltipDisabled]="!container.available_version"></p-tag>
         }
       </td>
       <td>

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
 from python_on_whales.components.container.models import (
@@ -37,6 +38,9 @@ class ContainerJobResult:
     previous_image_digests: list[str] = field(default_factory=list)
     previous_image_tags: list[str] = field(default_factory=list)
     previous_image_version: str | None = None
+    current_version: str | None = None
+    available_version: str | None = None
+    available_created: datetime | None = None
 
     @property
     def name(self) -> str:
@@ -61,6 +65,9 @@ class ServiceJobResult:
     remote_digests: list[str] = field(default_factory=list)
     local_image: ImageInspectResult | None = None
     remote_image: ImageInspectResult | None = None
+    current_version: str | None = None
+    available_version: str | None = None
+    available_created: datetime | None = None
 
     @property
     def name(self) -> str:

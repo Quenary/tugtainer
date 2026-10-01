@@ -9,6 +9,7 @@ from .auth_validators import password_validator
 class PasswordSetRequestBody(BaseModel):
     password: str
     confirm_password: str
+    setup_code: str | None = None
 
     @field_validator("password", "confirm_password")
     @classmethod

@@ -1,3 +1,4 @@
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -8,23 +9,9 @@ import backend.modules.containers.containers_model  # noqa: F401
 import backend.modules.health.health_model  # noqa: F401
 from backend.core.jobs.check.check_service import run_check_service_job
 from backend.enums.job_status_enum import EJobStatus
-from shared.schemas.service_schemas import ServiceListItemSchema, ServiceReplicasSchema
+from backend.testing import make_service, patch_async_session
 
 base_module = "backend.core.jobs.check.check_service"
-
-
-def _make_service(
-    name: str = "web",
-    image: str = "nginx:alpine",
-    service_id: str = "svc-123",
-) -> ServiceListItemSchema:
-    return ServiceListItemSchema(
-        id=service_id,
-        name=name,
-        image=image,
-        mode="replicated",
-        replicas=ServiceReplicasSchema(running=1, desired=1),
-    )
 
 
 @pytest.fixture
@@ -37,10 +24,11 @@ def mock_session(mocker: MockerFixture):
     mock_execute_result.scalar_one_or_none.return_value = None
     session.execute = AsyncMock(return_value=mock_execute_result)
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
+    mocker.patch(
+        f"{base_module}.cache_available_image_metadata",
+        AsyncMock(return_value=None),
+    )
     return session
 
 
@@ -51,7 +39,7 @@ async def test_check_service_missing_image(
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
     tracker = MagicMock()
-    service = _make_service(image="")
+    service = make_service(image="")
 
     result = await run_check_service_job(
         client,
@@ -66,70 +54,84 @@ async def test_check_service_missing_image(
 
 
 @pytest.mark.asyncio
-async def test_check_service_local_image_update_available(
-    mocker: MockerFixture, mock_session: MagicMock
+@pytest.mark.parametrize(
+    ("local_digest", "remote_digest", "expected"),
+    [
+        ("nginx@sha256:old_digest", "sha256:new_digest", "available"),
+        ("nginx@sha256:current_digest", "sha256:current_digest", "not_available"),
+    ],
+)
+async def test_check_service_local_image_digest_outcome(
+    mocker: MockerFixture,
+    mock_session: MagicMock,
+    local_digest: str,
+    remote_digest: str,
+    expected: str,
 ):
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
     tracker = MagicMock()
-    service = _make_service(name="web", image="nginx:alpine")
+    service = make_service(name="web", image="nginx:alpine")
 
-    # Local inspect succeeds with repo digests
+    local_img = MagicMock()
+    local_img.id = "sha256:local123"
+    local_img.repo_digests = [local_digest]
+    client.image.inspect = AsyncMock(return_value=local_img)
+
+    mocker.patch(
+        f"{base_module}.get_image_remote_digest",
+        AsyncMock(return_value=remote_digest),
+    )
+    mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
+
+    result = await run_check_service_job(
+        client,
+        host,  # type: ignore[arg-type]
+        service,
+        tracker=tracker,
+    )
+
+    assert result.result == expected
+    assert result.local_digests == [local_digest]
+    assert result.remote_digests == [remote_digest]
+    assert mock_session.commit.called
+
+
+@pytest.mark.asyncio
+async def test_check_service_records_resolved_available_version(
+    mocker: MockerFixture, mock_session: MagicMock
+):
+    host = SimpleNamespace(id=1, name="test-host")
+    client = MagicMock()
+    service = make_service(name="web", image="nginx:alpine")
     local_img = MagicMock()
     local_img.id = "sha256:local123"
     local_img.repo_digests = ["nginx@sha256:old_digest"]
+    local_img.config = SimpleNamespace(
+        labels={"org.opencontainers.image.version": "2.3.6"}
+    )
     client.image.inspect = AsyncMock(return_value=local_img)
-
-    # Remote digest differs
     mocker.patch(
         f"{base_module}.get_image_remote_digest",
         AsyncMock(return_value="sha256:new_digest"),
     )
     mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
+    created = datetime(2024, 5, 1)
+    cache = mocker.patch(
+        f"{base_module}.cache_available_image_metadata",
+        AsyncMock(return_value=SimpleNamespace(version="2.3.7", created=created)),
+    )
 
     result = await run_check_service_job(
         client,
         host,  # type: ignore[arg-type]
         service,
-        tracker=tracker,
     )
 
-    assert result.result == "available"
-    assert result.local_digests == ["nginx@sha256:old_digest"]
-    assert result.remote_digests == ["sha256:new_digest"]
-    assert mock_session.commit.called
-
-
-@pytest.mark.asyncio
-async def test_check_service_local_image_not_available(
-    mocker: MockerFixture, mock_session: MagicMock
-):
-    host = SimpleNamespace(id=1, name="test-host")
-    client = MagicMock()
-    tracker = MagicMock()
-    service = _make_service(name="web", image="nginx:alpine")
-
-    local_img = MagicMock()
-    local_img.id = "sha256:local123"
-    local_img.repo_digests = ["nginx@sha256:current_digest"]
-    client.image.inspect = AsyncMock(return_value=local_img)
-
-    # Remote digest matches local
-    mocker.patch(
-        f"{base_module}.get_image_remote_digest",
-        AsyncMock(return_value="sha256:current_digest"),
-    )
-    mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
-
-    result = await run_check_service_job(
-        client,
-        host,  # type: ignore[arg-type]
-        service,
-        tracker=tracker,
-    )
-
-    assert result.result == "not_available"
-    assert result.remote_digests == ["sha256:current_digest"]
+    assert result.current_version == "2.3.6"
+    assert result.available_version == "2.3.7"
+    assert result.available_created == created
+    cache.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -140,7 +142,7 @@ async def test_check_service_pinned_digest_when_image_not_on_manager(
     client = MagicMock()
     tracker = MagicMock()
     # Image in service spec contains pinned digest from Swarm
-    service = _make_service(
+    service = make_service(
         name="web",
         image="nginx:alpine@sha256:pinned_digest_abc",
     )
@@ -176,7 +178,7 @@ async def test_check_service_local_image_without_digests_exits_early(
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
     tracker = MagicMock()
-    service = _make_service(name="web", image="local-custom-app:latest")
+    service = make_service(name="web", image="local-custom-app:latest")
 
     # Local image exists but has no repo digests (built locally)
     local_img = MagicMock()
@@ -211,7 +213,7 @@ async def test_check_service_pull_before_check(
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
     tracker = MagicMock()
-    service = _make_service(name="web", image="nginx:alpine")
+    service = make_service(name="web", image="nginx:alpine")
 
     # Image not cached on manager initially
     client.image.inspect = AsyncMock(side_effect=Exception("Not found"))

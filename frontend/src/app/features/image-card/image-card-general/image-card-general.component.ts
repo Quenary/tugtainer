@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ImagesStore } from '../../images/images.store';
 import { TranslatePipe } from '@ngx-translate/core';
-import { TagModule } from 'primeng/tag';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { TextareaModule } from 'primeng/textarea';
-import { InputTextModule } from 'primeng/inputtext';
+import { Tag } from '@openng/optimus-ui/tag';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { Textarea } from '@openng/optimus-ui/textarea';
+import { InputText } from '@openng/optimus-ui/inputtext';
 import { DecimalPipe } from '@angular/common';
 import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
 
@@ -12,10 +12,10 @@ import { DayjsPipe } from '@shared/pipes/dayjs.pipe';
   selector: 'app-image-card-general',
   imports: [
     TranslatePipe,
-    TagModule,
-    IftaLabelModule,
-    TextareaModule,
-    InputTextModule,
+    Tag,
+    IftaLabel,
+    Textarea,
+    InputText,
     DecimalPipe,
     DayjsPipe,
   ],

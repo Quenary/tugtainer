@@ -1,11 +1,19 @@
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi import HTTPException
 from pytest_mock import MockerFixture
 
+from backend.const import LOCAL_AGENT_URL
+from backend.exception import TugUrlValidationError, TugUrlValidationSSRFError
 from backend.modules.hosts.hosts_util import (
     annotate_available_updates_count,
+    get_host,
+    sync_local_agent_secret,
+    validate_agent_url_against_ssrf,
 )
+from backend.testing import patch_async_session
 
 
 @pytest.mark.asyncio
@@ -132,3 +140,105 @@ async def test_annotate_available_updates_count_swarm_only_services(
 
     assert h.available_updates_count == 4
     assert session.execute.call_count == 2
+
+
+def _session_with_hosts(mocker: MockerFixture, hosts: list):
+    session = AsyncMock()
+    db_result = MagicMock()
+    db_result.scalars.return_value.all.return_value = hosts
+    session.execute = AsyncMock(return_value=db_result)
+    session.commit = AsyncMock()
+    patch_async_session(mocker, "backend.modules.hosts.hosts_util", session)
+    return session
+
+
+@pytest.mark.asyncio
+async def test_sync_local_agent_secret_updates_only_local_host(mocker: MockerFixture):
+    local = SimpleNamespace(name="local", url=LOCAL_AGENT_URL, secret="old")
+    session = _session_with_hosts(mocker, [local])
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_SECRET", "new-secret")
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_ENABLED", True)
+    info = mocker.patch("backend.modules.hosts.hosts_util.logging.info")
+
+    await sync_local_agent_secret()
+
+    assert local.secret == "new-secret"
+    session.commit.assert_awaited_once()
+    info.assert_called_once()
+    assert "new-secret" not in str(info.call_args)
+    clause = session.execute.await_args.args[0].whereclause
+    assert clause.left.name == "url"
+    assert clause.right.value == LOCAL_AGENT_URL
+
+
+@pytest.mark.asyncio
+async def test_sync_local_agent_secret_skips_unchanged(mocker: MockerFixture):
+    local = SimpleNamespace(name="local", url=LOCAL_AGENT_URL, secret="same")
+    session = _session_with_hosts(mocker, [local])
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_SECRET", "same")
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_ENABLED", True)
+
+    await sync_local_agent_secret()
+
+    assert local.secret == "same"
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "secret, enabled",
+    [
+        (None, True),
+        ("", True),
+        ("new-secret", False),
+    ],
+)
+async def test_sync_local_agent_secret_noop_when_unsafe(
+    mocker: MockerFixture, secret, enabled
+):
+    session_maker = mocker.patch("backend.modules.hosts.hosts_util.async_session_maker")
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_SECRET", secret)
+    mocker.patch("backend.modules.hosts.hosts_util.Config.AGENT_ENABLED", enabled)
+
+    await sync_local_agent_secret()
+
+    session_maker.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_host_missing_raises_404() -> None:
+    session = AsyncMock()
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = None
+    session.execute = AsyncMock(return_value=result)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_host(1, session)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Docker host not found in database"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error", "detail_contains"),
+    [
+        (TugUrlValidationSSRFError("restricted"), "AGENT_ALLOW_NETWORKS"),
+        (TugUrlValidationError("bad url"), "bad url"),
+    ],
+)
+async def test_validate_agent_url_maps_to_422(
+    mocker: MockerFixture,
+    error: Exception,
+    detail_contains: str,
+) -> None:
+    mocker.patch(
+        "backend.modules.hosts.hosts_util.validate_url_against_ssrf",
+        new=AsyncMock(side_effect=error),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await validate_agent_url_against_ssrf("http://agent.example")
+
+    assert exc_info.value.status_code == 422
+    assert detail_contains in str(exc_info.value.detail)

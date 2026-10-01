@@ -71,7 +71,7 @@ def _patch_common(mocker, db_list, deps, *, settings=None):
         f"{base_module}.SettingsStorage.get",
         side_effect=get_setting,
     )
-    mocker.patch(f"{base_module}.is_protected_container", return_value=False)
+    mocker.patch(f"{base_module}.get_container_protected_label", return_value=False)
     mocker.patch(f"{base_module}.is_running_container", return_value=True)
     mocker.patch(f"{base_module}.get_service_name", return_value=None)
     mocker.patch(f"{base_module}.get_compose_id", return_value=None)

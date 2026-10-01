@@ -66,96 +66,101 @@ describe('HostsCardComponent', () => {
     fixture.detectChanges();
   });
 
-  it('enables the optional secret field when creating a host', () => {
-    const control = component.form.controls.secret;
-    expect(control.enabled).toBe(true);
-    expect(control.valid).toBe(true);
-  });
-
-  it('creates a host without the update-only secret flag', () => {
-    component.form.patchValue({
-      ...host,
-      secret: '',
+  describe('create', () => {
+    it('enables an optional secret', () => {
+      const control = component.form.controls.secret;
+      expect(control.enabled).toBe(true);
+      expect(control.valid).toBe(true);
     });
 
-    component.save();
-
-    expect(hostsStoreMock.create).toHaveBeenCalledWith({
-      body: expect.not.objectContaining({
-        is_changing_secret: expect.anything(),
-      }),
-    });
-  });
-
-  it('keeps the secret disabled until change secret is enabled', () => {
-    selectedId.set(host.id);
-    selected.set(host);
-    fixture.detectChanges();
-
-    expect(component.form.controls.is_changing_secret.value).toBe(false);
-    expect(component.form.controls.secret.disabled).toBe(true);
-
-    component.form.controls.is_changing_secret.setValue(true);
-
-    expect(component.form.controls.secret.enabled).toBe(true);
-  });
-
-  it('allows replacing an existing secret with an empty value', () => {
-    selectedId.set(host.id);
-    selected.set(host);
-    fixture.detectChanges();
-    component.form.controls.is_changing_secret.setValue(true);
-    component.form.controls.secret.setValue('');
-
-    component.save();
-
-    expect(hostsStoreMock.update).toHaveBeenCalledWith({
-      id: host.id,
-      body: expect.objectContaining({
-        is_changing_secret: true,
+    it('omits the update-only secret flag', () => {
+      component.form.patchValue({
+        ...host,
         secret: '',
-      }),
+      });
+
+      component.save();
+
+      expect(hostsStoreMock.create).toHaveBeenCalledWith({
+        body: expect.not.objectContaining({
+          is_changing_secret: expect.anything(),
+        }),
+      });
+    });
+
+    it('includes ssl_ca', () => {
+      const sslCa =
+        '-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----';
+      component.form.patchValue({
+        ...host,
+        secret: '',
+        ssl_ca: sslCa,
+      });
+
+      component.save();
+
+      expect(hostsStoreMock.create).toHaveBeenCalledWith({
+        body: expect.objectContaining({ ssl_ca: sslCa }),
+      });
+    });
+
+    it('does not submit an invalid form', () => {
+      component.save();
+
+      expect(hostsStoreMock.create).not.toHaveBeenCalled();
+      expect(component.form.controls.name.touched).toBe(true);
+      expect(component.form.controls.url.touched).toBe(true);
     });
   });
 
-  it('does not submit an invalid form', () => {
-    component.save();
+  describe('update', () => {
+    it('keeps the secret disabled until change secret is enabled', () => {
+      selectedId.set(host.id);
+      selected.set(host);
+      fixture.detectChanges();
 
-    expect(hostsStoreMock.create).not.toHaveBeenCalled();
-    expect(component.form.controls.name.touched).toBe(true);
-    expect(component.form.controls.url.touched).toBe(true);
-  });
+      expect(component.form.controls.is_changing_secret.value).toBe(false);
+      expect(component.form.controls.secret.disabled).toBe(true);
 
-  it('includes ssl_ca when creating a host', () => {
-    const sslCa =
-      '-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----';
-    component.form.patchValue({
-      ...host,
-      secret: '',
-      ssl_ca: sslCa,
+      component.form.controls.is_changing_secret.setValue(true);
+
+      expect(component.form.controls.secret.enabled).toBe(true);
     });
 
-    component.save();
+    it('allows an empty replacement secret', () => {
+      selectedId.set(host.id);
+      selected.set(host);
+      fixture.detectChanges();
+      component.form.controls.is_changing_secret.setValue(true);
+      component.form.controls.secret.setValue('');
 
-    expect(hostsStoreMock.create).toHaveBeenCalledWith({
-      body: expect.objectContaining({ ssl_ca: sslCa }),
+      component.save();
+
+      expect(hostsStoreMock.update).toHaveBeenCalledWith({
+        id: host.id,
+        body: expect.objectContaining({
+          is_changing_secret: true,
+          secret: '',
+        }),
+      });
     });
-  });
 
-  it('patches ssl_ca from host info and submits it on update', () => {
-    const sslCa = '-----BEGIN CERTIFICATE-----\nca\n-----END CERTIFICATE-----';
-    selectedId.set(host.id);
-    selected.set({ ...host, ssl_ca: sslCa });
-    fixture.detectChanges();
+    it('submits ssl_ca from host info', () => {
+      const sslCa =
+        '-----BEGIN CERTIFICATE-----\nca\n-----END CERTIFICATE-----';
+      selectedId.set(host.id);
+      selected.set({ ...host, ssl_ca: sslCa });
+      fixture.detectChanges();
 
-    expect(component.form.controls.ssl_ca.value).toBe(sslCa);
+      expect(component.form.controls.ssl_ca.value).toBe(sslCa);
 
-    component.form.markAsDirty();
-    component.save();
+      component.form.markAsDirty();
+      component.save();
 
-    expect(hostsStoreMock.update).toHaveBeenCalledWith({
-      id: host.id,
-      body: expect.objectContaining({ ssl_ca: sslCa }),
+      expect(hostsStoreMock.update).toHaveBeenCalledWith({
+        id: host.id,
+        body: expect.objectContaining({ ssl_ca: sslCa }),
+      });
     });
   });
 });

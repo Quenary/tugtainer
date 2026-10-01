@@ -69,6 +69,8 @@ AUTH:
     - 至少一个大写字母
     - 至少一个数字
   SIGNIN_WITH_OIDC: 使用 OIDC 登录
+  SETUP_CODE: 设置码
+  SETUP_HINT: 一次性设置码已写入容器日志，有效期为 5 分钟。如果已过期，请重启容器。
 ACTIONS:
   RESULT: 结果
   PROGRESS: 进度
@@ -196,6 +198,11 @@ CONTAINERS:
   CURRENT_VERSION_HINT: |-
     当前镜像标签中记录的版本。
     这是镜像发布者提供的提示。
+  AVAILABLE_VERSION: 可用版本
+  AVAILABLE_VERSION_HINT: |-
+    可更新到的镜像标签中记录的版本。
+    这是镜像发布者提供的提示，在存在摘要更新时显示。
+  AVAILABLE_CREATED: 可用镜像构建时间
   UPDATE: 更新
   UPDATE_DISABLED_HINTS:
     PROTECTED: 受保护的容器无法从此应用更新。

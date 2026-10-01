@@ -7,9 +7,9 @@ import {
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonModule } from 'primeng/button';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { TextareaModule } from 'primeng/textarea';
+import { Button } from '@openng/optimus-ui/button';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { Textarea } from '@openng/optimus-ui/textarea';
 import { IContainerHooks } from 'src/app/features/containers/containers.interface';
 import { TInterfaceToForm } from '@shared/types/interface-to-form.type';
 
@@ -25,13 +25,7 @@ const HOOK_FIELDS: THookField[] = [
 
 @Component({
   selector: 'app-container-card-hooks',
-  imports: [
-    ReactiveFormsModule,
-    TranslatePipe,
-    IftaLabelModule,
-    TextareaModule,
-    ButtonModule,
-  ],
+  imports: [ReactiveFormsModule, TranslatePipe, IftaLabel, Textarea, Button],
   templateUrl: './container-card-hooks.component.html',
   styleUrl: './container-card-hooks.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

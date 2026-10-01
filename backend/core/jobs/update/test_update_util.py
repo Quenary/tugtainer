@@ -13,9 +13,11 @@ from backend.core.jobs.jobs_results import (
 )
 from backend.core.jobs.update.update_util import (
     disconnect_all_networks,
+    get_container_healthcheck_timeout,
     update_containers_data_after_execution,
 )
 from backend.modules.containers.containers_model import ContainersModel
+from backend.modules.hosts.hosts_model import HostsModel
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 
 
@@ -210,27 +212,21 @@ async def test_stores_previous_image_without_digests(mocker):
     assert container.previous_image_tags == ["my-app:latest"]
 
 
-def test_get_container_healthcheck_timeout_uses_container_value():
-    from backend.core.jobs.update.update_util import get_container_healthcheck_timeout
-    from backend.modules.hosts.hosts_model import HostsModel
-
+@pytest.mark.parametrize(
+    ("container_timeout", "expected"),
+    [
+        (120, 120),
+        (None, 60),
+    ],
+)
+def test_get_container_healthcheck_timeout(
+    container_timeout: int | None, expected: int
+):
     host = HostsModel(container_hc_timeout=60)
-    container = ContainersModel(healthcheck_timeout=120)
-    assert get_container_healthcheck_timeout(host, container) == 120
-
-
-def test_get_container_healthcheck_timeout_falls_back_to_host():
-    from backend.core.jobs.update.update_util import get_container_healthcheck_timeout
-    from backend.modules.hosts.hosts_model import HostsModel
-
-    host = HostsModel(container_hc_timeout=60)
-    container = ContainersModel(healthcheck_timeout=None)
-    assert get_container_healthcheck_timeout(host, container) == 60
+    container = ContainersModel(healthcheck_timeout=container_timeout)
+    assert get_container_healthcheck_timeout(host, container) == expected
 
 
 def test_get_container_healthcheck_timeout_falls_back_when_no_container():
-    from backend.core.jobs.update.update_util import get_container_healthcheck_timeout
-    from backend.modules.hosts.hosts_model import HostsModel
-
     host = HostsModel(container_hc_timeout=60)
     assert get_container_healthcheck_timeout(host, None) == 60

@@ -9,28 +9,30 @@ import { InspectComponent } from '@shared/components/inspect/inspect.component';
 import { ImagesStore } from '../images/images.store';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AccordionModule } from 'primeng/accordion';
+import {
+  AccordionPanel,
+  AccordionHeader,
+  AccordionContent,
+  Accordion,
+} from '@openng/optimus-ui/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ToolbarModule } from 'primeng/toolbar';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { TextareaModule } from 'primeng/textarea';
-import { InputTextModule } from 'primeng/inputtext';
+import { Toolbar } from '@openng/optimus-ui/toolbar';
+import { Button } from '@openng/optimus-ui/button';
+import { Tag } from '@openng/optimus-ui/tag';
 import { ImageCardGeneralComponent } from './image-card-general/image-card-general.component';
 
 @Component({
   selector: 'app-image-card',
   imports: [
     InspectComponent,
-    AccordionModule,
+    AccordionPanel,
+    AccordionHeader,
+    AccordionContent,
+    Accordion,
     TranslatePipe,
-    ToolbarModule,
-    ButtonModule,
-    TagModule,
-    IftaLabelModule,
-    TextareaModule,
-    InputTextModule,
+    Toolbar,
+    Button,
+    Tag,
     ImageCardGeneralComponent,
   ],
   templateUrl: './image-card.component.html',

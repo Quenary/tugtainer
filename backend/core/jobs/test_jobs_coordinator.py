@@ -225,3 +225,48 @@ async def test_jobs_coordinator_handles_swarm_services_jobs(mocker) -> None:
     assert completed[0].get("names") == ["svc1"]
     assert completed[1].get("kind") == "update_services"
     assert completed[1].get("names") == ["svc2", "svc3"]
+
+
+@pytest.mark.asyncio
+async def test_submit_records_error_when_job_returns_false(mocker) -> None:
+    coord = HostJobCoordinator()
+    host = cast(Any, SimpleNamespace(id=99031, name="false-host"))
+
+    async def check(*args, **kwargs):
+        return False
+
+    mocker.patch(
+        "backend.core.jobs.check.check_host.run_check_host_job",
+        side_effect=check,
+    )
+    mocker.patch(
+        "backend.core.jobs.jobs_coordinator.AgentClientManager.get_host_client",
+        return_value=mocker.Mock(),
+    )
+
+    await coord.submit(host, "check", names=["a"], manual=True, wait=True)
+
+    state = HostJobTracker(host).get()
+    assert state is not None
+    assert state.get("status") == EJobStatus.ERROR
+
+
+@pytest.mark.asyncio
+async def test_submit_wait_reraises_job_exception(mocker) -> None:
+    coord = HostJobCoordinator()
+    host = cast(Any, SimpleNamespace(id=99032, name="raise-host"))
+    mocker.patch(
+        "backend.core.jobs.check.check_host.run_check_host_job",
+        side_effect=RuntimeError("boom"),
+    )
+    mocker.patch(
+        "backend.core.jobs.jobs_coordinator.AgentClientManager.get_host_client",
+        return_value=mocker.Mock(),
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        await coord.submit(host, "check", names=["a"], manual=True, wait=True)
+
+    state = HostJobTracker(host).get()
+    assert state is not None
+    assert state.get("status") == EJobStatus.ERROR

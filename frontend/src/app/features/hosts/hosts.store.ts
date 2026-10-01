@@ -38,7 +38,10 @@ import { PublicApiService } from '../public/public-api.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { IPruneImageRequestBodySchema } from '../images/images.interface';
 import { ImagesApiService } from '../images/images-api.service';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogRef,
+} from '@openng/optimus-ui/dynamicdialog';
 import {
   IJobsProgressDialogSource,
   JobsProgressDialogComponent,

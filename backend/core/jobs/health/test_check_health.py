@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.core.jobs.health.check_health import (
     HealthMonitorNotificationBatchItem,
     _do_check_host_health,
@@ -13,6 +14,7 @@ from backend.core.jobs.health.check_health import (
 )
 from backend.modules.health.health_model import ContainerHealthState
 from backend.modules.settings.settings_enum import ESettingKey
+from backend.testing import patch_async_session
 
 base_module = "backend.core.jobs.health.check_health"
 
@@ -29,10 +31,7 @@ async def test_do_check_host_health_inserts_missing_container(mocker: MockerFixt
     db_containers_mock.scalars.return_value.all.return_value = []
     session.execute.return_value = db_containers_mock
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
 
     client_manager_mock = mocker.patch(f"{base_module}.AgentClientManager")
     host_client = MagicMock()
@@ -73,6 +72,39 @@ async def test_do_check_host_health_inserts_missing_container(mocker: MockerFixt
 
 
 @pytest.mark.asyncio
+async def test_do_check_host_health_skips_hidden_container(mocker: MockerFixture):
+    host = SimpleNamespace(id=1, name="host1", enabled=True, container_hc_timeout=60)
+
+    session = AsyncMock()
+    session.get.return_value = host
+
+    db_containers_mock = MagicMock()
+    db_containers_mock.scalars.return_value.all.return_value = []
+    session.execute.return_value = db_containers_mock
+
+    patch_async_session(mocker, base_module, session)
+
+    client_manager_mock = mocker.patch(f"{base_module}.AgentClientManager")
+    host_client = MagicMock()
+    hidden = SimpleNamespace(
+        id="c1",
+        name="hidden",
+        state=SimpleNamespace(health=SimpleNamespace()),
+        config=SimpleNamespace(labels={TUGTAINER_HIDDEN_LABEL: "true"}),
+    )
+    host_client.container.list = AsyncMock(return_value=[hidden])
+    client_manager_mock.get_host_client.return_value = host_client
+
+    mocker.patch(f"{base_module}.SettingsStorage.get", return_value="1")
+    insert_mock = AsyncMock()
+    mocker.patch(f"{base_module}.insert_or_update_container", insert_mock)
+
+    await _do_check_host_health(1)
+
+    insert_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_do_check_host_health_skips_container_without_healthcheck(
     mocker: MockerFixture,
 ):
@@ -86,10 +118,7 @@ async def test_do_check_host_health_skips_container_without_healthcheck(
     db_containers_mock.scalars.return_value.all.return_value = []
     session.execute.return_value = db_containers_mock
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
 
     client_manager_mock = mocker.patch(f"{base_module}.AgentClientManager")
     host_client = MagicMock()
@@ -138,10 +167,7 @@ async def test_do_check_host_health_unhealthy_triggers_restart_and_notification(
 
     session.execute.side_effect = [db_containers_mock, state_mock_result]
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
 
     client_manager_mock = mocker.patch(f"{base_module}.AgentClientManager")
     host_client = MagicMock()
@@ -183,71 +209,20 @@ async def test_do_check_host_health_unhealthy_triggers_restart_and_notification(
 
 
 @pytest.mark.asyncio
-async def test_do_check_host_health_healthy_resets_state(mocker: MockerFixture):
-    host = SimpleNamespace(id=1, name="host1", enabled=True, container_hc_timeout=60)
-
-    session = AsyncMock()
-    session.get.return_value = host
-    session.add = MagicMock()
-
-    db_container = SimpleNamespace(id=1, name="recovering_app", healthcheck_timeout=30)
-    db_containers_mock = MagicMock()
-    db_containers_mock.scalars.return_value.all.return_value = [db_container]
-
-    existing_state = ContainerHealthState(
-        host_id=1,
-        container_id=1,
-        consecutive_failures=5,
-        restart_attempts=2,
-        is_notified=True,
-    )
-    state_mock_result = MagicMock()
-    state_mock_result.scalar_one_or_none.return_value = existing_state
-
-    session.execute.side_effect = [db_containers_mock, state_mock_result]
-
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
-
-    client_manager_mock = mocker.patch(f"{base_module}.AgentClientManager")
-    host_client = MagicMock()
-    agent_container = SimpleNamespace(
-        id="c1",
-        name="recovering_app",
-        state=SimpleNamespace(health=SimpleNamespace()),
-    )
-    host_client.container.list = AsyncMock(return_value=[agent_container])
-    client_manager_mock.get_host_client.return_value = host_client
-
-    mocker.patch(f"{base_module}.SettingsStorage.get", return_value="2")
-    mocker.patch(
-        f"{base_module}.get_container_health_status_str", return_value="healthy"
-    )
-    send_notif_mock = mocker.patch(
-        f"{base_module}._send_health_notifications", AsyncMock()
-    )
-
-    await _do_check_host_health(1)
-
-    assert existing_state.consecutive_failures == 0
-    assert existing_state.restart_attempts == 0
-    assert existing_state.is_notified is False
-    send_notif_mock.assert_awaited_once_with(
-        "host1",
-        [
-            {
-                "container": agent_container,
-                "status": "healthy",
-            }
-        ],
-    )
-
-
-@pytest.mark.asyncio
-async def test_do_check_host_health_healthy_does_not_notify_if_not_previously_notified(
+@pytest.mark.parametrize(
+    ("container_name", "failures", "restarts", "was_notified", "expect_notice"),
+    [
+        ("recovering_app", 5, 2, True, True),
+        ("normal_app", 0, 0, False, False),
+    ],
+)
+async def test_do_check_host_health_healthy_resets_state(
     mocker: MockerFixture,
+    container_name: str,
+    failures: int,
+    restarts: int,
+    was_notified: bool,
+    expect_notice: bool,
 ):
     host = SimpleNamespace(id=1, name="host1", enabled=True, container_hc_timeout=60)
 
@@ -255,32 +230,29 @@ async def test_do_check_host_health_healthy_does_not_notify_if_not_previously_no
     session.get.return_value = host
     session.add = MagicMock()
 
-    db_container = SimpleNamespace(id=1, name="normal_app", healthcheck_timeout=30)
+    db_container = SimpleNamespace(id=1, name=container_name, healthcheck_timeout=30)
     db_containers_mock = MagicMock()
     db_containers_mock.scalars.return_value.all.return_value = [db_container]
 
     existing_state = ContainerHealthState(
         host_id=1,
         container_id=1,
-        consecutive_failures=0,
-        restart_attempts=0,
-        is_notified=False,
+        consecutive_failures=failures,
+        restart_attempts=restarts,
+        is_notified=was_notified,
     )
     state_mock_result = MagicMock()
     state_mock_result.scalar_one_or_none.return_value = existing_state
 
     session.execute.side_effect = [db_containers_mock, state_mock_result]
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
 
     client_manager_mock = mocker.patch(f"{base_module}.AgentClientManager")
     host_client = MagicMock()
     agent_container = SimpleNamespace(
         id="c1",
-        name="normal_app",
+        name=container_name,
         state=SimpleNamespace(health=SimpleNamespace()),
     )
     host_client.container.list = AsyncMock(return_value=[agent_container])
@@ -299,7 +271,18 @@ async def test_do_check_host_health_healthy_does_not_notify_if_not_previously_no
     assert existing_state.consecutive_failures == 0
     assert existing_state.restart_attempts == 0
     assert existing_state.is_notified is False
-    send_notif_mock.assert_not_called()
+    if expect_notice:
+        send_notif_mock.assert_awaited_once_with(
+            "host1",
+            [
+                {
+                    "container": agent_container,
+                    "status": "healthy",
+                }
+            ],
+        )
+    else:
+        send_notif_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -350,10 +333,7 @@ async def test_check_all_containers_health(mocker: MockerFixture):
     result_mock.scalars.return_value = scalars_mock
     session.execute.return_value = result_mock
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
 
     check_host_mock = mocker.patch(f"{base_module}._check_host_health", AsyncMock())
 

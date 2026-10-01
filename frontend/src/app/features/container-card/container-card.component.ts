@@ -15,21 +15,25 @@ import {
   IContainerPatchBody,
   TControlContainerCommand,
 } from 'src/app/features/containers/containers.interface';
-import { AccordionModule } from 'primeng/accordion';
+import {
+  AccordionPanel,
+  AccordionHeader,
+  AccordionContent,
+  Accordion,
+} from '@openng/optimus-ui/accordion';
 import { TranslatePipe } from '@ngx-translate/core';
-import { IftaLabelModule } from 'primeng/iftalabel';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { TextareaModule } from 'primeng/textarea';
-import { ToolbarModule } from 'primeng/toolbar';
-import { ButtonModule } from 'primeng/button';
-import { ToggleButtonModule } from 'primeng/togglebutton';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
+import { IftaLabel } from '@openng/optimus-ui/iftalabel';
+import { InputText } from '@openng/optimus-ui/inputtext';
+import { InputNumber } from '@openng/optimus-ui/inputnumber';
+import { IconField } from '@openng/optimus-ui/iconfield';
+import { InputIcon } from '@openng/optimus-ui/inputicon';
+import { Textarea } from '@openng/optimus-ui/textarea';
+import { Toolbar } from '@openng/optimus-ui/toolbar';
+import { Button } from '@openng/optimus-ui/button';
+import { Tag } from '@openng/optimus-ui/tag';
+import { Tooltip } from '@openng/optimus-ui/tooltip';
 import { ContainerActionsComponent } from '@shared/components/container-actions/container-actions.component';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { ToggleSwitch } from '@openng/optimus-ui/toggleswitch';
 import { FormsModule } from '@angular/forms';
 import { ContainerCardLogsComponent } from './container-card-logs/container-card-logs.component';
 import { ContainerCardHooksComponent } from './container-card-hooks/container-card-hooks.component';
@@ -40,33 +44,35 @@ import { ContainersStore } from '../containers/containers.store';
 import { InspectComponent } from '@shared/components/inspect/inspect.component';
 import { SettingsStore } from '../settings/settings.store';
 import { ESettingKey } from '../settings/settings.interface';
-import { DividerModule } from 'primeng/divider';
+import { Divider } from '@openng/optimus-ui/divider';
 
 @Component({
   selector: 'app-container-card',
   imports: [
-    AccordionModule,
+    AccordionPanel,
+    AccordionHeader,
+    AccordionContent,
+    Accordion,
     TranslatePipe,
-    IftaLabelModule,
-    InputTextModule,
-    InputNumberModule,
-    IconFieldModule,
-    InputIconModule,
-    TextareaModule,
-    ToolbarModule,
-    ButtonModule,
-    ToggleButtonModule,
-    TagModule,
-    TooltipModule,
+    IftaLabel,
+    InputText,
+    InputNumber,
+    IconField,
+    InputIcon,
+    Textarea,
+    Toolbar,
+    Button,
+    Tag,
+    Tooltip,
     ContainerActionsComponent,
-    ToggleSwitchModule,
+    ToggleSwitch,
     FormsModule,
     ContainerCardLogsComponent,
     ContainerCardHooksComponent,
     BooleanFieldComponent,
     DayjsPipe,
     InspectComponent,
-    DividerModule,
+    Divider,
   ],
   templateUrl: './container-card.component.html',
   styleUrl: './container-card.component.scss',
@@ -134,6 +140,27 @@ export class ContainerCardComponent implements OnDestroy {
     const digests = item?.previous_image_digests ?? [];
     const tags = item?.previous_image_tags ?? [];
     return (digests.length ? digests : tags).join('\n');
+  });
+  /**
+   * Whether the card has derived fields to separate from the editable ones:
+   * versions, check timestamps, and the previous image.
+   */
+  protected readonly hasComputedFields = computed(() => {
+    const item = this.containersStore.selected();
+    const previousImage = this.previousImage();
+    if (!item) {
+      return false;
+    }
+    return Boolean(
+      item.current_version ||
+      (item.update_available &&
+        (item.available_version || item.available_created)) ||
+      item.previous_image_version ||
+      item.checked_at ||
+      item.remote_digests_changed_at ||
+      item.updated_at ||
+      previousImage,
+    );
   });
   /**
    * Previous image textarea rows count

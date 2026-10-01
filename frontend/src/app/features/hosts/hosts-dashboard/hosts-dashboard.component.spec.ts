@@ -4,9 +4,9 @@ import { HostsDashboardComponent } from './hosts-dashboard.component';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { HostsStore } from '../hosts.store';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { provideTranslateService } from '@ngx-translate/core';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 
 describe('HostsDashboardComponent', () => {
@@ -50,36 +50,45 @@ describe('HostsDashboardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should select host', () => {
-    const selectSpy = vi.spyOn(hostsStore, 'select');
-    activatedRouteParams.next({ id: 123 });
+  describe('selection', () => {
+    it('selects the host from the route', () => {
+      const selectSpy = vi.spyOn(hostsStore, 'select');
+      activatedRouteParams.next({ id: 123 });
 
-    expect(selectSpy).toHaveBeenCalledWith(123);
-    expect(selectSpy).toHaveBeenCalledTimes(1);
+      expect(selectSpy).toHaveBeenCalledWith(123);
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears the selection on destroy', () => {
+      const selectSpy = vi.spyOn(hostsStore, 'select');
+      fixture.destroy();
+
+      expect(selectSpy).toHaveBeenCalledWith(null);
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('should de-select host', () => {
-    const selectSpy = vi.spyOn(hostsStore, 'select');
-    fixture.destroy();
+  describe('narrow', () => {
+    it('turns on when the breakpoint matches', () => {
+      breakpointObserverObserve.next({ matches: true } as BreakpointState);
+      fixture.detectChanges();
+      expect(component['narrow']()).toBe(true);
+      expect(fixture.nativeElement.classList.contains('narrow')).toBe(true);
+    });
 
-    expect(selectSpy).toHaveBeenCalledWith(null);
-    expect(selectSpy).toHaveBeenCalledTimes(1);
-  });
+    it('turns off when the breakpoint does not match', () => {
+      breakpointObserverObserve.next({ matches: false } as BreakpointState);
+      fixture.detectChanges();
+      expect(component['narrow']()).toBe(false);
+      expect(fixture.nativeElement.classList.contains('narrow')).toBe(false);
+    });
 
-  it('should update narrow state', () => {
-    breakpointObserverObserve.next({ matches: true } as BreakpointState);
-    fixture.detectChanges();
-    expect(component['narrow']()).toBe(true);
-    expect(fixture.nativeElement.classList.contains('narrow')).toBe(true);
-
-    breakpointObserverObserve.next({ matches: false } as BreakpointState);
-    fixture.detectChanges();
-    expect(component['narrow']()).toBe(false);
-    expect(fixture.nativeElement.classList.contains('narrow')).toBe(false);
-
-    component['narrow'].set(true);
-    fixture.detectChanges();
-    expect(component['narrow']()).toBe(true);
-    expect(fixture.nativeElement.classList.contains('narrow')).toBe(true);
+    it('keeps a local value when the breakpoint matches again', () => {
+      component['narrow'].set(true);
+      breakpointObserverObserve.next({ matches: true } as BreakpointState);
+      fixture.detectChanges();
+      expect(component['narrow']()).toBe(true);
+      expect(fixture.nativeElement.classList.contains('narrow')).toBe(true);
+    });
   });
 });

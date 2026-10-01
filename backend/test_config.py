@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from backend.config import Config
+from backend.const import LOCAL_AGENT_ENDPOINT
 
 
 @pytest.fixture(autouse=True)
@@ -37,8 +38,10 @@ def test_config_empty_env(mock_apply, mock_load):
     assert Config.DOMAIN is None
     assert Config.ALLOW_ORIGINS == []
     assert Config.OIDC_ENABLED is False
-    # If AGENT_ENABLED is true (default), then default endpoints is 127.0.0.1:8001
-    assert Config.AGENT_ALLOW_ENDPOINTS == {"127.0.0.1:8001"}
+    assert Config.AGENT_SECRET is None
+    assert Config.AGENT_ENABLED is True
+    # If AGENT_ENABLED is true (default), then default endpoint is the local agent
+    assert Config.AGENT_ALLOW_ENDPOINTS == {LOCAL_AGENT_ENDPOINT}
 
 
 @patch.dict(
@@ -55,6 +58,7 @@ def test_config_empty_env(mock_apply, mock_load):
         "OIDC_ENABLED": "true",
         "OIDC_ALLOWED_EMAILS": "admin@example.com, user@example.com",
         "AGENT_ALLOW_NETWORKS": "192.168.1.0/24, 10.0.0.0/8",
+        "AGENT_SECRET": "my-secret",
         "AGENT_ENABLED": "false",
     },
     clear=True,
@@ -79,5 +83,7 @@ def test_config_filled_env(mock_apply, mock_load):
     assert IPv4Network("192.168.1.0/24") in Config.AGENT_ALLOW_NETWORKS
     assert IPv4Network("10.0.0.0/8") in Config.AGENT_ALLOW_NETWORKS
 
+    assert Config.AGENT_SECRET == "my-secret"
+    assert Config.AGENT_ENABLED is False
     # AGENT_ENABLED is false, so default AGENT_ALLOW_ENDPOINTS is empty
     assert Config.AGENT_ALLOW_ENDPOINTS == set()

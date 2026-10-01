@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from backend.core.jobs.update.update_all import update_all_hosts
+from backend.testing import patch_async_session
 
 base_module = "backend.core.jobs.update.update_all"
 
@@ -20,10 +21,7 @@ def mock_hosts(mocker: MockerFixture):
     session = MagicMock()
     session.execute = AsyncMock(return_value=mock_result)
 
-    session_cm = MagicMock()
-    session_cm.__aenter__ = AsyncMock(return_value=session)
-    session_cm.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch(f"{base_module}.async_session_maker", return_value=session_cm)
+    patch_async_session(mocker, base_module, session)
 
     mocker.patch(
         f"{base_module}.job_to_notification_result",
@@ -35,15 +33,18 @@ def mock_hosts(mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
-async def test_update_all_hosts_default_scheduled(
-    mocker: MockerFixture, mock_hosts: list[SimpleNamespace]
+@pytest.mark.parametrize("manual", [False, True])
+async def test_update_all_hosts_submits_each_host(
+    mocker: MockerFixture,
+    mock_hosts: list[SimpleNamespace],
+    manual: bool,
 ):
     mock_submit = mocker.patch(
         f"{base_module}.host_job_coordinator.submit",
         AsyncMock(return_value=SimpleNamespace(job={"kind": "update", "names": None})),
     )
 
-    await update_all_hosts()
+    await update_all_hosts(manual=manual)
 
     assert mock_submit.call_count == 2
     for host in mock_hosts:
@@ -51,29 +52,7 @@ async def test_update_all_hosts_default_scheduled(
             host,
             "update",
             names=None,
-            manual=False,
-            wait=True,
-        )
-
-
-@pytest.mark.asyncio
-async def test_update_all_hosts_manual(
-    mocker: MockerFixture, mock_hosts: list[SimpleNamespace]
-):
-    mock_submit = mocker.patch(
-        f"{base_module}.host_job_coordinator.submit",
-        AsyncMock(return_value=SimpleNamespace(job={"kind": "update", "names": None})),
-    )
-
-    await update_all_hosts(manual=True)
-
-    assert mock_submit.call_count == 2
-    for host in mock_hosts:
-        mock_submit.assert_any_call(
-            host,
-            "update",
-            names=None,
-            manual=True,
+            manual=manual,
             wait=True,
         )
 

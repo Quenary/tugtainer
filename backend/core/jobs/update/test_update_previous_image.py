@@ -1,3 +1,4 @@
+import pytest
 from python_on_whales.components.container.models import ContainerConfig
 from python_on_whales.components.image.models import ImageInspectResult
 
@@ -75,13 +76,16 @@ def test_for_result_collects_on_updated():
     ]
 
 
-def test_for_result_skips_rolled_back_and_failed():
+@pytest.mark.parametrize(
+    "result",
+    ["rolled_back", "failed", "available", "not_available", None],
+)
+def test_for_result_skips_rolled_back_and_failed(result):
     """
     After a rollback the container runs the inspected image again,
     so it is the current image, not a previous one.
     """
     image = _image(digests=["nginx@sha256:abc"])
 
-    for result in ("rolled_back", "failed", "available", "not_available", None):
-        previous = get_previous_image_for_result(image, result)
-        assert not previous, f"expected nothing to be collected for {result}"
+    previous = get_previous_image_for_result(image, result)
+    assert not previous

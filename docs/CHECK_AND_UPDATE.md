@@ -8,6 +8,15 @@
 4. Compare digests;
 5. If different, the container is **marked as available**.
 
+When the digests differ, Tugtainer also resolves a human-readable version and the image build time for that pending image. An up-to-date container makes no extra registry request. The first time a digest is seen as pending, one config blob is fetched; the result is cached by digest and reused for every container and Swarm service that waits on the same image. A later check of the same digest does not fetch it again.
+
+- If `PULL_BEFORE_CHECK` already pulled the image, the version and build time are read from that inspect.
+- Otherwise the tag manifest is fetched. A single-arch manifest already contains the config digest. A multi-arch index is followed to the manifest that matches the local image `os`, `architecture`, and `variant`, and then that config blob is fetched.
+- The version comes from `org.opencontainers.image.version`, falling back to `org.label-schema.version`. It is a hint from the publisher, with the same limits as [`previous_image_version`](#previous-image) below.
+- The build time is the image config `created` field.
+- A digest with no version label is still cached, so the blob is not downloaded on every check. A failed registry read is not cached and is retried next time.
+- The values are shown on the container card. The containers and Swarm services tables keep the "Update available" tag and put the version in its tooltip when one was resolved.
+
 **Scheduled** process includes all enabled hosts and all containers **selected for auto-check**.
 
 **Manual** process includes all containers despite the auto-check toggle (Check all across all hosts or on a host), a single container, or a selected set of containers.
@@ -24,6 +33,7 @@
 
 - ### Process
   1. The dependency graph is built:
+     - [hidden](CUSTOM_LABELS.md#devquenarytugtainerhiddentrue) containers are excluded before the graph is built;
      - [protected](CUSTOM_LABELS.md#devquenarytugtainerprotectedtrue) containers are skipped;
      - not `running` containers are skipped by default (can be changed in the settings);
   2. A set of **updatable** containers is calculated:
@@ -112,7 +122,7 @@ Tugtainer supports managing and updating services on Docker Swarm clusters.
    - If no repository digests can be determined (for instance, images built locally without registry digests), the service is safely skipped from remote registry querying.
 3. **Registry query & comparison**:
    - Tugtainer queries the remote registry for the latest digest of the base image tag.
-   - If the remote digest differs from the current digest, the service is **marked as available** for update.
+   - If the remote digest differs from the current digest, the service is **marked as available** for update. The pending image version and build time are resolved the same way as for containers.
 
 ### Update process for Swarm services
 

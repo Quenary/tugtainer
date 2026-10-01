@@ -4,9 +4,9 @@ import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { HostsStore } from '../hosts/hosts.store';
 import { ImagesStore } from '../images/images.store';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '@openng/optimus-ui/api';
 import { provideTranslateService } from '@ngx-translate/core';
-import { DialogService } from 'primeng/dynamicdialog';
+import { DialogService } from '@openng/optimus-ui/dynamicdialog';
 import { Mocked } from 'vitest';
 import { ResizeObserverMock } from '@testing/mocks/resize-observer.mock';
 
@@ -47,21 +47,23 @@ describe('ImageCardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should select image', () => {
-    const selectSpy = vi.spyOn(imagesStore, 'select');
-    const loadSelectedSpy = vi.spyOn(imagesStore, 'loadSelected');
-    activatedRouteParams.next({ imageId: 'test' });
+  describe('selection', () => {
+    it('selects the image from the route', () => {
+      const selectSpy = vi.spyOn(imagesStore, 'select');
+      const loadSelectedSpy = vi.spyOn(imagesStore, 'loadSelected');
+      activatedRouteParams.next({ imageId: 'test' });
 
-    expect(selectSpy).toHaveBeenCalledWith('test');
-    expect(selectSpy).toHaveBeenCalledTimes(1);
-    expect(loadSelectedSpy).toHaveBeenCalledTimes(1);
-  });
+      expect(selectSpy).toHaveBeenCalledWith('test');
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+      expect(loadSelectedSpy).toHaveBeenCalledTimes(1);
+    });
 
-  it('should de-select image', () => {
-    const selectSpy = vi.spyOn(imagesStore, 'select');
-    fixture.destroy();
+    it('clears the selection on destroy', () => {
+      const selectSpy = vi.spyOn(imagesStore, 'select');
+      fixture.destroy();
 
-    expect(selectSpy).toHaveBeenCalledWith(null);
-    expect(selectSpy).toHaveBeenCalledTimes(1);
+      expect(selectSpy).toHaveBeenCalledWith(null);
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+    });
   });
 });
