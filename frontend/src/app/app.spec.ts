@@ -176,16 +176,18 @@ describe('App', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should hide toolbar', async () => {
-    fixture.detectChanges();
-    await harness.navigateByUrl('/auth');
-    expect(component['isToolbarVisible']()).toBe(false);
-  });
+  describe('toolbar', () => {
+    it('hides on the auth route', async () => {
+      fixture.detectChanges();
+      await harness.navigateByUrl('/auth');
+      expect(component['isToolbarVisible']()).toBe(false);
+    });
 
-  it('should show toolbar', async () => {
-    fixture.detectChanges();
-    await harness.navigateByUrl('/hosts');
-    expect(component['isToolbarVisible']()).toBe(true);
+    it('shows on the hosts route', async () => {
+      fixture.detectChanges();
+      await harness.navigateByUrl('/hosts');
+      expect(component['isToolbarVisible']()).toBe(true);
+    });
   });
 
   describe('breadcrumbs', () => {
@@ -194,14 +196,14 @@ describe('App', () => {
       return component['breadcrumbs']();
     }
 
-    it('should keep breadcrumbs empty on routes without breadcrumb data', async () => {
+    it('stays empty without breadcrumb data', async () => {
       fixture.detectChanges();
       await harness.navigateByUrl('/auth');
 
       expect(readBreadcrumbs()).toEqual([]);
     });
 
-    it('should build breadcrumbs for a single route', async () => {
+    it('builds one crumb', async () => {
       fixture.detectChanges();
       await harness.navigateByUrl('/settings');
 
@@ -210,7 +212,7 @@ describe('App', () => {
       ]);
     });
 
-    it('should build nested breadcrumbs with accumulated router links', async () => {
+    it('accumulates router links for a nested route', async () => {
       fixture.detectChanges();
       await harness.navigateByUrl('/hosts/7/containers/nginx');
 
@@ -230,60 +232,73 @@ describe('App', () => {
       ]);
     });
 
-    it('should build breadcrumbs for host sections', async () => {
-      fixture.detectChanges();
+    describe('host sections', () => {
+      it('lists hosts', async () => {
+        fixture.detectChanges();
+        await harness.navigateByUrl('/hosts');
+        expect(readBreadcrumbs()).toEqual([
+          { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
+        ]);
+      });
 
-      await harness.navigateByUrl('/hosts');
-      expect(readBreadcrumbs()).toEqual([
-        { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
-      ]);
+      it('edits a host', async () => {
+        fixture.detectChanges();
+        await harness.navigateByUrl('/hosts/3/edit');
+        expect(readBreadcrumbs()).toEqual([
+          { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
+          {
+            label: undefined,
+            icon: 'pi pi-server',
+            routerLink: '/hosts/3/edit',
+          },
+        ]);
+      });
 
-      await harness.navigateByUrl('/hosts/3/edit');
-      expect(readBreadcrumbs()).toEqual([
-        { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
-        {
-          label: undefined,
-          icon: 'pi pi-server',
-          routerLink: '/hosts/3/edit',
-        },
-      ]);
+      it('opens an image', async () => {
+        fixture.detectChanges();
+        await harness.navigateByUrl('/hosts/3/images/sha256');
+        expect(readBreadcrumbs()).toEqual([
+          { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
+          { label: 'Dashboard', icon: undefined, routerLink: '/hosts/3' },
+          { label: 'Images', icon: undefined, routerLink: '/hosts/3/images' },
+          {
+            label: undefined,
+            icon: 'pi pi-list',
+            routerLink: '/hosts/3/images/sha256',
+          },
+        ]);
+      });
 
-      await harness.navigateByUrl('/hosts/3/images/sha256');
-      expect(readBreadcrumbs()).toEqual([
-        { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
-        { label: 'Dashboard', icon: undefined, routerLink: '/hosts/3' },
-        { label: 'Images', icon: undefined, routerLink: '/hosts/3/images' },
-        {
-          label: undefined,
-          icon: 'pi pi-list',
-          routerLink: '/hosts/3/images/sha256',
-        },
-      ]);
+      it('lists services', async () => {
+        fixture.detectChanges();
+        await harness.navigateByUrl('/hosts/3/services');
+        expect(readBreadcrumbs()).toEqual([
+          { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
+          { label: 'Dashboard', icon: undefined, routerLink: '/hosts/3' },
+          {
+            label: 'Services',
+            icon: undefined,
+            routerLink: '/hosts/3/services',
+          },
+        ]);
+      });
 
-      await harness.navigateByUrl('/hosts/3/services');
-      expect(readBreadcrumbs()).toEqual([
-        { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
-        { label: 'Dashboard', icon: undefined, routerLink: '/hosts/3' },
-        {
-          label: 'Services',
-          icon: undefined,
-          routerLink: '/hosts/3/services',
-        },
-      ]);
-
-      await harness.navigateByUrl('/hosts/3/health');
-      expect(readBreadcrumbs()).toEqual([
-        { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
-        { label: 'Dashboard', icon: undefined, routerLink: '/hosts/3' },
-        {
-          label: 'Healthcheck Monitoring',
-          icon: undefined,
-          routerLink: '/hosts/3/health',
-        },
-      ]);
+      it('opens health monitoring', async () => {
+        fixture.detectChanges();
+        await harness.navigateByUrl('/hosts/3/health');
+        expect(readBreadcrumbs()).toEqual([
+          { label: 'Hosts', icon: undefined, routerLink: '/hosts' },
+          { label: 'Dashboard', icon: undefined, routerLink: '/hosts/3' },
+          {
+            label: 'Healthcheck Monitoring',
+            icon: undefined,
+            routerLink: '/hosts/3/health',
+          },
+        ]);
+      });
     });
 
-    it('should refresh breadcrumb labels when translations change', async () => {
+    it('refreshes labels when the language changes', async () => {
       fixture.detectChanges();
       await harness.navigateByUrl('/settings');
       expect(readBreadcrumbs()).toEqual([

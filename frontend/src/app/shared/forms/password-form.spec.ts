@@ -7,27 +7,29 @@ describe('createPasswordForm', () => {
     return form;
   }
 
-  it('should be invalid initially', () => {
-    expect(createPasswordForm().invalid).toBe(true);
-  });
+  describe('validity', () => {
+    it('is invalid initially', () => {
+      expect(createPasswordForm().invalid).toBe(true);
+    });
 
-  it('should accept matching passwords', () => {
-    const form = setPasswords('123QWErty!', '123QWErty!');
+    it('accepts matching passwords', () => {
+      const form = setPasswords('123QWErty!', '123QWErty!');
 
-    expect(form.valid).toBe(true);
-    expect(form.errors).toBeNull();
-  });
+      expect(form.valid).toBe(true);
+      expect(form.errors).toBeNull();
+    });
 
-  it('should reject passwords that do not match', () => {
-    const form = setPasswords('123QWErty!', 'Rty123Qwe');
+    it('rejects passwords that do not match', () => {
+      const form = setPasswords('123QWErty!', 'Rty123Qwe');
 
-    expect(form.invalid).toBe(true);
-    expect(form.errors).toEqual({ passwordMatchValidator: true });
-  });
+      expect(form.invalid).toBe(true);
+      expect(form.errors).toEqual({ passwordMatchValidator: true });
+    });
 
-  it('should reject a password without the required pattern', () => {
-    const form = setPasswords('lowercase1', 'lowercase1');
+    it('rejects a password without the required pattern', () => {
+      const form = setPasswords('lowercase1', 'lowercase1');
 
-    expect(form.controls.password.invalid).toBe(true);
+      expect(form.controls.password.invalid).toBe(true);
+    });
   });
 });

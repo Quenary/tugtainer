@@ -152,7 +152,7 @@ describe('AppStore', () => {
       expect(document.documentElement.className).toBe('DARK');
     });
 
-    it('should resolve AUTO to DARK', () => {
+    it('resolves AUTO to DARK', () => {
       vi.stubGlobal(
         'matchMedia',
         vi.fn().mockReturnValue({ matches: true } as MediaQueryList),
@@ -163,7 +163,7 @@ describe('AppStore', () => {
       expect(document.documentElement.className).toBe('DARK');
     });
 
-    it('should resolve AUTO to LIGHT', () => {
+    it('resolves AUTO to LIGHT', () => {
       vi.stubGlobal(
         'matchMedia',
         vi.fn().mockReturnValue({ matches: false } as MediaQueryList),
@@ -176,7 +176,7 @@ describe('AppStore', () => {
   });
 
   describe('setLang', () => {
-    it('should set lang and apply its locale', () => {
+    it('sets the language and applies its locale', () => {
       const translateService = TestBed.inject(TranslateService);
       const useSpy = vi.spyOn(translateService, 'use');
 
@@ -188,7 +188,7 @@ describe('AppStore', () => {
       expect(localeServiceMock.apply).toHaveBeenCalledWith('ru');
     });
 
-    it('should resolve AUTO to the browser locale', () => {
+    it('resolves AUTO to the browser locale', () => {
       vi.spyOn(navigator, 'language', 'get').mockReturnValue('ru-RU');
 
       store.setLang('AUTO');

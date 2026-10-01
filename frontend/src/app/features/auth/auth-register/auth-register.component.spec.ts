@@ -44,43 +44,45 @@ describe('AuthRegisterComponent', () => {
     component['form'].markAsDirty();
   }
 
-  it('should not submit an invalid form', () => {
-    component['onSubmit']();
+  describe('onSubmit', () => {
+    it('does nothing while the form is invalid', () => {
+      component['onSubmit']();
 
-    expect(authApiServiceMock.setPassword).not.toHaveBeenCalled();
-  });
-
-  it('should send the setup code with the password', () => {
-    fillForm();
-    component['onSubmit']();
-
-    expect(authApiServiceMock.setPassword).toHaveBeenCalledWith({
-      password: '123QWErty!',
-      confirm_password: '123QWErty!',
-      setup_code: 'setup-code',
+      expect(authApiServiceMock.setPassword).not.toHaveBeenCalled();
     });
-  });
 
-  it('should notify the parent after a successful registration', () => {
-    const registered = vi.fn();
-    component.OnRegistered.subscribe(registered);
-    fillForm();
-    component['onSubmit']();
+    it('sends the setup code with the password', () => {
+      fillForm();
+      component['onSubmit']();
 
-    expect(registered).toHaveBeenCalledTimes(1);
-    expect(toastServiceMock.success).toHaveBeenCalledTimes(1);
-  });
+      expect(authApiServiceMock.setPassword).toHaveBeenCalledWith({
+        password: '123QWErty!',
+        confirm_password: '123QWErty!',
+        setup_code: 'setup-code',
+      });
+    });
 
-  it('should show an error when registration fails', () => {
-    authApiServiceMock.setPassword.mockReturnValue(
-      throwError(() => new Error('expired')),
-    );
-    const registered = vi.fn();
-    component.OnRegistered.subscribe(registered);
-    fillForm();
-    component['onSubmit']();
+    it('notifies the parent after success', () => {
+      const registered = vi.fn();
+      component.OnRegistered.subscribe(registered);
+      fillForm();
+      component['onSubmit']();
 
-    expect(registered).not.toHaveBeenCalled();
-    expect(toastServiceMock.error).toHaveBeenCalledTimes(1);
+      expect(registered).toHaveBeenCalledTimes(1);
+      expect(toastServiceMock.success).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows an error when registration fails', () => {
+      authApiServiceMock.setPassword.mockReturnValue(
+        throwError(() => new Error('expired')),
+      );
+      const registered = vi.fn();
+      component.OnRegistered.subscribe(registered);
+      fillForm();
+      component['onSubmit']();
+
+      expect(registered).not.toHaveBeenCalled();
+      expect(toastServiceMock.error).toHaveBeenCalledTimes(1);
+    });
   });
 });

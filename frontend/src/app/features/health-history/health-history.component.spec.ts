@@ -47,57 +47,59 @@ describe('HealthHistoryComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should not load history on init if no hostId is selected', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(healthHistoryApiServiceMock.getHistory).not.toHaveBeenCalled();
-  });
-
-  it('should load history when hostId is selected', async () => {
-    hostSelectedIdSignal.set(1);
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(healthHistoryApiServiceMock.getHistory).toHaveBeenCalledWith({
-      host_id: 1,
-      page: 1,
-      limit: 25,
+  describe('history', () => {
+    it('does not load without a selected host', async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(healthHistoryApiServiceMock.getHistory).not.toHaveBeenCalled();
     });
-  });
 
-  it('should load history on lazy load', async () => {
-    hostSelectedIdSignal.set(1);
-    fixture.detectChanges();
-    await fixture.whenStable();
-    healthHistoryApiServiceMock.getHistory.mockClear();
+    it('loads the first page for the selected host', async () => {
+      hostSelectedIdSignal.set(1);
+      fixture.detectChanges();
+      await fixture.whenStable();
 
-    const event: TableLazyLoadEvent = { first: 40, rows: 20 };
-    component.onLazyLoad(event);
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(healthHistoryApiServiceMock.getHistory).toHaveBeenCalledWith({
-      host_id: 1,
-      page: 3,
-      limit: 20,
+      expect(healthHistoryApiServiceMock.getHistory).toHaveBeenCalledWith({
+        host_id: 1,
+        page: 1,
+        limit: 25,
+      });
     });
-  });
 
-  it('should filter by status and reset page to 1', async () => {
-    hostSelectedIdSignal.set(1);
-    fixture.detectChanges();
-    await fixture.whenStable();
-    healthHistoryApiServiceMock.getHistory.mockClear();
+    it('loads the requested page', async () => {
+      hostSelectedIdSignal.set(1);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      healthHistoryApiServiceMock.getHistory.mockClear();
 
-    component.onStatusChange('unhealthy');
-    fixture.detectChanges();
-    await fixture.whenStable();
+      const event: TableLazyLoadEvent = { first: 40, rows: 20 };
+      component.onLazyLoad(event);
+      fixture.detectChanges();
+      await fixture.whenStable();
 
-    expect(healthHistoryApiServiceMock.getHistory).toHaveBeenCalledWith({
-      host_id: 1,
-      page: 1,
-      limit: 25,
-      status: ['unhealthy'],
+      expect(healthHistoryApiServiceMock.getHistory).toHaveBeenCalledWith({
+        host_id: 1,
+        page: 3,
+        limit: 20,
+      });
+    });
+
+    it('filters by status and resets the page', async () => {
+      hostSelectedIdSignal.set(1);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      healthHistoryApiServiceMock.getHistory.mockClear();
+
+      component.onStatusChange('unhealthy');
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(healthHistoryApiServiceMock.getHistory).toHaveBeenCalledWith({
+        host_id: 1,
+        page: 1,
+        limit: 25,
+        status: ['unhealthy'],
+      });
     });
   });
 });

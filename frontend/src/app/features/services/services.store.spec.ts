@@ -107,21 +107,23 @@ describe('ServicesStore', () => {
     expect(store.hostId()).toBe(1);
   });
 
-  it('should load list of services', () => {
-    store.loadList();
+  describe('loadList', () => {
+    it('loads the services', () => {
+      store.loadList();
 
-    expect(servicesApiServiceMock.list).toHaveBeenCalledWith(1);
-    expect(store.entities()).toHaveLength(1);
-    expect(store.entities()[0].name).toBe('web-service');
-  });
+      expect(servicesApiServiceMock.list).toHaveBeenCalledWith(1);
+      expect(store.entities()).toHaveLength(1);
+      expect(store.entities()[0].name).toBe('web-service');
+    });
 
-  it('should handle load error gracefully', () => {
-    const error = new Error('Failed to load services');
-    servicesApiServiceMock.list.mockReturnValue(throwError(() => error));
+    it('shows an error when loading fails', () => {
+      const error = new Error('Failed to load services');
+      servicesApiServiceMock.list.mockReturnValue(throwError(() => error));
 
-    store.loadList();
+      store.loadList();
 
-    expect(toastServiceMock.error).toHaveBeenCalledWith(error);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(error);
+    });
   });
 
   it('should patch service', () => {
@@ -160,24 +162,33 @@ describe('ServicesStore', () => {
     expect(toastServiceMock.success).toHaveBeenCalled();
   });
 
-  it('should select a service by name', () => {
-    store.loadList();
+  describe('select', () => {
+    beforeEach(() => {
+      store.loadList();
+    });
 
-    store.select('web-service');
-    expect(store.selected()?.name).toBe('web-service');
+    it('selects a service by name', () => {
+      store.select('web-service');
 
-    store.select(null);
-    expect(store.selected()).toBeNull();
+      expect(store.selected()?.name).toBe('web-service');
+    });
+
+    it('clears the selection', () => {
+      store.select('web-service');
+      store.select(null);
+
+      expect(store.selected()).toBeNull();
+    });
   });
 
   describe('updateServicesList effect', () => {
-    it('should reload list when updateServicesList changes', () => {
+    it('reloads the list when the signal changes', () => {
       updateServicesListSignal.set(new Date());
       TestBed.flushEffects();
       expect(servicesApiServiceMock.list).toHaveBeenCalled();
     });
 
-    it('should not reload if updateServicesList is null', () => {
+    it('does not reload when the signal is null', () => {
       servicesApiServiceMock.list.mockClear();
       updateServicesListSignal.set(null);
       TestBed.flushEffects();

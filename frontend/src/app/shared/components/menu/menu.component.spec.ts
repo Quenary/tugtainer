@@ -56,18 +56,22 @@ describe('MenuComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should update narrow state', () => {
-    breakpointObserverObserve.next({ matches: true } as BreakpointState);
-    expect(component['narrow']()).toBe(true);
+  describe('narrow', () => {
+    it('turns on when the breakpoint matches', () => {
+      breakpointObserverObserve.next({ matches: true } as BreakpointState);
+      expect(component['narrow']()).toBe(true);
+    });
 
-    breakpointObserverObserve.next({ matches: false } as BreakpointState);
-    expect(component['narrow']()).toBe(false);
+    it('turns off when the breakpoint does not match', () => {
+      breakpointObserverObserve.next({ matches: false } as BreakpointState);
+      expect(component['narrow']()).toBe(false);
+    });
 
-    component['narrow'].set(true);
-    expect(component['narrow']()).toBe(true);
-
-    breakpointObserverObserve.next({ matches: true } as BreakpointState);
-    expect(component['narrow']()).toBe(true);
+    it('keeps a local value when the breakpoint matches again', () => {
+      component['narrow'].set(true);
+      breakpointObserverObserve.next({ matches: true } as BreakpointState);
+      expect(component['narrow']()).toBe(true);
+    });
   });
 
   it('should logout and navigate', () => {

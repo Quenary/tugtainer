@@ -23,34 +23,36 @@ describe('ContainerCardHooksComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should populate the form from the hooks input', () => {
-    const hooks: IContainerHooks = {
-      pre_update: ['echo one', 'echo two'],
-      post_update: [],
-      pre_stop: [],
-      pre_rollback: [],
-      post_rollback: [],
-    };
-    fixture.componentRef.setInput('hooks', hooks);
-    fixture.detectChanges();
+  describe('form', () => {
+    it('fills fields from the hooks input', () => {
+      const hooks: IContainerHooks = {
+        pre_update: ['echo one', 'echo two'],
+        post_update: [],
+        pre_stop: [],
+        pre_rollback: [],
+        post_rollback: [],
+      };
+      fixture.componentRef.setInput('hooks', hooks);
+      fixture.detectChanges();
 
-    expect(component['form'].controls.pre_update.value).toBe(
-      'echo one\necho two',
-    );
-  });
+      expect(component['form'].controls.pre_update.value).toBe(
+        'echo one\necho two',
+      );
+    });
 
-  it('should emit save with lines split into an array, blank lines stripped', () => {
-    fixture.componentRef.setInput('hooks', null);
-    fixture.detectChanges();
+    it('emits lines split into an array, with blank lines stripped', () => {
+      fixture.componentRef.setInput('hooks', null);
+      fixture.detectChanges();
 
-    const emitted: IContainerHooks[] = [];
-    component.save.subscribe((v) => emitted.push(v));
+      const emitted: IContainerHooks[] = [];
+      component.save.subscribe((v) => emitted.push(v));
 
-    component['form'].controls.pre_update.setValue('echo one\n\necho two\n');
-    component['onSave']();
+      component['form'].controls.pre_update.setValue('echo one\n\necho two\n');
+      component['onSave']();
 
-    expect(emitted).toHaveLength(1);
-    expect(emitted[0].pre_update).toEqual(['echo one', 'echo two']);
-    expect(emitted[0].post_update).toEqual([]);
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0].pre_update).toEqual(['echo one', 'echo two']);
+      expect(emitted[0].post_update).toEqual([]);
+    });
   });
 });

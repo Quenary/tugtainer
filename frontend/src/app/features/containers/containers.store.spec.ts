@@ -474,14 +474,14 @@ describe('ContainersStore', () => {
   });
 
   describe('updateContainersList effect', () => {
-    it('should reload list on updateContainersList change', () => {
+    it('reloads the list when the signal changes', () => {
       updateContainersListSignal.set(new Date());
       TestBed.tick();
 
       expect(containersApiServiceMock.list).toHaveBeenCalledTimes(1);
     });
 
-    it('should not reload if updateContainersList is null', () => {
+    it('does not reload when the signal is null', () => {
       updateContainersListSignal.set(null);
       TestBed.tick();
 

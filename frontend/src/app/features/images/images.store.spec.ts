@@ -213,13 +213,13 @@ describe('ImagesStore', () => {
   });
 
   describe('updateImagesList effect', () => {
-    it('should reload list when updateImagesList changes', () => {
+    it('reloads the list when the signal changes', () => {
       updateImagesListSignal.set(new Date());
       TestBed.tick();
       expect(imagesApiServiceMock.list).toHaveBeenCalledWith(1);
     });
 
-    it('should not reload if updateImagesList is null', () => {
+    it('does not reload when the signal is null', () => {
       updateImagesListSignal.set(null);
       TestBed.tick();
       expect(imagesApiServiceMock.list).not.toHaveBeenCalled();

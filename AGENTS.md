@@ -1,6 +1,6 @@
 # AGENTS.md — Guidelines for AI Agents
 
-For general contributing workflow and commit standards, see [docs/CONTRIBUTING.md](file:///home/quenary/repos/tugtainer/docs/CONTRIBUTING.md).
+For general contributing workflow and commit standards, see [docs/CONTRIBUTING.md](file:///home/quenary/repos/tugtainer/docs/CONTRIBUTING.md). Package guides: [backend/AGENTS.md](backend/AGENTS.md), [frontend/AGENTS.md](frontend/AGENTS.md).
 
 ## 1. Architecture Overview
 
@@ -22,9 +22,9 @@ For general contributing workflow and commit standards, see [docs/CONTRIBUTING.m
 ### Local Dev
 
 ```bash
-# Backend: source .venv/bin/activate && python -m backend.dev
-# Agent:   source .venv/bin/activate && python -m agent.dev
-# Frontend: cd frontend && npm start
+uv run python -m backend.dev
+uv run python -m agent.dev
+npm --prefix frontend run start
 ```
 
 ### Pre-commit Quality Checks
