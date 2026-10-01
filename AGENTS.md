@@ -1,6 +1,6 @@
 # AGENTS.md — Guidelines for AI Agents
 
-For general contributing workflow and commit standards, see [docs/CONTRIBUTING.md](file:///home/quenary/repos/tugtainer/docs/CONTRIBUTING.md). Package guides: [backend/AGENTS.md](backend/AGENTS.md), [frontend/AGENTS.md](frontend/AGENTS.md).
+For general contributing workflow and commit standards, see [docs/CONTRIBUTING.md](file:///home/quenary/repos/tugtainer/docs/CONTRIBUTING.md). Package guides: [backend/AGENTS.md](backend/AGENTS.md), [agent/AGENTS.md](agent/AGENTS.md), [frontend/AGENTS.md](frontend/AGENTS.md).
 
 ## 1. Architecture Overview
 
