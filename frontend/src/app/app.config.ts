@@ -19,8 +19,13 @@ import Aura from '@openng/optimus-ui-themes/aura';
 import { MessageService } from '@openng/optimus-ui/api';
 import { definePreset } from '@openng/optimus-ui-themes';
 import { SlickTranslationLoader } from './core/services/slick-translation-loader.service';
-import { getStoredLang, resolveLocale } from './core/services/locale.service';
+import {
+  getStoredLang,
+  resolveLocale,
+  resolveTranslationLang,
+} from './core/services/locale.service';
 import { DialogService } from '@openng/optimus-ui/dynamicdialog';
+import { defaultLang } from './app.consts';
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -48,8 +53,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideTranslateService({
       loader: provideTranslateLoader(SlickTranslationLoader),
-      fallbackLang: 'en',
-      lang: resolveLocale(getStoredLang()),
+      fallbackLang: defaultLang,
+      lang: resolveTranslationLang(resolveLocale(getStoredLang())),
     }),
     {
       provide: LOCALE_ID,

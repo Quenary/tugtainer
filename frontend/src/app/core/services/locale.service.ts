@@ -1,7 +1,11 @@
 import { registerLocaleData } from '@angular/common';
 import { Injectable } from '@angular/core';
 import dayjs from 'dayjs';
-import { supportedLocales } from 'src/app/app.consts';
+import {
+  defaultLang,
+  supportedLangs,
+  supportedLocales,
+} from 'src/app/app.consts';
 import { EStorageKey } from 'src/app/app.enums';
 import {
   storageGetItemJson,
@@ -10,6 +14,7 @@ import {
 import { Subject } from 'rxjs';
 
 export type TAppLang = 'AUTO' | (typeof supportedLocales)[number];
+export type TTranslationLang = (typeof supportedLangs)[number];
 
 export const localeLabels: Record<(typeof supportedLocales)[number], string> = {
   en: 'English',
@@ -24,8 +29,10 @@ export const localeLabels: Record<(typeof supportedLocales)[number], string> = {
 };
 
 export function getBrowserLocale(): string {
-  const locale = navigator.language ? navigator.language.split('-')[0] : 'en';
-  return supportedLocales.find((l) => l === locale) || 'en';
+  const locale = navigator.language
+    ? navigator.language.split('-')[0]
+    : defaultLang;
+  return supportedLocales.find((l) => l === locale) || defaultLang;
 }
 
 /**
@@ -45,7 +52,19 @@ export function resolveLocale(lang: TAppLang | null | undefined): string {
   if (!lang || lang === 'AUTO') {
     return getBrowserLocale();
   }
-  return supportedLocales.find((l) => l === lang) || 'en';
+  return supportedLocales.find((l) => l === lang) || defaultLang;
+}
+
+/**
+ * Map resolved locale (e.g. 'de') to a language that has translation.
+ * Locale-only languages fall back to {@link defaultLang}, so
+ * ngx-translate never requests a catalog that does not exist.
+ */
+export function resolveTranslationLang(
+  locale: string | null | undefined,
+): TTranslationLang {
+  const lang = (locale || '').toLowerCase().split('-')[0];
+  return supportedLangs.find((l) => l === lang) || defaultLang;
 }
 
 const importDayjsLocale = async (locale: string) => {

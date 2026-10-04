@@ -39,7 +39,7 @@ public_router = APIRouter(tags=["public"], prefix="/public")
 def get_version():
     try:
         with open("/app/version") as file:
-            return {"image_version": file.readline()}
+            return {"image_version": file.readline().strip()}
     except FileNotFoundError as e:
         raise HTTPException(404, "Version file not found") from e
 
@@ -128,7 +128,7 @@ async def get_update_count(
 async def is_update_available():
     try:
         with open("/app/version") as file:
-            local_version = file.readline()
+            local_version = file.readline().strip()
     except FileNotFoundError as e:
         raise HTTPException(404, "Version file not found") from e
     try:
