@@ -188,6 +188,17 @@ describe('AppStore', () => {
       expect(localeServiceMock.apply).toHaveBeenCalledWith('ru');
     });
 
+    it('uses the en catalog for locale-only languages (#255)', () => {
+      const translateService = TestBed.inject(TranslateService);
+      const useSpy = vi.spyOn(translateService, 'use');
+
+      store.setLang('de');
+
+      expect(store.lang()).toBe('de');
+      expect(useSpy).toHaveBeenCalledWith('en');
+      expect(localeServiceMock.apply).toHaveBeenCalledWith('de');
+    });
+
     it('resolves AUTO to the browser locale', () => {
       vi.spyOn(navigator, 'language', 'get').mockReturnValue('ru-RU');
 

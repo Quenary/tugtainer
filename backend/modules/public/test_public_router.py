@@ -53,6 +53,19 @@ async def test_is_update_available(
     assert data["release_url"] == expected_release_url
 
 
+@pytest.mark.parametrize(
+    "file_content, expected",
+    [("v1.44.0\n", "v1.44.0"), ("v1.44.0", "v1.44.0"), ("  dev build \n", "dev build")],
+)
+def test_get_version_strips_whitespace(
+    mocker: MockerFixture, file_content: str, expected: str
+):
+    mocker.patch("builtins.open", mocker.mock_open(read_data=file_content))
+    response = client.get("/public/version")
+    assert response.status_code == 200
+    assert response.json() == {"image_version": expected}
+
+
 @pytest.mark.asyncio
 async def test_get_update_count(
     mocker: MockerFixture,

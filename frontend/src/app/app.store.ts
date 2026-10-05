@@ -21,6 +21,7 @@ import {
   getStoredLang,
   LocaleService,
   resolveLocale,
+  resolveTranslationLang,
   setStoredLang,
   TAppLang,
 } from './core/services/locale.service';
@@ -114,7 +115,7 @@ export const AppStore = signalStore(
         patchState(store, { lang });
         setStoredLang(lang);
         const locale = resolveLocale(lang);
-        translateService.use(locale);
+        translateService.use(resolveTranslationLang(locale));
         void localeService.apply(locale);
       },
     };
