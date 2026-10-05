@@ -1,5 +1,7 @@
 # Tugtainer is a self-hosted app for automating updates of your docker containers
 
+[![Deploy to Railyard](https://app.railyard.run/deploy/badge)](https://app.railyard.run/deploy?repo=https://github.com/Quenary/tugtainer)
+
 <img src="resources/social_preview.jpg" width="100%">
 
 Please be aware that the application is distributed as-is and is not recommended for use in a production environment.
