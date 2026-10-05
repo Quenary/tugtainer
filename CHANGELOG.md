@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.44.1 (2026-10-05)
+
+### Bug Fixes
+
+- **frontend**: App loading with locale-only languages
+  ([`dd78d49`](https://github.com/Quenary/tugtainer/commit/dd78d4952aa566269bf25cb19722b995d4a8cd40))
+
+
 ## v1.44.0 (2026-10-01)
 
 ### Bug Fixes
