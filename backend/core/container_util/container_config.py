@@ -22,6 +22,7 @@ from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
     get_container_restart_policy_str,
 )
+from .map_binds_to_volumes import map_binds_to_volumes
 from .map_device_requests_to_gpus import map_device_requests_to_gpus
 from .map_devices_to_list import map_devices_to_list
 from .map_env_to_dict import map_env_to_dict
@@ -116,6 +117,8 @@ def get_container_config(
     if image and image.config and image.config.working_dir != config.working_dir:
         workdir = normalize_path(config.working_dir)
 
+    VOLUMES, MOUNTS = map_binds_to_volumes(host_config.binds, container.mounts)
+
     LABELS, REJECTED_LABELS = filter_cli_safe_labels(config.labels or {})
     if REJECTED_LABELS:
         logging.warning(
@@ -168,7 +171,7 @@ def get_container_config(
         "memory_reservation": host_config.memory_reservation,
         "memory_swap": host_config.memory_swap,
         "memory_swappiness": host_config.memory_swappiness,
-        "mounts": map_mounts_to_arg(container.mounts),
+        "mounts": map_mounts_to_arg(MOUNTS),
         "oom_kill": bool(not host_config.oom_kill_disable),
         "oom_score_adj": host_config.oom_score_adj,
         "pid": normalize_ns_mode(host_config.pid_mode),
@@ -189,6 +192,7 @@ def get_container_config(
         "user": config.user,
         "userns": normalize_ns_mode(host_config.userns_mode),
         "uts": normalize_ns_mode(host_config.uts_mode),
+        "volumes": VOLUMES,
         "volume_driver": host_config.volume_driver,
         "volumes_from": host_config.volumes_from,
         "workdir": workdir,
