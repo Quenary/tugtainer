@@ -23,6 +23,16 @@ function extraEndpoint(
   return endpoint;
 }
 
+interface MountSpec {
+  Type?: string;
+  Source?: string;
+  Target?: string;
+}
+
+function mountSpecs(mounts: MountSpec[] | undefined): string[] {
+  return (mounts ?? []).map((m) => `${m.Type} ${m.Source} -> ${m.Target}`);
+}
+
 test.describe('update container with extra network', () => {
   test.setTimeout(240_000);
 
@@ -54,6 +64,8 @@ test.describe('update container with extra network', () => {
         'test.local:127.0.0.1',
       ]),
     );
+    expect(before.HostConfig.Binds).toHaveLength(1);
+    expect(before.HostConfig.Mounts).toHaveLength(1);
 
     const names = [outdatedAlpineExtraNetwork.name];
     const checkWatch = await watchHostJobs(request, host.id);
@@ -114,6 +126,11 @@ test.describe('update container with extra network', () => {
         'host.docker.internal:host-gateway',
         'test.local:127.0.0.1',
       ]),
+    );
+    // -v binds stay in HostConfig.Binds, --mount ones in HostConfig.Mounts
+    expect(after.HostConfig.Binds).toEqual(before.HostConfig.Binds);
+    expect(mountSpecs(after.HostConfig.Mounts)).toEqual(
+      mountSpecs(before.HostConfig.Mounts),
     );
   });
 });

@@ -6,6 +6,7 @@ import {
   removeContainerIfExists,
   removeImageTagIfExists,
   removeNetworkIfExists,
+  removeVolumeIfExists,
 } from '../shared/util/docker.util';
 
 /** Distinct from check-container's 3.22/3.23 pair so the tests can run in parallel. */
@@ -18,6 +19,8 @@ export const PRIMARY_NET = 'tugtainer-test-update-primary';
 export const EXTRA_NET = 'tugtainer-test-update-extra';
 export const EXTRA_ALIAS = 'app';
 export const LINK_ALIAS = 'db';
+export const BIND_VOLUME = 'tugtainer-test-update-bind';
+export const MOUNT_VOLUME = 'tugtainer-test-update-mount';
 
 const TEST_LABEL = 'update-extra-network';
 
@@ -35,6 +38,8 @@ async function cleanup(): Promise<void> {
   const docker = getDocker();
   await removeContainerIfExists(docker, APP_NAME);
   await removeContainerIfExists(docker, DB_NAME);
+  await removeVolumeIfExists(docker, BIND_VOLUME);
+  await removeVolumeIfExists(docker, MOUNT_VOLUME);
   await removeNetworkIfExists(docker, EXTRA_NET);
   await removeNetworkIfExists(docker, PRIMARY_NET);
   await removeImageTagIfExists(docker, STALE_TAG);
@@ -42,7 +47,8 @@ async function cleanup(): Promise<void> {
 
 /**
  * Outdated alpine container on a primary user-defined network, plus a second
- * network connected with alias + --link (the path that failed in #225).
+ * network connected with alias + --link (the path that failed in #225),
+ * and a -v volume next to a --mount one.
  */
 export const test = base.extend<{
   outdatedAlpineExtraNetwork: OutdatedAlpineExtraNetwork;
@@ -90,6 +96,10 @@ export const test = base.extend<{
             'host.docker.internal:host-gateway',
             'test.local:127.0.0.1',
           ],
+          // Recreated from inspect, each must keep its form:
+          // -v in HostConfig.Binds, --mount in HostConfig.Mounts
+          Binds: [`${BIND_VOLUME}:/bind`],
+          Mounts: [{ Type: 'volume', Source: MOUNT_VOLUME, Target: '/mount' }],
         },
       });
       await app.start();
