@@ -12,7 +12,7 @@ def map_binds_to_volumes(
     """
     Map docker inspect HostConfig.Binds (created with -v / --volume)
     to run/create volumes arg, so the recreated container keeps them
-    in HostConfig.Binds. Some tools read volumes only from there (e.g. Unraid).
+    in HostConfig.Binds. Some tools read volumes only from there.
     A bind is used only if it matches an inspect mount,
     anything else stays a --mount.
     :returns 0: volumes arg
