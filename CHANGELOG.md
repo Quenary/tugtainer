@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.44.3 (2026-10-24)
+
+### Bug Fixes
+
+- **backend**: Drop old image-defined envs/labels, keep overrides
+  ([`833595c`](https://github.com/Quenary/tugtainer/commit/833595c67b7357bd6c701febc4128513cc7fb9d6))
+
+
 ## v1.44.2 (2026-10-24)
 
 ### Bug Fixes
