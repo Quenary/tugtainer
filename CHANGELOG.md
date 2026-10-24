@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.44.2 (2026-10-24)
+
+### Bug Fixes
+
+- **backend**: Keep -v binds in HostConfig.Binds on container recreation
+  ([`4fd3654`](https://github.com/Quenary/tugtainer/commit/4fd3654a8252e6f2cec22e5674292b79655f13e5))
+
+### Documentation
+
+- **backend**: Drop the example from the binds docstring
+  ([`c0d01dd`](https://github.com/Quenary/tugtainer/commit/c0d01dd6827e92fe6c856b7344f7990e306e4362))
+
+
 ## v1.44.1 (2026-10-05)
 
 ### Bug Fixes
