@@ -4,6 +4,7 @@ from python_on_whales.components.container.models import (
     ContainerHealthCheck,
     ContainerHostConfig,
     ContainerInspectResult,
+    Mount,
 )
 from python_on_whales.components.image.models import ImageInspectResult
 
@@ -251,3 +252,37 @@ def test_labels_rejected_by_cli_are_dropped():
         "ru.название": "значение",
         "with.value": "value with spaces",
     }
+
+
+# Binds created with -v should be recreated with -v,
+# so they stay in HostConfig.Binds, other mounts with --mount
+def test_binds_recreated_as_volumes():
+    container = ContainerInspectResult(
+        config=ContainerConfig(image="test_image"),
+        host_config=ContainerHostConfig(binds=["/srv/app:/config:ro"]),
+        mounts=[
+            Mount(
+                type="bind",
+                source="/srv/app",
+                destination="/config",
+                mode="ro",
+                rw=False,
+                propagation="rprivate",
+            ),
+            Mount(
+                type="bind",
+                source="/srv/cache",
+                destination="/cache",
+                mode="",
+                rw=True,
+                propagation="rprivate",
+            ),
+        ],
+    )
+
+    res, _ = get_container_config(container, image=None, docker_version=None)
+
+    assert res.volumes == [("/srv/app", "/config", "ro")]
+    assert res.mounts == [
+        ["type=bind", "dst=/cache", "bind-propagation=rprivate", "source=/srv/cache"]
+    ]

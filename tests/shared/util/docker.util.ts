@@ -79,6 +79,20 @@ export async function removeNetworkIfExists(
   }
 }
 
+export async function removeVolumeIfExists(
+  docker: Docker,
+  name: string,
+): Promise<void> {
+  try {
+    await docker.getVolume(name).remove();
+  } catch (err) {
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (statusCode !== 404) {
+      throw err;
+    }
+  }
+}
+
 export async function connectContainerToNetwork(
   docker: Docker,
   networkName: string,
