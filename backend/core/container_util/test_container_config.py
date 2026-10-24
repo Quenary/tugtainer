@@ -286,3 +286,56 @@ def test_binds_recreated_as_volumes():
     assert res.mounts == [
         ["type=bind", "dst=/cache", "bind-propagation=rprivate", "source=/srv/cache"]
     ]
+
+
+# Image defaults from the old image should not override the new image's ones
+# Related to #263
+def test_old_image_env_and_labels_are_not_carried_over():
+    container = ContainerInspectResult(
+        name="test-container",
+        config=ContainerConfig(
+            image="app:latest",
+            env=[
+                "VERSION=1.0",
+                "PATH=/old/bin",
+                "TZ=Europe/Berlin",
+                "MY_VAR=custom",
+                "EMPTY=",
+            ],
+            labels={
+                "org.opencontainers.image.version": "1.0",
+                "org.opencontainers.image.title": "My custom title",
+                "com.docker.compose.project": "stack",
+            },
+        ),
+    )
+    image = ImageInspectResult(
+        config=ContainerConfig(
+            image="app:latest",
+            env=["VERSION=1.0", "PATH=/old/bin", "TZ=UTC", "EMPTY="],
+            labels={
+                "org.opencontainers.image.version": "1.0",
+                "org.opencontainers.image.title": "App",
+            },
+        )
+    )
+
+    res, _ = get_container_config(container, image=image, docker_version=None)
+
+    # VERSION/PATH/EMPTY equal image defaults -> dropped,
+    # TZ is a user override of an image variable -> kept
+    assert res.envs == {"TZ": "Europe/Berlin", "MY_VAR": "custom"}
+    assert res.labels == {
+        "org.opencontainers.image.title": "My custom title",
+        "com.docker.compose.project": "stack",
+    }
+
+
+def test_env_and_labels_kept_without_image():
+    container = ContainerInspectResult(
+        name="test-container",
+        config=ContainerConfig(image="app:latest", env=["A=1"], labels={"l": "v"}),
+    )
+    res, _ = get_container_config(container, image=None, docker_version=None)
+    assert res.envs == {"A": "1"}
+    assert res.labels == {"l": "v"}
