@@ -11,7 +11,7 @@ from python_on_whales.components.image.models import (
 )
 
 from backend.util.drop_empty_keys import drop_empty_keys
-from backend.util.subtract_dict import subtract_dict
+from backend.util.subtract_dict import subtract_dict, subtract_dict_items
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
@@ -75,7 +75,13 @@ def get_container_config(
     config: Final = container.config or ContainerConfig()
     host_config: Final = container.host_config or ContainerHostConfig()
 
-    ENVS = map_env_to_dict(config.env)
+    # Docker stores image ENV merged with user env in container config.
+    # Drop values equal to the old image defaults, so the new image
+    # provides its own defaults, while user overrides (different value) stay.
+    ENVS = subtract_dict_items(
+        map_env_to_dict(config.env),
+        map_env_to_dict(image.config.env) if (image and image.config) else None,
+    )
 
     NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(container, docker_version)
     if NET_COMMANDS:
@@ -119,7 +125,13 @@ def get_container_config(
 
     VOLUMES, MOUNTS = map_binds_to_volumes(host_config.binds, container.mounts)
 
-    LABELS, REJECTED_LABELS = filter_cli_safe_labels(config.labels or {})
+    # Same for labels: drop the ones inherited unchanged from the old image
+    LABELS, REJECTED_LABELS = filter_cli_safe_labels(
+        subtract_dict_items(
+            config.labels,
+            image.config.labels if (image and image.config) else None,
+        )
+    )
     if REJECTED_LABELS:
         logging.warning(
             f"Labels rejected by docker CLI were dropped while preparing config of {container.name}: {REJECTED_LABELS}"
