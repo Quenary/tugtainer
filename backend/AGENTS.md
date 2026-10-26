@@ -15,11 +15,11 @@ Repo workflow and commits: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). How 
 - `enums/`, `util/` — shared backend helpers.
 - `alembic/` — migrations. `env.py` imports every model so autogenerate sees it.
 
-Domains: `auth`, `hosts`, `containers`, `images`, `services`, `health`, `settings`, `public`.
+Domains: `auth`, `hosts`, `containers`, `images`, `services`, `health`, `settings`, `public`, `self_update`.
 
 ## Startup
 
-`lifespan` runs in this order: issue the password setup code, sync the local agent secret, `load_agents_on_init`, `SettingsStorage.load_all`, `schedule_jobs_on_init`, then stale-container cleanup. Cleanup failures are logged and do not stop startup. Shutdown calls `AgentClientManager.remove_all`.
+`lifespan` runs in this order: issue the password setup code, sync the local agent secret, `load_agents_on_init`, `SettingsStorage.load_all`, `schedule_jobs_on_init`, then stale-container cleanup. Cleanup failures are logged and do not stop startup. Last, `start_self_update_watcher` reports the result of a self-update in the background (see [docs/SELF_UPDATE.md](../docs/SELF_UPDATE.md)); the helper it waits for runs `shared/self_update` and must not import `backend`. Shutdown calls `AgentClientManager.remove_all`.
 
 `socket_manager.init_socket(app)` mounts Socket.IO on the same app. Connections are checked with `is_authorized_cookies`. Job progress is emitted from `jobs_tracker` / `jobs_cache`.
 

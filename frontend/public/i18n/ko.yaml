@@ -55,6 +55,18 @@ UPDATE_DIALOGUE:
     자세한 안내는 GitHub에서 확인할 수 있습니다.
   DEPLOY_GUIDELINE: 배포 가이드
   RELEASE_NOTES: 릴리스 노트
+  SELF_UPDATE: 자체 업데이트
+  SELF_UPDATE_NOTES: |-
+    자체 업데이트는 현재 태그의 최신 이미지를 받아 이 컨테이너를 다시 생성합니다.
+    새 버전이 정상이 아니면 이전 컨테이너와 데이터베이스가 복원됩니다.
+  SELF_UPDATE_CONFIRM: 컨테이너를 교체하는 동안 잠시 UI를 사용할 수 없습니다. 계속하시겠습니까?
+  SELF_UPDATE_WAITING: 업데이트 중입니다. 앱이 다시 실행되면 페이지가 새로 고쳐집니다...
+  SELF_UPDATE_STATUS:
+    SUCCEEDED: 자체 업데이트 성공
+    ABORTED: 자체 업데이트 중단됨
+    ROLLED_BACK: 자체 업데이트 롤백됨
+    FAILED: 자체 업데이트 실패
+    INTERRUPTED: 자체 업데이트가 예기치 않게 중단됨
 AUTH:
   PASSWORD: 비밀번호
   CONFIRM_PASSWORD: 비밀번호 확인

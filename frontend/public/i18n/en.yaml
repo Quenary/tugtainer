@@ -55,6 +55,18 @@ UPDATE_DIALOGUE:
     Detailed instructions are available on GitHub.
   DEPLOY_GUIDELINE: Deploy Guideline
   RELEASE_NOTES: Release Notes
+  SELF_UPDATE: Self-update
+  SELF_UPDATE_NOTES: |-
+    Self-update pulls the newer image of the current tag and recreates this container with it.
+    If the new version is not healthy, the previous container and database are restored.
+  SELF_UPDATE_CONFIRM: The UI will be unavailable for a moment while the container is replaced. Continue?
+  SELF_UPDATE_WAITING: Updating, the page reloads when the app is back...
+  SELF_UPDATE_STATUS:
+    SUCCEEDED: Self-update succeeded
+    ABORTED: Self-update aborted
+    ROLLED_BACK: Self-update rolled back
+    FAILED: Self-update failed
+    INTERRUPTED: Self-update interrupted
 AUTH:
   PASSWORD: Password
   CONFIRM_PASSWORD: Confirm password

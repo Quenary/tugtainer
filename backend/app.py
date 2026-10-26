@@ -37,6 +37,10 @@ from backend.modules.images.images_router import (
 from backend.modules.public.public_router import (
     public_router as public_router,
 )
+from backend.modules.self_update.self_update_router import (
+    self_update_router as self_update_router,
+)
+from backend.modules.self_update.self_update_util import start_self_update_watcher
 from backend.modules.services.services_router import (
     services_router as services_router,
 )
@@ -77,6 +81,7 @@ async def lifespan(app: FastAPI):
         await cleanup_all_stale_containers()
     except Exception:
         logging.exception("Failed to run stale containers cleanup on startup")
+    start_self_update_watcher()
     yield  # App
     # Code to run on shutdown
     await AgentClientManager.remove_all()
@@ -91,6 +96,7 @@ app.include_router(images_router)
 app.include_router(hosts_router)
 app.include_router(health_router)
 app.include_router(services_router)
+app.include_router(self_update_router)
 
 if Config.ALLOW_ORIGINS:
     app.add_middleware(

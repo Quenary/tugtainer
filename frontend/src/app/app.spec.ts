@@ -18,8 +18,13 @@ import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
 import { AppStore } from './app.store';
 import { DeepSignal } from '@ngrx/signals';
 import { MenuComponent } from '@shared/components/menu/menu.component';
-import { MenuItem, MessageService } from '@openng/optimus-ui/api';
+import {
+  ConfirmationService,
+  MenuItem,
+  MessageService,
+} from '@openng/optimus-ui/api';
 import { IRouteData } from '@shared/interfaces/route-data.interface';
+import { SelfUpdateStore } from './features/self-update/self-update.store';
 
 @Component({
   selector: 'app-test-comp',
@@ -123,6 +128,14 @@ describe('App', () => {
   let harness: RouterTestingHarness;
   let toastServiceMock: Mocked<ToastService>;
   let appStoreMock: Partial<InstanceType<typeof AppStore>>;
+  let selfUpdateStoreMock: {
+    allowed: ReturnType<typeof signal<boolean>>;
+    loading: ReturnType<typeof signal<boolean>>;
+    waiting: ReturnType<typeof signal<boolean>>;
+    loadStatus: ReturnType<typeof vi.fn>;
+    start: ReturnType<typeof vi.fn>;
+    showPendingResult: ReturnType<typeof vi.fn>;
+  };
   let translateService: TranslateService;
 
   beforeEach(async () => {
@@ -139,6 +152,15 @@ describe('App', () => {
       isAuthDisabled: signal(false),
     };
 
+    selfUpdateStoreMock = {
+      allowed: signal(false),
+      loading: signal(false),
+      waiting: signal(false),
+      loadStatus: vi.fn(),
+      start: vi.fn(),
+      showPendingResult: vi.fn(),
+    };
+
     toastServiceMock = getToastServiceMock();
 
     await TestBed.configureTestingModule({
@@ -147,6 +169,7 @@ describe('App', () => {
         provideZonelessChangeDetection(),
         provideTranslateService(),
         { provide: AppStore, useValue: appStoreMock },
+        { provide: SelfUpdateStore, useValue: selfUpdateStoreMock },
         { provide: ToastService, useValue: toastServiceMock },
         MessageService,
         provideRouter(routes),
@@ -313,6 +336,46 @@ describe('App', () => {
       expect(readBreadcrumbs()).toEqual([
         { label: 'Настройки', icon: undefined, routerLink: '/settings' },
       ]);
+    });
+  });
+
+  describe('self-update', () => {
+    it('loads the status when the new version dialog opens', () => {
+      fixture.detectChanges();
+
+      component['openNewVersionDialog']();
+
+      expect(component['showNewVersionDialog']()).toBe(true);
+      expect(selfUpdateStoreMock.loadStatus).toHaveBeenCalled();
+    });
+
+    it('shows a pending result once signed in', async () => {
+      fixture.detectChanges();
+      await harness.navigateByUrl('/hosts');
+      fixture.detectChanges();
+
+      expect(selfUpdateStoreMock.showPendingResult).toHaveBeenCalled();
+    });
+
+    it('does not check the result on the auth route', async () => {
+      fixture.detectChanges();
+      await harness.navigateByUrl('/auth');
+      fixture.detectChanges();
+
+      expect(selfUpdateStoreMock.showPendingResult).not.toHaveBeenCalled();
+    });
+
+    it('starts after confirmation', () => {
+      fixture.detectChanges();
+      const confirmationService =
+        fixture.debugElement.injector.get(ConfirmationService);
+      const confirmSpy = vi.spyOn(confirmationService, 'confirm');
+
+      component['confirmSelfUpdate'](new Event('click'));
+      expect(selfUpdateStoreMock.start).not.toHaveBeenCalled();
+      confirmSpy.mock.calls[0][0].accept();
+
+      expect(selfUpdateStoreMock.start).toHaveBeenCalled();
     });
   });
 });

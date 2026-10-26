@@ -53,6 +53,10 @@ class TugAgentClientError(TugException):
         return res
 
 
+class TugSelfUpdateError(TugException):
+    """Self-update cannot be started"""
+
+
 class TugUrlValidationError(TugException):
     """Tugtainer exception for URL validation"""
 

@@ -55,6 +55,18 @@ UPDATE_DIALOGUE:
     详细说明请参见 GitHub。
   DEPLOY_GUIDELINE: 部署指南
   RELEASE_NOTES: 发行说明
+  SELF_UPDATE: 自我更新
+  SELF_UPDATE_NOTES: |-
+    自我更新会拉取当前标签的较新镜像，并用它重新创建此容器。
+    如果新版本不健康，将恢复之前的容器和数据库。
+  SELF_UPDATE_CONFIRM: 替换容器期间界面将短暂不可用。是否继续？
+  SELF_UPDATE_WAITING: 正在更新，应用恢复后页面将自动刷新...
+  SELF_UPDATE_STATUS:
+    SUCCEEDED: 自我更新成功
+    ABORTED: 自我更新已中止
+    ROLLED_BACK: 自我更新已回滚
+    FAILED: 自我更新失败
+    INTERRUPTED: 自我更新意外中断
 AUTH:
   PASSWORD: 密码
   CONFIRM_PASSWORD: 确认密码
