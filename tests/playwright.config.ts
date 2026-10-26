@@ -21,5 +21,12 @@ export default defineConfig({
       testDir: './e2e',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // Replaces the app container, so it runs after everything else
+      name: 'self-update',
+      testDir: './self-update',
+      dependencies: ['integration', 'e2e'],
+      retries: 0,
+    },
   ],
 });

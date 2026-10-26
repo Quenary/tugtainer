@@ -78,6 +78,11 @@ upgrading.
   `tugtainer-tests-runner`) and share the external network `tugtainer-tests`.
 - Inside Docker, tests use `BASE_URL=http://app.tugtainer.test` (FQDN network
   alias). Chromium does not reliably open single-label hosts like `http://app`.
+- The `self-update` project replaces the app container, so it depends on the
+  `integration` and `e2e` projects and runs last. The app runs from
+  `localhost:5000/tugtainer:tests`; the test pushes images to the `registry:2`
+  service, which publishes port `5000` on the host so the Docker daemon can
+  pull from it.
 - The Playwright runner mounts `/var/run/docker.sock` so tests can create
   containers via `dockerode` on the same engine the app reaches through
   socket-proxy.
