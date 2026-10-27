@@ -61,6 +61,7 @@ UPDATE_DIALOGUE:
     如果新版本不健康，将恢复之前的容器和数据库。
   SELF_UPDATE_CONFIRM: 替换容器期间界面将短暂不可用。是否继续？
   SELF_UPDATE_WAITING: 正在更新，应用恢复后页面将自动刷新...
+  SELF_UPDATE_TIMEOUT: 应用未能及时恢复。请检查容器并刷新页面。
   SELF_UPDATE_STATUS:
     SUCCEEDED: 自我更新成功
     ABORTED: 自我更新已中止

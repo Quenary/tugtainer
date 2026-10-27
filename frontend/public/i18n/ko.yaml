@@ -61,6 +61,7 @@ UPDATE_DIALOGUE:
     새 버전이 정상이 아니면 이전 컨테이너와 데이터베이스가 복원됩니다.
   SELF_UPDATE_CONFIRM: 컨테이너를 교체하는 동안 잠시 UI를 사용할 수 없습니다. 계속하시겠습니까?
   SELF_UPDATE_WAITING: 업데이트 중입니다. 앱이 다시 실행되면 페이지가 새로 고쳐집니다...
+  SELF_UPDATE_TIMEOUT: 앱이 제시간에 다시 실행되지 않았습니다. 컨테이너를 확인하고 페이지를 새로 고치세요.
   SELF_UPDATE_STATUS:
     SUCCEEDED: 자체 업데이트 성공
     ABORTED: 자체 업데이트 중단됨

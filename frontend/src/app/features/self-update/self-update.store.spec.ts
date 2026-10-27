@@ -7,6 +7,7 @@ import { ToastService } from 'src/app/core/services/toast.service';
 import { PageReloadService } from 'src/app/core/services/page-reload.service';
 import { EStorageKey } from 'src/app/app.enums';
 import { getToastServiceMock } from '@testing/mocks/toast-service.mock';
+import { PublicApiService } from 'src/app/features/public/public-api.service';
 import { SelfUpdateApiService } from './self-update-api.service';
 import {
   ISelfUpdateState,
@@ -15,6 +16,7 @@ import {
 } from './self-update.interface';
 import {
   SELF_UPDATE_POLL_INTERVAL_MS,
+  SELF_UPDATE_WAIT_TIMEOUT_MS,
   SelfUpdateStore,
 } from './self-update.store';
 
@@ -48,10 +50,14 @@ describe('SelfUpdateStore', () => {
   let apiMock: Mocked<Pick<SelfUpdateApiService, 'getStatus' | 'start'>>;
   let toastServiceMock: Mocked<ToastService>;
   let reloadMock: { reload: ReturnType<typeof vi.fn> };
+  let publicApiMock: Mocked<Pick<PublicApiService, 'getHealth'>>;
+
+  const down = () => throwError(() => new Error('502'));
 
   beforeEach(() => {
     sessionStorage.clear();
     apiMock = { getStatus: vi.fn(), start: vi.fn() };
+    publicApiMock = { getHealth: vi.fn().mockReturnValue(of('OK')) };
     toastServiceMock = getToastServiceMock();
     reloadMock = { reload: vi.fn() };
 
@@ -63,6 +69,7 @@ describe('SelfUpdateStore', () => {
         { provide: SelfUpdateApiService, useValue: apiMock },
         { provide: ToastService, useValue: toastServiceMock },
         { provide: PageReloadService, useValue: reloadMock },
+        { provide: PublicApiService, useValue: publicApiMock },
       ],
     });
 
@@ -95,25 +102,81 @@ describe('SelfUpdateStore', () => {
   });
 
   describe('start', () => {
-    it('waits for a final state and reloads', () => {
+    it('reloads when the app is back after the restart', () => {
       vi.useFakeTimers();
-      const status$ = new Subject<ISelfUpdateStatusResponse>();
       apiMock.start.mockReturnValue(of(makeState('pending')));
-      apiMock.getStatus.mockReturnValueOnce(throwError(() => new Error('502')));
-      apiMock.getStatus.mockReturnValueOnce(of(response(makeState('running'))));
-      apiMock.getStatus.mockReturnValueOnce(status$);
+      apiMock.getStatus.mockReturnValue(of(response(makeState('running'))));
+      publicApiMock.getHealth
+        .mockReturnValueOnce(of('OK'))
+        .mockReturnValueOnce(down())
+        .mockReturnValueOnce(down());
 
       store.start();
 
       expect(store.waiting()).toBe(true);
       expect(sessionStorage.getItem(EStorageKey.SELF_UPDATE_PENDING)).toBe('1');
 
+      // Old app still running, then down twice
       vi.advanceTimersByTime(SELF_UPDATE_POLL_INTERVAL_MS * 3);
       expect(reloadMock.reload).not.toHaveBeenCalled();
+      expect(apiMock.getStatus).toHaveBeenCalledTimes(1);
 
-      status$.next(response(makeState('succeeded')));
+      vi.advanceTimersByTime(SELF_UPDATE_POLL_INTERVAL_MS);
 
       expect(reloadMock.reload).toHaveBeenCalledTimes(1);
+      // The status is not polled after the restart
+      expect(apiMock.getStatus).toHaveBeenCalledTimes(1);
+    });
+
+    it('reloads when the status is rejected by the new instance', () => {
+      vi.useFakeTimers();
+      apiMock.start.mockReturnValue(of(makeState('pending')));
+      apiMock.getStatus.mockReturnValue(throwError(() => new Error('401')));
+
+      store.start();
+
+      vi.advanceTimersByTime(SELF_UPDATE_POLL_INTERVAL_MS);
+      expect(reloadMock.reload).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(SELF_UPDATE_POLL_INTERVAL_MS);
+
+      expect(reloadMock.reload).toHaveBeenCalledTimes(1);
+      expect(apiMock.getStatus).toHaveBeenCalledTimes(1);
+    });
+
+    it('reloads on a final state without a restart', () => {
+      vi.useFakeTimers();
+      const status$ = new Subject<ISelfUpdateStatusResponse>();
+      apiMock.start.mockReturnValue(of(makeState('pending')));
+      apiMock.getStatus.mockReturnValueOnce(of(response(makeState('running'))));
+      apiMock.getStatus.mockReturnValueOnce(status$);
+
+      store.start();
+
+      vi.advanceTimersByTime(SELF_UPDATE_POLL_INTERVAL_MS * 2);
+      expect(reloadMock.reload).not.toHaveBeenCalled();
+
+      status$.next(response(makeState('aborted')));
+
+      expect(reloadMock.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops waiting after the timeout', () => {
+      vi.useFakeTimers();
+      apiMock.start.mockReturnValue(of(makeState('pending')));
+      publicApiMock.getHealth.mockReturnValue(down());
+
+      store.start();
+
+      vi.advanceTimersByTime(SELF_UPDATE_WAIT_TIMEOUT_MS);
+
+      expect(reloadMock.reload).not.toHaveBeenCalled();
+      expect(store.waiting()).toBe(false);
+      expect(toastServiceMock.error).toHaveBeenCalledWith(
+        'UPDATE_DIALOGUE.SELF_UPDATE_TIMEOUT',
+      );
+      // The result is shown on the next load
+      expect(sessionStorage.getItem(EStorageKey.SELF_UPDATE_PENDING)).toBe('1');
     });
 
     it('shows error and does not wait', () => {

@@ -61,6 +61,7 @@ UPDATE_DIALOGUE:
     If the new version is not healthy, the previous container and database are restored.
   SELF_UPDATE_CONFIRM: The UI will be unavailable for a moment while the container is replaced. Continue?
   SELF_UPDATE_WAITING: Updating, the page reloads when the app is back...
+  SELF_UPDATE_TIMEOUT: The app did not come back in time. Check the containers and reload the page.
   SELF_UPDATE_STATUS:
     SUCCEEDED: Self-update succeeded
     ABORTED: Self-update aborted
