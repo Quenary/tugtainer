@@ -6,6 +6,9 @@ import { getDocker } from '../shared/util/docker.util';
 const APP_CONTAINER = 'tests-tugtainer';
 const APP_IMAGE = 'localhost:5000/tugtainer:tests';
 const NEXT_VERSION = 'tests-next';
+const BROKEN_VERSION = 'tests-broken';
+const APP_ENTRYPOINT = '["/app/entrypoint.sh"]';
+const BROKEN_ENTRYPOINT = '["sh", "-c", "exit 1"]';
 const FINAL_STATUSES = [
   'succeeded',
   'aborted',
@@ -45,11 +48,16 @@ async function pushImage(docker: Docker, image: string): Promise<void> {
  * the app image with another /app/version, committed from a throwaway container.
  * The local tag is dropped afterwards, so the self-update has to pull it.
  */
-async function pushNextImage(docker: Docker, imageId: string): Promise<string> {
+async function pushNextImage(
+  docker: Docker,
+  imageId: string,
+  version: string,
+  entrypoint = APP_ENTRYPOINT,
+): Promise<string> {
   const builder = await docker.createContainer({
     Image: imageId,
     Entrypoint: ['sh', '-c'],
-    Cmd: [`echo ${NEXT_VERSION} > /app/version`],
+    Cmd: [`echo ${version} > /app/version`],
   });
   try {
     await builder.start();
@@ -57,7 +65,7 @@ async function pushNextImage(docker: Docker, imageId: string): Promise<string> {
     const committed = await builder.commit({
       repo: 'localhost:5000/tugtainer',
       tag: 'tests',
-      changes: ['ENTRYPOINT ["/app/entrypoint.sh"]', 'CMD ["python3"]'],
+      changes: [`ENTRYPOINT ${entrypoint}`, 'CMD ["python3"]'],
     });
     await pushImage(docker, APP_IMAGE);
     await docker.getImage(APP_IMAGE).remove();
@@ -87,6 +95,32 @@ async function waitForVersion(
     .toBe(version);
 }
 
+async function getVersion(request: APIRequestContext): Promise<string> {
+  return (await (await request.get('/api/public/version')).json())
+    .image_version;
+}
+
+/**
+ * Sign in again (the restarted app generates a new JWT secret)
+ * and wait for the final status of the self-update.
+ */
+async function waitForResult(
+  request: APIRequestContext,
+): Promise<{ status: string; error: string | null }> {
+  await login(request);
+  await expect
+    .poll(
+      async () => {
+        const res = await request.get('/api/self_update/status');
+        const status = res.ok() ? (await res.json()).state?.status : null;
+        return FINAL_STATUSES.includes(status);
+      },
+      { timeout: 120_000, intervals: [2_000] },
+    )
+    .toBe(true);
+  return (await (await request.get('/api/self_update/status')).json()).state;
+}
+
 async function containerExists(docker: Docker, name: string): Promise<boolean> {
   try {
     await docker.getContainer(name).inspect();
@@ -97,7 +131,63 @@ async function containerExists(docker: Docker, name: string): Promise<boolean> {
 }
 
 test.describe('self-update', () => {
-  test.setTimeout(300_000);
+  // Both replace the app container
+  test.describe.configure({ mode: 'serial' });
+  test.setTimeout(420_000);
+
+  test('rolls back to the old container when the new image is broken', async ({
+    authorizedRequest: request,
+  }) => {
+    const docker = getDocker();
+    const before = await docker.getContainer(APP_CONTAINER).inspect();
+    const oldVersion = await getVersion(request);
+
+    await pushNextImage(
+      docker,
+      before.Image,
+      BROKEN_VERSION,
+      BROKEN_ENTRYPOINT,
+    );
+
+    const start = await request.post('/api/self_update/start');
+    expect(start.status(), await start.text()).toBe(202);
+
+    // The broken container exits and never gets healthy,
+    // the helper waits for the self-update health timeout (120s)
+    // and starts the old container again
+    await expect
+      .poll(
+        async () => {
+          try {
+            const app = await docker.getContainer(APP_CONTAINER).inspect();
+            if (
+              app.Id !== before.Id ||
+              app.State.StartedAt === before.State.StartedAt
+            ) {
+              return false;
+            }
+            return (await request.get('/api/public/health')).ok();
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 300_000, intervals: [3_000] },
+      )
+      .toBe(true);
+    const state = await waitForResult(request);
+    expect(state.status, state.error ?? '').toBe('rolled_back');
+    expect(state.error).toContain('unhealthy');
+
+    const after = await docker.getContainer(APP_CONTAINER).inspect();
+    expect(after.Id).toBe(before.Id);
+    expect(after.Image).toBe(before.Image);
+    expect(after.State.Running).toBe(true);
+    expect(await getVersion(request)).toBe(oldVersion);
+    expect(await containerExists(docker, `${APP_CONTAINER}-old`)).toBe(false);
+    await expect
+      .poll(() => containerExists(docker, `${APP_CONTAINER}-self-update`))
+      .toBe(false);
+  });
 
   test('replaces the app container with the newer image of its tag', async ({
     authorizedRequest: request,
@@ -106,32 +196,24 @@ test.describe('self-update', () => {
     const before = await docker.getContainer(APP_CONTAINER).inspect();
     expect(before.Config.Image).toBe(APP_IMAGE);
 
-    // Same image in the registry: refused before anything is touched
+    // Same image in the registry: refused before anything is touched.
+    // The tag may point to the broken image pulled by the rollback test.
+    await docker
+      .getImage(before.Image)
+      .tag({ repo: 'localhost:5000/tugtainer', tag: 'tests' });
     await pushImage(docker, APP_IMAGE);
     const noUpdate = await request.post('/api/self_update/start');
     expect(noUpdate.status()).toBe(409);
     expect((await noUpdate.json()).detail).toContain('No newer image');
 
-    const nextImageId = await pushNextImage(docker, before.Image);
+    const nextImageId = await pushNextImage(docker, before.Image, NEXT_VERSION);
 
     const start = await request.post('/api/self_update/start');
     expect(start.status(), await start.text()).toBe(202);
 
     await waitForVersion(request, NEXT_VERSION);
-    // The new container generates a new JWT secret
-    await login(request);
-    await expect
-      .poll(
-        async () => {
-          const res = await request.get('/api/self_update/status');
-          const status = res.ok() ? (await res.json()).state?.status : null;
-          return FINAL_STATUSES.includes(status);
-        },
-        { timeout: 120_000, intervals: [2_000] },
-      )
-      .toBe(true);
-    const status = await (await request.get('/api/self_update/status')).json();
-    expect(status.state.status, status.state.error).toBe('succeeded');
+    const state = await waitForResult(request);
+    expect(state.status, state.error ?? '').toBe('succeeded');
 
     const after = await docker.getContainer(APP_CONTAINER).inspect();
     expect(after.Id).not.toBe(before.Id);
