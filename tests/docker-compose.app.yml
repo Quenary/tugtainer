@@ -26,8 +26,17 @@ services:
     networks:
       - tugtainer-tests
 
+  # The self-update test pushes a newer image of the app tag here.
+  # Published on the host, as the docker daemon pulls from localhost:5000.
+  registry:
+    image: registry:2
+    container_name: tests-registry
+    ports:
+      - '5000:5000'
+
   app:
     container_name: tests-tugtainer
+    image: localhost:5000/tugtainer:tests
     build:
       context: ..
       dockerfile: Dockerfile.app
@@ -36,6 +45,7 @@ services:
     environment:
       ALLOW_UNAUTHENTICATED_AGENT: 'true'
       ENABLE_PUBLIC_API: 'true'
+      ALLOW_SELF_UPDATE: 'true'
       LOG_LEVEL: info
       DOCKER_HOST: tcp://socket-proxy:2375
     volumes:
@@ -54,6 +64,7 @@ services:
       start_period: 15s
     depends_on:
       - socket-proxy
+      - registry
 
 volumes:
   tugtainer_data_tests:

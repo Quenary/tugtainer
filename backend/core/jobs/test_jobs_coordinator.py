@@ -270,3 +270,46 @@ async def test_submit_wait_reraises_job_exception(mocker) -> None:
     state = HostJobTracker(host).get()
     assert state is not None
     assert state.get("status") == EJobStatus.ERROR
+
+
+@pytest.mark.asyncio
+async def test_hold_refused_while_busy() -> None:
+    coord = HostJobCoordinator()
+    coord._queues[1] = [HostJobRuntime(kind="check", names=None, manual=True)]
+
+    assert coord.is_busy()
+    assert not coord.hold()
+
+    coord._queues[1][0].done.set()
+
+    assert not coord.is_busy()
+    assert coord.hold()
+    # Already held
+    assert not coord.hold()
+
+
+@pytest.mark.asyncio
+async def test_hold_defers_jobs_until_release(mocker) -> None:
+    coord = HostJobCoordinator()
+    host = cast(Any, SimpleNamespace(id=99033, name="held-host"))
+    check = mocker.AsyncMock(return_value=True)
+    mocker.patch(
+        "backend.core.jobs.check.check_host.run_check_host_job",
+        side_effect=check,
+    )
+    mocker.patch(
+        "backend.core.jobs.jobs_coordinator.AgentClientManager.get_host_client",
+        return_value=mocker.Mock(),
+    )
+
+    assert coord.hold()
+    job = await coord.submit(host, "check", names=["a"], manual=True, wait=False)
+    await asyncio.sleep(0.01)
+
+    assert job.started is False
+    check.assert_not_called()
+
+    coord.release()
+    await asyncio.wait_for(job.done.wait(), 1)
+
+    check.assert_awaited_once()

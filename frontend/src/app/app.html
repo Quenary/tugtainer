@@ -1,4 +1,5 @@
 <p-toast position="bottom-right" />
+<p-confirmpopup></p-confirmpopup>
 
 @defer (when showNewVersionDialog()) {
 <p-dialog
@@ -8,8 +9,25 @@
   [style]="{ width: '35rem' }"
   [visible]="showNewVersionDialog()"
   (visibleChange)="showNewVersionDialog.set($event)">
+  @if (selfUpdateStore.waiting()) {
+  <span>
+    <i class="pi pi-spin pi-spinner"></i>
+    {{ 'UPDATE_DIALOGUE.SELF_UPDATE_WAITING' | translate }}
+  </span>
+  } @else if (selfUpdateStore.allowed()) {
+  <span> {{ 'UPDATE_DIALOGUE.SELF_UPDATE_NOTES' | translate }} </span>
+  } @else {
   <span> {{ 'UPDATE_DIALOGUE.UPDATE_NOTES' | translate }} </span>
+  }
   <ng-template #footer>
+    @if (selfUpdateStore.allowed()) {
+    <p-button
+      icon="pi pi-sync"
+      severity="warn"
+      [label]="'UPDATE_DIALOGUE.SELF_UPDATE' | translate"
+      [loading]="selfUpdateStore.loading() || selfUpdateStore.waiting()"
+      (onClick)="confirmSelfUpdate($event)"></p-button>
+    }
     <p-button
       icon="pi pi-link"
       severity="success"
@@ -46,7 +64,7 @@
         } @if (appStore.update()?.is_available) {
         <p-tag
           severity="success"
-          (click)="showNewVersionDialog.set(true)">
+          (click)="openNewVersionDialog()">
           {{ 'UPDATE_DIALOGUE.UPDATE' | translate }}
         </p-tag>
         }

@@ -28,6 +28,7 @@ class Config:
     ALLOW_ORIGINS: ClassVar[list[str]]
     ENABLE_PUBLIC_API: ClassVar[bool]
     ALLOW_HOOKS: ClassVar[bool]
+    ALLOW_SELF_UPDATE: ClassVar[bool]
     GH_TOKEN: ClassVar[str]
     DOCKER_CONFIG: ClassVar[str]
 
@@ -109,6 +110,9 @@ class Config:
                 os.getenv("ENABLE_PUBLIC_API", "false").lower() == "true"
             )
             cls.ALLOW_HOOKS = os.getenv("ALLOW_HOOKS", "false").lower() == "true"
+            cls.ALLOW_SELF_UPDATE = (
+                os.getenv("ALLOW_SELF_UPDATE", "false").lower() == "true"
+            )
             cls.GH_TOKEN = os.getenv("GH_TOKEN", "")
             cls.DOCKER_CONFIG = os.getenv("DOCKER_CONFIG", "~/.docker")
 

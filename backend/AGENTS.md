@@ -15,11 +15,11 @@ Repo workflow and commits: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). How 
 - `enums/`, `util/` — shared backend helpers.
 - `alembic/` — migrations. `env.py` imports every model so autogenerate sees it.
 
-Domains: `auth`, `hosts`, `containers`, `images`, `services`, `health`, `settings`, `public`.
+Domains: `auth`, `hosts`, `containers`, `images`, `services`, `health`, `settings`, `public`, `self_update`.
 
 ## Startup
 
-`lifespan` runs in this order: issue the password setup code, sync the local agent secret, `load_agents_on_init`, `SettingsStorage.load_all`, `schedule_jobs_on_init`, then stale-container cleanup. Cleanup failures are logged and do not stop startup. Shutdown calls `AgentClientManager.remove_all`.
+`lifespan` runs in this order: issue the password setup code, sync the local agent secret, `load_agents_on_init`, `SettingsStorage.load_all`, `schedule_jobs_on_init`, then stale-container cleanup. Cleanup failures are logged and do not stop startup. Last, `start_self_update_watcher` reports the result of a self-update in the background (see [docs/SELF_UPDATE.md](../docs/SELF_UPDATE.md)); the helper it waits for runs `shared/self_update` and must not import `backend`. Shutdown calls `AgentClientManager.remove_all`.
 
 `socket_manager.init_socket(app)` mounts Socket.IO on the same app. Connections are checked with `is_authorized_cookies`. Job progress is emitted from `jobs_tracker` / `jobs_cache`.
 
@@ -66,7 +66,7 @@ Container behavior is also driven by labels in `const.py`: `dev.quenary.tugtaine
 - `core/jobs/cleanup/` — clear flags on containers that disappeared from the host.
 - `jobs_tracker.py`, `jobs_cache.py`, `jobs_results.py` — progress shared with the UI over Socket.IO.
 
-`host_job_coordinator` stops a second check or update from running on the same host. Check and update functions catch their own failures and return a `ContainerJobResult`. They record slots on `HostJobTracker` instead of raising into the cron runner.
+`host_job_coordinator` stops a second check or update from running on the same host. Check and update functions catch their own failures and return a `ContainerJobResult`. They record slots on `HostJobTracker` instead of raising into the cron runner. `hold()` / `release()` pause job starts on all hosts; self-update holds them from its start until the app restarts, and refuses to start while `is_busy()`.
 
 `container_util/` maps inspect data (ports, env, healthcheck, labels) into recreate kwargs. Hidden and protected containers are label filters in `container_labels.py`. Image digests and registry metadata go through `modules/images/`.
 

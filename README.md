@@ -15,6 +15,7 @@ Automatic updates are disabled by default. You can enable only what you need.
 - [private registries](./docs/PRIVATE_REGISTRIES.md)
 - [custom labels](./docs/CUSTOM_LABELS.md)
 - [hooks](./docs/HOOKS.md)
+- [self-update](./docs/SELF_UPDATE.md)
 - [notifications](./docs/NOTIFICATIONS.md)
 - [auth](./docs/AUTH.md)
 - [api](./docs/API.md)
@@ -73,6 +74,7 @@ Automatic updates are disabled by default. You can enable only what you need.
 > Keep in mind that you **cannot update** an **agent** or a **socket-proxy** from within the app because they are used to communicate with the Docker CLI.
 > Avoid including these containers in a docker-compose that contains other containers you want to update automatically, as this will result in an error during the update.
 > To keep them updated, you can activate "check" only to receive notifications, and recreate them manually or from another tool, such as Portainer.
+> The app container itself can be updated from the UI with the opt-in [self-update](./docs/SELF_UPDATE.md).
 
 - ### Remote hosts
 

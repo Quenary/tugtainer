@@ -3,6 +3,8 @@ import {
   inject,
   signal,
   computed,
+  effect,
+  untracked,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import {
@@ -15,7 +17,8 @@ import { Toast } from '@openng/optimus-ui/toast';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { filter, map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { MenuItem } from '@openng/optimus-ui/api';
+import { ConfirmationService, MenuItem } from '@openng/optimus-ui/api';
+import { ConfirmPopup } from '@openng/optimus-ui/confirmpopup';
 import { Button } from '@openng/optimus-ui/button';
 import { Tag } from '@openng/optimus-ui/tag';
 import { Dialog } from '@openng/optimus-ui/dialog';
@@ -25,6 +28,7 @@ import { Breadcrumb } from '@openng/optimus-ui/breadcrumb';
 import { IRouteData } from '@shared/interfaces/route-data.interface';
 import { AppStore } from './app.store';
 import { MenuComponent } from '@shared/components/menu/menu.component';
+import { SelfUpdateStore } from './features/self-update/self-update.store';
 
 @Component({
   selector: 'app-root',
@@ -38,7 +42,9 @@ import { MenuComponent } from '@shared/components/menu/menu.component';
     FormsModule,
     Breadcrumb,
     MenuComponent,
+    ConfirmPopup,
   ],
+  providers: [ConfirmationService],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.scss',
@@ -47,7 +53,9 @@ export class App {
   private readonly translateService = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly confirmationService = inject(ConfirmationService);
   protected readonly appStore = inject(AppStore);
+  protected readonly selfUpdateStore = inject(SelfUpdateStore);
 
   /**
    * Whether to show new version dialog
@@ -82,6 +90,45 @@ export class App {
       startWith(!['/', '/auth'].includes(this.router.url)),
     ),
   );
+
+  constructor() {
+    effect(() => {
+      const isToolbarVisible = this.isToolbarVisible();
+
+      if (!isToolbarVisible) {
+        return;
+      }
+
+      // Signed in: show the result of a self-update started from this tab
+      untracked(() => this.selfUpdateStore.showPendingResult());
+    });
+  }
+
+  protected openNewVersionDialog(): void {
+    this.showNewVersionDialog.set(true);
+    this.selfUpdateStore.loadStatus();
+  }
+
+  protected confirmSelfUpdate($event: Event): void {
+    this.confirmationService.confirm({
+      target: $event.currentTarget,
+      message: this.translateService.instant(
+        'UPDATE_DIALOGUE.SELF_UPDATE_CONFIRM',
+      ),
+      rejectButtonProps: {
+        label: this.translateService.instant('GENERAL.CANCEL'),
+        severity: 'secondary',
+        outlined: true,
+      },
+      acceptButtonProps: {
+        label: this.translateService.instant('GENERAL.CONFIRM'),
+        severity: 'warn',
+      },
+      accept: () => {
+        this.selfUpdateStore.start();
+      },
+    });
+  }
 
   protected openDeployGuideline(): void {
     window.open(DeployGuidelineUrl, '_blank');

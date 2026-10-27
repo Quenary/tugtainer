@@ -63,6 +63,9 @@ class HostJobCoordinator:
         self._queues: dict[int, list[HostJobRuntime]] = {}
         self._workers: dict[int, asyncio.Task[None]] = {}
         self._locks: dict[int, asyncio.Lock] = {}
+        # Cleared while held, workers do not start new jobs
+        self._released = asyncio.Event()
+        self._released.set()
 
     def _lock(self, host_id: int) -> asyncio.Lock:
         if host_id not in self._locks:
@@ -74,6 +77,28 @@ class HostJobCoordinator:
         self._queues.clear()
         self._workers.clear()
         self._locks.clear()
+        self._released.set()
+
+    def is_busy(self) -> bool:
+        """Whether any host has a running or queued job."""
+        return any(
+            not job.done.is_set() for jobs in self._queues.values() for job in jobs
+        )
+
+    def hold(self) -> bool:
+        """
+        Stop starting new jobs on all hosts, e.g. for the self-update,
+        which restarts the app and would kill a running job.
+        Jobs submitted meanwhile are queued until release.
+        :returns: False if a job is running or queued, nothing is held then
+        """
+        if not self._released.is_set() or self.is_busy():
+            return False
+        self._released.clear()
+        return True
+
+    def release(self) -> None:
+        self._released.set()
 
     async def submit(
         self,
@@ -131,7 +156,10 @@ class HostJobCoordinator:
         client = AgentClientManager.get_host_client(host)
         try:
             while True:
+                await self._released.wait()
                 async with self._lock(host.id):
+                    if not self._released.is_set():
+                        continue
                     jobs = self._queues.get(host.id, [])
                     pending = [j for j in jobs if not j.started]
                     if not pending:
