@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.45.0 (2026-10-27)
+
+### Features
+
+- Add opt-in self-update of the app container
+  ([#267](https://github.com/Quenary/tugtainer/pull/267),
+  [`c1fc50e`](https://github.com/Quenary/tugtainer/commit/c1fc50ecd0c2def57e240bccd22ac71609670292))
+
+
 ## v1.44.3 (2026-10-24)
 
 ### Bug Fixes
