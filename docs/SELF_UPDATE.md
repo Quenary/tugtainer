@@ -5,9 +5,13 @@ Enable it with `ALLOW_SELF_UPDATE=true` on the app container.
 
 The update is started manually: click the "Update available" tag next to the version, then **Self-update** in the dialog.
 The UI is unavailable for a moment while the container is replaced. The page reloads when the app is back and shows the result.
+If the app is not back within 15 minutes, the page stops waiting and shows an error.
 The result is also sent to the configured [notification](NOTIFICATIONS.md) URLs.
 
 Self-update covers only the app container. The agent and the socket-proxy are not updated by it.
+
+The self-update is refused while a check or update job is running or queued, as restarting the app would kill it.
+From the start until the app restarts, new jobs (scheduled or manual) wait in the queue.
 
 ## How it works
 
@@ -26,7 +30,7 @@ So the app hands the swap over to a short-lived helper container.
    - create the new container under the original name, with the same config as a normal update;
    - stop `<name>-old`;
    - copy the SQLite database files (`tugtainer.db`, `-wal`, `-shm`) to `/tugtainer/self_update/backup/`;
-   - start the new container and wait until it is healthy (or running, without a healthcheck), using the healthcheck timeout of the container or its host;
+   - start the new container and wait until it is healthy (or running, without a healthcheck), using the healthcheck timeout of the container or its host, but at least 120 seconds (the image healthcheck runs every 30 seconds, and the new version migrates the database first);
    - remove `<name>-old` and the database copy.
 5. If any step fails or the new container is not healthy in time, the helper rolls back:
    it removes the new container, restores the database copy (the new version may have migrated the database already), renames `<name>-old` back and starts it again.
@@ -49,7 +53,12 @@ A leftover `<name>-old` is removed only when its id is recorded in that journal 
 
 ## If something goes wrong
 
-If the helper reports `failed` (the rollback did not complete) or `interrupted` (the helper is gone without a result), check the containers:
+If the helper reports `failed` (the rollback did not complete) or `interrupted` (the helper is gone without a result), check the containers.
+
+**A helper that crashes or is killed in the middle of the swap needs manual recovery.**
+Nothing rolls back in that case: the old container is left stopped as `<name>-old`,
+and a new container may exist under the original name, possibly on a migrated database.
+If the app is not running at all, there is nothing that could report it, so look at the containers yourself:
 
 ```bash
 docker ps -a --filter name=tugtainer
