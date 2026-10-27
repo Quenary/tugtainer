@@ -2,8 +2,9 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Final
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from shared.schemas.command_validator import command_validator
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
 
 # Bump on any incompatible change of SelfUpdatePlan.
@@ -46,6 +47,12 @@ class SelfUpdatePlan(BaseModel):
     healthcheck_timeout: int
     # Absolute path of the SQLite database on the data volume, if any
     db_path: str | None = None
+
+    @field_validator("commands")
+    @classmethod
+    def validate_commands(cls, commands: list[list[str]]) -> list[list[str]]:
+        # Same allowlist as the agent applies to the normal update path
+        return [command_validator(command) for command in commands]
 
 
 class ESelfUpdateStatus(StrEnum):

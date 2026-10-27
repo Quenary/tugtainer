@@ -66,7 +66,7 @@ Container behavior is also driven by labels in `const.py`: `dev.quenary.tugtaine
 - `core/jobs/cleanup/` — clear flags on containers that disappeared from the host.
 - `jobs_tracker.py`, `jobs_cache.py`, `jobs_results.py` — progress shared with the UI over Socket.IO.
 
-`host_job_coordinator` stops a second check or update from running on the same host. Check and update functions catch their own failures and return a `ContainerJobResult`. They record slots on `HostJobTracker` instead of raising into the cron runner.
+`host_job_coordinator` stops a second check or update from running on the same host. Check and update functions catch their own failures and return a `ContainerJobResult`. They record slots on `HostJobTracker` instead of raising into the cron runner. `hold()` / `release()` pause job starts on all hosts; self-update holds them from its start until the app restarts, and refuses to start while `is_busy()`.
 
 `container_util/` maps inspect data (ports, env, healthcheck, labels) into recreate kwargs. Hidden and protected containers are label filters in `container_labels.py`. Image digests and registry metadata go through `modules/images/`.
 

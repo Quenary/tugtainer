@@ -11,6 +11,7 @@ from python_on_whales.components.container.models import (
 )
 from python_on_whales.components.image.models import ImageInspectResult
 
+from backend.core.jobs.jobs_coordinator import HostJobCoordinator, HostJobRuntime
 from backend.exception import TugSelfUpdateError
 from backend.modules.self_update import self_update_util
 from backend.modules.self_update.self_update_util import (
@@ -24,6 +25,7 @@ from backend.modules.self_update.self_update_util import (
     watch_self_update_result,
 )
 from backend.testing import patch_async_session
+from shared.schemas.container_schemas import CreateContainerRequestBodySchema
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.self_update.self_update_files import read_state, write_state
 from shared.self_update.self_update_schemas import (
@@ -251,7 +253,15 @@ class TestCleanupStaleOldContainer:
 
 class TestStartSelfUpdate:
     @pytest.fixture
-    def client(self, mocker: MockerFixture, work_dir: Path) -> AsyncMock:
+    def coordinator(self, mocker: MockerFixture) -> HostJobCoordinator:
+        coordinator = HostJobCoordinator()
+        mocker.patch(f"{base_module}.host_job_coordinator", coordinator)
+        return coordinator
+
+    @pytest.fixture
+    def client(
+        self, mocker: MockerFixture, work_dir: Path, coordinator: HostJobCoordinator
+    ) -> AsyncMock:
         mocker.patch(f"{base_module}.Config.ALLOW_SELF_UPDATE", True)
         mocker.patch(
             f"{base_module}.Config.DB_URL",
@@ -308,7 +318,8 @@ class TestStartSelfUpdate:
         assert plan.new_image_id == NEW_IMAGE
         assert plan.create.name == "tugtainer"
         assert plan.create.image == "ghcr.io/quenary/tugtainer:1"
-        assert plan.healthcheck_timeout == 90
+        # Raised to the self-update minimum
+        assert plan.healthcheck_timeout == 120
         assert plan.db_path == "/tugtainer/tugtainer.db"
 
         helper = client.container.create.await_args.args[0]
@@ -317,13 +328,80 @@ class TestStartSelfUpdate:
         client.container.start.assert_awaited_once_with("tugtainer-self-update")
 
     @pytest.mark.asyncio
-    async def test_refuses_same_image(self, client: AsyncMock, work_dir: Path) -> None:
+    async def test_keeps_longer_healthcheck_timeout(
+        self, client: AsyncMock, mocker: MockerFixture, work_dir: Path
+    ) -> None:
+        mocker.patch(
+            f"{base_module}.get_container_healthcheck_timeout", return_value=300
+        )
+
+        await start_self_update()
+
+        plan_path = work_dir / SELF_UPDATE_PLAN_FILE
+        plan = SelfUpdatePlan.model_validate_json(plan_path.read_text())
+        assert plan.healthcheck_timeout == 300
+
+    @pytest.mark.asyncio
+    async def test_holds_jobs_until_result(
+        self, client: AsyncMock, mocker: MockerFixture, coordinator: HostJobCoordinator
+    ) -> None:
+        watcher = mocker.patch(f"{base_module}.start_self_update_watcher")
+
+        await start_self_update()
+
+        assert not coordinator.hold()
+        watcher.assert_called_once_with(release_jobs=True)
+
+    @pytest.mark.asyncio
+    async def test_refuses_while_jobs_running(
+        self, client: AsyncMock, coordinator: HostJobCoordinator
+    ) -> None:
+        coordinator._queues[1] = [
+            HostJobRuntime(kind="update", names=None, manual=True)
+        ]
+
+        with pytest.raises(TugSelfUpdateError, match="jobs are running"):
+            await start_self_update()
+
+        client.image.pull.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_refuses_disallowed_command(
+        self, client: AsyncMock, mocker: MockerFixture, work_dir: Path
+    ) -> None:
+        mocker.patch(
+            f"{base_module}.get_container_config",
+            return_value=(
+                mocker.Mock(),
+                [["run", "--privileged", "alpine"]],
+            ),
+        )
+        mocker.patch(
+            f"{base_module}.diff_container_config_with_image",
+            side_effect=lambda config, image: CreateContainerRequestBodySchema(
+                image="ghcr.io/quenary/tugtainer:1", name="tugtainer"
+            ),
+        )
+
+        with pytest.raises(TugSelfUpdateError, match="Command not allowed"):
+            await start_self_update()
+
+        assert not (work_dir / SELF_UPDATE_PLAN_FILE).exists()
+        client.container.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_refuses_same_image(
+        self, client: AsyncMock, work_dir: Path, coordinator: HostJobCoordinator
+    ) -> None:
         client.image.pull.return_value = ImageInspectResult.model_validate(
             {"id": OLD_IMAGE}
         )
 
         with pytest.raises(TugSelfUpdateError, match="No newer image"):
             await start_self_update()
+
+        # Released for other jobs
+        assert coordinator.hold()
 
         assert not (work_dir / SELF_UPDATE_PLAN_FILE).exists()
         client.container.create.assert_not_called()
@@ -447,6 +525,25 @@ class TestWatchSelfUpdateResult:
         await watch_self_update_result()
 
         report.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_releases_jobs_after_abort(
+        self, mocker: MockerFixture, work_dir: Path
+    ) -> None:
+        coordinator = HostJobCoordinator()
+        mocker.patch(f"{base_module}.host_job_coordinator", coordinator)
+        mocker.patch(f"{base_module}._report_result", new=AsyncMock())
+        write_state(
+            work_dir / SELF_UPDATE_STATE_FILE,
+            _state(status=ESelfUpdateStatus.ABORTED, error="changed"),
+        )
+        assert coordinator.hold()
+
+        self_update_util.start_self_update_watcher(release_jobs=True)
+        assert SelfUpdateStorage.watch_task is not None
+        await SelfUpdateStorage.watch_task
+
+        assert coordinator.hold()
 
 
 def test_format_result_mentions_versions_and_error() -> None:

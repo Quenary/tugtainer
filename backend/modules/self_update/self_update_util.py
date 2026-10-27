@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Final
 
 from packaging import version
+from pydantic import ValidationError
 from python_on_whales.components.container.models import (
     ContainerInspectResult,
     Mount,
@@ -24,6 +25,7 @@ from backend.core.container_util.container_config import (
 from backend.core.container_util.get_container_image_spec import (
     get_container_image_spec,
 )
+from backend.core.jobs.jobs_coordinator import host_job_coordinator
 from backend.core.jobs.update.update_util import get_container_healthcheck_timeout
 from backend.core.notifications_core import send_notification
 from backend.db.session import async_session_maker
@@ -64,6 +66,8 @@ DOCKER_SOCKET_PATHS: Final = frozenset({"/var/run/docker.sock", "/run/docker.soc
 # The helper waits for our healthcheck, which can be long.
 RESULT_WAIT_TIMEOUT: Final = 3600
 RESULT_POLL_INTERVAL: Final = 5
+# The image healthcheck runs every 30s, and the new version migrates the database
+MIN_HEALTHCHECK_TIMEOUT: Final = 120
 
 
 class SelfUpdateStorage:
@@ -253,52 +257,75 @@ async def start_self_update() -> SelfUpdateState:
         current = read_state(get_state_path())
         if current and not current.is_final:
             raise TugSelfUpdateError("Self-update is already in progress")
-
-        host, client, container = await find_self()
-        name: Final = str(container.name)
-        old_name: Final = f"{name}{SELF_UPDATE_OLD_SUFFIX}"
-        helper_name: Final = f"{name}{SELF_UPDATE_HELPER_SUFFIX}"
-
-        await cleanup_stale_old_container(client, name)
-        for other in (old_name, helper_name):
-            if await client.container.exists(other):
-                raise TugSelfUpdateError(
-                    f"Container {other} already exists, remove it first"
-                )
-
-        data_mount: Final = get_data_mount(container)
-        db_path: Final = get_sqlite_db_path()
-        image_spec: Final = get_container_image_spec(container)
-        if not image_spec or not container.image:
-            raise TugSelfUpdateError("Cannot get the image of this app")
-
-        logger.info(f"Pulling {image_spec}")
-        local_image = await client.image.inspect(
-            InspectImageRequestBodySchema(spec_or_id=container.image)
-        )
-        remote_image = await client.image.pull(
-            PullImageRequestBodySchema(image=image_spec)
-        )
-        if not remote_image.id or remote_image.id == container.image:
-            raise TugSelfUpdateError(f"No newer image for {image_spec}")
-
-        docker_version = await client.common.version()
-        config, commands = get_container_config(container, local_image, docker_version)
-        config = diff_container_config_with_image(config, remote_image)
-
-        async with async_session_maker() as session:
-            result = await session.execute(
-                select(ContainersModel).where(
-                    ContainersModel.host_id == host.id,
-                    ContainersModel.name == name,
-                )
+        task = SelfUpdateStorage.watch_task
+        if task and not task.done():
+            raise TugSelfUpdateError("Previous self-update result is being reported")
+        # The app restarts, which would kill a running check or update
+        if not host_job_coordinator.hold():
+            raise TugSelfUpdateError(
+                "Check or update jobs are running, try again when they are finished"
             )
-            db_container = result.scalars().first()
+        try:
+            state = await _launch_helper()
+        except BaseException:
+            host_job_coordinator.release()
+            raise
+        start_self_update_watcher(release_jobs=True)
+        return state
 
-        old_version: Final = read_app_version()
-        new_version: Final = get_version_from_labels(
-            remote_image.config.labels if remote_image.config else None
+
+async def _launch_helper() -> SelfUpdateState:
+    """
+    Pull the new image, write the plan and start the helper container.
+    """
+    host, client, container = await find_self()
+    name: Final = str(container.name)
+    old_name: Final = f"{name}{SELF_UPDATE_OLD_SUFFIX}"
+    helper_name: Final = f"{name}{SELF_UPDATE_HELPER_SUFFIX}"
+
+    await cleanup_stale_old_container(client, name)
+    for other in (old_name, helper_name):
+        if await client.container.exists(other):
+            raise TugSelfUpdateError(
+                f"Container {other} already exists, remove it first"
+            )
+
+    data_mount: Final = get_data_mount(container)
+    db_path: Final = get_sqlite_db_path()
+    image_spec: Final = get_container_image_spec(container)
+    if not image_spec or not container.image:
+        raise TugSelfUpdateError("Cannot get the image of this app")
+
+    logger.info(f"Pulling {image_spec}")
+    local_image = await client.image.inspect(
+        InspectImageRequestBodySchema(spec_or_id=container.image)
+    )
+    remote_image = await client.image.pull(PullImageRequestBodySchema(image=image_spec))
+    if not remote_image.id or remote_image.id == container.image:
+        raise TugSelfUpdateError(f"No newer image for {image_spec}")
+
+    docker_version = await client.common.version()
+    config, commands = get_container_config(container, local_image, docker_version)
+    config = diff_container_config_with_image(config, remote_image)
+
+    async with async_session_maker() as session:
+        result = await session.execute(
+            select(ContainersModel).where(
+                ContainersModel.host_id == host.id,
+                ContainersModel.name == name,
+            )
         )
+        db_container = result.scalars().first()
+
+    old_version: Final = read_app_version()
+    new_version: Final = get_version_from_labels(
+        remote_image.config.labels if remote_image.config else None
+    )
+    healthcheck_timeout: Final = max(
+        get_container_healthcheck_timeout(host, db_container),
+        MIN_HEALTHCHECK_TIMEOUT,
+    )
+    try:
         plan = SelfUpdatePlan(
             version=SELF_UPDATE_PLAN_VERSION,
             container_id=str(container.id),
@@ -309,46 +336,47 @@ async def start_self_update() -> SelfUpdateState:
             new_version=new_version,
             create=config,
             commands=commands,
-            healthcheck_timeout=get_container_healthcheck_timeout(host, db_container),
+            healthcheck_timeout=healthcheck_timeout,
             db_path=db_path,
         )
-        state = SelfUpdateState(
-            status=ESelfUpdateStatus.PENDING,
-            container_name=name,
-            old_container_id=str(container.id),
-            helper_container_name=helper_name,
-            old_image_id=container.image,
-            new_image_id=remote_image.id,
-            old_version=old_version,
-            new_version=new_version,
-        )
-        plan_path: Final = get_work_dir() / SELF_UPDATE_PLAN_FILE
-        write_private_file(plan_path, plan.model_dump_json(exclude_unset=True))
-        write_state(get_state_path(), state)
-        SelfUpdateStorage.last_result = None
+    except ValidationError as e:
+        raise TugSelfUpdateError(f"Invalid self-update plan: {e}") from e
+    state = SelfUpdateState(
+        status=ESelfUpdateStatus.PENDING,
+        container_name=name,
+        old_container_id=str(container.id),
+        helper_container_name=helper_name,
+        old_image_id=container.image,
+        new_image_id=remote_image.id,
+        old_version=old_version,
+        new_version=new_version,
+    )
+    plan_path: Final = get_work_dir() / SELF_UPDATE_PLAN_FILE
+    write_private_file(plan_path, plan.model_dump_json(exclude_unset=True))
+    write_state(get_state_path(), state)
+    SelfUpdateStorage.last_result = None
 
-        try:
-            logger.info(f"Starting self-update helper {helper_name}")
-            await client.container.create(
-                get_helper_config(
-                    container,
-                    data_mount,
-                    remote_image.id,
-                    helper_name,
-                    str(plan_path),
-                    docker_version,
-                )
+    try:
+        logger.info(f"Starting self-update helper {helper_name}")
+        await client.container.create(
+            get_helper_config(
+                container,
+                data_mount,
+                remote_image.id,
+                helper_name,
+                str(plan_path),
+                docker_version,
             )
-            await client.container.start(helper_name)
-        except Exception:
-            logger.exception("Failed to start self-update helper")
-            plan_path.unlink(missing_ok=True)
-            get_state_path().unlink(missing_ok=True)
-            if await client.container.exists(helper_name):
-                await client.container.remove(helper_name)
-            raise
-        start_self_update_watcher()
-        return state
+        )
+        await client.container.start(helper_name)
+    except Exception:
+        logger.exception("Failed to start self-update helper")
+        plan_path.unlink(missing_ok=True)
+        get_state_path().unlink(missing_ok=True)
+        if await client.container.exists(helper_name):
+            await client.container.remove(helper_name)
+        raise
+    return state
 
 
 def _format_result(state: SelfUpdateState) -> tuple[str, str]:
@@ -438,20 +466,24 @@ async def watch_self_update_result() -> None:
             logger.exception("Failed to clean up after self-update")
 
 
-def start_self_update_watcher() -> None:
+def start_self_update_watcher(release_jobs: bool = False) -> None:
     """
     Run the result watcher in the background, not to block the startup.
     Started on startup (new or rolled back container), and after launching
     the helper (the result of an abort is reported by the running app).
+    :param release_jobs: release the held jobs when done
     """
     task = SelfUpdateStorage.watch_task
     if task and not task.done():
         return
-    SelfUpdateStorage.watch_task = asyncio.create_task(_watch_logged())
+    SelfUpdateStorage.watch_task = asyncio.create_task(_watch_logged(release_jobs))
 
 
-async def _watch_logged() -> None:
+async def _watch_logged(release_jobs: bool) -> None:
     try:
         await watch_self_update_result()
     except Exception:
         logger.exception("Failed to report the self-update result")
+    finally:
+        if release_jobs:
+            host_job_coordinator.release()

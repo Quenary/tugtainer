@@ -297,6 +297,20 @@ class TestRunSelfUpdate:
         assert "version 99" in str(state.error)
         assert docker.calls == []
 
+    def test_aborts_on_disallowed_command(self, work_dir: Path) -> None:
+        docker = FakeDocker()
+        plan_path = _prepare(work_dir, _plan())
+        data = json.loads(plan_path.read_text())
+        data["commands"] = [["run", "--privileged", "alpine"]]
+        plan_path.write_text(json.dumps(data))
+
+        state = run_self_update(docker, plan_path)
+
+        assert state is not None
+        assert state.status == ESelfUpdateStatus.ABORTED
+        assert "Command not allowed" in str(state.error)
+        assert docker.calls == []
+
     def test_requires_pending_state(self, work_dir: Path) -> None:
         docker = FakeDocker()
         state = _pending_state()
