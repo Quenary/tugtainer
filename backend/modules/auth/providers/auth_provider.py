@@ -3,8 +3,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import Any, Literal, cast
 
+import jwt
 from fastapi import HTTPException, Request, Response, status
-from jose import JWTError, jwt
+from jwt.exceptions import InvalidTokenError
 
 from backend.config import Config
 from backend.modules.auth.auth_schemas import TokenPayload
@@ -60,8 +61,8 @@ class AuthProvider(ABC):
         expire: datetime = now() + expires_delta
         to_encode.update({"exp": expire})
         return jwt.encode(
-            claims=dict(to_encode),
-            key=Config.JWT_SECRET_KEY,
+            dict(to_encode),
+            Config.JWT_SECRET_KEY,
             algorithm=Config.JWT_ALGORITHM,
         )
 
@@ -79,7 +80,7 @@ class AuthProvider(ABC):
                     algorithms=[Config.JWT_ALGORITHM],
                 ),
             )
-        except JWTError as e:
+        except InvalidTokenError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token is invalid or expired",

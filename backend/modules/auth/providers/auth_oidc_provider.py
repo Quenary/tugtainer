@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import hmac
 import logging
 import secrets
 from datetime import timedelta
@@ -5,25 +8,65 @@ from typing import Any, Literal, cast
 from urllib.parse import urlencode
 
 import aiohttp
+import jwt
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
-from jose import jwt
+from jwt.exceptions import InvalidTokenError
 
 from backend.config import Config
 
 from .auth_provider import AuthProvider
 
 # Asymmetric-only allowlist for ID token signatures (JWKS public-key verify).
-# Reject HS* to avoid alg confusion / client-secret signing. PS* omitted —
-# python-jose does not support them; add only when the JWT library does.
+# Reject HS* to avoid alg confusion / client-secret signing.
 OIDC_ASYMMETRIC_SIGNING_ALGORITHMS = {
     "RS256",
     "RS384",
     "RS512",
+    "PS256",
+    "PS384",
+    "PS512",
     "ES256",
     "ES384",
     "ES512",
 }
+
+_AT_HASH_DIGEST = {
+    "RS256": "sha256",
+    "RS384": "sha384",
+    "RS512": "sha512",
+    "PS256": "sha256",
+    "PS384": "sha384",
+    "PS512": "sha512",
+    "ES256": "sha256",
+    "ES384": "sha384",
+    "ES512": "sha512",
+}
+
+
+def _verify_access_token_hash(
+    claims: dict[str, Any],
+    access_token: str | None,
+    algorithm: str,
+) -> None:
+    """Check OIDC at_hash when an access token was returned with the ID token."""
+    if access_token is None or "at_hash" not in claims:
+        return
+    digest_name = _AT_HASH_DIGEST.get(algorithm)
+    at_hash = claims.get("at_hash")
+    if digest_name is None or not isinstance(at_hash, str):
+        raise InvalidTokenError("ID token at_hash is invalid")
+    digest = hashlib.new(
+        digest_name,
+        access_token.encode("ascii"),
+    ).digest()
+    expected = (
+        base64.urlsafe_b64encode(digest[: len(digest) // 2])
+        .rstrip(b"=")
+        .decode("ascii")
+    )
+    if not hmac.compare_digest(expected, at_hash):
+        raise InvalidTokenError("ID token at_hash does not match the access token")
 
 
 class AuthOidcProvider(AuthProvider):
@@ -379,19 +422,15 @@ class AuthOidcProvider(AuthProvider):
 
         claims = jwt.decode(
             id_token,
-            key=matching_keys[0],
+            jwt.PyJWK.from_dict(matching_keys[0]),
             algorithms=[algorithm],
             audience=client_id,
             issuer=issuer,
-            access_token=access_token,
             options={
-                "require_iss": True,
-                "require_sub": True,
-                "require_aud": True,
-                "require_exp": True,
-                "require_iat": True,
+                "require": ["iss", "sub", "aud", "exp", "iat"],
             },
         )
+        _verify_access_token_hash(claims, access_token, algorithm)
         audience = claims["aud"]
         authorized_party = claims.get("azp")
         if isinstance(audience, list) and len(audience) > 1:

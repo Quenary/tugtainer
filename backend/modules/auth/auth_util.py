@@ -1,7 +1,7 @@
 from typing import cast
 
+import jwt
 from fastapi import HTTPException, Request, status
-from jose import jwt
 
 from backend.config import Config
 from backend.modules.auth.auth_schemas import AuthProviderType, TokenPayload

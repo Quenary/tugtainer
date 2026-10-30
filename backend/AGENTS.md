@@ -78,7 +78,7 @@ Manual check and update from the UI call the same `check_all_hosts` / `update_al
 
 `SettingsStorage` is an in-memory snapshot of the `settings` table, loaded in `lifespan`. Read it with `SettingsStorage.get(ESettingKey.…)` so the return type stays overloaded. Cron and job code use this cache, not a query per read.
 
-Auth is JWT (`python-jose`). Password and OIDC providers live in `modules/auth/providers/` and are selected by `AuthProviderType`. `is_authorized_req` is the router dependency. `Config.DISABLE_AUTH` skips it.
+Auth is JWT (PyJWT). Password and OIDC providers live in `modules/auth/providers/` and are selected by `AuthProviderType`. `is_authorized_req` is the router dependency. `Config.DISABLE_AUTH` skips it.
 
 Domain errors subclass `TugException` in `exception.py`. Raise `HTTPException` at the router edge; let `TugAgentClientError` reach the app handler.
 
