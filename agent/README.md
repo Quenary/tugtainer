@@ -1,5 +1,5 @@
 # Tugtainer Agent
 
-This part of the app can be deployed in a separate container and provides secure remote access to Docker.
+The agent runs on a Docker host and exposes that daemon to the backend.
 
-See [/backend/README.md](/backend/README.md) for more details.
+Setup matches the [backend](../backend/README.md). Local entry: `uv run python -m agent.dev`.

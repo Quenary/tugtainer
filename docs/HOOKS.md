@@ -1,35 +1,17 @@
 # Hooks
 
-You can configure shell commands to run inside a container at points of the
-update lifecycle: `pre_update`, `post_update`, `pre_stop`, `pre_rollback`,
-`post_rollback`. Each command runs as `sh -c "<command>"` inside the target
-container via the agent.
+A container can run a shell command at `pre_update`, `post_update`, `pre_stop`, `pre_rollback`, and `post_rollback`. The agent executes it as `sh -c` inside that container. The app does not ship database or service backup commands. The command and its output are part of the container configuration.
 
-Tugtainer has no built-in database/service-specific backup logic — writing
-the actual backup/notification commands (e.g. `pg_dump`) and managing where
-their output goes is entirely up to you.
+Both gates must be on. `ALLOW_HOOKS` on the backend hides the form and never calls exec while it is off. `ALLOW_EXEC` on that host's agent refuses exec even when the backend asks.
 
-This feature is off by default and requires two things to be true at once:
+Every command in a hook runs. Any error counts as a failure of that hook. Other containers in the same batch continue.
 
-- `ALLOW_HOOKS=true` on the Tugtainer backend (feature gate — hides the UI
-  form and stops the backend from ever calling the agent's exec endpoint
-  when false).
-- `ALLOW_EXEC=true` on the Tugtainer-Agent for the specific host you want to
-  run hooks on (defense in depth — an agent that hasn't opted in refuses to
-  execute commands even if asked).
+| Hook | When | On failure |
+| --- | --- | --- |
+| `pre_stop` | Every container the update is about to stop, including a dependent that is only restarted | That container is not stopped |
+| `pre_update` | The container being recreated, after `pre_stop` succeeded | That container is not stopped or recreated |
+| `post_update` | After the new container is healthy | Recorded. The update is already done |
+| `pre_rollback` | While the failed container is still running, before it is stopped for rollback | Recorded. Rollback continues |
+| `post_rollback` | After the previous container has been started | Recorded. Rollback is already done |
 
-Failure semantics:
-
-- A failing `pre_update` or `pre_stop` hook aborts that container's update —
-  the container is left running as-is, same as any other pre-flight check
-  failure.
-- `post_update`, `pre_rollback` and `post_rollback` hook failures are
-  report-only (logged) and never block anything — by the time these run,
-  either the update already succeeded or a rollback is already underway and
-  must complete regardless.
-- `pre_rollback` runs while the failed container is still alive, right
-  before Tugtainer stops it to roll back.
-
-The hooks form is hidden in the UI for protected containers (see
-[Custom labels](CUSTOM_LABELS.md#devquenarytugtainerprotectedtrue)), since protected containers are never
-updated by the app.
+The form is hidden for a [protected](CUSTOM_LABELS.md) container, because the app never updates one.

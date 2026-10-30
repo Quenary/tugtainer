@@ -2,7 +2,7 @@
 
 FastAPI app that serves the UI and runs container check, update, health, and cleanup jobs. Python `>=3.13`. Docker work goes through host agents, not a local Docker socket.
 
-Repo workflow and commits: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). How to run the app: [README.md](README.md).
+General rules (scope, Python, tests, checks) are in the root [AGENTS.md](../AGENTS.md). Repo workflow and commits: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). How to run the app: [README.md](README.md).
 
 ## Layout
 
@@ -84,18 +84,11 @@ Domain errors subclass `TugException` in `exception.py`. Raise `HTTPException` a
 
 ## Tests
 
-Tests sit next to the code as `test_*.py`. Async tests use `@pytest.mark.asyncio`. Patch with `pytest-mock` (`mocker.patch`) and `AsyncMock`. Router tests build `TestClient(app)`, replace `is_authorized_req` and `get_async_session` through `app.dependency_overrides`, and stub `AgentClientManager`. `backend/modules/conftest.py` restores overrides after each test.
-
-Import `backend` and `shared` as top-level packages. Run pytest from the repo root (`python -m pytest`, or a path under `backend/`).
+Router tests build `TestClient(app)`, replace `is_authorized_req` and `get_async_session` through `app.dependency_overrides`, and stub `AgentClientManager`. `backend/modules/conftest.py` restores overrides after each test. Patch with `pytest-mock` (`mocker.patch`) and `AsyncMock`.
 
 - Shared factories live in `backend/testing.py` (`patch_async_session`, `make_service`). Fixtures live in `conftest.py`.
-- Parametrize near-duplicate cases. Do not add tests for trivial getters.
-- Type helpers where it stays simple. Match ruff and mypy.
 
 ## Style
 
-Ruff and mypy are configured in the repo `pyproject.toml` (Ruff selects E, F, I, B, UP; mypy allows missing imports and unset optionals). Match the surrounding file.
-
-- Prefer `list[str]`, `str | None`, and `Final` over `typing` aliases the codebase has already dropped.
-- Log with `logging`; include the job or container name in the logger. Do not add `print` outside `dev.py`.
+- Include the job or container name in the logger.
 - Keep a change inside one module and its tests. A new SQLAlchemy model still needs the `alembic/env.py` import and a migration.

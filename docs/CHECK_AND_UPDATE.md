@@ -1,131 +1,79 @@
-# Check and update process
+# Check and update
 
-## Check process
+A container built from a local image, with no registry digest, is not checked. The same rule applies to a Swarm service.
 
-1. Verify that a container is suitable for checking (not a local image);
-2. Pull image (if enabled in the settings, disabled by default), this may be handy if you are using a registry proxy;
-3. Request current digest of an image from a registry;
-4. Compare digests;
-5. If different, the container is **marked as available**.
+## Check
 
-When the digests differ, Tugtainer also resolves a human-readable version and the image build time for that pending image. An up-to-date container makes no extra registry request. The first time a digest is seen as pending, one config blob is fetched; the result is cached by digest and reused for every container and Swarm service that waits on the same image. A later check of the same digest does not fetch it again.
+```mermaid
+flowchart TD
+  Start[Check] --> Local{Registry digest?}
+  Local -- no --> Skip[Skip]
+  Local -- yes --> Pull{PULL_BEFORE_CHECK?}
+  Pull -- yes --> DoPull[Pull]
+  Pull -- no --> Digest[Read the remote digest]
+  DoPull --> Digest
+  Digest --> Got{Remote digest obtained?}
+  Got -- no --> Keep[Keep the previous conclusion]
+  Got -- yes --> Cmp{Same as the running image?}
+  Cmp -- yes --> Ok[Up to date]
+  Cmp -- no --> Mark[Mark update available]
+```
 
-- If `PULL_BEFORE_CHECK` already pulled the image, the version and build time are read from that inspect.
-- Otherwise the tag manifest is fetched. A single-arch manifest already contains the config digest. A multi-arch index is followed to the manifest that matches the local image `os`, `architecture`, and `variant`, and then that config blob is fetched.
-- The version comes from `org.opencontainers.image.version`, falling back to `org.label-schema.version`. It is a hint from the publisher, with the same limits as [`previous_image_version`](#previous-image) below.
-- The build time is the image config `created` field.
-- A digest with no version label is still cached, so the blob is not downloaded on every check. A failed registry read is not cached and is retried next time.
-- The values are shown on the container card. The containers and Swarm services tables keep the "Update available" tag and put the version in its tooltip when one was resolved.
+A scheduled check covers every enabled host and every container selected for auto-check. A manual check ignores that toggle: all containers, one container, or the selected rows. A hidden container is never checked.
 
-**Scheduled** process includes all enabled hosts and all containers **selected for auto-check**.
+A failed registry lookup does not mark the container up to date. `result` stays empty and the stored availability is left as it was.
 
-**Manual** process includes all containers despite the auto-check toggle (Check all across all hosts or on a host), a single container, or a selected set of containers.
+When the digests differ, the app also resolves a version and a build time for the pending image. An up-to-date container makes no extra registry request. The version comes from `org.opencontainers.image.version`, then `org.label-schema.version`. It is a publisher hint, with the same limits as [previous image](#previous-image). The build time is the image `created` field. The container card shows both. Tables keep the "Update available" tag and put the version in its tooltip.
 
-## Update process
+`PULL_BEFORE_CHECK` is off by default. It pulls before the digest comparison, which matters for a registry proxy.
 
-- ### Dependency graph
-  - Containers of a host are processed as a single set;
-  - A dependency graph is built for that host from:
-    - Compose dependencies (`com.docker.compose.depends_on` for containers with the same `com.docker.compose.project` and `com.docker.compose.project.config_files`)
-    - Custom dependencies ([dev.quenary.tugtainer.depends_on](CUSTOM_LABELS.md#devquenarytugtainerdepends_onmy_postgresmy_redis))
-  - Dependencies are directional: if container A depends on B, B is started before A and stopped after A;
-  - Containers without dependencies are treated as independent nodes
+## Update
 
-- ### Process
-  1. The dependency graph is built:
-     - [hidden](CUSTOM_LABELS.md#devquenarytugtainerhiddentrue) containers are excluded before the graph is built;
-     - [protected](CUSTOM_LABELS.md#devquenarytugtainerprotectedtrue) containers are skipped;
-     - not `running` containers are skipped by default (can be changed in the settings);
-  2. A set of **updatable** containers is calculated:
-     - an updatable container has an **available** update and is either **selected for auto-update** or included by a **manual** run;
-  3. A set of **affected** containers is calculated:
-     - includes all containers that depend (directly or transitively) on any updatable container;
-     - excludes the updatable containers themselves;
-  4. A topological execution order is built from the dependency graph;
-  5. Images are pulled for **updatable** containers;
-  6. All involved containers (**updatable** and **affected**) that were running are stopped once, from most dependent to least dependent;
-  7. Then, in reverse order (least dependent → most dependent):
-     - **Updatable** containers are recreated and started;
-     - **Affected** containers are started;
-  8. After start, healthchecks are waited on; if an updatable container becomes unhealthy, it is rolled back to the previous image.
+Containers on one host are one set. The graph comes from Compose `com.docker.compose.depends_on` (same `com.docker.compose.project` and `com.docker.compose.project.config_files`) and from [`dev.quenary.tugtainer.depends_on`](CUSTOM_LABELS.md). If A depends on B, B starts before A and stops after A. Containers with no dependency are independent.
 
-**Scheduled** process runs on all enabled hosts for containers **selected for auto-update**.
+```mermaid
+flowchart TD
+  Graph[Build the graph] --> Filter[Drop hidden and protected containers, and stopped ones by default]
+  Filter --> Upd[Updatable: update available, and auto-update or a manual run]
+  Upd --> Aff[Affected: dependents of an updatable container]
+  Aff --> Pull[Pull images for updatable containers]
+  Pull --> Stop[Stop updatable and affected containers, dependents first]
+  Stop --> Start[Recreate updatable containers and start affected ones, dependencies first]
+  Start --> Health{Updatable container healthy?}
+  Health -- yes --> Done[Done]
+  Health -- no --> Roll[Roll back to the previous image]
+```
 
-**Manual** process updates all containers with an available update despite the auto-update toggle (Check all / Update all on a host, or Update all across all hosts), a single container, or a selected set of containers. Dependents of those containers are still included in `affected` and are stopped/started with the plan. Select several rows in the containers table to check or update them together.
+Stopped containers are skipped unless the setting includes them. [Hidden](CUSTOM_LABELS.md) containers never enter the graph. [Protected](CUSTOM_LABELS.md) containers are skipped.
 
-Check and update jobs on the **same host** run one after another (a check of A and B cannot overlap an update of C and D). Jobs on different hosts can run at the same time.
+A scheduled update runs on every enabled host for containers selected for auto-update. A manual update ignores that toggle and still stops and starts dependents. Several selected rows are checked or updated together.
 
-Per-host `HostState` is the source of truth: `current` job, `queued` jobs, and `completed` jobs. Each `Job` carries its own `containers` (status + result). Finished jobs stay in `completed` until the cache expires.
+Check and update on the same host run one at a time. Different hosts run in parallel.
 
-Optional [hooks](../README.md#hooks) can run around stop, update, and rollback when enabled.
+Optional [hooks](HOOKS.md) run around stop, update, and rollback when both gates are on.
 
 ## Update delay
 
-Optional delay between detecting a new image and applying a **scheduled** update (security buffer while a bad release can be yanked or fixed).
-
-- Global setting `DELAY_UPDATE_FOR` (seconds, default `0` = no delay);
-- Per-container `delay_update_for` overrides the global value when set; otherwise the global setting is used;
-- When remote digests change, `remote_digests_changed_at` is updated and kept as the last change time;
-- Scheduled update runs only if `now - remote_digests_changed_at >=` effective delay (or delay is `0` / timestamp is missing);
-- **Manual** updates ignore the delay;
-- Notifications on check are **not** delayed.
+`DELAY_UPDATE_FOR` (seconds, default `0`) waits after a new digest is detected before a scheduled update applies it. A per-container `delay_update_for` replaces the global value when set. The clock starts at the last digest change. If that time was never recorded, the wait is not applied. A manual update does not wait. Check notifications are not delayed.
 
 ## Previous image
 
-After a container is successfully updated, the identity of the image it was
-running before is recorded, so the previous version can be pinned again if the
-new one turns out to be broken.
+A successful update records the image the container was running before it. The values come from the inspect the update already did.
 
-Everything is read from the image inspect that the update already performs
-before pulling, so no extra registry requests are made.
+| Field | Role |
+| --- | --- |
+| `previous_image_digests` | Repo digests. This is what pins the image in Compose. |
+| `previous_image_tags` | Local tags. Useful for a pinned tag, not for a floating tag such as `latest`. |
+| `previous_image_version` | `org.opencontainers.image.version`, then `org.label-schema.version`. A publisher hint: it may come from a base image, be a branch name, or not exist as a tag. |
 
-- `previous_image_digests` — repo digests of the previous image, e.g.
-  `nginx@sha256:...`. This is the only value that pins the exact image again;
-  put it in the `image:` of your compose file to go back to it;
-- `previous_image_tags` — repo tags the previous image had locally. Useful when
-  the container tracks a pinned tag, less so when it tracks a floating one such
-  as `latest`;
-- `previous_image_version` — version taken from the previous image labels
-  (`org.opencontainers.image.version`, falling back to
-  `org.label-schema.version`). It is a hint from the image publisher: it may be
-  inherited from a base image, be a branch name, or not be published as a tag in
-  that exact form. Pin the digest, not this value.
+A rollback or a failure does not record a previous image: the container is still on that image. If none of the three values can be read, the stored ones stay. The app does not search the registry for a tag that matches a digest. The card and [notification templates](NOTIFICATIONS.md) show the recorded values.
 
-Recorded only when the update **succeeded**. After a rollback or a failure the
-container is running that same image again, so it is the current one and is not
-recorded as previous. An update that could not collect any of the three values
-leaves the previously recorded ones untouched.
+## Swarm
 
-There is no reverse lookup from a digest to a tag in the registry API, and
-enumerating every tag of a repository to find one would cost a request per tag,
-so it is deliberately not attempted.
+Adding a host, and later status checks, set the Swarm flag when the agent is a manager. The host dashboard then shows Swarm services.
 
-The values are shown on the container card and are available in the
-[notification templates](./NOTIFICATIONS.md).
+A check inspects the image on the manager first. If that yields no repo digest, a digest already pinned in the service image (`repo:tag@sha256:…`) is used. If there is still none, the image is pulled only when `PULL_BEFORE_CHECK` is on; otherwise the service is skipped. When `PULL_BEFORE_CHECK` is on and the image was not pulled in that step, it is pulled again before the remote digest is read. A differing remote digest marks the service available. A failed lookup keeps the previous conclusion. Version and build time follow the container rules.
 
-## Docker Swarm support
+A scheduled check includes services with check enabled. A scheduled update includes services with update enabled and an available image. A manual check or update ignores those switches. A manual update does not require an available image.
 
-Tugtainer supports managing and updating services on Docker Swarm clusters.
-
-### Host auto-detection
-
-- When adding a host or during background health monitoring, Tugtainer checks whether the host agent is running in Docker Swarm manager mode (`info.swarm.control_available`).
-- If detected as a Swarm manager, a **Swarm Services** card is displayed on the host dashboard, providing access to the services table.
-
-### Check process for Swarm services
-
-1. **Image inspection & digest resolution**:
-   - In Docker Swarm, `service.image` often contains a pinned digest resolved at deployment time (e.g. `repo/image:tag@sha256:<digest>`). If present, Tugtainer extracts this digest directly, avoiding unnecessary layer downloads on the manager node.
-   - If no digest is in the specification, Tugtainer attempts to inspect the image locally on the manager node to retrieve its `repo_digests`.
-   - If the image is not cached on the manager node (e.g., service tasks are distributed across worker nodes), pulling the image is only attempted if `PULL_BEFORE_CHECK` is explicitly enabled in settings.
-2. **Local images protection**:
-   - If no repository digests can be determined (for instance, images built locally without registry digests), the service is safely skipped from remote registry querying.
-3. **Registry query & comparison**:
-   - Tugtainer queries the remote registry for the latest digest of the base image tag.
-   - If the remote digest differs from the current digest, the service is **marked as available** for update. The pending image version and build time are resolved the same way as for containers.
-
-### Update process for Swarm services
-
-1. Swarm services are updated through the agent using Docker's service update mechanism (`docker service update --image <image>`).
-2. Docker Swarm orchestrates rolling updates, container recreation across worker nodes, and health monitoring according to the service's update configuration.
-3. Update progress, state transitions (such as `updating`, `completed`, or `rollback_completed`), and service logs are accessible in real-time through the UI and WebSocket progress dialogs.
+An update calls the agent's service update and reports `updated` when Swarm accepts the call. Swarm applies the service's own rolling update and health configuration. The table then shows that status (`updating`, `completed`, `rollback_completed`) and the service logs. There is no app-level rollback and no previous-image record.

@@ -1,18 +1,17 @@
 # Private registries
 
-To use private registries, you have to mount docker config to Tugtainer or Tugtainer Agent, depending on where the container with the private image is located.
+A private image is pulled with the Docker config of the app or the agent that owns that container.
 
-- Create the config using one of the methods on the host machine
-  - Log into the registry `docker login <registry>`
-  - Manually
-  ```json
-  {
-    "auths": {
-      "<registry>": {
-        "auth": "base64 encoded 'username:password_or_token'"
-      }
+The config is created on the host with `docker login <registry>`, or written by hand:
+
+```json
+{
+  "auths": {
+    "<registry>": {
+      "auth": "base64 encoded 'username:password_or_token'"
     }
   }
-  ```
-- Mount the config to the Tugtainer (Agent) as a read-only volume `-v $HOME/.docker/config.json:/root/.docker/config.json:ro` or in a docker-compose file.
-- That's all you need to do, Docker CLI will take care of the rest.
+}
+```
+
+It is mounted read-only, for example `-v $HOME/.docker/config.json:/root/.docker/config.json:ro`. The Docker CLI then authenticates on pull.

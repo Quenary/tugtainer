@@ -1,92 +1,71 @@
 # Notifications
 
-Tugtainer uses [Apprise](https://github.com/caronc/apprise?tab=readme-ov-file#productivity-based-notifications) to send notifications and [Jinja2](https://jinja.palletsprojects.com/en/stable/) to render their content. See each project's documentation for details.
+Job results go out through [Apprise](https://github.com/caronc/apprise). The body is a [Jinja2](https://jinja.palletsprojects.com/en/stable/) template. A notification is sent only when the rendered body is not empty.
 
-> Notification URLs that resolve to private or reserved networks are blocked by default (best-effort SSRF protection). See [.env.example](../.env.example) and the [security policy](./SECURITY.md).
+Notification URLs that resolve to private or reserved networks are blocked by default. The check is best-effort. See [Security](./SECURITY.md) and [.env.example](../.env.example).
 
-Jinja2 custom filters:
-
-- `any_worthy` — returns true if at least one item has a result of `available`, `updated`, `rolled_back`, or `failed`
-
-Jinja2 context schema:
+The template receives this context. Inspect objects expose the Docker inspect fields in snake_case. `item.name` and `item.image` exist on both a container item and a service item.
 
 ```json
 {
-  "hostname": "Tugtainer container hostname",
+  "hostname": "hostname of the app container",
   "results": [
     {
       "host_id": 0,
       "host_name": "string",
       "items": [
         {
-          "container": {
-            "id": "string",
-            "image": "string",
-            "...other docker container inspect keys, in snake_case": {}
-          },
-          "local_image": {
-            "id": "string",
-            "repo_digests": ["digest1", "digest2"],
-            "...other docker image inspect keys, in snake_case": {}
-          },
-          "remote_image": {
-            "...same schema as local_image": {}
-          },
-          "local_digests": ["platform-specific image digests"],
-          "remote_digests": ["platform-specific image digests"],
-          "previous_image_digests": [
-            "digests of the image the container was running before the update"
-          ],
-          "previous_image_tags": [
-            "tags of the image the container was running before the update"
-          ],
-          "previous_image_version": "version from the previous image labels, or None",
-          "current_version": "version from the running image labels, or None",
-          "available_version": "version from the pending image labels, or None",
-          "available_created": "build time of the pending image, or None",
-          "result": "not_available|available|available(notified)|updated|rolled_back|failed|None"
+          "container": { "id": "string", "image": "string" },
+          "local_image": { "id": "string", "repo_digests": ["digest"] },
+          "remote_image": { "id": "string" },
+          "local_digests": ["platform-specific digests of the running image"],
+          "remote_digests": ["platform-specific digests from the registry"],
+          "previous_image_digests": ["repo digests of the image before a successful update"],
+          "previous_image_tags": ["tags of that image"],
+          "previous_image_version": "version label of that image, or null",
+          "current_version": "version label of the running image, or null",
+          "available_version": "version label of the pending image, or null",
+          "available_created": "build time of the pending image, or null",
+          "result": "not_available | available | available(notified) | updated | rolled_back | failed | null"
         }
       ],
-      "prune_result": "string"
+      "prune_result": "string or null"
     }
   ]
 }
 ```
 
-`result` values:
+A Swarm service item has no `container` and no `previous_image_*`. It has `service_name`, `service_image`, `service_id`, `local_image`, `remote_image`, `local_digests`, `remote_digests`, `current_version`, `available_version`, `available_created`, and `result`. `local_image` and `remote_image` are null when that image was not inspected.
 
-- `not_available`: No new image was found.
-- `available`: A new image is available for the container.
-- `available(notified)`: A new image is available, but the same image was already included in a previous notification. Tugtainer keeps the digests of newly detected images, so the result stays `available` if a different new image appears.
-- `updated`: The container was successfully recreated with the new image.
-- `rolled_back`: Tugtainer failed to recreate the container, but restored it using the previous image.
-- `failed`: Tugtainer failed to recreate the container.
+`previous_image_*` is filled only after a successful container update. See [Previous image](./CHECK_AND_UPDATE.md#previous-image). `result` is null when the registry lookup failed; the previous availability is kept and the item is not reported as up to date.
 
-A notification is sent only when the body is not empty. For example, if every container has an "available(notified)" result, the default template produces an empty body and no notification is sent.
+| `result` | Meaning |
+| --- | --- |
+| `not_available` | No new image. |
+| `available` | A new image is available. |
+| `available(notified)` | That same new image was already included in an earlier notification. A different new image stays `available`. |
+| `updated` | The container was recreated with the new image. |
+| `rolled_back` | Recreate failed and the previous image was restored. |
+| `failed` | Recreate failed. |
+| `null` | The registry lookup failed. |
 
-The default template is defined in [backend/const.py](../backend/const.py). When `available_version` is set, a line includes it, and also `current_version -> available_version` when the running image has a version label. A template already saved in settings is left as-is; the new wording applies to the built-in default.
+The filter `any_worthy` is true when any item is `available`, `updated`, `rolled_back`, or `failed`. The built-in default template renders an empty body when no item is one of those, so nothing is sent. When `available_version` is set, the default template includes it, and `current_version -> available_version` when the running image has a version label. A template saved in settings is left as-is. The default lives in `backend/const.py`.
 
-## Health Monitor Notifications
+## Health monitor
 
-Tugtainer can also send notifications when containers are detected as unhealthy.
-
-Jinja2 context schema:
+A separate template runs when health monitoring reports containers. The context is one host name mapped to the containers in that report:
 
 ```json
 {
   "groups": {
     "<host_name>": [
       {
-        "container": {
-          "id": "string",
-          "name": "string",
-          "...other docker container inspect keys, in snake_case": {}
-        },
-        "status": "unhealthy|healthy|starting"
+        "container": { "id": "string", "name": "string" },
+        "status": "unhealthy | healthy"
       }
     ]
   }
 }
 ```
 
-The default template is defined in [backend/const.py](../backend/const.py).
+`unhealthy` is sent once the notify threshold is reached. `healthy` is the recovery report, and only when an unhealthy notification was already sent for that container. A `starting` status is stored in history and is not part of this context. See [Healthcheck monitoring](./HEALTHCHECK_MONITOR.md).

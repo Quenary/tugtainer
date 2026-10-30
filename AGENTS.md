@@ -1,8 +1,23 @@
 # AGENTS.md — Guidelines for AI Agents
 
-For general contributing workflow and commit standards, see [docs/CONTRIBUTING.md](file:///home/quenary/repos/tugtainer/docs/CONTRIBUTING.md). Package guides: [backend/AGENTS.md](backend/AGENTS.md), [agent/AGENTS.md](agent/AGENTS.md), [frontend/AGENTS.md](frontend/AGENTS.md).
+This guide is the source of general rules for AI agents in this repository. Package guides add rules on top of it and do not repeat it.
 
-## 1. Architecture Overview
+## Read before editing
+
+Before proposing a plan or editing code, read every document below that applies to the task.
+
+- Repo workflow, commits, checks — [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- Backend — [backend/AGENTS.md](backend/AGENTS.md)
+- Docker host agent — [agent/AGENTS.md](agent/AGENTS.md)
+- Frontend — [frontend/AGENTS.md](frontend/AGENTS.md)
+- Security — [docs/SECURITY.md](docs/SECURITY.md)
+- Feature behavior — the matching file in `docs/` (`AUTH.md`, `CHECK_AND_UPDATE.md`, `HOOKS.md`, `SELF_UPDATE.md`, and the others)
+
+When a change affects behavior, configuration, architecture, or contracts between packages, update the matching documentation in the same change. Follow [Documentation](docs/CONTRIBUTING.md#documentation).
+
+General and cross-cutting docs live in `docs/`. Package docs live beside the code (`backend/README.md`, `agent/README.md`, `frontend/README.md`). The root `README.md` is the product overview. Extend the matching doc rather than duplicating long explanations in comments only.
+
+## Architecture
 
 - **`backend/`** (FastAPI + SQLAlchemy 2.0 async + SQLite `tugtainer.db`):
   - `backend/app.py`: FastAPI entrypoint, `lifespan()` startup and shutdown.
@@ -14,45 +29,33 @@ For general contributing workflow and commit standards, see [docs/CONTRIBUTING.m
   - `backend/alembic/`: SQLite database migrations.
 - **`agent/`**: Lightweight daemon on Docker hosts (`python-on-whales` + FastAPI).
 - **`shared/`**: Common Pydantic schemas (`shared/schemas/`) and utilities shared between backend and agent. `shared/self_update/` is the self-update helper run from the new app image; it imports nothing from `backend/`.
-- **`frontend/`**: Angular SPA with PrimeNG.
+- **`frontend/`**: Angular SPA. UI primitives come from `@openng/optimus-ui`.
 - **`tests/`**: Dockerized Playwright E2E and integration tests.
 
-## 2. Dev & Validation Commands
+## Code principles
 
-### Local Dev
+Apply a principle only when it makes this change simpler. Do not reshape the code just to satisfy it.
 
-```bash
-uv run python -m backend.dev
-uv run python -m agent.dev
-npm --prefix frontend run start
-```
+- **SOLID, KISS, DRY, YAGNI.** Follow the design already in the touched code. Prefer a clear, small change over a new abstraction or behavior the task does not need.
+- **Scope.** Make the smallest change that fully solves the problem. Do not refactor unrelated code.
 
-### Pre-commit Quality Checks
+## Python
 
-```bash
-# Python lint & format
-uv run ruff check --fix
-uv run ruff format
+These rules apply to `backend/`, `agent/`, and `shared/`. Ruff and mypy are configured in the repo `pyproject.toml` (Ruff selects E, F, I, B, UP; mypy allows missing imports and unset optionals). Match the surrounding file.
 
-# Python type checking
-uv run mypy agent backend shared
+- Prefer `list[str]`, `str | None`, and `Final`.
+- Log with `logging`. Do not add `print` outside `dev.py`.
+- Import `backend`, `agent`, and `shared` as top-level packages. Run pytest from the repo root with `PYTHONPATH=.`; without it pytest raises `ModuleNotFoundError`.
 
-# Python unit tests (PYTHONPATH=. is mandatory!)
-PYTHONPATH=. uv run pytest backend/
-# Single test file:
-PYTHONPATH=. uv run pytest backend/core/jobs/cleanup/test_cleanup_containers.py
+## Tests
 
-# Frontend checks
-npm --prefix frontend run lint
-npm --prefix frontend run prettier-check
+- Cover the important behavior of the change. Parameterize cases that differ by inputs and expected results. Do not add tests for trivial getters.
+- A bug fix gets a test that fails before the fix when that is practical.
+- Python tests sit next to the code as `test_*.py`. Async tests use `@pytest.mark.asyncio`. Patch with `pytest-mock`.
+- How a package sets up its tests is in that package's guide.
 
-# Integration / E2E (with cleanup)
-npm --prefix tests run test:all
-# Integration / E2E (if test app is already started)
-npm --prefix tests run test:docker
-```
+## Checks
 
-## 3. Critical Gotchas & Patterns
+After substantive edits, run the checks for the touched packages. Commands are in [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). Commit messages follow Conventional Commits (see Commits there).
 
-1. **`PYTHONPATH=.` for pytest**:
-   Packages `backend`, `agent`, and `shared` are top-level imports. Direct invocation without `PYTHONPATH=.` causes `ModuleNotFoundError`.
+No AI attribution anywhere: commit messages, PR titles, and descriptions must not contain `Co-authored-by` trailers, `@cursor` or other agent mentions, or "Generated with …" lines, and an AI tool is never listed as an author. The agent is an assistant; the human author is responsible for the change.

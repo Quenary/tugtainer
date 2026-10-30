@@ -1,11 +1,8 @@
 # Tugtainer Frontend
 
-It is recommended to use [NVM](https://github.com/nvm-sh/nvm) (node version manager).
+Angular SPA. Node.js is managed with [nvm](https://github.com/nvm-sh/nvm).
 
 - Install dependencies with `npm ci`
-- Run the app
-  - Whole app with Ctrl + Shift + B (VS Code default task)
-  - Frontend with `npm start`
-- Run tests with `npm test` or `npm run test:ci`
-- Run lint with `npm run lint` or `npx lint-staged`
-- Run format check with `npm run prettier-check`
+- Run the app with `npm start`
+
+Lint, format, and tests are in [CONTRIBUTING.md](../docs/CONTRIBUTING.md).

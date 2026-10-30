@@ -1,131 +1,111 @@
-# Tugtainer is a self-hosted app for automating updates of your docker containers
+# Tugtainer
 
 <img src="resources/social_preview.jpg" width="100%">
 
-Please be aware that the application is distributed as-is and is not recommended for use in a production environment.
+Tugtainer is a self-hosted application that automates Docker container updates. It is distributed as-is and is not intended for production use. Important data needs regular backups.
 
-And don't forget about regular backups of important data.
+Automatic updates are disabled by default.
 
-Automatic updates are disabled by default. You can enable only what you need.
+## Table of contents
 
-## Table of contents:
+- [Main features](#main-features)
+- [Deploy](#deploy)
+- [Private registries](./docs/PRIVATE_REGISTRIES.md)
+- [Custom labels](./docs/CUSTOM_LABELS.md)
+- [Hooks](./docs/HOOKS.md)
+- [Self-update](./docs/SELF_UPDATE.md)
+- [Notifications](./docs/NOTIFICATIONS.md)
+- [Auth](./docs/AUTH.md)
+- [API](./docs/API.md)
+- [Environment](#environment)
+- [Check and update](./docs/CHECK_AND_UPDATE.md)
+- [Healthcheck monitoring](./docs/HEALTHCHECK_MONITOR.md)
+- [Screenshots](./docs/SCREENSHOTS.md)
+- [Contributing](./docs/CONTRIBUTING.md)
+- [Security](./docs/SECURITY.md)
 
-- [main features](#main-features)
-- [deploy](#deploy)
-- [private registries](./docs/PRIVATE_REGISTRIES.md)
-- [custom labels](./docs/CUSTOM_LABELS.md)
-- [hooks](./docs/HOOKS.md)
-- [self-update](./docs/SELF_UPDATE.md)
-- [notifications](./docs/NOTIFICATIONS.md)
-- [auth](./docs/AUTH.md)
-- [api](./docs/API.md)
-- [env](#env)
-- [check and update](./docs/CHECK_AND_UPDATE.md)
-- [healthcheck monitoring](./docs/HEALTHCHECK_MONITOR.md)
-- [screenshots](./docs/SCREENSHOTS.md)
-- [contributing](./docs/CONTRIBUTING.md)
-- [security](./docs/SECURITY.md)
-
-## Main features:
+## Main features
 
 - Web UI with authentication
-- Multiple hosts support
-- Docker Swarm support (managers auto-detection, services check, rolling updates, and logs)
-- Socket proxy support
+- Multiple hosts
+- Docker Swarm (manager detection, service checks, rolling updates, logs)
+- Socket proxy
 - Crontab scheduling
-- Notifications to a wide range of services
-- Per-container config (check only or auto-update)
-- Automatic/manual check and update
-- Healthcheck monitoring with auto-restarts and notifications
-- Automatic/manual image pruning
-- Linked containers support (compose and custom)
-- Private registries support
-- Basic container control (start, stop, etc.)
-- Container detailed info (inspect, logs)
+- Notifications
+- Per-container check-only or auto-update
+- Manual and scheduled check and update
+- Healthcheck monitoring with restarts and notifications
+- Manual and scheduled image pruning
+- Linked containers (Compose and custom labels)
+- Private registries
+- Basic container control (start, stop, and the rest)
+- Container inspect and logs
 
-## Deploy:
+## Deploy
 
-- ### Quick start
+### Quick start
 
-  Use [docker-compose.app.yml](./docker-compose.app.yml) or the following docker commands.
+The app starts from [docker-compose.app.yml](./docker-compose.app.yml) or from:
 
-  ```bash
-  # create volume
-  docker volume create tugtainer_data
+```bash
+docker volume create tugtainer_data
 
-  # pull image
-  docker pull ghcr.io/quenary/tugtainer:1
+docker pull ghcr.io/quenary/tugtainer:1
 
-  # run container
-  # AGENT_SECRET is required. Set a strong, unique shared secret.
-  docker run -d -p 9412:80 \
-      --name=tugtainer \
-      --restart=unless-stopped \
-      -e AGENT_SECRET="" \
-      -v tugtainer_data:/tugtainer \
-      -v /var/run/docker.sock:/var/run/docker.sock:ro \
-      ghcr.io/quenary/tugtainer:1
-  ```
+# AGENT_SECRET is required. Set a strong, unique shared secret.
+docker run -d -p 9412:80 \
+    --name=tugtainer \
+    --restart=unless-stopped \
+    -e AGENT_SECRET="" \
+    -v tugtainer_data:/tugtainer \
+    -v /var/run/docker.sock:/var/run/docker.sock:ro \
+    ghcr.io/quenary/tugtainer:1
+```
 
-> [!IMPORTANT]
-> On the first start, copy the one-time setup code from the container logs (`docker logs tugtainer`) and set the password within 5 minutes. If the code expires, restart the container. See [auth](./docs/AUTH.md).
+On the first start the container logs a one-time setup code (`docker logs tugtainer`). The password is set with that code within 5 minutes. An expired code requires a restart. See [Auth](./docs/AUTH.md).
 
-> [!IMPORTANT]
-> Keep in mind that you **cannot update** an **agent** or a **socket-proxy** from within the app because they are used to communicate with the Docker CLI.
-> Avoid including these containers in a docker-compose that contains other containers you want to update automatically, as this will result in an error during the update.
-> To keep them updated, you can activate "check" only to receive notifications, and recreate them manually or from another tool, such as Portainer.
-> The app container itself can be updated from the UI with the opt-in [self-update](./docs/SELF_UPDATE.md).
+The app cannot update an agent or a socket-proxy: those containers carry the Docker API connection. A Compose project that mixes them with containers set to auto-update fails that update. Check-only mode still sends notifications; recreation stays outside the app. The app container itself updates from the UI when [self-update](./docs/SELF_UPDATE.md) is enabled.
 
-- ### Remote hosts
+### Remote hosts
 
-  > [!IMPORTANT]
-  > Agent host URLs that resolve to private or reserved networks are blocked by default (best-effort check; see the [security policy](./docs/SECURITY.md)).
-  > The agent client then connects only to the addresses that passed that check, without replacing the hostname (TLS / virtual hosts stay intact).
-  > If your remote agent is on a LAN or Docker network, allow it on the primary instance via **AGENT_ALLOW_NETWORKS** (e.g. `192.168.0.0/24`) and/or **AGENT_ALLOW_ENDPOINTS** (e.g. `10.0.0.5:9413`).
-  > See [.env.example](./.env.example).
-  > By default, only the built-in agent endpoint `127.0.0.1:8001` is allowed when `AGENT_ENABLED=true`.
+Agent URLs that resolve to private or reserved networks are blocked by default. The check is best-effort; see [Security](./docs/SECURITY.md). The client then connects only to addresses that passed the check and keeps the original hostname, so TLS and virtual hosts stay intact. A remote agent on a LAN or a Docker network is allowed with `AGENT_ALLOW_NETWORKS` (for example `192.168.0.0/24`) and/or `AGENT_ALLOW_ENDPOINTS` (for example `10.0.0.5:9413`). See [.env.example](./.env.example). With `AGENT_ENABLED=true`, only `127.0.0.1:8001` is allowed until an exception is set.
 
-  To manage remote hosts from one UI, you have to deploy the Tugtainer Agent.
-  To do so, you can use [docker-compose.agent.yml](./docker-compose.agent.yml) or the following docker commands.
+A remote host runs the agent, from [docker-compose.agent.yml](./docker-compose.agent.yml) or from:
 
-  After deploying the agent, in the UI follow Menu -> Hosts, and add it with the respective parameters. The **Agent secret** field should match the **AGENT_SECRET** you've provided for the agent container.
+```bash
+docker pull ghcr.io/quenary/tugtainer-agent:1
 
-  Backend and agent use HTTP by default. You can put a reverse proxy in front for HTTPS.
+# AGENT_SECRET is required. Set a strong, unique shared secret.
+docker run -d -p 9413:8001 \
+    --name=tugtainer-agent \
+    --restart=unless-stopped \
+    -e AGENT_SECRET="" \
+    -v /var/run/docker.sock:/var/run/docker.sock:ro \
+    ghcr.io/quenary/tugtainer-agent:1
+```
 
-  - Public CA (Let's Encrypt, etc.): set the host URL to `https://…`, leave **SSL** on, leave **Custom CA** empty.
-  - Private CA or self-signed: paste the CA PEM (or the self-signed certificate) into **Custom CA**, keep **SSL** on. The certificate hostname/SAN must match the URL host.
-  - TLS on the agent without a reverse proxy: mount cert/key into the agent container and pass `--ssl-certfile` / `--ssl-keyfile` via `command` (see [docker-compose.agent.yml](./docker-compose.agent.yml)). Paste the corresponding CA in the host settings. The image healthcheck uses `http://localhost:8001` and may fail if uvicorn serves only HTTPS.
+The host is added under Menu → Hosts. The agent secret matches `AGENT_SECRET` on the agent container. Backend and agent speak HTTP. A reverse proxy can terminate HTTPS.
 
-  ```bash
-  # pull image
-  docker pull ghcr.io/quenary/tugtainer-agent:1
+| Setup | Host URL | SSL | Custom CA |
+| --- | --- | --- | --- |
+| Public CA | `https://…` | on | empty |
+| Private CA or self-signed | `https://…` | on | CA PEM, or the self-signed certificate. The hostname or SAN matches the URL host. |
+| TLS on the agent, no proxy | `https://…` | on | Cert and key mounted into the agent; `--ssl-certfile` and `--ssl-keyfile` via `command` (see [docker-compose.agent.yml](./docker-compose.agent.yml)). The image healthcheck calls `http://localhost:8001` and fails when the agent serves only HTTPS. |
 
-  # run container
-  # AGENT_SECRET is required. Set a strong, unique shared secret.
-  docker run -d -p 9413:8001 \
-      --name=tugtainer-agent \
-      --restart=unless-stopped \
-      -e AGENT_SECRET="" \
-      -v /var/run/docker.sock:/var/run/docker.sock:ro \
-      ghcr.io/quenary/tugtainer-agent:1
-  ```
+### Socket proxy
 
-- ### Socket proxy
+The app and the agent can run without a direct Docker socket mount. The provided Compose files do this by default. Example proxy: [linuxserver/socket-proxy](https://hub.docker.com/r/linuxserver/socket-proxy).
 
-  You can use Tugtainer and Tugtainer Agent without mounting the Docker socket directly.
+| Feature | Proxy variables |
+| --- | --- |
+| Check | `CONTAINERS`, `IMAGES`, `POST`, `INFO`, `PING` |
+| Update | `NETWORKS` |
+| Logs | `ALLOW_LOGS` |
+| Start, stop, restart, pause | `ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `ALLOW_PAUSE`, `ALLOW_UNPAUSE` |
+| Swarm | `SERVICES`, `TASKS`, `NODES`, `SWARM` |
 
-  [docker-compose.app.yml](./docker-compose.app.yml) and [docker-compose.agent.yml](./docker-compose.agent.yml) use this approach by default.
+`DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`.
 
-  Manual setup:
-  - Deploy socket-proxy e.g. https://hub.docker.com/r/linuxserver/socket-proxy
-  - Enable the following environment variables based on the features you want to use:
-    - **Base (check feature)**: `CONTAINERS`, `IMAGES`, `POST`, `INFO`, `PING`
-    - **Update feature**: `NETWORKS`
-    - **Logs feature**: `ALLOW_LOGS`
-    - **Container controls (start/stop/restart)**: `ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `ALLOW_PAUSE`, `ALLOW_UNPAUSE`
-    - **Docker Swarm feature**: `SERVICES`, `TASKS`, `NODES`, `SWARM`
-  - Set the env var DOCKER_HOST="tcp://my-socket-proxy:port" on the Tugtainer(-agent) container(s);
+## Environment
 
-## Env:
-
-Most environment variables are optional. **AGENT_SECRET** is required for backend-agent communication. See [.env.example](/.env.example) for a list of vars with descriptions.
+Most variables are optional. `AGENT_SECRET` is required. The full list is in [.env.example](./.env.example).

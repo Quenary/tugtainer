@@ -2,7 +2,7 @@
 
 Angular 22 SPA for Tugtainer. TypeScript `~6.0`. Standalone components are the default. The app is zoneless (`provideZonelessChangeDetection` in `src/app/app.config.ts`).
 
-For repo-wide workflow and commits, see [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). Scripts live in `package.json`.
+General rules (scope, tests, checks) are in the root [AGENTS.md](../AGENTS.md). Repo workflow and commits: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). Scripts live in `package.json`.
 
 ## Layout
 
@@ -86,7 +86,7 @@ Group related `it` blocks in a nested `describe` named after the subject (a comp
 - Drop unused imports. Prefix intentionally unused names with `_` (`@typescript-eslint/no-unused-vars`).
 - Do not leave `console.log` in the codebase.
 - Every new file ends with a trailing newline.
-- Keep diffs limited to the task. Do not migrate unrelated templates or stores.
+- Do not migrate unrelated templates or stores.
 
 ## Resources
 
