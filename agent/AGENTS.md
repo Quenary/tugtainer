@@ -2,7 +2,7 @@
 
 FastAPI daemon on a Docker host. The backend calls it over HTTP; this process talks to the local Docker socket through `python_on_whales`. Python `>=3.13`.
 
-Repo workflow: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). Deploy notes: [README.md](README.md). Local entry: `uv run python -m agent.dev` (port 8001).
+General rules (scope, Python, tests, checks) are in the root [AGENTS.md](../AGENTS.md). Repo workflow: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md). Deploy notes: [README.md](README.md). Local entry: `uv run python -m agent.dev` (port 8001).
 
 ## Layout
 
@@ -25,18 +25,7 @@ Swarm routes require a manager (`control_available`). Service list merges `servi
 
 ## Tests
 
-Tests sit next to the code as `test_*.py`. Async tests use `@pytest.mark.asyncio`. Patch with `pytest-mock`. Router tests use `TestClient(app)`.
-
-Import `agent` and `shared` as top-level packages. Run pytest from the repo root with `PYTHONPATH=.`.
+Router tests use `TestClient(app)`.
 
 - Factories live in `agent/testing.py`. Fixtures live in `conftest.py`.
 - `agent/conftest.py` restores `dependency_overrides`. `agent/api/conftest.py` stubs `verify_signature`. Auth coverage stays in `agent/test_auth.py`.
-- Parametrize near-duplicate cases. Do not add tests for trivial getters.
-- Type helpers where it stays simple. Match ruff and mypy.
-
-## Style
-
-Ruff and mypy are configured in the repo `pyproject.toml`. Match the surrounding file.
-
-- Prefer `list[str]`, `str | None`, and `Final`.
-- Log with `logging`. Do not add `print` outside `dev.py`.

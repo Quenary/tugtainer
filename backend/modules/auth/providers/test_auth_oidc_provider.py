@@ -1,11 +1,18 @@
 import base64
+import hashlib
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
+import jwt
 import pytest
-import rsa
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+)
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
+from jwt.exceptions import InvalidTokenError
 
 from backend.config import Config
 from backend.modules.auth.providers.auth_oidc_provider import AuthOidcProvider
@@ -18,7 +25,7 @@ def _base64url_uint(value: int) -> str:
 
 @pytest.fixture(scope="module")
 def signing_key():
-    return rsa.newkeys(2048)
+    return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
 @pytest.fixture
@@ -31,19 +38,18 @@ def discovery_doc():
 
 
 def _jwk(signing_key, kid: str = "signing-key") -> dict[str, str]:
-    public_key, _ = signing_key
+    public_numbers = signing_key.public_key().public_numbers()
     return {
         "kty": "RSA",
         "use": "sig",
         "alg": "RS256",
         "kid": kid,
-        "n": _base64url_uint(public_key.n),
-        "e": _base64url_uint(public_key.e),
+        "n": _base64url_uint(public_numbers.n),
+        "e": _base64url_uint(public_numbers.e),
     }
 
 
 def _id_token(signing_key, **claim_overrides) -> str:
-    _, private_key = signing_key
     now = datetime.now(UTC)
     claims = {
         "iss": "https://idp.example.com",
@@ -54,9 +60,14 @@ def _id_token(signing_key, **claim_overrides) -> str:
         "exp": now + timedelta(minutes=5),
         **claim_overrides,
     }
+    pem = signing_key.private_bytes(
+        Encoding.PEM,
+        PrivateFormat.PKCS8,
+        NoEncryption(),
+    )
     return jwt.encode(
         claims,
-        private_key.save_pkcs1(),
+        pem,
         algorithm="RS256",
         headers={"kid": "signing-key"},
     )
@@ -84,11 +95,11 @@ async def test_verify_oidc_id_token_validates_signature_and_claims(
 async def test_verify_oidc_id_token_rejects_wrong_signing_key(
     signing_key, discovery_doc
 ):
-    other_key = rsa.newkeys(2048)
+    other_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     provider = AuthOidcProvider()
     provider._fetch_oidc_jwks = AsyncMock(return_value={"keys": [_jwk(other_key)]})
 
-    with pytest.raises(JWTError):
+    with pytest.raises(InvalidTokenError):
         await provider._verify_oidc_id_token(
             _id_token(signing_key),
             None,
@@ -102,10 +113,41 @@ async def test_verify_oidc_id_token_rejects_wrong_audience(signing_key, discover
     provider = AuthOidcProvider()
     provider._fetch_oidc_jwks = AsyncMock(return_value={"keys": [_jwk(signing_key)]})
 
-    with pytest.raises(JWTError):
+    with pytest.raises(InvalidTokenError):
         await provider._verify_oidc_id_token(
             _id_token(signing_key, aud="another-client"),
             None,
+            discovery_doc,
+            "tugtainer",
+        )
+
+
+def _at_hash(access_token: str) -> str:
+    digest = hashlib.sha256(access_token.encode("ascii")).digest()
+    return base64.urlsafe_b64encode(digest[:16]).rstrip(b"=").decode("ascii")
+
+
+@pytest.mark.asyncio
+async def test_verify_oidc_id_token_checks_access_token_hash(
+    signing_key, discovery_doc
+):
+    provider = AuthOidcProvider()
+    provider._fetch_oidc_jwks = AsyncMock(return_value={"keys": [_jwk(signing_key)]})
+    access_token = "access-token-value"
+
+    claims = await provider._verify_oidc_id_token(
+        _id_token(signing_key, at_hash=_at_hash(access_token)),
+        access_token,
+        discovery_doc,
+        "tugtainer",
+    )
+
+    assert claims["sub"] == "user-123"
+
+    with pytest.raises(InvalidTokenError):
+        await provider._verify_oidc_id_token(
+            _id_token(signing_key, at_hash=_at_hash(access_token)),
+            "different-access-token",
             discovery_doc,
             "tugtainer",
         )
