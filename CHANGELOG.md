@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.45.1 (2026-10-30)
+
+### Bug Fixes
+
+- **security**: Backend/agent dependencies audit, replace python-jose to PyJWT
+  ([`f0414de`](https://github.com/Quenary/tugtainer/commit/f0414dee20fc0f2c6e3df5a9682d98bd58206095))
+
+### Documentation
+
+- Align guidelines and feature docs with the code, consistant doc styles
+  ([`f84fafa`](https://github.com/Quenary/tugtainer/commit/f84fafa9a5e0b8b71181fccbc2bf0e482e45467e))
+
+
 ## v1.45.0 (2026-10-27)
 
 ### Features
