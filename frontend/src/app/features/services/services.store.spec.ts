@@ -194,5 +194,19 @@ describe('ServicesStore', () => {
       TestBed.flushEffects();
       expect(servicesApiServiceMock.list).not.toHaveBeenCalled();
     });
+
+    it('does not reload when the selected host is not a swarm', () => {
+      servicesApiServiceMock.list.mockClear();
+      hostSelectedIdSignal.set(2);
+      hostSelectedSignal.set({
+        ...mockHost,
+        id: 2,
+        is_swarm: false,
+      } as IHostEntity);
+      updateServicesListSignal.set(new Date());
+      TestBed.flushEffects();
+      expect(servicesApiServiceMock.list).not.toHaveBeenCalled();
+      expect(toastServiceMock.error).not.toHaveBeenCalled();
+    });
   });
 });

@@ -226,7 +226,11 @@ export const ServicesStore = signalStore(
         const u = hostsStore.updateServicesList();
         if (u) {
           untracked(() => {
-            store.loadList();
+            // The store outlives the services route, so a job on a host
+            // without swarm services must not request its services list.
+            if (hostsStore.selected()?.is_swarm) {
+              store.loadList();
+            }
           });
         }
       });
