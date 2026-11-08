@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.45.2 (2026-11-08)
+
+### Bug Fixes
+
+- **frontend**: Reload services after a job only on swarm hosts
+  ([`38a30a2`](https://github.com/Quenary/tugtainer/commit/38a30a21378368e162c24060d4790d1349f347f8))
+
+
 ## v1.45.1 (2026-10-30)
 
 ### Bug Fixes
