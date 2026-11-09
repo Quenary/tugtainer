@@ -1,6 +1,6 @@
 # Check and update
 
-A locally built image that still has a tag and no known digest is not checked. An untagged image with no repo digests is compared with the registry. The same rules apply to a Swarm service, except a pinned service digest is still checked when the manager copy has tags and no RepoDigests.
+A locally built image that still has a tag and no known digest is not checked. An untagged image with no repo digests is compared with the registry. A `<none>` tag, including `<none>:<none>`, is untagged. The same rules apply to a Swarm service, except a pinned service digest is still checked when the manager copy has tags and no RepoDigests.
 
 ## Check
 

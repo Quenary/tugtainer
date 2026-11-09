@@ -912,11 +912,19 @@ def image_content_matches(
 
 
 def image_is_local_build(image: ImageInspectResult | None) -> bool:
-    """Tagged image with no registry digest: built locally, not an untagged pull."""
+    """Tagged image with no registry digest: built locally, not an untagged pull.
+
+    A ``<none>`` repo, including ``<none>:<none>``, is not a tag.
+    """
     if image is None:
         return False
     tags = image.repo_tags
-    if not isinstance(tags, list) or not any(tags):
+    if not isinstance(tags, list):
+        return False
+    has_tag = any(
+        isinstance(tag, str) and tag.split(":", 1)[0] != "<none>" for tag in tags
+    )
+    if not has_tag:
         return False
     return not image.repo_digests
 

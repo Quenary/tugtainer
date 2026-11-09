@@ -1054,6 +1054,33 @@ async def test_assess_pinned_digest_queries_registry_for_tagged_image(
 
 
 @pytest.mark.asyncio
+async def test_assess_none_tag_queries_registry(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    digest = mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(return_value=_blob(["sha256:layer"])),
+    )
+    local = _image(
+        repo_digests=[],
+        repo_tags=["<none>:<none>"],
+        layers=["sha256:layer"],
+    )
+
+    remote, update = await assess_image_update("ghcr.io/example/app:1", local, [])
+
+    digest.assert_awaited_once_with("ghcr.io/example/app:1", None)
+    assert remote == ["sha256:manifest"]
+    assert update is False
+
+
+@pytest.mark.asyncio
 async def test_assess_changed_diff_ids_are_available(
     mocker: MockerFixture,
 ):
