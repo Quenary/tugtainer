@@ -1,9 +1,11 @@
+import json
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from agent.auth import verify_signature
 from agent.docker_client import RUNTIME_CLIENT
+from shared.runtime.image_prune import format_image_prune_result, prune_filters
 from shared.runtime.registry_auth import registry_auth_for_image
 from shared.runtime.runtime_models import (
     ImageInspectResult,
@@ -60,7 +62,10 @@ async def list_images(body: GetImageListBodySchema):
     description="Prune volumes",
 )
 async def prune(body: PruneImagesRequestBodySchema) -> str:
-    return await RUNTIME_CLIENT.image_prune(filters=body.filters)
+    raw = await RUNTIME_CLIENT.image_prune(
+        filters=prune_filters(body.all, body.filters)
+    )
+    return format_image_prune_result(json.loads(raw) if raw else {})
 
 
 @router.post(

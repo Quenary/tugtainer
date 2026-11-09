@@ -4,9 +4,10 @@ import pytest
 from fastapi import HTTPException
 from pytest_mock import MockerFixture
 
-from agent.api.image_api import is_exists, list_images, pull
+from agent.api.image_api import is_exists, list_images, prune, pull
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
+    PruneImagesRequestBodySchema,
     PullImageRequestBodySchema,
 )
 
@@ -60,3 +61,36 @@ async def test_pull_passes_registry_auth(mocker: MockerFixture) -> None:
     await pull(PullImageRequestBodySchema(image="ghcr.io/org/app:1"))
 
     image_pull.assert_awaited_once_with("ghcr.io/org/app:1", auth_config=auth)
+
+
+@pytest.mark.asyncio
+async def test_prune_all_sends_dangling_false_and_formats_text(
+    mocker: MockerFixture,
+) -> None:
+    image_prune = mocker.patch(
+        "agent.api.image_api.RUNTIME_CLIENT.image_prune",
+        new=AsyncMock(
+            return_value=(
+                '{"ImagesDeleted":[{"Untagged":"app:old"},'
+                '{"Deleted":"sha256:abc"}],"SpaceReclaimed":2048}'
+            )
+        ),
+    )
+
+    text = await prune(PruneImagesRequestBodySchema(all=True))
+
+    image_prune.assert_awaited_once_with(filters={"dangling": ["false"]})
+    assert text.splitlines()[-1] == "Total reclaimed space: 2kB"
+
+
+@pytest.mark.asyncio
+async def test_prune_default_omits_filters(mocker: MockerFixture) -> None:
+    image_prune = mocker.patch(
+        "agent.api.image_api.RUNTIME_CLIENT.image_prune",
+        new=AsyncMock(return_value="{}"),
+    )
+
+    text = await prune(PruneImagesRequestBodySchema())
+
+    image_prune.assert_awaited_once_with(filters=None)
+    assert text.endswith("Total reclaimed space: 0B")
