@@ -33,8 +33,8 @@ describe('ImagesStore', () => {
   } as IImage;
 
   const mockInspectResult = {
-    Id: 'img-1',
-    RepoTags: ['nginx:latest'],
+    id: 'img-1',
+    repo_tags: ['nginx:latest'],
   } as IImageInspectResult;
 
   beforeEach(() => {

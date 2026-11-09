@@ -40,8 +40,8 @@ export class HostJobsResultComponent {
         let id = slotKey;
 
         if ('container' in res && res.container) {
-          name = res.container.Name ?? slotKey;
-          id = res.container.Id ?? slotKey;
+          name = res.container.name ?? slotKey;
+          id = res.container.id ?? slotKey;
         } else if ('service_name' in res && res.service_name) {
           name = res.service_name;
           id = ('service_id' in res && res.service_id) || res.service_name;

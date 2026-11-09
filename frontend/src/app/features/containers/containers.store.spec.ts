@@ -41,8 +41,8 @@ describe('ContainersStore', () => {
   } as IContainerEntity;
 
   const mockContainerInspect = {
-    Id: 'test-id',
-    Created: dayjs().format(),
+    id: 'test-id',
+    created: dayjs().format(),
   } as IContainerInspectResult;
 
   const mockContainerInfo = {

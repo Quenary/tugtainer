@@ -36,7 +36,7 @@ describe('HostJobsResultComponent', () => {
             'slot-nginx': {
               status: EJobStatus.DONE,
               result: {
-                container: { Name: 'nginx', Id: 'abc' },
+                container: { name: 'nginx', id: 'abc' },
                 result: 'updated',
               } as IContainerJobResult,
             },
@@ -54,7 +54,7 @@ describe('HostJobsResultComponent', () => {
             'slot-nginx': {
               status: EJobStatus.ERROR,
               result: {
-                container: { Name: 'nginx', Id: 'abc' },
+                container: { name: 'nginx', id: 'abc' },
                 result: 'failed',
                 error: 'VolumeOptions.Subpath requires Docker API >= 1.45',
               } as IContainerJobResult,
