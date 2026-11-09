@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from dataclasses import dataclass
@@ -17,7 +18,10 @@ from backend.modules.containers.containers_model import (
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_version_from_labels import get_version_from_labels
+from backend.util.jitter import jitter
 from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerHealthCheck,
     ContainerInspectResult,
     ImageInspectResult,
 )
@@ -107,8 +111,9 @@ async def get_image_remote_digest(
         logger.debug(resp)
         resp.raise_for_status()
         if resp.status == 304:
-            return local_digest
-        return resp.headers.get("Docker-Content-Digest") or resp.headers.get("Etag")
+            return normalize_registry_digest(local_digest)
+        raw = resp.headers.get("Docker-Content-Digest") or resp.headers.get("Etag")
+        return normalize_registry_digest(raw)
 
     async def _do_request(
         session: aiohttp.ClientSession,
@@ -170,6 +175,34 @@ async def get_image_remote_digest(
             raise last_error
 
         return None
+
+
+def normalize_registry_digest(value: str | None) -> str | None:
+    """Digest token without RFC quotes or a weak-validator prefix."""
+    if value is None:
+        return None
+    token = value.strip()
+    if token[:2].upper() == "W/":
+        token = token[2:].strip()
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in {'"', "'"}:
+        token = token[1:-1]
+    token = token.strip()
+    return token or None
+
+
+def digest_in_repo_digests(
+    digest: str | None,
+    repo_digests: list[str] | None,
+) -> bool:
+    """True when the registry digest is already one of the image's repo digests."""
+    token = normalize_registry_digest(digest)
+    if not token or not repo_digests:
+        return False
+    for repo in repo_digests:
+        normalized = normalize_registry_digest(repo) or ""
+        if token == normalized or token in normalized:
+            return True
+    return False
 
 
 def parse_image_spec(spec: str) -> tuple[str, str, str]:
@@ -572,18 +605,16 @@ async def _registry_get_json(
         return await _read(resp2), attempt
 
 
-async def get_remote_image_metadata(
+async def fetch_remote_config_blob(
     spec: str,
     platform: ImagePlatform | None = None,
-) -> RemoteImageMetadata:
+) -> dict[str, Any]:
     """
-    Read version and created for the image currently pointed at by a tag.
+    Image config blob for the tag, after walking an index to the local platform.
 
-    Fetches the manifest, follows one index entry when the tag is multi-arch,
-    then fetches that image's config blob. Raises if the registry cannot
-    be read; callers must not cache a failed lookup.
+    Raises if the registry cannot be read or the blob is not an image config.
     """
-    logger: Final = logging.getLogger("get_remote_image_metadata")
+    logger: Final = logging.getLogger("fetch_remote_config_blob")
     registry, repo, tag = parse_image_spec(spec)
     insecure_registries = SettingsStorage.get(ESettingKey.INSECURE_REGISTRIES)
     insecure = is_insecure_registry(registry, insecure_registries)
@@ -658,4 +689,212 @@ async def get_remote_image_metadata(
             ssl,
             insecure,
         )
-        return metadata_from_config_blob(blob)
+        if not isinstance(blob, dict):
+            raise ValueError(f"Image config for {spec} is not a JSON object")
+        return blob
+
+
+async def get_remote_image_metadata(
+    spec: str,
+    platform: ImagePlatform | None = None,
+) -> RemoteImageMetadata:
+    """
+    Read version and created for the image currently pointed at by a tag.
+
+    Fetches the manifest, follows one index entry when the tag is multi-arch,
+    then fetches that image's config blob. Raises if the registry cannot
+    be read; callers must not cache a failed lookup.
+    """
+    blob = await fetch_remote_config_blob(spec, platform)
+    return metadata_from_config_blob(blob)
+
+
+def _string_list(value: object) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value else []
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return [str(value)]
+
+
+def _text(value: object) -> str:
+    if value is None:
+        return ""
+    return str(value)
+
+
+def _label_map(value: object) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    return {str(key): "" if item is None else str(item) for key, item in value.items()}
+
+
+def _mapping_signature(value: object) -> tuple[tuple[str, str], ...]:
+    if not isinstance(value, dict):
+        return ()
+    items = [
+        (str(key), "" if item is None else str(item)) for key, item in value.items()
+    ]
+    return tuple(sorted(items))
+
+
+def _number(value: object) -> int:
+    if isinstance(value, bool) or value is None or value == "":
+        return 0
+    if isinstance(value, int):
+        return value
+    return 0
+
+
+def _health_signature(value: object) -> tuple[Any, ...]:
+    if isinstance(value, ContainerHealthCheck):
+        test = _string_list(value.test)
+        numbers = (
+            _number(value.interval),
+            _number(value.timeout),
+            _number(value.retries),
+            _number(value.start_period),
+            _number(value.start_interval),
+        )
+    elif isinstance(value, dict):
+        test = _string_list(value.get("Test", value.get("test")))
+        numbers = (
+            _number(value.get("Interval", value.get("interval"))),
+            _number(value.get("Timeout", value.get("timeout"))),
+            _number(value.get("Retries", value.get("retries"))),
+            _number(value.get("StartPeriod", value.get("start_period"))),
+            _number(value.get("StartInterval", value.get("start_interval"))),
+        )
+    else:
+        return ()
+    if not test and numbers == (0, 0, 0, 0, 0):
+        return ()
+    return (tuple(test), numbers)
+
+
+def _local_config_signature(local: ContainerConfig | None) -> tuple[Any, ...]:
+    """Fields that change what the image runs. Created and history are ignored."""
+    return (
+        _string_list(local.env if local else None),
+        _string_list(local.cmd if local else None),
+        _string_list(local.entrypoint if local else None),
+        _label_map(local.labels if local else None),
+        _text(local.user if local else None),
+        _text(local.working_dir if local else None),
+        _mapping_signature(local.exposed_ports if local else None),
+        _mapping_signature(local.volumes if local else None),
+        _text(local.stop_signal if local else None),
+        _health_signature(local.healthcheck if local else None),
+    )
+
+
+def _remote_config_signature(remote: object) -> tuple[Any, ...]:
+    remote_config = remote if isinstance(remote, dict) else {}
+
+    def remote_value(*keys: str) -> object:
+        for key in keys:
+            if key in remote_config:
+                return remote_config[key]
+        return None
+
+    return (
+        _string_list(remote_value("Env", "env")),
+        _string_list(remote_value("Cmd", "cmd")),
+        _string_list(remote_value("Entrypoint", "entrypoint")),
+        _label_map(remote_value("Labels", "labels")),
+        _text(remote_value("User", "user")),
+        _text(remote_value("WorkingDir", "working_dir")),
+        _mapping_signature(remote_value("ExposedPorts", "exposed_ports")),
+        _mapping_signature(remote_value("Volumes", "volumes")),
+        _text(remote_value("StopSignal", "stop_signal")),
+        _health_signature(remote_value("Healthcheck", "healthcheck")),
+    )
+
+
+def _layer_ids(value: object, *keys: str) -> list[str] | None:
+    if not isinstance(value, dict):
+        return None
+    layers: object | None = None
+    for key in keys:
+        if key in value:
+            layers = value[key]
+            break
+    if not isinstance(layers, list) or not layers:
+        return None
+    if not all(isinstance(item, str) and item for item in layers):
+        return None
+    return list(layers)
+
+
+def image_content_matches(
+    local: ImageInspectResult,
+    blob: dict[str, Any],
+) -> bool | None:
+    """
+    True when the local image and the registry config blob are the same image.
+
+    None when the local inspect has no rootfs diff ids to compare.
+    Created timestamps and history are not part of the comparison: containerd
+    records the index digest locally while the registry returns the platform
+    manifest digest for the same config.
+    """
+    local_layers = _layer_ids(local.root_fs, "Layers", "layers", "diff_ids")
+    if local_layers is None:
+        return None
+    remote_root = blob.get("rootfs") or blob.get("RootFS")
+    remote_layers = _layer_ids(remote_root, "diff_ids", "DiffIDs", "Layers", "layers")
+    if remote_layers is None or local_layers != remote_layers:
+        return False
+    remote_config = blob.get("config") or blob.get("Config")
+    return _local_config_signature(local.config) == _remote_config_signature(
+        remote_config
+    )
+
+
+async def assess_image_update(
+    spec: str,
+    local_image: ImageInspectResult | None,
+    local_digests: list[str],
+) -> tuple[list[str], bool | None]:
+    """
+    Decide whether the registry tag differs from the local image.
+
+    The digest is enough when it already appears in RepoDigests. Otherwise the
+    platform config blob is compared. None means the registry could not be
+    read, or the local image has no rootfs to compare after a digest miss.
+    A service pinned only by digest (no local inspect) is compared as a string.
+    """
+    logger: Final = logging.getLogger("assess_image_update")
+    delay: Final = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
+    candidates: list[str | None] = list(local_digests) or [None]
+    remote: str | None = None
+    for digest in candidates:
+        try:
+            found = await get_image_remote_digest(spec, digest)
+            if found:
+                remote = found
+                break
+        except Exception:
+            logger.exception(f"Failed to get remote digest for {spec} {digest}")
+        finally:
+            await asyncio.sleep(jitter(delay))
+    if not remote:
+        return [], None
+    if digest_in_repo_digests(remote, local_digests):
+        return [remote], False
+    if local_image is None:
+        if not local_digests:
+            return [remote], None
+        return [remote], True
+    try:
+        blob = await fetch_remote_config_blob(spec, platform_from_image(local_image))
+    except Exception:
+        logger.exception(f"Failed to read image config for {spec}")
+        return [remote], None
+    same = image_content_matches(local_image, blob)
+    if same is None:
+        logger.warning(f"Local image {spec} has no rootfs diff ids to compare")
+        return [remote], None
+    return [remote], not same

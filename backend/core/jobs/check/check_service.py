@@ -5,7 +5,7 @@ from typing import Final
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
-from backend.core.jobs.check.check_util import get_image_remote_digest
+from backend.core.jobs.check.check_util import assess_image_update
 from backend.core.jobs.jobs_results import ContainerJobOutcome, ServiceJobResult
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.db.session import async_session_maker
@@ -102,10 +102,10 @@ async def run_check_service_job(
                 except Exception:
                     logger.exception(f"Failed to pull image {spec_base}")
 
-            # 4. Protection against local-only images (built without registry digests)
-            if not local_digests:
+            if local_image is None and not local_digests:
                 logger.warning(
-                    "Missing repo digests. Presumably a local image or image not found on manager. Exiting."
+                    "Missing local image and digests. Presumably a local image "
+                    "or image not found on manager. Exiting."
                 )
                 _slot(EJobStatus.DONE, result)
                 return result
@@ -142,19 +142,9 @@ async def run_check_service_job(
                 except Exception:
                     logger.exception(f"Failed to pull image {spec_base}")
 
-            # Query remote registry for updated digest
-            remote_digests: list[str] = []
-            for d in local_digests:
-                try:
-                    rd = await get_image_remote_digest(spec_base, d)
-                    if rd:
-                        remote_digests = [rd]
-                        break
-                except Exception:
-                    logger.exception(f"Failed to get remote digest for {spec_base} {d}")
-                finally:
-                    await asyncio.sleep(jitter(delay))
-
+            remote_digests, update_known = await assess_image_update(
+                spec_base, local_image, local_digests
+            )
             result.remote_digests = remote_digests
             logger.info(f"Remote digests is {remote_digests}")
             if local_image is not None:
@@ -164,15 +154,13 @@ async def run_check_service_job(
 
             result_lit: ContainerJobOutcome
             update_available: bool
-            if not remote_digests:
+            if update_known is None:
                 logger.warning(
-                    "No remote digests obtained; skipping availability conclusion"
+                    "No registry comparison; skipping availability conclusion"
                 )
                 result_lit = None
                 update_available = bool(s_db.update_available) if s_db else False
-            elif any(
-                all(rd not in ld for ld in local_digests) for rd in remote_digests
-            ):
+            elif update_known:
                 if s_db and s_db.remote_digests == remote_digests:
                     result_lit = "available(notified)"
                 else:
