@@ -148,7 +148,7 @@ async def test_https_without_tls_verify_uses_default_ssl(
 async def test_https_rejects_ssl_none(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
     client = RuntimeClient("https://daemon:2376", ssl_context=None)  # type: ignore[arg-type]
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         await client._get_session()
 
 

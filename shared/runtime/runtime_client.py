@@ -186,7 +186,8 @@ def load_docker_tls_context(
 
 def _require_connector_ssl(value: object) -> ssl_lib.SSLContext | bool:
     """Value for aiohttp.TCPConnector. ssl=None is deprecated in aiohttp 3.14."""
-    assert isinstance(value, (ssl_lib.SSLContext, bool))
+    if not isinstance(value, (ssl_lib.SSLContext, bool)):
+        raise TypeError("TCPConnector ssl must be an SSLContext or bool")
     return value
 
 
