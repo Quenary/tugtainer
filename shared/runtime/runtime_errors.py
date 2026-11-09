@@ -1,7 +1,7 @@
 from typing import Any
 
 
-class RuntimeError(Exception):
+class RuntimeEngineError(Exception):
     """Base exception for all runtime engine interactions."""
 
     def __init__(
@@ -21,7 +21,7 @@ class RuntimeError(Exception):
         return self.message or super().__str__()
 
 
-class RuntimeClientError(RuntimeError):
+class RuntimeClientError(RuntimeEngineError):
     """HTTP error returned by Docker/Podman engine daemon."""
 
     pass
@@ -39,19 +39,19 @@ class RuntimeConflictError(RuntimeClientError):
     pass
 
 
-class RuntimePreflightError(RuntimeError):
+class RuntimePreflightError(RuntimeEngineError):
     """Preflight validation failed before recreation; operation aborted safely."""
 
     pass
 
 
-class IncompatibleRuntimeError(RuntimeError):
+class IncompatibleRuntimeError(RuntimeEngineError):
     """Runtime engine or API version does not meet supported criteria."""
 
     pass
 
 
-class RuntimeExecError(RuntimeError):
+class RuntimeExecError(RuntimeEngineError):
     """Command executed inside container exited with a non-zero exit code."""
 
     def __init__(self, exit_code: int, stdout: str = "", stderr: str = ""):
@@ -67,7 +67,7 @@ class RuntimeExecError(RuntimeError):
         self.stderr = stderr
 
 
-class StreamTruncatedError(RuntimeError):
+class StreamTruncatedError(RuntimeEngineError):
     """Streaming response disconnected before payload or frame completed."""
 
     pass

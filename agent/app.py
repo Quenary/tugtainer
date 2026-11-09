@@ -17,7 +17,7 @@ from agent.docker_client import RUNTIME_CLIENT
 from shared.runtime import (
     RuntimeClientError,
     RuntimeConflictError,
-    RuntimeError,
+    RuntimeEngineError,
     RuntimeNotFoundError,
 )
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter
@@ -86,9 +86,9 @@ async def runtime_conflict_handler(
 
 
 @app.exception_handler(RuntimeClientError)
-@app.exception_handler(RuntimeError)
+@app.exception_handler(RuntimeEngineError)
 async def runtime_exception_handler(
     request: Request,
-    exc: RuntimeError,
+    exc: RuntimeEngineError,
 ):
     raise HTTPException(status.HTTP_424_FAILED_DEPENDENCY, f"Runtime Exception: {exc}")

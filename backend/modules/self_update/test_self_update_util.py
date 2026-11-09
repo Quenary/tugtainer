@@ -73,7 +73,7 @@ def _container(
 
 
 def _version(api_version: str) -> DockerVersionScheme:
-    return DockerVersionScheme.model_validate({"client": {"api_version": api_version}})
+    return DockerVersionScheme(api_version=api_version)
 
 
 def _state(**kwargs) -> SelfUpdateState:

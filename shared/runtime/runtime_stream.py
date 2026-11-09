@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import struct
@@ -37,7 +38,7 @@ async def demultiplex_stream(
             header = await reader.readexactly(8)
         except aiohttp.ClientPayloadError:
             break
-        except asyncio_incomplete_error():
+        except asyncio.IncompleteReadError:
             # Incomplete header before EOF
             break
 
@@ -63,12 +64,6 @@ async def demultiplex_stream(
                     break
                 yield (1, chunk)
             break
-
-
-def asyncio_incomplete_error():
-    import asyncio
-
-    return (asyncio.IncompleteReadError,)
 
 
 async def read_stream_as_text(

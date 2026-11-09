@@ -1,11 +1,13 @@
-from types import SimpleNamespace
-from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
 
-from shared.runtime.runtime_models import ContainerInspectResult
+from shared.runtime.runtime_models import (
+    ContainerHealthState,
+    ContainerInspectResult,
+    ContainerState,
+)
 from shared.util.wait_for_container_healthy import wait_for_container_healthy
 
 base_module = "shared.util.wait_for_container_healthy"
@@ -16,11 +18,13 @@ def _container(
     health: str | None = None,
     id: str | None = "c1",
 ) -> ContainerInspectResult:
-    state = SimpleNamespace(
-        status=status,
-        health=SimpleNamespace(status=health) if health else None,
+    return ContainerInspectResult(
+        id=id,
+        state=ContainerState(
+            status=status,
+            health=ContainerHealthState(status=health) if health else None,
+        ),
     )
-    return cast(ContainerInspectResult, SimpleNamespace(id=id, state=state))
 
 
 @pytest.mark.asyncio

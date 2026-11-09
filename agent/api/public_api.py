@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from agent.auth import verify_signature
 from agent.docker_client import RUNTIME_CLIENT
-from shared.runtime import RuntimeError
+from shared.runtime import RuntimeEngineError
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -14,9 +14,9 @@ async def health():
     try:
         ok = await RUNTIME_CLIENT.ping()
         if not ok:
-            raise RuntimeError("Runtime ping returned false")
+            raise RuntimeEngineError("Runtime ping returned false")
         return "OK"
-    except (RuntimeError, Exception) as e:
+    except Exception as e:
         message = "Failed to connect to container runtime"
         logging.exception(message)
         raise HTTPException(

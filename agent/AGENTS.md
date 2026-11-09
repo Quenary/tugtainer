@@ -18,7 +18,7 @@ Routers: `container`, `image`, `network`, `common`, `service`, `public`.
 
 Every router depends on `verify_signature`, except `GET /public/health`. `ALLOW_UNAUTHENTICATED_AGENT=true` skips the check. Exec inside a container stays off unless `ALLOW_EXEC=true`.
 
-`asyncio.TimeoutError` becomes HTTP 500. `RuntimeNotFoundError` becomes HTTP 404. `RuntimeConflictError` becomes HTTP 409. `RuntimeClientError` and `RuntimeError` become HTTP 424. `GET /public/health` catches runtime failures and returns 424.
+`asyncio.TimeoutError` becomes HTTP 500. `RuntimeNotFoundError` becomes HTTP 404. `RuntimeConflictError` becomes HTTP 409. `RuntimeClientError` and `RuntimeEngineError` become HTTP 424. `GET /public/health` catches runtime failures and returns 424.
 
 Swarm routes require a manager (`control_available`). Service list queries Docker Swarm service endpoints directly.
 
