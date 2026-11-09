@@ -383,27 +383,48 @@ def test_preflight_allows_image_mount_on_api_1_48():
 
 
 @pytest.mark.parametrize(
-    ("labels", "match"),
+    ("labels", "env"),
     [
-        ({"PODMAN_SYSTEMD_UNIT": "tugtainer.service"}, "PODMAN_SYSTEMD_UNIT"),
-        ({"manager": "systemd"}, "manager=systemd"),
-        ({"io.containers.quadlet.service": "app"}, "quadlet"),
+        ({"PODMAN_SYSTEMD_UNIT": "tugtainer.service"}, None),
+        (None, ["PODMAN_SYSTEMD_UNIT=tugtainer.service"]),
     ],
 )
 def test_preflight_rejects_systemd_managed_container(
-    labels: dict[str, str], match: str
+    labels: dict[str, str] | None,
+    env: list[str] | None,
 ) -> None:
     from shared.runtime.runtime_errors import RuntimePreflightError
 
     container = ContainerInspectResult(
         name="quadlet-container",
-        config=ContainerConfig(image="app:latest", labels=labels),
+        config=ContainerConfig(image="app:latest", labels=labels, env=env),
     )
 
-    with pytest.raises(RuntimePreflightError, match=match):
+    with pytest.raises(RuntimePreflightError, match="PODMAN_SYSTEMD_UNIT"):
         get_container_config(container, image=None, docker_version=None)
     with pytest.raises(RuntimePreflightError, match="podman auto-update"):
         get_container_config(container, image=None, docker_version=None)
+
+
+@pytest.mark.parametrize(
+    ("labels", "env"),
+    [
+        ({"manager": "systemd"}, None),
+        ({"io.containers.quadlet.service": "app"}, None),
+        ({"note": "built by quadlet"}, ["manager=systemd"]),
+    ],
+)
+def test_preflight_allows_unrelated_systemd_labels(
+    labels: dict[str, str],
+    env: list[str] | None,
+) -> None:
+    container = ContainerInspectResult(
+        name="plain-container",
+        config=ContainerConfig(image="app:latest", labels=labels, env=env),
+    )
+
+    res, _ = get_container_config(container, image=None, docker_version=None)
+    assert res.name == "plain-container"
 
 
 def test_preflight_rejects_cidfile():

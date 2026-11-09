@@ -46,7 +46,7 @@ def validate_recreation_preflight(
             f"Container {container.name} uses cidfile, which cannot be preserved "
             "through the engine API."
         )
-    managed = systemd_managed_reason(config.labels)
+    managed = systemd_managed_reason(config.labels, config.env)
     if managed:
         raise RuntimePreflightError(f"Container {container.name} {managed}")
 

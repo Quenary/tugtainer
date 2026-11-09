@@ -324,8 +324,11 @@ async def _launch_helper() -> SelfUpdateState:
 
     data_mount: Final = get_data_mount(container)
     db_path: Final = get_sqlite_db_path()
-    labels = container.config.labels or {} if container.config else {}
-    managed = systemd_managed_reason(labels)
+    container_config = container.config
+    managed = systemd_managed_reason(
+        container_config.labels if container_config else None,
+        container_config.env if container_config else None,
+    )
     if managed:
         raise TugSelfUpdateError(f"Container {name} {managed}")
 

@@ -32,7 +32,7 @@ Upgrading the app container is manual. See [Upgrading to 2.x](../README.md#upgra
 ## Podman and systemd
 
 - For Podman hosts, the helper container runs against the same service socket and user namespace as the application (never switching rootless to rootful).
-- Recreation and self-update are refused before the container is stopped when it is managed by systemd or Quadlet (`PODMAN_SYSTEMD_UNIT`, `manager=systemd`, or a label containing `quadlet`). The container keeps running. Use `podman auto-update` for those units.
+- Recreation and self-update are refused before the container is stopped when it is managed by systemd or Quadlet (label or environment `PODMAN_SYSTEMD_UNIT`). The container keeps running. Use `podman auto-update` for those units.
 
 ## Requirements
 
