@@ -469,7 +469,7 @@ class TestStartSelfUpdate:
             new=AsyncMock(return_value=(host, client, container)),
         )
 
-        with pytest.raises(TugSelfUpdateError, match="systemd/Quadlet"):
+        with pytest.raises(TugSelfUpdateError, match="PODMAN_SYSTEMD_UNIT"):
             await start_self_update()
 
         assert not (work_dir / SELF_UPDATE_PLAN_FILE).exists()

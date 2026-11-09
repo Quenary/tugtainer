@@ -31,6 +31,7 @@ from .map_ulimits_to_arg import map_ulimits_to_arg
 from .normalize_ns_mode import normalize_ns_mode
 from .normalize_path import normalize_path
 from .parse_extra_hosts import parse_extra_hosts
+from .systemd_managed import systemd_managed_reason
 
 
 def validate_recreation_preflight(
@@ -45,6 +46,9 @@ def validate_recreation_preflight(
             f"Container {container.name} uses cidfile, which cannot be preserved "
             "through the engine API."
         )
+    managed = systemd_managed_reason(config.labels)
+    if managed:
+        raise RuntimePreflightError(f"Container {container.name} {managed}")
     if config.systemd_mode:
         raise RuntimePreflightError(
             f"Container {container.name} uses systemd mode, which cannot be preserved "

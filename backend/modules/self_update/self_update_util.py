@@ -21,6 +21,7 @@ from backend.core.container_util.container_config import (
 from backend.core.container_util.get_container_image_spec import (
     get_container_image_spec,
 )
+from backend.core.container_util.systemd_managed import systemd_managed_reason
 from backend.core.jobs.jobs_coordinator import host_job_coordinator
 from backend.core.jobs.update.update_util import get_container_healthcheck_timeout
 from backend.core.notifications_core import send_notification
@@ -296,14 +297,9 @@ async def _launch_helper() -> SelfUpdateState:
     data_mount: Final = get_data_mount(container)
     db_path: Final = get_sqlite_db_path()
     labels = container.config.labels or {} if container.config else {}
-    if (
-        "PODMAN_SYSTEMD_UNIT" in labels
-        or labels.get("manager") == "systemd"
-        or any("quadlet" in k.lower() for k in labels)
-    ):
-        raise TugSelfUpdateError(
-            "Self-update is not supported for systemd/Quadlet-managed containers"
-        )
+    managed = systemd_managed_reason(labels)
+    if managed:
+        raise TugSelfUpdateError(f"Container {name} {managed}")
 
     image_spec: Final = get_container_image_spec(container)
     if not image_spec or not container.image:

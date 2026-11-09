@@ -382,6 +382,30 @@ def test_preflight_allows_image_mount_on_api_1_48():
     assert res.name == "image-mount-container"
 
 
+@pytest.mark.parametrize(
+    ("labels", "match"),
+    [
+        ({"PODMAN_SYSTEMD_UNIT": "tugtainer.service"}, "PODMAN_SYSTEMD_UNIT"),
+        ({"manager": "systemd"}, "manager=systemd"),
+        ({"io.containers.quadlet.service": "app"}, "quadlet"),
+    ],
+)
+def test_preflight_rejects_systemd_managed_container(
+    labels: dict[str, str], match: str
+) -> None:
+    from shared.runtime.runtime_errors import RuntimePreflightError
+
+    container = ContainerInspectResult(
+        name="quadlet-container",
+        config=ContainerConfig(image="app:latest", labels=labels),
+    )
+
+    with pytest.raises(RuntimePreflightError, match=match):
+        get_container_config(container, image=None, docker_version=None)
+    with pytest.raises(RuntimePreflightError, match="podman auto-update"):
+        get_container_config(container, image=None, docker_version=None)
+
+
 def test_preflight_rejects_cidfile():
     from shared.runtime.runtime_errors import RuntimePreflightError
 
