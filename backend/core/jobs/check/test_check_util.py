@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
@@ -8,7 +9,9 @@ from pytest_mock import MockerFixture
 
 from backend.core.jobs.check.check_util import (
     ImagePlatform,
+    RegistryBasicAuthError,
     _docker_registry_auth,
+    _registry_get_json,
     assess_image_update,
     filter_containers_by_check_enabled,
     get_image_remote_digest,
@@ -304,6 +307,94 @@ async def test_get_image_remote_digest_bearer_auth_flow(
     auth_header = session.head.call_args_list[1].kwargs["headers"]["Authorization"]
     assert auth_header == "Bearer tok"
     assert session.get.call_args.kwargs["allow_redirects"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_image_remote_digest_identity_token_basic_challenge(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    head_resp = _mock_head_response(
+        401,
+        {"WWW-Authenticate": 'Basic realm="Registry Realm"'},
+    )
+    session = MagicMock()
+    session.head = MagicMock(return_value=head_resp)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+    mocker.patch(f"{module_path}.aiohttp.ClientSession", return_value=session)
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: "refresh-token",
+        ),
+    )
+    exception = mocker.patch.object(
+        logging.getLogger("get_image_remote_digest"), "exception"
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = await get_image_remote_digest("ghcr.io/example/app:1")
+
+    assert result is None
+    assert "identitytoken" in caplog.text
+    assert "Basic" in caplog.text
+    head_resp.raise_for_status.assert_not_called()
+    exception.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_registry_get_json_identity_token_basic_challenge_is_unknown(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    resp = MagicMock()
+    resp.status = 401
+    resp.headers = {"WWW-Authenticate": 'Basic realm="Registry Realm"'}
+    resp.raise_for_status = MagicMock()
+    resp.__aenter__ = AsyncMock(return_value=resp)
+    resp.__aexit__ = AsyncMock(return_value=False)
+    session = MagicMock()
+    session.get = MagicMock(return_value=resp)
+
+    with caplog.at_level(logging.WARNING):
+        with pytest.raises(RegistryBasicAuthError):
+            await _registry_get_json(
+                session,
+                "https://ghcr.io/v2/example/app/manifests/1",
+                {},
+                "example/app",
+                None,
+                True,
+                False,
+                "refresh-token",
+            )
+
+    assert caplog.text.count("identitytoken") == 1
+    resp.raise_for_status.assert_not_called()
+
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(side_effect=RegistryBasicAuthError("ghcr.io")),
+    )
+    exception = mocker.spy(logging.getLogger("assess_image_update"), "exception")
+    local = _image(repo_digests=["example/app@sha256:index"], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update(
+        "ghcr.io/example/app:1", local, local.repo_digests or []
+    )
+
+    assert remote == ["sha256:manifest"]
+    assert update is None
+    exception.assert_not_called()
 
 
 @pytest.mark.asyncio

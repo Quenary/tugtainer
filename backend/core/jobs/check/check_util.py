@@ -146,6 +146,9 @@ async def get_image_remote_digest(
                     logger.info("Fallback to Basic auth")
                     headers["Authorization"] = f"Basic {basic_token}"
                     auth_applied = True
+                elif identity_token and _basic_auth_challenge(auth_header):
+                    _warn_identity_token_basic(logger, registry)
+                    return None
 
                 if auth_applied:
                     async with session.head(url, headers=headers, ssl=ssl) as resp2:
@@ -175,6 +178,23 @@ async def get_image_remote_digest(
             raise last_error
 
         return None
+
+
+class RegistryBasicAuthError(Exception):
+    """An identitytoken cannot answer a Basic authentication challenge."""
+
+
+def _basic_auth_challenge(auth_header: str) -> bool:
+    scheme = auth_header.strip().split(" ", 1)[0].casefold()
+    return scheme == "basic"
+
+
+def _warn_identity_token_basic(logger: logging.Logger, registry: str) -> None:
+    logger.warning(
+        "Registry %s requires Basic authentication, but config.json only has "
+        "an identitytoken. Basic-auth registries need username/password (auth).",
+        registry,
+    )
 
 
 def normalize_registry_digest(value: str | None) -> str | None:
@@ -629,6 +649,10 @@ async def _registry_get_json(
             attempt["Authorization"] = f"Bearer {bearer_token}"
         elif basic_token:
             attempt["Authorization"] = f"Basic {basic_token}"
+        elif identity_token and _basic_auth_challenge(auth_header):
+            registry = urlparse(url).hostname or url
+            _warn_identity_token_basic(logger, registry)
+            raise RegistryBasicAuthError(registry)
         else:
             resp.raise_for_status()
 
@@ -941,6 +965,8 @@ async def assess_image_update(
         return [remote], True
     try:
         blob = await fetch_remote_config_blob(spec, platform_from_image(local_image))
+    except RegistryBasicAuthError:
+        return [remote], None
     except Exception:
         logger.exception(f"Failed to read image config for {spec}")
         return [remote], None
