@@ -1,9 +1,13 @@
 import re
 from typing import Any
 
+from packaging import version
+from packaging.version import Version
+
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
+    CreateMount,
     PortMapping,
 )
 
@@ -37,6 +41,8 @@ _UNSUPPORTED_FIELDS: tuple[str, ...] = (
 
 def build_create_request(
     body: CreateContainerRequestBodySchema,
+    *,
+    api_version: str | None = None,
 ) -> tuple[dict[str, Any], str | None]:
     """Map a CLI-shaped create schema to an engine API create body and name."""
     _reject_unsupported(body)
@@ -67,7 +73,7 @@ def build_create_request(
         payload["OpenStdin"] = True
         payload["AttachStdin"] = True
 
-    host = _host_config(body)
+    host = _host_config(body, api_version=api_version)
     if host:
         payload["HostConfig"] = host
     networking = _networking_config(body)
@@ -169,11 +175,15 @@ def _healthcheck(body: CreateContainerRequestBodySchema) -> dict[str, Any] | Non
     return result or None
 
 
-def _host_config(body: CreateContainerRequestBodySchema) -> dict[str, Any]:
+def _host_config(
+    body: CreateContainerRequestBodySchema,
+    *,
+    api_version: str | None,
+) -> dict[str, Any]:
     host: dict[str, Any] = {}
-    binds = _binds(body.volumes)
+    binds = _all_binds(body)
     _set(host, "Binds", binds)
-    mounts = _mounts(body.mounts)
+    mounts = _mounts(body.mounts, api_version)
     _set(host, "Mounts", mounts)
     bindings = _port_bindings(body.publish)
     if bindings:
@@ -299,6 +309,14 @@ def _endpoint(body: CreateContainerRequestBodySchema) -> dict[str, Any]:
     return endpoint
 
 
+def _all_binds(body: CreateContainerRequestBodySchema) -> list[str] | None:
+    binds = list(body.binds or [])
+    for item in _binds(body.volumes) or []:
+        if item not in binds:
+            binds.append(item)
+    return binds or None
+
+
 def _binds(
     volumes: list[tuple[str | Any, str | Any] | tuple[str | Any, str | Any, str]]
     | None,
@@ -315,35 +333,122 @@ def _binds(
     return binds
 
 
-def _mounts(mounts: list[list[str]] | None) -> list[dict[str, Any]] | None:
+_BIND_OPTION_KEYS: dict[str, str] = {
+    "propagation": "Propagation",
+    "nonrecursive": "NonRecursive",
+    "createmountpoint": "CreateMountpoint",
+    "readonlynonrecursive": "ReadOnlyNonRecursive",
+    "readonlyforcerecursive": "ReadOnlyForceRecursive",
+}
+_VOLUME_OPTION_KEYS: dict[str, str] = {
+    "nocopy": "NoCopy",
+    "labels": "Labels",
+    "driverconfig": "DriverConfig",
+    "subpath": "Subpath",
+}
+_DRIVER_CONFIG_KEYS: dict[str, str] = {"name": "Name", "options": "Options"}
+_TMPFS_OPTION_KEYS: dict[str, str] = {
+    "sizebytes": "SizeBytes",
+    "mode": "Mode",
+    "options": "Options",
+}
+_IMAGE_OPTION_KEYS: dict[str, str] = {"subpath": "Subpath"}
+
+
+def _parse_api(api_version: str | None) -> Version | None:
+    if not api_version:
+        return None
+    text = api_version.removeprefix("/v").removeprefix("v")
+    return version.parse(text)
+
+
+def _require_api(api: Version | None, minimum: str, what: str) -> None:
+    parsed = version.parse(minimum)
+    if api is not None and api >= parsed:
+        return
+    got = str(api) if api is not None else "unknown"
+    raise RuntimePreflightError(
+        f"{what} requires Docker API >= {minimum}, but the target API is {got}"
+    )
+
+
+def _canonical_key(key: str, mapping: dict[str, str], label: str) -> str:
+    if key in mapping.values():
+        return key
+    canonical = mapping.get(key.lower())
+    if canonical is None:
+        raise RuntimePreflightError(f"Cannot represent {label}.{key}")
+    return canonical
+
+
+def _normalize_options(
+    options: dict[str, Any] | None,
+    mapping: dict[str, str],
+    label: str,
+) -> dict[str, Any] | None:
+    if not options:
+        return None
+    result: dict[str, Any] = {}
+    for key, value in options.items():
+        result[_canonical_key(str(key), mapping, label)] = value
+    return result
+
+
+def _mounts(
+    mounts: list[CreateMount] | None,
+    api_version: str | None,
+) -> list[dict[str, Any]] | None:
     if not mounts:
         return None
+    api = _parse_api(api_version)
     result: list[dict[str, Any]] = []
-    for parts in mounts:
-        mount: dict[str, Any] = {}
-        for part in parts:
-            if part == "readonly":
-                mount["ReadOnly"] = True
-                continue
-            if "=" not in part:
-                continue
-            key, value = part.split("=", 1)
-            key = key.lower()
-            if key == "type":
-                mount["Type"] = value
-            elif key in {"dst", "destination", "target"}:
-                mount["Target"] = value
-            elif key in {"source", "src"}:
-                mount["Source"] = value
-            elif key == "consistency":
-                mount["Consistency"] = value
-            elif key == "bind-propagation":
-                mount.setdefault("BindOptions", {})["Propagation"] = value
-            elif key == "volume-driver":
-                mount.setdefault("VolumeOptions", {})["DriverConfig"] = {"Name": value}
-        if mount:
-            result.append(mount)
-    return result or None
+    for mount in mounts:
+        result.append(_engine_mount(mount, api))
+    return result
+
+
+def _engine_mount(mount: CreateMount, api: Version | None) -> dict[str, Any]:
+    if mount.type == "image" or mount.image_options:
+        _require_api(api, "1.48", "Image mounts")
+    engine: dict[str, Any] = {"Type": mount.type, "Target": mount.target}
+    _set(engine, "Source", mount.source)
+    if mount.read_only:
+        engine["ReadOnly"] = True
+    _set(engine, "Consistency", mount.consistency)
+    bind = _normalize_options(mount.bind_options, _BIND_OPTION_KEYS, "BindOptions")
+    if bind:
+        for key in ("ReadOnlyNonRecursive", "ReadOnlyForceRecursive"):
+            if key in bind:
+                _require_api(api, "1.44", f"BindOptions.{key}")
+        engine["BindOptions"] = bind
+    volume = _normalize_options(
+        mount.volume_options, _VOLUME_OPTION_KEYS, "VolumeOptions"
+    )
+    if volume:
+        if "DriverConfig" in volume:
+            if not isinstance(volume["DriverConfig"], dict):
+                raise RuntimePreflightError(
+                    "Cannot represent VolumeOptions.DriverConfig"
+                )
+            volume["DriverConfig"] = _normalize_options(
+                volume["DriverConfig"],
+                _DRIVER_CONFIG_KEYS,
+                "VolumeOptions.DriverConfig",
+            )
+        if "Subpath" in volume:
+            _require_api(api, "1.45", "VolumeOptions.Subpath")
+        engine["VolumeOptions"] = volume
+    tmpfs = _normalize_options(mount.tmpfs_options, _TMPFS_OPTION_KEYS, "TmpfsOptions")
+    if tmpfs:
+        if "Options" in tmpfs:
+            if not isinstance(tmpfs["Options"], list):
+                raise RuntimePreflightError("Cannot represent TmpfsOptions.Options")
+            _require_api(api, "1.46", "TmpfsOptions.Options")
+        engine["TmpfsOptions"] = tmpfs
+    image = _normalize_options(mount.image_options, _IMAGE_OPTION_KEYS, "ImageOptions")
+    if image:
+        engine["ImageOptions"] = image
+    return engine
 
 
 def _port_bindings(

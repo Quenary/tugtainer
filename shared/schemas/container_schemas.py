@@ -1,10 +1,26 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import (
+    Any,
     Literal,
 )
 
 from pydantic import BaseModel, Field
+
+
+class CreateMount(BaseModel):
+    """Engine API mount preserved on recreate."""
+
+    type: str
+    target: str
+    source: str | None = None
+    read_only: bool | None = None
+    consistency: str | None = None
+    bind_options: dict[str, Any] | None = None
+    volume_options: dict[str, Any] | None = None
+    tmpfs_options: dict[str, Any] | None = None
+    image_options: dict[str, Any] | None = None
+
 
 PortMapping = int | str | tuple[int | str, ...]
 
@@ -85,7 +101,8 @@ class CreateContainerRequestBodySchema(BaseModel):
     memory_reservation: int | str | None = None
     memory_swap: int | str | None = None
     memory_swappiness: int | None = None
-    mounts: list[list[str]] | None = None
+    mounts: list[CreateMount] | None = None
+    binds: list[str] | None = None
     name: str | None = None
     networks: list[str] | None = None
     network_aliases: list[str] | None = None

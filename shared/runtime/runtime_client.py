@@ -72,6 +72,7 @@ def split_image_ref(spec: str) -> tuple[str, str | None, str | None]:
 def _create_payload(
     payload: dict[str, Any] | BaseModel,
     name: str | None,
+    api_version: str | None = None,
 ) -> tuple[dict[str, Any], str | None, str | None]:
     body: CreateContainerRequestBodySchema | None = None
     if isinstance(payload, CreateContainerRequestBodySchema):
@@ -79,7 +80,7 @@ def _create_payload(
     elif isinstance(payload, dict) and "image" in payload and "Image" not in payload:
         body = CreateContainerRequestBodySchema.model_validate(payload)
     if body is not None:
-        data, schema_name = build_create_request(body)
+        data, schema_name = build_create_request(body, api_version=api_version)
         return data, name or schema_name, body.platform
     if isinstance(payload, BaseModel):
         return payload.model_dump(exclude_unset=True, by_alias=True), name, None
@@ -385,7 +386,11 @@ class RuntimeClient:
     ) -> ContainerInspectResult:
         if not self._negotiated_api_prefix:
             await self.get_version()
-        data, name, platform = _create_payload(payload, name)
+        data, name, platform = _create_payload(
+            payload,
+            name,
+            api_version=self._negotiated_api_prefix.removeprefix("/v"),
+        )
         params: dict[str, Any] = {}
         if name:
             params["name"] = name

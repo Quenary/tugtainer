@@ -9,6 +9,7 @@ from shared.runtime.runtime_models import (
     ImageInspectResult,
     Mount,
 )
+from shared.schemas.container_schemas import CreateMount
 
 
 # Fields mapping generic test case
@@ -286,9 +287,14 @@ def test_binds_recreated_as_volumes():
 
     res, _ = get_container_config(container, image=None, docker_version=None)
 
-    assert res.volumes == [("/srv/app", "/config", "ro")]
+    assert res.binds == ["/srv/app:/config:ro"]
     assert res.mounts == [
-        ["type=bind", "dst=/cache", "bind-propagation=rprivate", "source=/srv/cache"]
+        CreateMount(
+            type="bind",
+            target="/cache",
+            source="/srv/cache",
+            bind_options={"Propagation": "rprivate"},
+        )
     ]
 
 
@@ -522,9 +528,9 @@ def test_anonymous_volume_identity_preserved():
     )
     res, _ = get_container_config(container, image=None, docker_version=None)
     assert res.mounts == [
-        [
-            "type=volume",
-            "dst=/var/lib/postgresql/data",
-            "source=a1b2c3d4e5f60000000000000000000000000000000000000000000000000000",
-        ]
+        CreateMount(
+            type="volume",
+            target="/var/lib/postgresql/data",
+            source="a1b2c3d4e5f60000000000000000000000000000000000000000000000000000",
+        )
     ]

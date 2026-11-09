@@ -22,13 +22,12 @@ from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
     get_container_restart_policy_str,
 )
-from .map_binds_to_volumes import map_binds_to_volumes
 from .map_device_requests_to_gpus import map_device_requests_to_gpus
 from .map_devices_to_list import map_devices_to_list
 from .map_env_to_dict import map_env_to_dict
 from .map_healthcheck_to_kwargs import map_healthcheck_to_kwargs
 from .map_log_config_to_kwargs import map_log_config_to_kwargs
-from .map_mounts_to_arg import map_mounts_to_arg
+from .map_mounts_to_arg import map_host_mounts
 from .map_tmpfs_dict_to_list import map_tmpfs_dict_to_list
 from .map_ulimits_to_arg import map_ulimits_to_arg
 from .normalize_ns_mode import normalize_ns_mode
@@ -68,13 +67,15 @@ def validate_recreation_preflight(
         return
 
     # Check image mounts (requires API >= 1.48)
-    if container.mounts:
-        for m in container.mounts:
-            if m.type == "image" and api_ver < version.parse("1.48"):
-                raise RuntimePreflightError(
-                    f"Container {container.name} uses image mounts which require Docker API >= 1.48, "
-                    f"but target daemon negotiated {api_ver}."
-                )
+    inspect_mounts = list(container.mounts or [])
+    if host_config.mounts:
+        inspect_mounts.extend(host_config.mounts)
+    for m in inspect_mounts:
+        if m.type == "image" and api_ver < version.parse("1.48"):
+            raise RuntimePreflightError(
+                f"Container {container.name} uses image mounts which require Docker API >= 1.48, "
+                f"but target daemon negotiated {api_ver}."
+            )
 
     # Check network gateway priority (requires API >= 1.48)
     if container.network_settings and container.network_settings.networks:
@@ -165,7 +166,9 @@ def get_container_config(
     if image and image.config and image.config.working_dir != config.working_dir:
         workdir = normalize_path(config.working_dir)
 
-    VOLUMES, MOUNTS = map_binds_to_volumes(host_config.binds, container.mounts)
+    BINDS, MOUNTS = map_host_mounts(
+        host_config.mounts, host_config.binds, container.mounts
+    )
 
     # Drop labels inherited unchanged from the old image
     LABELS = subtract_dict_items(
@@ -225,7 +228,8 @@ def get_container_config(
         "memory_reservation": host_config.memory_reservation,
         "memory_swap": host_config.memory_swap,
         "memory_swappiness": host_config.memory_swappiness,
-        "mounts": map_mounts_to_arg(MOUNTS),
+        "binds": BINDS or None,
+        "mounts": MOUNTS or None,
         "oom_kill": (
             None
             if host_config.oom_kill_disable is None
@@ -252,7 +256,6 @@ def get_container_config(
         "user": config.user,
         "userns": normalize_ns_mode(host_config.userns_mode),
         "uts": normalize_ns_mode(host_config.uts_mode),
-        "volumes": VOLUMES,
         "volume_driver": host_config.volume_driver,
         "volumes_from": host_config.volumes_from,
         "workdir": workdir,

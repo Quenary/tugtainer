@@ -49,6 +49,9 @@ class Mount(RuntimeBaseModel):
     tmpfs_options: dict[str, Any] | None = Field(
         default=None, validation_alias=AliasChoices("TmpfsOptions", "tmpfs_options")
     )
+    image_options: dict[str, Any] | None = Field(
+        default=None, validation_alias=AliasChoices("ImageOptions", "image_options")
+    )
     name: str | None = Field(
         default=None, validation_alias=AliasChoices("Name", "name")
     )

@@ -68,7 +68,11 @@ def test_create_payload_top_level_fields(kwargs: dict, expected: dict) -> None:
             {"Binds": ["/src:/dst:ro"]},
         ),
         (
-            {"mounts": [["type=tmpfs", "dst=/run", "readonly"]]},
+            {
+                "mounts": [
+                    {"type": "tmpfs", "target": "/run", "read_only": True},
+                ]
+            },
             {"Mounts": [{"Type": "tmpfs", "Target": "/run", "ReadOnly": True}]},
         ),
         (
@@ -259,6 +263,165 @@ def test_create_payload_rejects_health_cmd() -> None:
 def test_create_payload_rejects_negative_health_duration() -> None:
     with pytest.raises(RuntimePreflightError, match="health_interval"):
         build_create_request(_body(health_interval=-1))
+
+
+def _mount(**kwargs: object) -> dict[str, object]:
+    return {"type": "bind", "target": "/dst", "source": "/src", **kwargs}
+
+
+@pytest.mark.parametrize(
+    ("mount", "api_version", "match"),
+    [
+        (
+            _mount(bind_options={"ReadOnlyNonRecursive": True}),
+            "1.43",
+            "BindOptions.ReadOnlyNonRecursive",
+        ),
+        (
+            _mount(bind_options={"ReadOnlyForceRecursive": True}),
+            None,
+            "BindOptions.ReadOnlyForceRecursive",
+        ),
+        (
+            {
+                "type": "volume",
+                "target": "/data",
+                "source": "data",
+                "volume_options": {"Subpath": "pg"},
+            },
+            "1.44",
+            "VolumeOptions.Subpath",
+        ),
+        (
+            {
+                "type": "tmpfs",
+                "target": "/run",
+                "tmpfs_options": {"Options": ["noexec"]},
+            },
+            "1.45",
+            "TmpfsOptions.Options",
+        ),
+        (
+            {"type": "image", "target": "/opt", "source": "app:1"},
+            "1.47",
+            "Image mounts",
+        ),
+        (
+            {
+                "type": "image",
+                "target": "/opt",
+                "source": "app:1",
+                "image_options": {"Subpath": "bin"},
+            },
+            None,
+            "Image mounts",
+        ),
+    ],
+)
+def test_create_payload_rejects_mounts_below_their_api_gate(
+    mount: dict, api_version: str | None, match: str
+) -> None:
+    with pytest.raises(RuntimePreflightError, match=match):
+        build_create_request(_body(mounts=[mount]), api_version=api_version)
+
+
+def test_create_payload_preserves_mount_options_at_their_api_gate() -> None:
+    payload, _ = build_create_request(
+        _body(
+            binds=["/srv:/config:ro,z"],
+            mounts=[
+                {
+                    "type": "bind",
+                    "target": "/dst",
+                    "source": "/src",
+                    "consistency": "cached",
+                    "read_only": True,
+                    "bind_options": {
+                        "Propagation": "rshared",
+                        "NonRecursive": True,
+                        "CreateMountpoint": True,
+                        "ReadOnlyNonRecursive": True,
+                        "ReadOnlyForceRecursive": False,
+                    },
+                },
+                {
+                    "type": "volume",
+                    "target": "/data",
+                    "source": "data",
+                    "volume_options": {
+                        "NoCopy": True,
+                        "Labels": {"backup": "daily"},
+                        "DriverConfig": {"Name": "rexray", "Options": {"size": "10"}},
+                        "Subpath": "pg",
+                    },
+                },
+                {
+                    "type": "tmpfs",
+                    "target": "/run",
+                    "tmpfs_options": {
+                        "SizeBytes": 4096,
+                        "Mode": 493,
+                        "Options": ["noexec"],
+                    },
+                },
+                {
+                    "type": "image",
+                    "target": "/opt",
+                    "source": "app:1",
+                    "image_options": {"Subpath": "bin"},
+                },
+            ],
+        ),
+        api_version="1.48",
+    )
+    host = _host(payload)
+    assert host["Binds"] == ["/srv:/config:ro,z"]
+    assert host["Mounts"] == [
+        {
+            "Type": "bind",
+            "Target": "/dst",
+            "Source": "/src",
+            "ReadOnly": True,
+            "Consistency": "cached",
+            "BindOptions": {
+                "Propagation": "rshared",
+                "NonRecursive": True,
+                "CreateMountpoint": True,
+                "ReadOnlyNonRecursive": True,
+                "ReadOnlyForceRecursive": False,
+            },
+        },
+        {
+            "Type": "volume",
+            "Target": "/data",
+            "Source": "data",
+            "VolumeOptions": {
+                "NoCopy": True,
+                "Labels": {"backup": "daily"},
+                "DriverConfig": {"Name": "rexray", "Options": {"size": "10"}},
+                "Subpath": "pg",
+            },
+        },
+        {
+            "Type": "tmpfs",
+            "Target": "/run",
+            "TmpfsOptions": {"SizeBytes": 4096, "Mode": 493, "Options": ["noexec"]},
+        },
+        {
+            "Type": "image",
+            "Target": "/opt",
+            "Source": "app:1",
+            "ImageOptions": {"Subpath": "bin"},
+        },
+    ]
+
+
+def test_create_payload_rejects_unknown_mount_option() -> None:
+    with pytest.raises(RuntimePreflightError, match="BindOptions.Foo"):
+        build_create_request(
+            _body(mounts=[_mount(bind_options={"Foo": True})]),
+            api_version="1.48",
+        )
 
 
 def test_create_payload_rejects_non_string_health_test() -> None:
