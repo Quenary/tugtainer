@@ -168,6 +168,69 @@ async def test_preflight_failure_leaves_container_and_dependent(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "exc",
+    [
+        ValueError("invalid literal for int() with base 10: 'nope'"),
+        TypeError("restart count must be a string"),
+    ],
+)
+async def test_config_prepare_error_leaves_container_and_dependent(
+    mocker: MockerFixture,
+    exc: Exception,
+) -> None:
+    web = _running("web")
+    db = _running("db")
+    client = _client()
+    rollback = CreateContainerRequestBodySchema(image="nginx:old", name="web")
+    merged = CreateContainerRequestBodySchema(image="nginx:new", name="web")
+
+    def build(body, *, capabilities=None):
+        assert capabilities is not None
+        if body is merged:
+            raise exc
+        return {}, None
+
+    mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
+    mocker.patch(f"{base_module}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{base_module}.Config.ALLOW_HOOKS", False)
+    mocker.patch(
+        f"{base_module}.get_container_config",
+        return_value=(rollback, []),
+    )
+    mocker.patch(
+        f"{base_module}.diff_container_config_with_image",
+        return_value=merged,
+    )
+    mocker.patch(f"{base_module}.build_create_request", side_effect=build)
+    mocker.patch(
+        f"{base_module}.update_containers_data_after_execution",
+        new=AsyncMock(),
+    )
+
+    plan = UpdateJobPlan(
+        to_update={"web"},
+        affected={"db"},
+        order=["web", "db"],
+        healthcheck_timeouts={"web": 1, "db": 1},
+    )
+    results = await execute_update_job(
+        client,
+        SimpleNamespace(id=1, name="host"),  # type: ignore[arg-type]
+        [web, db],  # type: ignore[list-item]
+        plan,
+        docker_version=RuntimeVersion(negotiated_api="1.44"),
+    )
+
+    client.container.stop.assert_not_called()
+    client.container.remove.assert_not_called()
+    client.container.start.assert_not_called()
+    web_result = next(result for result in results if result.name == "web")
+    assert web_result.result == "failed"
+    assert web_result.error == str(exc)
+
+
+@pytest.mark.asyncio
 async def test_protocol_mismatch_does_not_stop_or_remove() -> None:
     web = _running("web")
     client = _client()

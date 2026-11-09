@@ -36,7 +36,6 @@ from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.jitter import jitter
 from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.container_create_payload import build_create_request
-from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
     ImageInspectResult,
@@ -169,9 +168,11 @@ async def execute_update_job(
             except Exception as e:
                 logger.exception(f"Failed to get config for {item.name}")
                 item.errors.append(e)
-                if isinstance(e, RuntimePreflightError):
-                    item.result = "failed"
-                    item.error = str(e)
+                # Any failure while preparing the recreate config keeps the
+                # container out of the stop loop, whatever the exception type.
+                item.prepare_failed = True
+                item.result = "failed"
+                item.error = str(e)
 
             await asyncio.sleep(jitter(delay))
 
@@ -185,20 +186,17 @@ async def execute_update_job(
             and not item.errors
         )
 
-    def _preflight_failed(item: UpdateJobPlanItem) -> bool:
-        return any(isinstance(error, RuntimePreflightError) for error in item.errors)
-
     proceeding = [
         other
         for other in items
-        if other.name in plan.to_update and not _preflight_failed(other)
+        if other.name in plan.to_update and not other.prepare_failed
     ]
 
     # Stopping containers in order
     # from most dependent to most dependable
     for name in reversed(plan.order):
         item = items_map.get(name)
-        if item and _preflight_failed(item):
+        if item and item.prepare_failed:
             logger.warning(
                 f"Skipping stop of {name} because recreate config was rejected"
             )
@@ -278,7 +276,7 @@ async def execute_update_job(
             if name in plan.to_update:
                 if not _can_update(item):
                     logger.warning(f"Cannot update {item.name} due to prior errors")
-                    if not _preflight_failed(item):
+                    if not item.prepare_failed:
                         try:
                             await _attempt_start_with_health(item)
                         except Exception as e:

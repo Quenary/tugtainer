@@ -36,6 +36,7 @@ class UpdateJobPlanItem:
     remote_image: ImageInspectResult | None = None
     result: ContainerJobOutcome | None = None
     errors: list[Exception] = field(default_factory=list)
+    prepare_failed: bool = False
 
     @property
     def name(self) -> str:
