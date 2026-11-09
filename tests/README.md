@@ -86,3 +86,14 @@ upgrading.
 - The Playwright runner mounts `/var/run/docker.sock` so tests can create
   containers via `dockerode` on the same engine the app reaches through
   socket-proxy.
+- `fixtures/outdated-alpine-extra-network.fixture.ts` starts an outdated
+  container with the host and network settings recreate has to keep: static
+  addresses, ports, health, resources, mounts, and a read-only bind.
+  `shared/util/container-config.util.ts` `pickPreservedConfig` compares those
+  fields before and after an update. Image id, runtime state, image labels,
+  and addresses assigned by Docker are not part of that comparison.
+- Registry scenarios push to `registry:2` on `localhost:5000`. The daemon
+  pulls that name from the published port. The app container forwards its own
+  `localhost:5000` to the registry service so digest checks use the same name.
+  Those tests set `INSECURE_REGISTRIES` to `localhost:5000` and leave it there
+  for the rest of the run.

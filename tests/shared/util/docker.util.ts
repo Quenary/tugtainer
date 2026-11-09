@@ -31,6 +31,7 @@ export async function pullImage(docker: Docker, image: string): Promise<void> {
 export async function removeContainerIfExists(
   docker: Docker,
   name: string,
+  options?: { removeVolumes?: boolean },
 ): Promise<void> {
   try {
     const container = docker.getContainer(name);
@@ -40,7 +41,7 @@ export async function removeContainerIfExists(
     } catch {
       // already stopped
     }
-    await container.remove({ force: true });
+    await container.remove({ force: true, v: options?.removeVolumes ?? false });
   } catch (err) {
     const statusCode = (err as { statusCode?: number }).statusCode;
     if (statusCode !== 404) {
@@ -97,13 +98,39 @@ export async function connectContainerToNetwork(
   docker: Docker,
   networkName: string,
   containerName: string,
-  options?: { aliases?: string[]; links?: string[] },
+  options?: { aliases?: string[]; links?: string[]; ipv4Address?: string },
 ): Promise<void> {
   await docker.getNetwork(networkName).connect({
     Container: containerName,
     EndpointConfig: {
       Aliases: options?.aliases,
       Links: options?.links,
+      IPAMConfig: options?.ipv4Address
+        ? { IPv4Address: options.ipv4Address }
+        : undefined,
     },
   });
+}
+
+export async function execInContainer(
+  docker: Docker,
+  name: string,
+  cmd: string[],
+): Promise<string> {
+  const exec = await docker.getContainer(name).exec({
+    Cmd: cmd,
+    AttachStdout: true,
+    AttachStderr: true,
+    User: 'root',
+  });
+  const stream = await exec.start({ hijack: true, stdin: false });
+  const chunks: Buffer[] = [];
+  await new Promise<void>((resolve, reject) => {
+    stream.on('data', (chunk: Buffer) => {
+      chunks.push(Buffer.from(chunk));
+    });
+    stream.on('end', () => resolve());
+    stream.on('error', reject);
+  });
+  return Buffer.concat(chunks).toString('utf8');
 }

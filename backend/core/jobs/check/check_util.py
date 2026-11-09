@@ -174,14 +174,25 @@ async def get_image_remote_digest(
 
 def parse_image_spec(spec: str) -> tuple[str, str, str]:
     """
-    Convert spec to registry, repo, tag
-    """
-    tag = "latest"
+    Convert spec to registry, repo, and manifest reference.
 
-    if ":" in spec and "/" in spec and spec.rfind(":") > spec.rfind("/"):
-        spec, tag = spec.rsplit(":", 1)
-    elif ":" in spec and spec.count(":") == 1 and "/" not in spec:
-        spec, tag = spec.rsplit(":", 1)
+    A digest (`repo@sha256:…`) is the manifest reference. A tag in front of
+    it is ignored. A registry port (`localhost:5000/app:tag`) is not a tag:
+    the tag is the colon after the last slash.
+    """
+    digest: str | None = None
+    if "@" in spec:
+        spec, digest = spec.rsplit("@", 1)
+
+    name_and_tag = _split_tag(spec)
+    if name_and_tag is not None:
+        spec = name_and_tag[0]
+    if digest is not None:
+        tag = digest
+    elif name_and_tag is not None:
+        tag = name_and_tag[1]
+    else:
+        tag = "latest"
 
     parts = spec.split("/")
 
@@ -201,6 +212,17 @@ def parse_image_spec(spec: str) -> tuple[str, str, str]:
         repo = f"library/{repo}"
 
     return registry, repo, tag
+
+
+def _split_tag(spec: str) -> tuple[str, str] | None:
+    """Split `name:tag` without treating a registry port as the tag."""
+    if ":" in spec and "/" in spec and spec.rfind(":") > spec.rfind("/"):
+        name, tag = spec.rsplit(":", 1)
+        return name, tag
+    if ":" in spec and spec.count(":") == 1 and "/" not in spec:
+        name, tag = spec.rsplit(":", 1)
+        return name, tag
+    return None
 
 
 def is_insecure_registry(

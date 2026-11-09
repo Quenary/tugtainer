@@ -49,6 +49,36 @@ module_path = "backend.core.jobs.check.check_util"
             "dev",
         ),
         (
+            "localhost:5000/org/app:1",
+            "localhost:5000",
+            "org/app",
+            "1",
+        ),
+        (
+            "localhost:5000/org/app@sha256:abc",
+            "localhost:5000",
+            "org/app",
+            "sha256:abc",
+        ),
+        (
+            "localhost:5000/org/app:1@sha256:abc",
+            "localhost:5000",
+            "org/app",
+            "sha256:abc",
+        ),
+        (
+            "nginx@sha256:abc",
+            "registry-1.docker.io",
+            "library/nginx",
+            "sha256:abc",
+        ),
+        (
+            "repo:tag@sha256:abc",
+            "registry-1.docker.io",
+            "library/repo",
+            "sha256:abc",
+        ),
+        (
             "library/alpine:3.14",
             "registry-1.docker.io",
             "library/alpine",

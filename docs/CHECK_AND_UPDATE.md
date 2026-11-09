@@ -19,7 +19,9 @@ flowchart TD
   Cmp -- no --> Mark[Mark update available]
 ```
 
-A scheduled check covers every enabled host and every container selected for auto-check. A manual check ignores that toggle: all containers, one container, or the selected rows. A hidden container is never checked.
+A scheduled check covers every enabled host and every container selected for auto-check. A manual check ignores that toggle: all containers, one container, or the selected rows. A hidden container is never checked. A protected container is checked and stays visible; start, stop, and update still refuse it.
+
+An image reference may include a registry port (`localhost:5000/app:tag`) or a digest (`repo@sha256:…`). The digest is the manifest reference, so a pinned image stays up to date while that digest is published. The tag in `repo:tag@sha256:…` is not used for the lookup.
 
 A failed registry lookup does not mark the container up to date. `result` stays empty and the stored availability is left as it was.
 

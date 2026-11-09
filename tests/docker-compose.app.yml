@@ -18,6 +18,17 @@ services:
       POST: 1
       TZ: UTC
       VERSION: 1
+      # CONTAINERS=1 does not allow these engine calls on its own.
+      # Recreate uses start, stop, and restart. Logs and exec serve health
+      # checks and hooks. Pause matches the client even when a test does not
+      # call it.
+      ALLOW_LOGS: 1
+      ALLOW_START: 1
+      ALLOW_STOP: 1
+      ALLOW_RESTARTS: 1
+      ALLOW_PAUSE: 1
+      ALLOW_UNPAUSE: 1
+      EXEC: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
@@ -28,15 +39,27 @@ services:
 
   # The self-update test pushes a newer image of the app tag here.
   # Published on the host, as the docker daemon pulls from localhost:5000.
+  # The same network as the app, so the in-app forwarder can reach this
+  # service by name. A service without a network would stay on the project
+  # default network, which the app does not join.
   registry:
     image: registry:2
     container_name: tests-registry
     ports:
       - '5000:5000'
+    networks:
+      - tugtainer-tests
 
   app:
     container_name: tests-tugtainer
     image: localhost:5000/tugtainer:tests
+    # The daemon pulls localhost:5000 from the published registry port.
+    # The app's own localhost is not that port, so digest checks forward it
+    # to the registry service. The product image does not do this.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - python /opt/registry-forward.py & exec /app/entrypoint.sh
     build:
       context: ..
       dockerfile: Dockerfile.app
@@ -50,6 +73,7 @@ services:
       DOCKER_HOST: tcp://socket-proxy:2375
     volumes:
       - tugtainer_data_tests:/tugtainer
+      - ./fixtures/registry-forward.py:/opt/registry-forward.py:ro
     networks:
       tugtainer-tests:
         aliases:
