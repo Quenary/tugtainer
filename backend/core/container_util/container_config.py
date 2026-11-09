@@ -117,7 +117,7 @@ def get_container_config(
         map_env_to_dict(image.config.env) if (image and image.config) else None,
     )
 
-    NET_KWARGS, SECONDARY_CONNECTS = get_container_net_kwargs(container, docker_version)
+    NET_KWARGS, SECONDARY_CONNECTS = get_container_net_kwargs(container)
 
     # Preserve only values that differ from image defaults.
     command: list[str] | None = None

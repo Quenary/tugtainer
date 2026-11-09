@@ -27,7 +27,6 @@ from shared.runtime.runtime_models import (
     ContainerInspectResult,
     ImageInspectResult,
 )
-from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.self_update.self_update_files import read_state, write_state
 from shared.self_update.self_update_schemas import (
     SELF_UPDATE_PLAN_FILE,
@@ -74,10 +73,6 @@ def _container(
     )
 
 
-def _version(api_version: str) -> DockerVersionScheme:
-    return DockerVersionScheme(api_version=api_version)
-
-
 def _state(**kwargs) -> SelfUpdateState:
     return SelfUpdateState(
         **{
@@ -113,41 +108,12 @@ class TestGetHelperNetworks:
     def test_keeps_special_modes(self, mode: str) -> None:
         container = _container(network_mode=mode, networks=[])
 
-        assert get_helper_networks(container, None) == [mode]
+        assert get_helper_networks(container) == [mode]
 
     def test_puts_primary_network_first(self) -> None:
         container = _container(network_mode="main", networks=["extra", "main"])
 
-        assert get_helper_networks(container, _version("1.45")) == ["main", "extra"]
-
-    def test_keeps_every_network_below_docker_1_44(self) -> None:
-        container = _container(network_mode="main", networks=["extra", "main"])
-
-        assert get_helper_networks(container, _version("1.43")) == ["main", "extra"]
-
-    @pytest.mark.parametrize(
-        ("version_info"),
-        [
-            DockerVersionScheme(
-                runtime_type="podman",
-                api_version="1.41",
-                version="5.7.0",
-                libpod_api_version="5.7.0",
-            ),
-            DockerVersionScheme(
-                runtime_type="podman",
-                api_version="1.44",
-                version="6.1.0",
-                libpod_api_version="6.1.0",
-            ),
-        ],
-    )
-    def test_keeps_every_network_on_podman(
-        self, version_info: DockerVersionScheme
-    ) -> None:
-        container = _container(network_mode="main", networks=["extra", "main"])
-
-        assert get_helper_networks(container, version_info) == ["main", "extra"]
+        assert get_helper_networks(container) == ["main", "extra"]
 
 
 class TestGetHelperConfig:
@@ -178,7 +144,6 @@ class TestGetHelperConfig:
             NEW_IMAGE,
             "tugtainer-self-update",
             "/tugtainer/self_update/plan.json",
-            None,
         )
 
         assert config.model_dump(exclude_unset=True) == {
@@ -208,7 +173,7 @@ class TestGetHelperConfig:
         container = _container()
 
         config = get_helper_config(
-            container, get_data_mount(container), NEW_IMAGE, "h", "/p", None
+            container, get_data_mount(container), NEW_IMAGE, "h", "/p"
         )
 
         assert config.envs is None
@@ -235,7 +200,7 @@ class TestGetHelperConfig:
         )
 
         config = get_helper_config(
-            container, get_data_mount(container), NEW_IMAGE, "h", "/p", None
+            container, get_data_mount(container), NEW_IMAGE, "h", "/p"
         )
 
         assert config.envs == {
@@ -254,7 +219,7 @@ class TestGetHelperConfig:
 
         with pytest.raises(TugSelfUpdateError, match="DOCKER_TLS_VERIFY"):
             get_helper_config(
-                container, get_data_mount(container), NEW_IMAGE, "h", "/p", None
+                container, get_data_mount(container), NEW_IMAGE, "h", "/p"
             )
 
 

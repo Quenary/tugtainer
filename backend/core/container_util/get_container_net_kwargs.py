@@ -7,7 +7,6 @@ from shared.runtime.runtime_models import (
     NetworkSettings,
 )
 from shared.schemas.container_schemas import PortMapping
-from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.network_schemas import NetworkConnectBodySchema
 
 from .map_port_bindings_to_list import map_port_bindings_to_list
@@ -15,7 +14,6 @@ from .map_port_bindings_to_list import map_port_bindings_to_list
 
 def get_container_net_kwargs(
     container: ContainerInspectResult,
-    docker_version: DockerVersionScheme | None,
 ) -> tuple[dict[str, Any], list[NetworkConnectBodySchema]]:
     """
     Get container networking params dict that matches kwargs for create/run.

@@ -42,7 +42,6 @@ from shared.runtime.runtime_models import (
     Mount,
 )
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
-from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
     PullImageRequestBodySchema,
@@ -181,10 +180,7 @@ def _mount_source_for_path(
     return None
 
 
-def get_helper_networks(
-    container: ContainerInspectResult,
-    docker_version: DockerVersionScheme | None,
-) -> list[str]:
+def get_helper_networks(container: ContainerInspectResult) -> list[str]:
     """
     Networks of the helper, so it reaches the same docker host (e.g. socket-proxy).
     Without addresses and aliases of the app.
@@ -198,7 +194,6 @@ def get_helper_networks(
     if mode in networks:
         networks.remove(mode)
         networks.insert(0, mode)
-    _ = docker_version
     return networks
 
 
@@ -208,7 +203,6 @@ def get_helper_config(
     image_id: str,
     helper_name: str,
     plan_path: str,
-    docker_version: DockerVersionScheme | None,
 ) -> CreateContainerRequestBodySchema:
     """
     One-shot helper from the new image.
@@ -239,7 +233,7 @@ def get_helper_config(
         envs["DOCKER_TLS_VERIFY"] = os.environ["DOCKER_TLS_VERIFY"]
         envs["DOCKER_CERT_PATH"] = cert_dir
         volumes.append((source, cert_dir, "ro"))
-    networks: Final = get_helper_networks(container, docker_version)[:1]
+    networks: Final = get_helper_networks(container)[:1]
 
     return CreateContainerRequestBodySchema.model_validate(
         {
@@ -412,7 +406,7 @@ async def _launch_helper() -> SelfUpdateState:
 
     try:
         logger.info(f"Starting self-update helper {helper_name}")
-        helper_networks = get_helper_networks(container, docker_version)
+        helper_networks = get_helper_networks(container)
         await client.container.create(
             get_helper_config(
                 container,
@@ -420,7 +414,6 @@ async def _launch_helper() -> SelfUpdateState:
                 remote_image.id,
                 helper_name,
                 str(plan_path),
-                docker_version,
             )
         )
         for network in helper_networks[1:]:

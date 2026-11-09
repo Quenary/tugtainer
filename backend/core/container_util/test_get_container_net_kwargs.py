@@ -34,7 +34,7 @@ def test_primary_network_taken_from_network_mode():
         network_mode="z_primary",
     )
 
-    kwargs, connects = get_container_net_kwargs(container, None)
+    kwargs, connects = get_container_net_kwargs(container)
 
     assert kwargs["networks"] == ["z_primary"]
     assert kwargs["network_aliases"] == ["main"]
@@ -55,7 +55,7 @@ def test_primary_network_falls_back_to_first_when_mode_not_attached():
         network_mode="default",
     )
 
-    kwargs, connects = get_container_net_kwargs(container, None)
+    kwargs, connects = get_container_net_kwargs(container)
 
     assert kwargs["networks"] == ["bridge"]
     assert connects == []
@@ -74,7 +74,7 @@ def test_primary_network_static_ip_follows_network_mode():
         network_mode="z_primary",
     )
 
-    kwargs, connects = get_container_net_kwargs(container, None)
+    kwargs, connects = get_container_net_kwargs(container)
 
     assert kwargs["ip"] == "172.31.0.5"
     assert connects == [
@@ -94,7 +94,7 @@ def test_primary_endpoint_links_are_preserved():
         network_mode="mynet",
     )
 
-    kwargs, _ = get_container_net_kwargs(container, None)
+    kwargs, _ = get_container_net_kwargs(container)
 
     assert kwargs["link"] == ["db:database"]
 
@@ -110,7 +110,7 @@ def test_secondary_endpoint_links_are_preserved_as_connect_args():
         network_mode="primary",
     )
 
-    _, connects = get_container_net_kwargs(container, None)
+    _, connects = get_container_net_kwargs(container)
 
     assert connects == [
         NetworkConnectBodySchema(
@@ -129,6 +129,6 @@ def test_legacy_host_config_links_still_used_without_endpoint_links():
         links=["/db:/app/database"],
     )
 
-    kwargs, _ = get_container_net_kwargs(container, None)
+    kwargs, _ = get_container_net_kwargs(container)
 
     assert kwargs["link"] == ["/db:/app/database"]
