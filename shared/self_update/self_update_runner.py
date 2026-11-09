@@ -7,6 +7,7 @@ from typing import Final
 
 from pydantic import ValidationError
 
+from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.container_create_payload import build_create_request
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.util.wait_for_container_healthy import wait_for_container_healthy
@@ -146,7 +147,15 @@ class SelfUpdateRunner:
         if await self._docker.exists(self._old_name):
             raise SelfUpdateAbort(f"Container {self._old_name} already exists")
         try:
-            build_create_request(plan.create, api_version=plan.api_version)
+            build_create_request(
+                plan.create,
+                capabilities=RuntimeCapabilities(
+                    runtime_type=plan.runtime_type or "docker",
+                    api_version=plan.api_version,
+                    engine_version=plan.engine_version,
+                    libpod_api_version=plan.libpod_api_version,
+                ),
+            )
         except RuntimePreflightError as e:
             raise SelfUpdateAbort(str(e)) from e
 

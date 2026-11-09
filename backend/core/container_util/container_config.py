@@ -1,9 +1,8 @@
 from typing import Any, Final
 
-from packaging import version
-
 from backend.util.drop_empty_keys import drop_empty_keys
 from backend.util.subtract_dict import subtract_dict, subtract_dict_items
+from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerConfig,
@@ -16,7 +15,6 @@ from shared.schemas.container_schemas import (
 )
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.network_schemas import NetworkConnectBodySchema
-from shared.util.get_docker_client_api_version import get_docker_client_api_version
 
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
@@ -62,30 +60,23 @@ def validate_recreation_preflight(
             "preserve through the compatible API."
         )
 
-    api_ver = get_docker_client_api_version(docker_version)
-    if not api_ver:
+    caps = RuntimeCapabilities.from_version(docker_version)
+    # An unknown Docker daemon is checked again when the create body is built.
+    if caps.runtime_type != "podman" and not caps.api_version:
         return
 
-    # Check image mounts (requires API >= 1.48)
     inspect_mounts = list(container.mounts or [])
     if host_config.mounts:
         inspect_mounts.extend(host_config.mounts)
     for m in inspect_mounts:
-        if m.type == "image" and api_ver < version.parse("1.48"):
-            raise RuntimePreflightError(
-                f"Container {container.name} uses image mounts which require Docker API >= 1.48, "
-                f"but target daemon negotiated {api_ver}."
-            )
+        if m.type == "image":
+            caps.require("Image mounts")
 
-    # Check network gateway priority (requires API >= 1.48)
     if container.network_settings and container.network_settings.networks:
-        for net_name, net_endpoint in container.network_settings.networks.items():
+        for net_endpoint in container.network_settings.networks.values():
             if getattr(net_endpoint, "gateway_priority", None) is not None:
-                if api_ver < version.parse("1.48"):
-                    raise RuntimePreflightError(
-                        f"Container {container.name} uses network GatewayPriority on '{net_name}' "
-                        f"which requires Docker API >= 1.48, but target daemon negotiated {api_ver}."
-                    )
+                caps.require("GwPriority")
+                break
 
 
 def diff_container_config_with_image(

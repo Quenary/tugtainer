@@ -33,6 +33,7 @@ from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.jitter import jitter
+from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.container_create_payload import build_create_request
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
@@ -50,12 +51,6 @@ from shared.schemas.image_schemas import (
 )
 
 logger: Final = logging.getLogger("execute_update_job")
-
-
-def _api_version(docker_version: DockerVersionScheme | None) -> str | None:
-    if not docker_version:
-        return None
-    return docker_version.negotiated_api or docker_version.api_version
 
 
 async def execute_update_job(
@@ -146,9 +141,9 @@ async def execute_update_job(
                 merged = None
                 if item.remote_image is not None:
                     merged = diff_container_config_with_image(config, item.remote_image)
-                    api_version = _api_version(docker_version)
-                    build_create_request(config, api_version=api_version)
-                    build_create_request(merged, api_version=api_version)
+                    capabilities = RuntimeCapabilities.from_version(docker_version)
+                    build_create_request(config, capabilities=capabilities)
+                    build_create_request(merged, capabilities=capabilities)
                 item.config = config
                 item.merged_config = merged
                 item.network_connects = network_connects

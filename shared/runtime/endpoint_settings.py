@@ -1,11 +1,7 @@
 from typing import Any
 
-from packaging import version
-
-from shared.runtime.runtime_errors import RuntimePreflightError
+from shared.runtime.capabilities import RuntimeCapabilities
 from shared.schemas.network_schemas import NetworkConnectBodySchema
-
-_GW_PRIORITY_API = "1.48"
 
 
 def build_endpoint_settings(
@@ -19,10 +15,14 @@ def build_endpoint_settings(
     driver_opts: dict[str, str] | None = None,
     gateway_priority: int | None = None,
     api_version: str | None = None,
+    capabilities: RuntimeCapabilities | None = None,
 ) -> dict[str, Any]:
     """Engine EndpointSettings shared by create and network connect."""
+    caps = capabilities or RuntimeCapabilities.docker(api_version)
     if gateway_priority is not None:
-        _require_gw_priority(api_version)
+        caps.require("GwPriority")
+    if mac_address:
+        caps.require("static MAC address")
     endpoint: dict[str, Any] = {}
     ipam: dict[str, Any] = {}
     _set(ipam, "IPv4Address", ipv4_address)
@@ -41,6 +41,7 @@ def build_endpoint_settings(
 def endpoint_config_from_connect(
     body: NetworkConnectBodySchema,
     api_version: str | None = None,
+    capabilities: RuntimeCapabilities | None = None,
 ) -> dict[str, Any] | None:
     """EndpointConfig for POST /networks/{id}/connect."""
     endpoint = build_endpoint_settings(
@@ -53,22 +54,9 @@ def endpoint_config_from_connect(
         driver_opts=body.driver_opts,
         gateway_priority=body.gateway_priority,
         api_version=api_version,
+        capabilities=capabilities,
     )
     return endpoint or None
-
-
-def _require_gw_priority(api_version: str | None) -> None:
-    parsed = None
-    if api_version:
-        text = api_version.removeprefix("/v").removeprefix("v")
-        parsed = version.parse(text)
-    if parsed is not None and parsed >= version.parse(_GW_PRIORITY_API):
-        return
-    got = str(parsed) if parsed is not None else "unknown"
-    raise RuntimePreflightError(
-        f"GwPriority requires Docker API >= {_GW_PRIORITY_API}, "
-        f"but the target API is {got}"
-    )
 
 
 def _set(target: dict[str, Any], key: str, value: Any) -> None:

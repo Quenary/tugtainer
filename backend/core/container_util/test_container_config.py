@@ -364,7 +364,8 @@ def test_preflight_rejects_image_mount_on_api_below_1_48():
 
     with pytest.raises(RuntimePreflightError) as exc_info:
         get_container_config(container, image=None, docker_version=ver)
-    assert "require Docker API >= 1.48" in str(exc_info.value)
+    assert "Image mounts requires Docker API >= 1.48" in str(exc_info.value)
+    assert "1.47" in str(exc_info.value)
 
 
 def test_preflight_allows_image_mount_on_api_1_48():
@@ -392,6 +393,113 @@ def test_preflight_rejects_cidfile():
 
     with pytest.raises(RuntimePreflightError, match="cidfile"):
         get_container_config(container, image=None, docker_version=None)
+
+
+def test_podman_keeps_static_mac_on_5_7_and_6() -> None:
+    from shared.runtime.capabilities import RuntimeCapabilities
+    from shared.runtime.container_create_payload import build_create_request
+    from shared.runtime.runtime_models import NetworkSettings, RuntimeVersion
+
+    container = ContainerInspectResult(
+        name="web",
+        config=ContainerConfig(image="app:latest"),
+        host_config=ContainerHostConfig(network_mode="appnet"),
+        network_settings=NetworkSettings.model_validate(
+            {
+                "networks": {
+                    "appnet": {
+                        "IPAMConfig": {"IPv4Address": "172.20.0.8"},
+                        "MacAddress": "02:42:ac:14:00:08",
+                    }
+                }
+            }
+        ),
+    )
+    for ver in (
+        RuntimeVersion(
+            runtime_type="podman",
+            api_version="1.41",
+            version="5.7.0",
+            libpod_api_version="5.7.0",
+        ),
+        RuntimeVersion(
+            runtime_type="podman",
+            api_version="1.44",
+            version="6.0.0",
+            libpod_api_version="6.0.0",
+        ),
+    ):
+        schema, _ = get_container_config(container, image=None, docker_version=ver)
+        assert schema.mac_address == "02:42:ac:14:00:08"
+        payload, _ = build_create_request(
+            schema, capabilities=RuntimeCapabilities.from_version(ver)
+        )
+        endpoint = payload["NetworkingConfig"]["EndpointsConfig"]["appnet"]
+        assert endpoint["MacAddress"] == "02:42:ac:14:00:08"
+
+
+def test_old_podman_mac_fails_preflight_without_dropping_it() -> None:
+    from shared.runtime.capabilities import RuntimeCapabilities
+    from shared.runtime.container_create_payload import build_create_request
+    from shared.runtime.runtime_errors import RuntimePreflightError
+    from shared.runtime.runtime_models import NetworkSettings, RuntimeVersion
+
+    ver = RuntimeVersion(
+        runtime_type="podman",
+        api_version="1.40",
+        version="4.9.3",
+        libpod_api_version="4.9.3",
+    )
+    container = ContainerInspectResult(
+        name="web",
+        config=ContainerConfig(image="app:latest"),
+        host_config=ContainerHostConfig(network_mode="appnet"),
+        network_settings=NetworkSettings.model_validate(
+            {
+                "networks": {
+                    "appnet": {
+                        "IPAMConfig": {"IPv4Address": "172.20.0.8"},
+                        "MacAddress": "02:42:ac:14:00:08",
+                    }
+                }
+            }
+        ),
+    )
+
+    schema, _ = get_container_config(container, image=None, docker_version=ver)
+    assert schema.mac_address == "02:42:ac:14:00:08"
+    with pytest.raises(RuntimePreflightError, match="Podman") as exc_info:
+        build_create_request(schema, capabilities=RuntimeCapabilities.from_version(ver))
+    assert "Docker API" not in str(exc_info.value)
+
+
+def test_podman_rejects_docker_only_gw_priority() -> None:
+    from shared.runtime.runtime_errors import RuntimePreflightError
+    from shared.runtime.runtime_models import (
+        NetworkEndpointSettings,
+        NetworkSettings,
+        RuntimeVersion,
+    )
+
+    container = ContainerInspectResult(
+        name="web",
+        config=ContainerConfig(image="app:latest"),
+        network_settings=NetworkSettings(
+            networks={
+                "appnet": NetworkEndpointSettings(gateway_priority=3),
+            }
+        ),
+    )
+    ver = RuntimeVersion(
+        runtime_type="podman",
+        api_version="1.44",
+        version="6.0.0",
+        libpod_api_version="6.0.0",
+    )
+
+    with pytest.raises(RuntimePreflightError, match="not supported on Podman") as exc:
+        get_container_config(container, image=None, docker_version=ver)
+    assert "Docker API" not in str(exc.value)
 
 
 def test_preflight_rejects_podman_storage_options():

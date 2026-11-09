@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-from packaging import version
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.engine import make_url
@@ -32,6 +31,7 @@ from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_self_container_id import get_self_container_id
 from backend.util.get_version_from_labels import get_version_from_labels
+from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.container_create_payload import build_create_request
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
@@ -44,6 +44,7 @@ from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
     PullImageRequestBodySchema,
 )
+from shared.schemas.network_schemas import NetworkConnectBodySchema
 from shared.self_update.self_update_files import (
     read_state,
     write_private_file,
@@ -59,7 +60,6 @@ from shared.self_update.self_update_schemas import (
     SelfUpdatePlan,
     SelfUpdateState,
 )
-from shared.util.get_docker_client_api_version import get_docker_client_api_version
 
 logger: Final = logging.getLogger("self_update")
 
@@ -177,10 +177,7 @@ def get_helper_networks(
     if mode in networks:
         networks.remove(mode)
         networks.insert(0, mode)
-    api_version = get_docker_client_api_version(docker_version)
-    # Multiple --network flags need API 1.44
-    if api_version and api_version < version.parse("1.44"):
-        return networks[:1]
+    _ = docker_version
     return networks
 
 
@@ -206,7 +203,7 @@ def get_helper_config(
     for mount in container.mounts or []:
         if mount.source and mount.destination in socket_paths:
             volumes.append((mount.source, mount.destination))
-    networks: Final = get_helper_networks(container, docker_version)
+    networks: Final = get_helper_networks(container, docker_version)[:1]
 
     return CreateContainerRequestBodySchema.model_validate(
         {
@@ -321,11 +318,9 @@ async def _launch_helper() -> SelfUpdateState:
         container, local_image, docker_version
     )
     config = diff_container_config_with_image(config, remote_image)
-    api_version = None
-    if docker_version is not None:
-        api_version = docker_version.negotiated_api or docker_version.api_version
+    capabilities = RuntimeCapabilities.from_version(docker_version)
     try:
-        build_create_request(config, api_version=api_version)
+        build_create_request(config, capabilities=capabilities)
     except RuntimePreflightError as e:
         raise TugSelfUpdateError(str(e)) from e
 
@@ -357,7 +352,10 @@ async def _launch_helper() -> SelfUpdateState:
             new_version=new_version,
             create=config,
             network_connects=network_connects,
-            api_version=api_version,
+            api_version=capabilities.api_version,
+            runtime_type=capabilities.runtime_type,
+            engine_version=capabilities.engine_version,
+            libpod_api_version=capabilities.libpod_api_version,
             healthcheck_timeout=healthcheck_timeout,
             db_path=db_path,
         )
@@ -380,6 +378,7 @@ async def _launch_helper() -> SelfUpdateState:
 
     try:
         logger.info(f"Starting self-update helper {helper_name}")
+        helper_networks = get_helper_networks(container, docker_version)
         await client.container.create(
             get_helper_config(
                 container,
@@ -390,6 +389,10 @@ async def _launch_helper() -> SelfUpdateState:
                 docker_version,
             )
         )
+        for network in helper_networks[1:]:
+            await client.network.connect(
+                NetworkConnectBodySchema(network=network, container=helper_name)
+            )
         await client.container.start(helper_name)
     except Exception:
         logger.exception("Failed to start self-update helper")

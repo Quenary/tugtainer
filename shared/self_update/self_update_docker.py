@@ -78,13 +78,15 @@ class HttpSelfUpdateDocker:
         container_id: str,
         connect_body: NetworkConnectBodySchema | None = None,
     ) -> None:
-        api_version = None
-        if connect_body and connect_body.gateway_priority is not None:
+        capabilities = None
+        if connect_body and (
+            connect_body.gateway_priority is not None or connect_body.mac_address
+        ):
             if not self._client._negotiated_api_prefix:
                 await self._client.get_version()
-            api_version = self._client._negotiated_api_prefix.removeprefix("/v")
+            capabilities = self._client.capabilities()
         endpoint_config = (
-            endpoint_config_from_connect(connect_body, api_version)
+            endpoint_config_from_connect(connect_body, capabilities=capabilities)
             if connect_body
             else None
         )

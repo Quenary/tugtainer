@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
 
+from .capabilities import RuntimeCapabilities
 from .container_create_payload import build_create_request
 from .runtime_errors import (
     IncompatibleRuntimeError,
@@ -75,7 +76,7 @@ def split_image_ref(spec: str) -> tuple[str, str | None, str | None]:
 def _create_payload(
     payload: dict[str, Any] | BaseModel,
     name: str | None,
-    api_version: str | None = None,
+    capabilities: RuntimeCapabilities | None = None,
 ) -> tuple[dict[str, Any], str | None, str | None]:
     body: CreateContainerRequestBodySchema | None = None
     if isinstance(payload, CreateContainerRequestBodySchema):
@@ -83,7 +84,7 @@ def _create_payload(
     elif isinstance(payload, dict) and "image" in payload and "Image" not in payload:
         body = CreateContainerRequestBodySchema.model_validate(payload)
     if body is not None:
-        data, schema_name = build_create_request(body, api_version=api_version)
+        data, schema_name = build_create_request(body, capabilities=capabilities)
         return data, name or schema_name, body.platform
     if isinstance(payload, BaseModel):
         return payload.model_dump(exclude_unset=True, by_alias=True), name, None
@@ -336,6 +337,17 @@ class RuntimeClient:
         )
         return self._version_info
 
+    def capabilities(self) -> RuntimeCapabilities:
+        """Capability policy for the daemon this client has negotiated with."""
+        info = self._version_info
+        api = self._negotiated_api_prefix.removeprefix("/v") or None
+        return RuntimeCapabilities(
+            runtime_type=self._runtime_type,
+            api_version=api,
+            engine_version=info.version if info else None,
+            libpod_api_version=self._libpod_api_version,
+        )
+
     async def get_info(self) -> dict[str, Any]:
         """Fetch system info."""
         if not self._negotiated_api_prefix:
@@ -392,7 +404,7 @@ class RuntimeClient:
         data, name, platform = _create_payload(
             payload,
             name,
-            api_version=self._negotiated_api_prefix.removeprefix("/v"),
+            capabilities=self.capabilities(),
         )
         params: dict[str, Any] = {}
         if name:

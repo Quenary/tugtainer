@@ -20,15 +20,15 @@ router = APIRouter(
     description="Connect container to network",
 )
 async def connect(body: NetworkConnectBodySchema) -> None:
-    api_version = None
-    if body.gateway_priority is not None:
+    capabilities = None
+    if body.gateway_priority is not None or body.mac_address:
         if not RUNTIME_CLIENT._negotiated_api_prefix:
             await RUNTIME_CLIENT.get_version()
-        api_version = RUNTIME_CLIENT._negotiated_api_prefix.removeprefix("/v")
+        capabilities = RUNTIME_CLIENT.capabilities()
     await RUNTIME_CLIENT.network_connect(
         network_id=body.network,
         container_id=body.container,
-        endpoint_config=endpoint_config_from_connect(body, api_version),
+        endpoint_config=endpoint_config_from_connect(body, capabilities=capabilities),
     )
 
 

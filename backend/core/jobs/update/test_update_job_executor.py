@@ -107,8 +107,10 @@ async def test_preflight_failure_leaves_container_and_dependent(
     merged = CreateContainerRequestBodySchema(image="nginx:new", name="web")
     seen: list[CreateContainerRequestBodySchema] = []
 
-    def build(body, *, api_version=None):
-        assert api_version == "1.44"
+    def build(body, *, capabilities=None):
+        assert capabilities is not None
+        assert capabilities.runtime_type == "docker"
+        assert capabilities.api_version == "1.44"
         seen.append(body)
         if body is merged:
             raise RuntimePreflightError(

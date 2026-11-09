@@ -1,7 +1,5 @@
 from typing import Any, cast
 
-from packaging import version
-
 from shared.runtime.runtime_models import (
     ContainerConfig,
     ContainerHostConfig,
@@ -11,9 +9,6 @@ from shared.runtime.runtime_models import (
 from shared.schemas.container_schemas import PortMapping
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.network_schemas import NetworkConnectBodySchema
-from shared.util.get_docker_client_api_version import (
-    get_docker_client_api_version,
-)
 
 from .map_port_bindings_to_list import map_port_bindings_to_list
 
@@ -32,7 +27,6 @@ def get_container_net_kwargs(
     CONFIG = container.config or ContainerConfig()
     HOST_CONFIG = container.host_config or ContainerHostConfig()
     NETWORK_SETTINGS = container.network_settings or NetworkSettings()
-    docker_client_api_version = get_docker_client_api_version(docker_version)
 
     DNS: list[str] = HOST_CONFIG.dns or []
     DNS_OPTIONS: list[str] = HOST_CONFIG.dns_options or []
@@ -128,9 +122,6 @@ def get_container_net_kwargs(
         NETWORK_ALIASES = []
         PUBLISH = []
         PUBLISH_ALL = False
-
-    if docker_client_api_version and docker_client_api_version < version.parse("1.44"):
-        MAC_ADDRESS = None
 
     return {
         "dns": DNS,

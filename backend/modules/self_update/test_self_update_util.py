@@ -119,10 +119,34 @@ class TestGetHelperNetworks:
 
         assert get_helper_networks(container, _version("1.45")) == ["main", "extra"]
 
-    def test_only_primary_network_on_old_api(self) -> None:
+    def test_keeps_every_network_below_docker_1_44(self) -> None:
         container = _container(network_mode="main", networks=["extra", "main"])
 
-        assert get_helper_networks(container, _version("1.43")) == ["main"]
+        assert get_helper_networks(container, _version("1.43")) == ["main", "extra"]
+
+    @pytest.mark.parametrize(
+        ("version_info"),
+        [
+            DockerVersionScheme(
+                runtime_type="podman",
+                api_version="1.41",
+                version="5.7.0",
+                libpod_api_version="5.7.0",
+            ),
+            DockerVersionScheme(
+                runtime_type="podman",
+                api_version="1.44",
+                version="6.1.0",
+                libpod_api_version="6.1.0",
+            ),
+        ],
+    )
+    def test_keeps_every_network_on_podman(
+        self, version_info: DockerVersionScheme
+    ) -> None:
+        container = _container(network_mode="main", networks=["extra", "main"])
+
+        assert get_helper_networks(container, version_info) == ["main", "extra"]
 
 
 class TestGetHelperConfig:
@@ -328,6 +352,36 @@ class TestStartSelfUpdate:
         assert helper.name == "tugtainer-self-update"
         assert helper.image == NEW_IMAGE
         client.container.start.assert_awaited_once_with("tugtainer-self-update")
+
+    @pytest.mark.asyncio
+    async def test_helper_connects_secondary_networks_before_start(
+        self, client: AsyncMock, mocker: MockerFixture
+    ) -> None:
+        host = SimpleNamespace(id=1, name="local", container_hc_timeout=90)
+        container = _container(network_mode="main", networks=["extra", "main"])
+        mocker.patch(
+            f"{base_module}.find_self",
+            new=AsyncMock(return_value=(host, client, container)),
+        )
+        order: list[str] = []
+        client.container.create.side_effect = lambda *_args, **_kwargs: order.append(
+            "create"
+        )
+        client.network.connect.side_effect = lambda *_args, **_kwargs: order.append(
+            "connect"
+        )
+        client.container.start.side_effect = lambda *_args, **_kwargs: order.append(
+            "start"
+        )
+
+        await start_self_update()
+
+        helper = client.container.create.await_args.args[0]
+        assert helper.networks == ["main"]
+        connected = client.network.connect.await_args.args[0]
+        assert connected.network == "extra"
+        assert connected.container == "tugtainer-self-update"
+        assert order == ["create", "connect", "start"]
 
     @pytest.mark.asyncio
     async def test_preflight_failure_does_not_start_helper(

@@ -1,9 +1,7 @@
 import re
 from typing import Any
 
-from packaging import version
-from packaging.version import Version
-
+from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.endpoint_settings import build_endpoint_settings
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.schemas.container_schemas import (
@@ -44,8 +42,10 @@ def build_create_request(
     body: CreateContainerRequestBodySchema,
     *,
     api_version: str | None = None,
+    capabilities: RuntimeCapabilities | None = None,
 ) -> tuple[dict[str, Any], str | None]:
     """Map a CLI-shaped create schema to an engine API create body and name."""
+    caps = capabilities or RuntimeCapabilities.docker(api_version)
     _reject_unsupported(body)
     payload: dict[str, Any] = {"Image": body.image}
     _set(payload, "Cmd", body.command)
@@ -74,10 +74,10 @@ def build_create_request(
         payload["OpenStdin"] = True
         payload["AttachStdin"] = True
 
-    host = _host_config(body, api_version=api_version)
+    host = _host_config(body, capabilities=caps)
     if host:
         payload["HostConfig"] = host
-    networking = _networking_config(body, api_version=api_version)
+    networking = _networking_config(body, capabilities=caps)
     if networking:
         payload["NetworkingConfig"] = networking
     return payload, body.name
@@ -179,12 +179,12 @@ def _healthcheck(body: CreateContainerRequestBodySchema) -> dict[str, Any] | Non
 def _host_config(
     body: CreateContainerRequestBodySchema,
     *,
-    api_version: str | None,
+    capabilities: RuntimeCapabilities,
 ) -> dict[str, Any]:
     host: dict[str, Any] = {}
     binds = _all_binds(body)
     _set(host, "Binds", binds)
-    mounts = _mounts(body.mounts, api_version)
+    mounts = _mounts(body.mounts, capabilities)
     _set(host, "Mounts", mounts)
     bindings = _port_bindings(body.publish)
     if bindings:
@@ -272,7 +272,7 @@ def _host_config(
 def _networking_config(
     body: CreateContainerRequestBodySchema,
     *,
-    api_version: str | None,
+    capabilities: RuntimeCapabilities,
 ) -> dict[str, Any] | None:
     """Attach every network. Endpoint settings stay on the first one.
 
@@ -282,7 +282,7 @@ def _networking_config(
     networks = [network for network in (body.networks or []) if network]
     if not networks:
         return None
-    endpoint = _endpoint(body, api_version)
+    endpoint = _endpoint(body, capabilities)
     if len(networks) == 1:
         if not endpoint:
             return None
@@ -298,7 +298,7 @@ def _networking_config(
 
 def _endpoint(
     body: CreateContainerRequestBodySchema,
-    api_version: str | None,
+    capabilities: RuntimeCapabilities,
 ) -> dict[str, Any]:
     links = None
     if body.link and body.networks and body.networks[0] not in {"bridge", "default"}:
@@ -312,7 +312,7 @@ def _endpoint(
         mac_address=body.mac_address,
         driver_opts=body.driver_opts,
         gateway_priority=body.gateway_priority,
-        api_version=api_version,
+        capabilities=capabilities,
     )
 
 
@@ -362,23 +362,6 @@ _TMPFS_OPTION_KEYS: dict[str, str] = {
 _IMAGE_OPTION_KEYS: dict[str, str] = {"subpath": "Subpath"}
 
 
-def _parse_api(api_version: str | None) -> Version | None:
-    if not api_version:
-        return None
-    text = api_version.removeprefix("/v").removeprefix("v")
-    return version.parse(text)
-
-
-def _require_api(api: Version | None, minimum: str, what: str) -> None:
-    parsed = version.parse(minimum)
-    if api is not None and api >= parsed:
-        return
-    got = str(api) if api is not None else "unknown"
-    raise RuntimePreflightError(
-        f"{what} requires Docker API >= {minimum}, but the target API is {got}"
-    )
-
-
 def _canonical_key(key: str, mapping: dict[str, str], label: str) -> str:
     if key in mapping.values():
         return key
@@ -403,20 +386,18 @@ def _normalize_options(
 
 def _mounts(
     mounts: list[CreateMount] | None,
-    api_version: str | None,
+    capabilities: RuntimeCapabilities,
 ) -> list[dict[str, Any]] | None:
     if not mounts:
         return None
-    api = _parse_api(api_version)
-    result: list[dict[str, Any]] = []
-    for mount in mounts:
-        result.append(_engine_mount(mount, api))
-    return result
+    return [_engine_mount(mount, capabilities) for mount in mounts]
 
 
-def _engine_mount(mount: CreateMount, api: Version | None) -> dict[str, Any]:
+def _engine_mount(
+    mount: CreateMount, capabilities: RuntimeCapabilities
+) -> dict[str, Any]:
     if mount.type == "image" or mount.image_options:
-        _require_api(api, "1.48", "Image mounts")
+        capabilities.require("Image mounts")
     engine: dict[str, Any] = {"Type": mount.type, "Target": mount.target}
     _set(engine, "Source", mount.source)
     if mount.read_only:
@@ -424,9 +405,14 @@ def _engine_mount(mount: CreateMount, api: Version | None) -> dict[str, Any]:
     _set(engine, "Consistency", mount.consistency)
     bind = _normalize_options(mount.bind_options, _BIND_OPTION_KEYS, "BindOptions")
     if bind:
-        for key in ("ReadOnlyNonRecursive", "ReadOnlyForceRecursive"):
+        for key in (
+            "NonRecursive",
+            "CreateMountpoint",
+            "ReadOnlyNonRecursive",
+            "ReadOnlyForceRecursive",
+        ):
             if key in bind:
-                _require_api(api, "1.44", f"BindOptions.{key}")
+                capabilities.require(f"BindOptions.{key}")
         engine["BindOptions"] = bind
     volume = _normalize_options(
         mount.volume_options, _VOLUME_OPTION_KEYS, "VolumeOptions"
@@ -443,14 +429,14 @@ def _engine_mount(mount: CreateMount, api: Version | None) -> dict[str, Any]:
                 "VolumeOptions.DriverConfig",
             )
         if "Subpath" in volume:
-            _require_api(api, "1.45", "VolumeOptions.Subpath")
+            capabilities.require("VolumeOptions.Subpath")
         engine["VolumeOptions"] = volume
     tmpfs = _normalize_options(mount.tmpfs_options, _TMPFS_OPTION_KEYS, "TmpfsOptions")
     if tmpfs:
         if "Options" in tmpfs:
             if not isinstance(tmpfs["Options"], list):
                 raise RuntimePreflightError("Cannot represent TmpfsOptions.Options")
-            _require_api(api, "1.46", "TmpfsOptions.Options")
+            capabilities.require("TmpfsOptions.Options")
         engine["TmpfsOptions"] = tmpfs
     image = _normalize_options(mount.image_options, _IMAGE_OPTION_KEYS, "ImageOptions")
     if image:
