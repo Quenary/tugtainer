@@ -97,8 +97,8 @@ The host is added under Menu → Hosts. The agent secret matches `AGENT_SECRET` 
 
 Tugtainer communicates directly with container runtime HTTP APIs over Unix domain sockets or TCP (including socket-proxy).
 
-- **Docker Engine**: Minimum supported Docker Engine is **25.0** (Docker API **1.44**). Version negotiation selects the highest supported API version up to **1.48** (Docker 28.x / current stable).
-- **Podman**: Rootful and rootless service sockets (`/run/podman/podman.sock` or `/run/user/<uid>/podman/podman.sock`) are natively detected and supported.
+- **Docker Engine**: Minimum supported Docker Engine is **25.0** (Docker API **1.44**). Version negotiation selects the highest supported API version up to the maximum tested API version **1.48**.
+- **Podman**: Rootless Podman needs `DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock` or that socket mounted into the container. There is no automatic detection and no fallback to the rootful socket.
 
 ### Socket proxy
 
