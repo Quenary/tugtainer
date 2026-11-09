@@ -329,6 +329,22 @@ class TestRunSelfUpdate:
         assert docker.calls == []
 
     @pytest.mark.asyncio
+    @pytest.mark.asyncio
+    async def test_aborts_invalid_create_before_rename(self, work_dir: Path) -> None:
+        docker = FakeDocker()
+        plan = _plan()
+        plan.create.health_cmd = "true"
+        plan_path = _prepare(work_dir, plan)
+
+        state = await run_self_update(docker, plan_path)
+
+        assert state is not None
+        assert state.status == ESelfUpdateStatus.ABORTED
+        assert state.error is not None
+        assert "health_cmd" in state.error
+        assert [call[0] for call in docker.calls] == ["inspect"]
+
+    @pytest.mark.asyncio
     async def test_requires_pending_state(self, work_dir: Path) -> None:
         docker = FakeDocker()
         state = _pending_state()

@@ -32,6 +32,8 @@ from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_self_container_id import get_self_container_id
 from backend.util.get_version_from_labels import get_version_from_labels
+from shared.runtime.container_create_payload import build_create_request
+from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
     Mount,
@@ -319,6 +321,13 @@ async def _launch_helper() -> SelfUpdateState:
         container, local_image, docker_version
     )
     config = diff_container_config_with_image(config, remote_image)
+    api_version = None
+    if docker_version is not None:
+        api_version = docker_version.negotiated_api or docker_version.api_version
+    try:
+        build_create_request(config, api_version=api_version)
+    except RuntimePreflightError as e:
+        raise TugSelfUpdateError(str(e)) from e
 
     async with async_session_maker() as session:
         result = await session.execute(
@@ -348,6 +357,7 @@ async def _launch_helper() -> SelfUpdateState:
             new_version=new_version,
             create=config,
             network_connects=network_connects,
+            api_version=api_version,
             healthcheck_timeout=healthcheck_timeout,
             db_path=db_path,
         )

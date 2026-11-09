@@ -29,7 +29,9 @@ class UpdateJobPlanItem:
     image_spec: Final[str | None] = None
     was_running: Final[bool | None] = None
     config: CreateContainerRequestBodySchema | None = None
+    merged_config: CreateContainerRequestBodySchema | None = None
     network_connects: list[NetworkConnectBodySchema] = field(default_factory=list)
+    error: str | None = None
     local_image: ImageInspectResult | None = None
     remote_image: ImageInspectResult | None = None
     result: ContainerJobOutcome | None = None

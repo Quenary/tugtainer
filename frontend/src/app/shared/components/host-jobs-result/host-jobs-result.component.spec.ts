@@ -47,6 +47,31 @@ describe('HostJobsResultComponent', () => {
       ]);
     });
 
+    it('keeps the recreate error', () => {
+      expect(
+        itemsFor({
+          containers: {
+            'slot-nginx': {
+              status: EJobStatus.ERROR,
+              result: {
+                container: { Name: 'nginx', Id: 'abc' },
+                result: 'failed',
+                error: 'VolumeOptions.Subpath requires Docker API >= 1.45',
+              } as IContainerJobResult,
+            },
+          },
+        }),
+      ).toEqual([
+        {
+          id: 'abc',
+          name: 'nginx',
+          result: 'failed',
+          severity: 'danger',
+          error: 'VolumeOptions.Subpath requires Docker API >= 1.45',
+        },
+      ]);
+    });
+
     it('uses the service id when it is present', () => {
       expect(
         itemsFor({

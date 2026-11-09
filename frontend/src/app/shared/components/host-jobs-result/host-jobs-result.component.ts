@@ -17,6 +17,7 @@ export interface IHostJobResultItem {
   name: string;
   result: TContainerJobOutcome;
   severity: TagSeverity | 'contrast';
+  error?: string;
 }
 
 @Component({
@@ -52,11 +53,14 @@ export class HostJobsResultComponent {
             ? (ContainerJobOutcomeSeverity[outcome] ?? 'contrast')
             : 'contrast';
 
+        const error = 'error' in res && res.error ? res.error : undefined;
+
         return {
           id,
           name,
           result: outcome,
           severity,
+          ...(error ? { error } : {}),
         };
       });
   });

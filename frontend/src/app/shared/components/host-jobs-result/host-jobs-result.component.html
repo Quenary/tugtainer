@@ -4,9 +4,14 @@
       <div class="results-item">
         <span>{{ item.name }}</span>
         @if (item.result) {
-          <p-tag [severity]="item.severity">
+          <p-tag
+            [severity]="item.severity"
+            [attr.title]="item.error ?? null">
             {{ item.result }}
           </p-tag>
+        }
+        @if (item.error) {
+          <span class="result-error">{{ item.error }}</span>
         }
       </div>
     }

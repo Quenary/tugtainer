@@ -42,6 +42,7 @@ class SelfUpdatePlan(BaseModel):
     new_version: str | None = None
     create: CreateContainerRequestBodySchema
     network_connects: list[NetworkConnectBodySchema] = Field(default_factory=list)
+    api_version: str | None = None
     healthcheck_timeout: int
     # Absolute path of the SQLite database on the data volume, if any
     db_path: str | None = None

@@ -7,6 +7,8 @@ from typing import Final
 
 from pydantic import ValidationError
 
+from shared.runtime.container_create_payload import build_create_request
+from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.util.wait_for_container_healthy import wait_for_container_healthy
 
 from .self_update_docker import SelfUpdateDocker
@@ -143,6 +145,10 @@ class SelfUpdateRunner:
             raise SelfUpdateAbort(f"Image {plan.new_image_id} not found")
         if await self._docker.exists(self._old_name):
             raise SelfUpdateAbort(f"Container {self._old_name} already exists")
+        try:
+            build_create_request(plan.create, api_version=plan.api_version)
+        except RuntimePreflightError as e:
+            raise SelfUpdateAbort(str(e)) from e
 
     async def _swap(self) -> None:
         plan = self._plan

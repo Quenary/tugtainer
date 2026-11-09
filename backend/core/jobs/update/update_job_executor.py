@@ -33,6 +33,8 @@ from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.jitter import jitter
+from shared.runtime.container_create_payload import build_create_request
+from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
     ImageInspectResult,
@@ -48,6 +50,12 @@ from shared.schemas.image_schemas import (
 )
 
 logger: Final = logging.getLogger("execute_update_job")
+
+
+def _api_version(docker_version: DockerVersionScheme | None) -> str | None:
+    if not docker_version:
+        return None
+    return docker_version.negotiated_api or docker_version.api_version
 
 
 async def execute_update_job(
@@ -127,7 +135,7 @@ async def execute_update_job(
                 logger.exception(f"Failed to pull image for {item.name}: {e}")
                 item.errors.append(e)
 
-            # Prepare config
+            # Prepare config and reject it before any container is stopped.
             try:
                 logger.info(f"Getting config for {item.name}")
                 config, network_connects = get_container_config(
@@ -135,11 +143,21 @@ async def execute_update_job(
                     item.local_image,
                     docker_version,
                 )
+                merged = None
+                if item.remote_image is not None:
+                    merged = diff_container_config_with_image(config, item.remote_image)
+                    api_version = _api_version(docker_version)
+                    build_create_request(config, api_version=api_version)
+                    build_create_request(merged, api_version=api_version)
                 item.config = config
+                item.merged_config = merged
                 item.network_connects = network_connects
             except Exception as e:
                 logger.exception(f"Failed to get config for {item.name}")
                 item.errors.append(e)
+                if isinstance(e, RuntimePreflightError):
+                    item.result = "failed"
+                    item.error = str(e)
 
             await asyncio.sleep(jitter(delay))
 
@@ -149,13 +167,33 @@ async def execute_update_job(
             and item.local_image
             and item.remote_image
             and item.config
+            and item.merged_config
             and not item.errors
         )
+
+    def _preflight_failed(item: UpdateJobPlanItem) -> bool:
+        return any(isinstance(error, RuntimePreflightError) for error in item.errors)
+
+    proceeding = [
+        other
+        for other in items
+        if other.name in plan.to_update and not _preflight_failed(other)
+    ]
 
     # Stopping containers in order
     # from most dependent to most dependable
     for name in reversed(plan.order):
         item = items_map.get(name)
+        if item and _preflight_failed(item):
+            logger.warning(
+                f"Skipping stop of {name} because recreate config was rejected"
+            )
+            continue
+        if item and name not in plan.to_update and not proceeding:
+            logger.warning(
+                f"Skipping stop of {name} because no container will be recreated"
+            )
+            continue
         if item and item.was_running:
             hooks = hooks_map.get(name)
             hook_errors = await run_hooks(client, name, hooks, EHookName.PRE_STOP)
@@ -226,13 +264,14 @@ async def execute_update_job(
             if name in plan.to_update:
                 if not _can_update(item):
                     logger.warning(f"Cannot update {item.name} due to prior errors")
-                    try:
-                        await _attempt_start_with_health(item)
-                    except Exception as e:
-                        logger.exception(
-                            f"Error while starting {item.name}. Continue..."
-                        )
-                        item.errors.append(e)
+                    if not _preflight_failed(item):
+                        try:
+                            await _attempt_start_with_health(item)
+                        except Exception as e:
+                            logger.exception(
+                                f"Error while starting {item.name}. Continue..."
+                            )
+                            item.errors.append(e)
                     continue
 
                 logger.info(f"Starting update of {item.name}")
@@ -253,8 +292,9 @@ async def execute_update_job(
                     await client.container.remove(item.name)
 
                     logger.info("Merging configs")
-                    merged_config = diff_container_config_with_image(
-                        config, remote_image
+                    merged_config = (
+                        item.merged_config
+                        or diff_container_config_with_image(config, remote_image)
                     )
 
                     logger.info("Recreating container...")
@@ -377,8 +417,8 @@ async def execute_update_job(
                     item.errors.append(e)
                     item.result = "failed"
 
-            # Starting non-updatable containers
-            if name in plan.affected:
+            # Starting non-updatable containers that were stopped for an update.
+            if name in plan.affected and proceeding:
                 try:
                     await _attempt_start_with_health(item)
                 except Exception as e:
@@ -401,6 +441,7 @@ async def execute_update_job(
             previous_image_digests=previous.digests,
             previous_image_tags=previous.tags,
             previous_image_version=previous.version,
+            error=item.error,
         )
 
     results = [_to_job_result(item) for item in items]

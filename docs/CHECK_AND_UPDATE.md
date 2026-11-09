@@ -61,8 +61,8 @@ Container recreation sends the Engine API create body:
 - All labels, environment variables, mounts, port bindings, device requests (GPUs), ulimits, and sysctls are preserved faithfully.
 - Anonymous volume identities are retained across recreations.
 - Secondary networks are attached before container startup.
-- **Preflight validation**: recreate configurations are checked against daemon API capabilities (such as image mounts and `GwPriority` requiring API 1.48) _before_ stopping or removing the running container. If a capability is unavailable, the update aborts cleanly with no downtime.
-- Recreation uses the Docker-compatible `POST /containers/create` endpoint on Docker and on Podman. A container that records a cidfile or systemd mode fails preflight and stays running. Podman storage options fail the same way. Env files, label files, a host-env copy, pods, and a pull policy are not engine API fields; a create request that sets them fails before the container is replaced.
+- **Preflight validation**: the new container config and the rollback config are both turned into engine create requests before anything is stopped or removed. That check includes unsupported fields, size and device parsing, healthcheck and mount values, and daemon API gates (image mounts and `GwPriority` need API 1.48). `RuntimePreflightError` aborts that container's update. The original container keeps running, and dependents are left running unless another container in the plan is still going to be recreated. The reason is stored on the job result and included in the notification.
+- Recreation uses the Docker-compatible `POST /containers/create` endpoint on Docker and on Podman. A container that records a cidfile or systemd mode fails preflight and stays running. Podman storage options fail the same way. Env files, label files, a host-env copy, pods, and a pull policy are not engine API fields; a create request that sets them fails before the container is replaced. The same create-request check runs again in the self-update helper before the app container is renamed.
 
 ## Update delay
 

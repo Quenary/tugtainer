@@ -152,3 +152,23 @@ def test_default_template_appends_pending_version_when_present():
     without_version = template.render(results=results)
     assert "web nginx:latest" in without_version
     assert "->" not in without_version
+
+
+def test_default_template_includes_preflight_error():
+    env = SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
+    env.filters["any_worthy"] = any_worthy
+    template = env.from_string(DEFAULT_NOTIFICATION_TEMPLATE)
+    item = ContainerJobResult(
+        container=ContainerInspectResult(
+            name="web",
+            config=ContainerConfig(image="nginx:latest"),
+        ),
+        result="failed",
+        image_spec="nginx:latest",
+        error="VolumeOptions.Subpath requires Docker API >= 1.45",
+    )
+    body = template.render(
+        results=[JobNotificationResult(host_id=1, host_name="home", items=[item])]
+    )
+
+    assert "VolumeOptions.Subpath requires Docker API >= 1.45" in body

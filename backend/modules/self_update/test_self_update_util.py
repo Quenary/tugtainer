@@ -21,6 +21,7 @@ from backend.modules.self_update.self_update_util import (
     watch_self_update_result,
 )
 from backend.testing import patch_async_session
+from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
     ImageInspectResult,
@@ -321,10 +322,29 @@ class TestStartSelfUpdate:
         assert plan.healthcheck_timeout == 120
         assert plan.db_path == "/tugtainer/tugtainer.db"
 
+        assert plan.api_version is None
+
         helper = client.container.create.await_args.args[0]
         assert helper.name == "tugtainer-self-update"
         assert helper.image == NEW_IMAGE
         client.container.start.assert_awaited_once_with("tugtainer-self-update")
+
+    @pytest.mark.asyncio
+    async def test_preflight_failure_does_not_start_helper(
+        self, client: AsyncMock, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            f"{base_module}.build_create_request",
+            side_effect=RuntimePreflightError(
+                "Image mounts require Docker API >= 1.48"
+            ),
+        )
+
+        with pytest.raises(TugSelfUpdateError, match="Image mounts"):
+            await start_self_update()
+
+        client.container.create.assert_not_called()
+        client.container.start.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_keeps_longer_healthcheck_timeout(
