@@ -10,7 +10,11 @@ product image does not.
 import socket
 import threading
 
-FORWARDS = ((5000, "registry", 5000),)
+FORWARDS = (
+    (5000, "registry", 5000),
+    (5001, "private-registry", 5000),
+    (5002, "unauthorized-registry", 5000),
+)
 
 
 def _pipe(src: socket.socket, dst: socket.socket) -> None:

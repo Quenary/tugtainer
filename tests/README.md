@@ -95,5 +95,10 @@ upgrading.
 - Registry scenarios push to `registry:2` on `localhost:5000`. The daemon
   pulls that name from the published port. The app container forwards its own
   `localhost:5000` to the registry service so digest checks use the same name.
-  Those tests set `INSECURE_REGISTRIES` to `localhost:5000` and leave it there
-  for the rest of the run.
+  Those tests set `INSECURE_REGISTRIES` to the local registry hosts and leave
+  it there for the rest of the run.
+- `private-registry` (`localhost:5001`) requires HTTP basic auth. The test
+  user is `tugtest` and the password is `tugtest-secret`. The app mounts
+  `fixtures/private-registry/config.json` at `/root/.docker/config.json`.
+  `unauthorized-registry` (`localhost:5002`) uses the same password file and
+  is absent from that config, so a pull is rejected.

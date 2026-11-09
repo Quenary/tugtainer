@@ -3,27 +3,66 @@ import { pullImage, removeImageTagIfExists } from './docker.util';
 
 const REGISTRY = 'localhost:5000';
 
-export function imageName(repo: string, tag: string): string {
-  return `${REGISTRY}/${repo}:${tag}`;
+export interface RegistryCredentials {
+  username: string;
+  password: string;
+  serveraddress: string;
+}
+
+export function imageName(
+  repo: string,
+  tag: string,
+  registry = REGISTRY,
+): string {
+  return `${registry}/${repo}:${tag}`;
 }
 
 export async function publishFrom(
   docker: Docker,
   source: string,
   target: string,
+  auth?: RegistryCredentials,
 ): Promise<string> {
   await pullImage(docker, source);
   const { repo, tag } = splitTag(target);
   await docker.getImage(source).tag({ repo, tag });
-  await pushTag(docker, target);
-  const info = await docker.getImage(target).inspect();
-  const digest = (info.RepoDigests ?? []).find((item) =>
-    item.startsWith(`${repo}@`),
-  );
-  if (!digest) {
-    throw new Error(`Registry did not return a digest for ${target}`);
+  await pushTag(docker, target, auth);
+  return digestOf(docker, target);
+}
+
+/**
+ * Commit a new layer before publishing.
+ *
+ * A shared image id collects a RepoDigest for every tag pushed from it.
+ * Check asks the registry once per digest, so a private registry the app
+ * cannot read would repeat that failure for every accumulated tag.
+ */
+export async function publishCommitted(
+  docker: Docker,
+  source: string,
+  target: string,
+  auth?: RegistryCredentials,
+): Promise<string> {
+  await pullImage(docker, source);
+  const builder = await docker.createContainer({
+    Image: source,
+    Cmd: ['/bin/true'],
+  });
+  try {
+    await builder.start();
+    await builder.wait();
+    const { repo, tag } = splitTag(target);
+    const marker = source.replace(/:/g, '-');
+    await builder.commit({
+      repo,
+      tag,
+      changes: [`LABEL dev.quenary.tugtainer.test.commit=${marker}`],
+    });
+  } finally {
+    await builder.remove({ force: true });
   }
-  return digest;
+  await pushTag(docker, target, auth);
+  return digestOf(docker, target);
 }
 
 /** Push a different image under an existing tag, then drop the local tag. */
@@ -31,8 +70,9 @@ export async function replacePublishedTag(
   docker: Docker,
   source: string,
   target: string,
+  auth?: RegistryCredentials,
 ): Promise<void> {
-  await publishFrom(docker, source, target);
+  await publishFrom(docker, source, target, auth);
   await removeImageTagIfExists(docker, target);
 }
 
@@ -65,9 +105,13 @@ export async function publishFailingHealthcheck(
   await removeImageTagIfExists(docker, target);
 }
 
-async function pushTag(docker: Docker, image: string): Promise<void> {
+async function pushTag(
+  docker: Docker,
+  image: string,
+  auth?: RegistryCredentials,
+): Promise<void> {
   const stream = await docker.getImage(image).push({
-    authconfig: { serveraddress: REGISTRY },
+    authconfig: auth ?? { serveraddress: registryHost(image) },
   });
   await new Promise<void>((resolve, reject) => {
     docker.modem.followProgress(
@@ -80,6 +124,23 @@ async function pushTag(docker: Docker, image: string): Promise<void> {
       },
     );
   });
+}
+
+async function digestOf(docker: Docker, target: string): Promise<string> {
+  const { repo } = splitTag(target);
+  const info = await docker.getImage(target).inspect();
+  const digest = (info.RepoDigests ?? []).find((item) =>
+    item.startsWith(`${repo}@`),
+  );
+  if (!digest) {
+    throw new Error(`Registry did not return a digest for ${target}`);
+  }
+  return digest;
+}
+
+function registryHost(image: string): string {
+  const slash = image.indexOf('/');
+  return slash === -1 ? REGISTRY : image.slice(0, slash);
 }
 
 function splitTag(image: string): { repo: string; tag: string } {

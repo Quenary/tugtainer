@@ -124,7 +124,7 @@ async def execute_update_job(
                 )
                 item.remote_image = remote_image
             except Exception as e:
-                logger.exception(f"Failed to pull image for {item.name}")
+                logger.exception(f"Failed to pull image for {item.name}: {e}")
                 item.errors.append(e)
 
             # Prepare config
