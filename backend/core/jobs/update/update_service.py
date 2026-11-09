@@ -76,8 +76,9 @@ async def run_update_service_job(
             logger.info(f"Service {service.name} successfully updated")
             _slot(EJobStatus.DONE, result)
             return result
-        except Exception:
+        except Exception as e:
             logger.exception("Failed to update swarm service")
             result.result = "failed"
+            result.error = str(e)
             _slot(EJobStatus.ERROR, result)
             return result

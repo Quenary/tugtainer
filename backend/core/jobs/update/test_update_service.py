@@ -88,6 +88,7 @@ async def test_run_update_service_job_failure(
     )
 
     assert result.result == "failed"
+    assert result.error == "Docker API error"
     tracker.set_container.assert_called_with("web", EJobStatus.ERROR, result)
 
 
