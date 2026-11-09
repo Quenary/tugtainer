@@ -11,6 +11,12 @@ from .runtime_errors import RuntimeClientError, StreamTruncatedError
 
 logger: Final = logging.getLogger("runtime.stream")
 
+_STREAM_DROPS: Final = (
+    aiohttp.ClientPayloadError,
+    aiohttp.ClientConnectionError,
+    ConnectionError,
+)
+
 
 async def demultiplex_stream(
     reader: aiohttp.StreamReader,
@@ -27,7 +33,10 @@ async def demultiplex_stream(
     """
     if is_tty:
         while True:
-            chunk = await reader.read(8192)
+            try:
+                chunk = await reader.read(8192)
+            except _STREAM_DROPS as exc:
+                raise StreamTruncatedError("Stream dropped before EOF") from exc
             if not chunk:
                 break
             yield (1, chunk)
@@ -36,11 +45,12 @@ async def demultiplex_stream(
     while True:
         try:
             header = await reader.readexactly(8)
-        except aiohttp.ClientPayloadError:
+        except asyncio.IncompleteReadError as exc:
+            if exc.partial:
+                raise StreamTruncatedError("Truncated stream header") from exc
             break
-        except asyncio.IncompleteReadError:
-            # Incomplete header before EOF
-            break
+        except _STREAM_DROPS as exc:
+            raise StreamTruncatedError("Stream dropped before EOF") from exc
 
         stream_type = header[0]
         # Validate standard 8-byte multiplex header: stream_type in (0, 1, 2) and 3 zero bytes
@@ -50,16 +60,19 @@ async def demultiplex_stream(
                 continue
             try:
                 payload = await reader.readexactly(payload_len)
-            except Exception as e:
+            except (asyncio.IncompleteReadError, *_STREAM_DROPS) as exc:
                 raise StreamTruncatedError(
                     f"Truncated stream payload, expected {payload_len} bytes"
-                ) from e
+                ) from exc
             yield (stream_type, payload)
         else:
             # Fallback for un-multiplexed raw stream (e.g. proxy or misconfigured TTY)
             yield (1, header)
             while True:
-                chunk = await reader.read(8192)
+                try:
+                    chunk = await reader.read(8192)
+                except _STREAM_DROPS as exc:
+                    raise StreamTruncatedError("Stream dropped before EOF") from exc
                 if not chunk:
                     break
                 yield (1, chunk)

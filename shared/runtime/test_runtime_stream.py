@@ -57,12 +57,30 @@ async def test_raw_fallback_when_not_multiplexed():
 
 
 @pytest.mark.asyncio
-async def test_incomplete_header_ends_stream():
-    reader = _make_reader(b"short")
-
-    text = await read_stream_as_text(reader, is_tty=False)
+async def test_empty_stream_is_complete():
+    text = await read_stream_as_text(_make_reader(b""), is_tty=False)
 
     assert text == ""
+
+
+@pytest.mark.asyncio
+async def test_short_header_is_truncated():
+    with pytest.raises(StreamTruncatedError, match="header"):
+        await read_stream_as_text(_make_reader(b"short"), is_tty=False)
+
+
+class _DroppingReader:
+    async def readexactly(self, n: int) -> bytes:
+        raise aiohttp.ClientPayloadError("dropped")
+
+    async def read(self, n: int) -> bytes:
+        raise aiohttp.ClientPayloadError("dropped")
+
+
+@pytest.mark.asyncio
+async def test_dropped_connection_is_truncated():
+    with pytest.raises(StreamTruncatedError, match="dropped"):
+        await read_stream_as_text(_DroppingReader(), is_tty=False)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

@@ -20,6 +20,7 @@ from .runtime_errors import (
     RuntimeConflictError,
     RuntimeExecError,
     RuntimeNotFoundError,
+    StreamTruncatedError,
 )
 from .runtime_models import (
     ContainerInspectResult,
@@ -37,6 +38,8 @@ logger: Final = logging.getLogger("runtime.client")
 CLIENT_MIN_DOCKER_API: Final = (1, 44)
 CLIENT_MAX_DOCKER_API: Final = (1, 48)
 LIST_INSPECT_CONCURRENCY: Final = 8
+_EXEC_SETTLE_ATTEMPTS: Final = 4
+_EXEC_SETTLE_DELAY: Final = 0.05
 
 T = TypeVar("T")
 
@@ -549,17 +552,34 @@ class RuntimeClient:
         finally:
             start_resp.close()
 
-        # 3. Inspect final exit code
-        inspect_resp = await self._request("GET", f"/exec/{exec_id}/json")
-        try:
-            info = await inspect_resp.json()
-            exit_code = info.get("ExitCode")
-        finally:
-            inspect_resp.close()
-
-        if exit_code is not None and exit_code != 0:
+        exit_code = await self._exec_exit_code(exec_id)
+        if exit_code != 0:
             raise RuntimeExecError(exit_code=exit_code, stdout=stdout, stderr=stderr)
         return stdout
+
+    async def _exec_exit_code(self, exec_id: str) -> int:
+        """Wait until the exec has stopped and reported an integer exit code."""
+        running: Any = None
+        exit_code: Any = None
+        for attempt in range(_EXEC_SETTLE_ATTEMPTS):
+            inspect_resp = await self._request("GET", f"/exec/{exec_id}/json")
+            try:
+                info = await inspect_resp.json()
+            finally:
+                inspect_resp.close()
+            running = info.get("Running")
+            exit_code = info.get("ExitCode")
+            if (
+                running is False
+                and isinstance(exit_code, int)
+                and not isinstance(exit_code, bool)
+            ):
+                return exit_code
+            if attempt + 1 < _EXEC_SETTLE_ATTEMPTS:
+                await asyncio.sleep(_EXEC_SETTLE_DELAY)
+        raise StreamTruncatedError(
+            f"Exec did not finish: Running={running}, ExitCode={exit_code}"
+        )
 
     # Network Operations
 

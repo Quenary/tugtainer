@@ -22,6 +22,7 @@ from shared.runtime.runtime_errors import (
     RuntimeConflictError,
     RuntimeExecError,
     RuntimeNotFoundError,
+    StreamTruncatedError,
 )
 from shared.runtime.runtime_models import (
     ContainerConfig,
@@ -537,7 +538,7 @@ async def test_container_exec_nonzero_includes_stderr(mocker: MockerFixture) -> 
     started = MagicMock()
     started.content = _stream(_frame(2, b"boom\n"))
     inspected = MagicMock()
-    inspected.json = AsyncMock(return_value={"ExitCode": 2})
+    inspected.json = AsyncMock(return_value={"Running": False, "ExitCode": 2})
     mocker.patch.object(
         client,
         "_request",
@@ -549,6 +550,59 @@ async def test_container_exec_nonzero_includes_stderr(mocker: MockerFixture) -> 
 
     assert exc_info.value.exit_code == 2
     assert exc_info.value.stderr == "boom\n"
+
+
+def _exec_responses(
+    inspect_payloads: list[dict[str, object]],
+) -> list[MagicMock]:
+    created = MagicMock()
+    created.json = AsyncMock(return_value={"Id": "exec1"})
+    started = MagicMock()
+    started.content = _stream(_frame(1, b"ok"))
+    inspected = [
+        MagicMock(json=AsyncMock(return_value=payload), close=MagicMock())
+        for payload in inspect_payloads
+    ]
+    return [created, started, *inspected]
+
+
+@pytest.mark.asyncio
+async def test_container_exec_missing_exit_code_fails(
+    mocker: MockerFixture,
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    mocker.patch("shared.runtime.runtime_client.asyncio.sleep", new=AsyncMock())
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(
+            side_effect=_exec_responses([{"Running": False, "ExitCode": None}] * 4)
+        ),
+    )
+
+    with pytest.raises(StreamTruncatedError, match="ExitCode"):
+        await client.container_exec("web", ["true"])
+
+
+@pytest.mark.asyncio
+async def test_container_exec_still_running_fails(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    sleep = AsyncMock()
+    mocker.patch("shared.runtime.runtime_client.asyncio.sleep", new=sleep)
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(
+            side_effect=_exec_responses([{"Running": True, "ExitCode": None}] * 4)
+        ),
+    )
+
+    with pytest.raises(StreamTruncatedError, match="Running"):
+        await client.container_exec("web", ["sleep"])
+
+    assert sleep.await_count == 3
 
 
 @pytest.mark.asyncio
