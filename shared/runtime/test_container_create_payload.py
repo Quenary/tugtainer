@@ -182,7 +182,10 @@ def test_create_payload_primary_network_endpoint() -> None:
             mac_address="02:42:ac:14:00:08",
             gateway_priority=5,
             link=["db"],
-        )
+            driver_opts={"com.docker.network.endpoint.ifname": "eth0"},
+            link_local_ip=["169.254.1.1"],
+        ),
+        api_version="1.48",
     )
 
     assert name == "web"
@@ -191,10 +194,13 @@ def test_create_payload_primary_network_endpoint() -> None:
     assert endpoint["IPAMConfig"] == {
         "IPv4Address": "172.20.0.8",
         "IPv6Address": "fd00::8",
+        "LinkLocalIPs": ["169.254.1.1"],
     }
     assert endpoint["MacAddress"] == "02:42:ac:14:00:08"
     assert endpoint["GwPriority"] == 5
     assert endpoint["Links"] == ["db"]
+    assert endpoint["DriverOpts"] == {"com.docker.network.endpoint.ifname": "eth0"}
+    assert endpoint["IPAMConfig"]["LinkLocalIPs"] == ["169.254.1.1"]
 
 
 def test_create_payload_single_network_has_no_empty_endpoint() -> None:

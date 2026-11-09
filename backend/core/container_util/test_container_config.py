@@ -477,7 +477,7 @@ def test_inspect_config_round_trips_into_engine_create_body():
     )
 
     schema, _ = get_container_config(container, image=None, docker_version=None)
-    payload, name = build_create_request(schema)
+    payload, name = build_create_request(schema, api_version="1.48")
 
     assert name == "app"
     assert payload["Image"] == "app:1"

@@ -4,6 +4,7 @@ from typing import Any
 from packaging import version
 from packaging.version import Version
 
+from shared.runtime.endpoint_settings import build_endpoint_settings
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
@@ -76,7 +77,7 @@ def build_create_request(
     host = _host_config(body, api_version=api_version)
     if host:
         payload["HostConfig"] = host
-    networking = _networking_config(body)
+    networking = _networking_config(body, api_version=api_version)
     if networking:
         payload["NetworkingConfig"] = networking
     return payload, body.name
@@ -270,6 +271,8 @@ def _host_config(
 
 def _networking_config(
     body: CreateContainerRequestBodySchema,
+    *,
+    api_version: str | None,
 ) -> dict[str, Any] | None:
     """Attach every network. Endpoint settings stay on the first one.
 
@@ -279,7 +282,7 @@ def _networking_config(
     networks = [network for network in (body.networks or []) if network]
     if not networks:
         return None
-    endpoint = _endpoint(body)
+    endpoint = _endpoint(body, api_version)
     if len(networks) == 1:
         if not endpoint:
             return None
@@ -293,20 +296,24 @@ def _networking_config(
     return {"EndpointsConfig": endpoints}
 
 
-def _endpoint(body: CreateContainerRequestBodySchema) -> dict[str, Any]:
-    endpoint: dict[str, Any] = {}
-    ipam: dict[str, Any] = {}
-    _set(ipam, "IPv4Address", body.ip)
-    _set(ipam, "IPv6Address", body.ip6)
-    _set(ipam, "LinkLocalIPs", body.link_local_ip)
-    if ipam:
-        endpoint["IPAMConfig"] = ipam
-    _set(endpoint, "Aliases", body.network_aliases)
+def _endpoint(
+    body: CreateContainerRequestBodySchema,
+    api_version: str | None,
+) -> dict[str, Any]:
+    links = None
     if body.link and body.networks and body.networks[0] not in {"bridge", "default"}:
-        endpoint["Links"] = body.link
-    _set(endpoint, "MacAddress", body.mac_address)
-    _set(endpoint, "GwPriority", body.gateway_priority)
-    return endpoint
+        links = body.link
+    return build_endpoint_settings(
+        ipv4_address=body.ip,
+        ipv6_address=body.ip6,
+        link_local_ips=body.link_local_ip,
+        aliases=body.network_aliases,
+        links=links,
+        mac_address=body.mac_address,
+        driver_opts=body.driver_opts,
+        gateway_priority=body.gateway_priority,
+        api_version=api_version,
+    )
 
 
 def _all_binds(body: CreateContainerRequestBodySchema) -> list[str] | None:

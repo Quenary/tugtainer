@@ -43,6 +43,8 @@ def get_container_net_kwargs(
     LINK: list[str] = HOST_CONFIG.links or []
     MAC_ADDRESS: str | None = None
     GATEWAY_PRIORITY: int | None = None
+    LINK_LOCAL_IP: list[str] | None = None
+    DRIVER_OPTS: dict[str, str] | None = None
     NETWORKS: list[str] = []
     NETWORK_ALIASES: list[str] = []
     PUBLISH: list[PortMapping] = map_port_bindings_to_list(HOST_CONFIG.port_bindings)
@@ -70,10 +72,12 @@ def get_container_net_kwargs(
         if MAIN_NETWORK.ipam_config:
             IP = MAIN_NETWORK.ipam_config.ipv4_address
             IP6 = MAIN_NETWORK.ipam_config.ipv6_address
+            LINK_LOCAL_IP = MAIN_NETWORK.ipam_config.link_local_ips
             # preserve mac address if static ips used
             # https://github.com/Quenary/tugtainer/issues/126
             MAC_ADDRESS = MAIN_NETWORK.mac_address or CONFIG.mac_address
         GATEWAY_PRIORITY = MAIN_NETWORK.gateway_priority
+        DRIVER_OPTS = MAIN_NETWORK.driver_opts
         for net in NETWORKS_KEYS:
             if net == MAIN_KEY:
                 continue
@@ -83,6 +87,7 @@ def get_container_net_kwargs(
             ipam = net_obj.ipam_config
             ipv4 = ipam.ipv4_address if ipam else None
             ipv6 = ipam.ipv6_address if ipam else None
+            link_local = ipam.link_local_ips if ipam else None
             net_mac = net_obj.mac_address if ipam else None
             gw_prio = getattr(net_obj, "gateway_priority", None)
             SECONDARY_CONNECTS.append(
@@ -93,7 +98,9 @@ def get_container_net_kwargs(
                     links=links or None,
                     ipv4_address=ipv4,
                     ipv6_address=ipv6,
+                    link_local_ips=link_local,
                     mac_address=net_mac,
+                    driver_opts=net_obj.driver_opts,
                     gateway_priority=gw_prio,
                 )
             )
@@ -115,6 +122,8 @@ def get_container_net_kwargs(
         IP = None
         IP6 = None
         MAC_ADDRESS = None
+        LINK_LOCAL_IP = None
+        DRIVER_OPTS = None
         LINK = []
         NETWORK_ALIASES = []
         PUBLISH = []
@@ -133,6 +142,8 @@ def get_container_net_kwargs(
         "link": LINK,
         "mac_address": MAC_ADDRESS,
         "gateway_priority": GATEWAY_PRIORITY,
+        "link_local_ip": LINK_LOCAL_IP,
+        "driver_opts": DRIVER_OPTS,
         "networks": NETWORKS,
         "network_aliases": NETWORK_ALIASES,
         "publish": PUBLISH,

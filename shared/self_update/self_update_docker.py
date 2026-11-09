@@ -1,5 +1,6 @@
-from typing import Any, Protocol
+from typing import Protocol
 
+from shared.runtime.endpoint_settings import endpoint_config_from_connect
 from shared.runtime.runtime_client import RuntimeClient
 from shared.runtime.runtime_models import ContainerInspectResult
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
@@ -77,28 +78,20 @@ class HttpSelfUpdateDocker:
         container_id: str,
         connect_body: NetworkConnectBodySchema | None = None,
     ) -> None:
-        endpoint_config: dict[str, Any] = {}
-        ipam: dict[str, Any] = {}
-        if connect_body:
-            if connect_body.ipv4_address:
-                ipam["IPv4Address"] = connect_body.ipv4_address
-            if connect_body.ipv6_address:
-                ipam["IPv6Address"] = connect_body.ipv6_address
-            if ipam:
-                endpoint_config["IPAMConfig"] = ipam
-            if connect_body.aliases:
-                endpoint_config["Aliases"] = connect_body.aliases
-            if connect_body.links:
-                endpoint_config["Links"] = connect_body.links
-            if connect_body.mac_address:
-                endpoint_config["MacAddress"] = connect_body.mac_address
-            if connect_body.gateway_priority is not None:
-                endpoint_config["GatewayPriority"] = connect_body.gateway_priority
-
+        api_version = None
+        if connect_body and connect_body.gateway_priority is not None:
+            if not self._client._negotiated_api_prefix:
+                await self._client.get_version()
+            api_version = self._client._negotiated_api_prefix.removeprefix("/v")
+        endpoint_config = (
+            endpoint_config_from_connect(connect_body, api_version)
+            if connect_body
+            else None
+        )
         await self._client.network_connect(
             network_id=network,
             container_id=container_id,
-            endpoint_config=endpoint_config or None,
+            endpoint_config=endpoint_config,
         )
 
     async def close(self) -> None:

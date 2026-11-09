@@ -87,6 +87,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     ip: str | None = None
     ip6: str | None = None
     gateway_priority: int | None = None
+    driver_opts: dict[str, str] | None = None
     ipc: str | None = None
     isolation: str | None = None
     kernel_memory: int | str | None = None
