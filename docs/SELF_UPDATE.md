@@ -15,15 +15,24 @@ flowchart TD
   Busy -- no --> Pull[Pull the current tag]
   Pull -- already running --> Noop[No newer image]
   Pull -- newer --> Helper[Start the helper from the new image]
-  Helper --> Swap[Rename the app, create the new container, stop the old one, back up SQLite, start the new one]
+  Helper --> Swap[Rename the app, create the new container, connect secondary networks, stop the old one, back up SQLite, start the new one]
   Swap -- healthy --> Done[Remove the old container and the backup]
   Swap -- not healthy --> Roll[Remove the new container, restore the database, start the old one]
   Roll -- cannot finish --> Failed[Report failed and leave the old container stopped]
 ```
 
-The helper is named `<name>-self-update`. It receives only the app's Docker access (`DOCKER_HOST` and networks, or the socket mount) and the data volume. The label `dev.quenary.tugtainer.protected` keeps scheduled updates away from it, and it is removed when it exits. The old container is renamed `<name>-old` and is removed only after the new one is healthy. A pulled image that matches the running one stops with "No newer image". A pinned tag such as `:1.44.3` follows that tag; the dialog's GitHub comparison can disagree with it.
+The helper is named `<name>-self-update`. It receives only the app's Docker access (`DOCKER_HOST` and networks, or the socket mount) and the data volume. The label `dev.quenary.tugtainer.protected` keeps scheduled updates away from it, and it is removed when it exits. The old container is renamed `<name>-old` and is removed only after the new one is healthy. Secondary networks are connected before starting the new container to ensure complete network availability on boot. A pulled image that matches the running one stops with "No newer image". A pinned tag such as `:1.44.3` follows that tag; the dialog's GitHub comparison can disagree with it.
 
 If the new container cannot be removed, or the database cannot be restored, rollback stops and reports `failed`. The old version does not start beside the new one or on a migrated database. After startup the app (new or restored) waits for the helper, reports the result once, and drops the helper's journal. A leftover `<name>-old` is removed only when that journal records it as the old container of a successful update.
+
+## Migration from 1.x to 2.0.0
+
+Upgrading from pre-2.0.0 releases to 2.0.0 requires manual container recreation. The self-update helper strictly validates the plan version (`version: 2`) and safely aborts before any destructive changes if a legacy plan format is supplied. Existing database state and application volumes in `/tugtainer` remain fully compatible.
+
+## Podman and systemd
+
+- For Podman hosts, the helper container runs against the same service socket and user namespace as the application (never switching rootless to rootful).
+- Self-update is rejected if the application container is managed by systemd or Quadlet (`PODMAN_SYSTEMD_UNIT`), preventing collisions with external service managers. Ordinary container management and updates remain enabled.
 
 ## Requirements
 

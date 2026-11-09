@@ -86,23 +86,32 @@ docker run -d -p 9413:8001 \
 
 The host is added under Menu → Hosts. The agent secret matches `AGENT_SECRET` on the agent container. Backend and agent speak HTTP. A reverse proxy can terminate HTTPS.
 
-| Setup | Host URL | SSL | Custom CA |
-| --- | --- | --- | --- |
-| Public CA | `https://…` | on | empty |
-| Private CA or self-signed | `https://…` | on | CA PEM, or the self-signed certificate. The hostname or SAN matches the URL host. |
-| TLS on the agent, no proxy | `https://…` | on | Cert and key mounted into the agent; `--ssl-certfile` and `--ssl-keyfile` via `command` (see [docker-compose.agent.yml](./docker-compose.agent.yml)). The image healthcheck calls `http://localhost:8001` and fails when the agent serves only HTTPS. |
+| Setup                      | Host URL    | SSL | Custom CA                                                                                                                                                                                                                                             |
+| -------------------------- | ----------- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public CA                  | `https://…` | on  | empty                                                                                                                                                                                                                                                 |
+| Private CA or self-signed  | `https://…` | on  | CA PEM, or the self-signed certificate. The hostname or SAN matches the URL host.                                                                                                                                                                     |
+| TLS on the agent, no proxy | `https://…` | on  | Cert and key mounted into the agent; `--ssl-certfile` and `--ssl-keyfile` via `command` (see [docker-compose.agent.yml](./docker-compose.agent.yml)). The image healthcheck calls `http://localhost:8001` and fails when the agent serves only HTTPS. |
+
+### Runtime compatibility
+
+Tugtainer communicates directly with container runtime HTTP APIs over Unix domain sockets or TCP (including socket-proxy).
+
+- **Docker Engine**: Minimum supported Docker Engine is **25.0** (Docker API **1.44**). Version negotiation selects the highest supported API version up to **1.48** (Docker 28.x / current stable).
+- **Podman**: Rootful and rootless service sockets (`/run/podman/podman.sock` or `/run/user/<uid>/podman/podman.sock`) are natively detected and supported.
 
 ### Socket proxy
 
 The app and the agent can run without a direct Docker socket mount. The provided Compose files do this by default. Example proxy: [linuxserver/socket-proxy](https://hub.docker.com/r/linuxserver/socket-proxy).
 
-| Feature | Proxy variables |
-| --- | --- |
-| Check | `CONTAINERS`, `IMAGES`, `POST`, `INFO`, `PING` |
-| Update | `NETWORKS` |
-| Logs | `ALLOW_LOGS` |
-| Start, stop, restart, pause | `ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `ALLOW_PAUSE`, `ALLOW_UNPAUSE` |
-| Swarm | `SERVICES`, `TASKS`, `NODES`, `SWARM` |
+| Feature                     | Proxy variables                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| Discovery & Health          | `VERSION=1`, `PING=1`, `INFO=1`                                                         |
+| Check                       | `CONTAINERS=1`, `IMAGES=1`, `POST=1`                                                    |
+| Update & Recreation         | `CONTAINERS=1`, `IMAGES=1`, `NETWORKS=1`, `POST=1`                                      |
+| Logs                        | `ALLOW_LOGS=1`                                                                          |
+| Hooks & Exec                | `EXEC=1`, `POST=1`                                                                      |
+| Start, stop, restart, pause | `ALLOW_START=1`, `ALLOW_STOP=1`, `ALLOW_RESTARTS=1`, `ALLOW_PAUSE=1`, `ALLOW_UNPAUSE=1` |
+| Swarm                       | `SERVICES=1`, `TASKS=1`, `NODES=1`, `SWARM=1`                                           |
 
 `DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`.
 

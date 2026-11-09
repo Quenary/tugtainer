@@ -27,7 +27,7 @@ General and cross-cutting docs live in `docs/`. Package docs live beside the cod
   - `backend/core/jobs/`: Background job subsystems (`check/`, `update/`, `health/`, `cleanup/`).
   - `backend/modules/`: Domain modules with models, routers, and schemas (`containers/`, `hosts/`, `health/`, `settings/`, `public/`, `auth/`, `images/`, `self_update/`).
   - `backend/alembic/`: SQLite database migrations.
-- **`agent/`**: Lightweight daemon on Docker hosts (`python-on-whales` + FastAPI).
+- **`agent/`**: Lightweight daemon on Docker hosts (async `aiohttp` runtime client + FastAPI).
 - **`shared/`**: Common Pydantic schemas (`shared/schemas/`) and utilities shared between backend and agent. `shared/self_update/` is the self-update helper run from the new app image; it imports nothing from `backend/`.
 - **`frontend/`**: Angular SPA. UI primitives come from `@openng/optimus-ui`.
 - **`tests/`**: Dockerized Playwright E2E and integration tests.

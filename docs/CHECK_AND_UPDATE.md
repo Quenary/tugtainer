@@ -52,6 +52,15 @@ Check and update on the same host run one at a time. Different hosts run in para
 
 Optional [hooks](HOOKS.md) run around stop, update, and rollback when both gates are on.
 
+### Configuration preservation and preflight
+
+Container recreation sends typed JSON specifications directly to the runtime API without intermediate CLI shell escaping:
+
+- All labels, environment variables, mounts, port bindings, device requests (GPUs), ulimits, and sysctls are preserved faithfully.
+- Anonymous volume identities are retained across recreations.
+- Secondary networks are attached before container startup.
+- **Preflight validation**: recreate configurations are checked against daemon API capabilities (such as image mounts and `GwPriority` requiring API 1.48) _before_ stopping or removing the running container. If a capability is unavailable, the update aborts cleanly with no downtime.
+
 ## Update delay
 
 `DELAY_UPDATE_FOR` (seconds, default `0`) waits after a new digest is detected before a scheduled update applies it. A per-container `delay_update_for` replaces the global value when set. The clock starts at the last digest change. If that time was never recorded, the wait is not applied. A manual update does not wait. Check notifications are not delayed.
@@ -60,10 +69,10 @@ Optional [hooks](HOOKS.md) run around stop, update, and rollback when both gates
 
 A successful update records the image the container was running before it. The values come from the inspect the update already did.
 
-| Field | Role |
-| --- | --- |
-| `previous_image_digests` | Repo digests. This is what pins the image in Compose. |
-| `previous_image_tags` | Local tags. Useful for a pinned tag, not for a floating tag such as `latest`. |
+| Field                    | Role                                                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `previous_image_digests` | Repo digests. This is what pins the image in Compose.                                                                                                          |
+| `previous_image_tags`    | Local tags. Useful for a pinned tag, not for a floating tag such as `latest`.                                                                                  |
 | `previous_image_version` | `org.opencontainers.image.version`, then `org.label-schema.version`. A publisher hint: it may come from a base image, be a branch name, or not exist as a tag. |
 
 A rollback or a failure does not record a previous image: the container is still on that image. If none of the three values can be read, the stored ones stay. The app does not search the registry for a tag that matches a digest. The card and [notification templates](NOTIFICATIONS.md) show the recorded values.
