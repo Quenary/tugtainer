@@ -5,22 +5,56 @@ from shared.runtime.runtime_models import (
 )
 
 
-def _ns_to_sec(ns: int | None) -> int | None:
-    return int(ns / 1_000_000_000) if ns else None
-
-
 def _test_list(cfg: ContainerHealthCheck | None) -> list[str]:
     if not cfg or not cfg.test:
         return []
     return list(cfg.test)
 
 
-def _health_cmd(test: list[str]) -> str | None:
-    if len(test) <= 1:
-        return None
-    if test[0] in ("CMD", "CMD-SHELL"):
-        return " ".join(test[1:])
-    return " ".join(test)
+def _same_healthcheck(
+    cfg: ContainerHealthCheck,
+    image_cfg: ContainerHealthCheck | None,
+) -> bool:
+    if image_cfg is None:
+        return False
+    return (
+        _test_list(cfg) == _test_list(image_cfg)
+        and cfg.interval == image_cfg.interval
+        and cfg.timeout == image_cfg.timeout
+        and cfg.retries == image_cfg.retries
+        and cfg.start_period == image_cfg.start_period
+        and cfg.start_interval == image_cfg.start_interval
+    )
+
+
+def _put_durations(
+    result: dict[str, Any],
+    cfg: ContainerHealthCheck,
+    image_cfg: ContainerHealthCheck | None,
+    *,
+    inherit_matching: bool,
+) -> None:
+    pairs = (
+        ("health_interval", cfg.interval, image_cfg.interval if image_cfg else None),
+        ("health_timeout", cfg.timeout, image_cfg.timeout if image_cfg else None),
+        ("health_retries", cfg.retries, image_cfg.retries if image_cfg else None),
+        (
+            "health_start_period",
+            cfg.start_period,
+            image_cfg.start_period if image_cfg else None,
+        ),
+        (
+            "health_start_interval",
+            cfg.start_interval,
+            image_cfg.start_interval if image_cfg else None,
+        ),
+    )
+    for key, value, image_value in pairs:
+        if value is None:
+            continue
+        if inherit_matching and value == image_value:
+            continue
+        result[key] = value
 
 
 def map_healthcheck_to_kwargs(
@@ -29,46 +63,26 @@ def map_healthcheck_to_kwargs(
     *,
     inherit_matching: bool = False,
 ) -> dict[str, Any]:
-    """Map docker inspect healthcheck to run/create kwargs.
+    """Map an inspect healthcheck onto create kwargs.
 
-    Docker CLI always stores --health-cmd as CMD-SHELL, so an image-defined
-    exec-form (CMD) healthcheck must be inherited rather than re-specified.
-    When inherit_matching is set, fields that already match the image are omitted.
+    ``Test`` is copied verbatim, including ``CMD`` and ``NONE``. Durations stay
+    in nanoseconds. When ``inherit_matching`` is set, a healthcheck identical
+    to the image is omitted so the new image definition applies. Any other
+    container healthcheck is sent with its original ``Test`` list.
     """
     if not cfg:
         if inherit_matching and not image_cfg:
             return {}
         return {"healthcheck": False}
 
+    if inherit_matching and _same_healthcheck(cfg, image_cfg):
+        return {}
+
     test = _test_list(cfg)
-    result: dict[str, Any] = {
-        "healthcheck": True,
-        "health_cmd": _health_cmd(test),
-        "health_interval": _ns_to_sec(cfg.interval),
-        "health_timeout": _ns_to_sec(cfg.timeout),
-        "health_retries": cfg.retries,
-        "health_start_period": _ns_to_sec(cfg.start_period),
-    }
-
-    if not inherit_matching or test != _test_list(image_cfg):
-        return result
-
-    # Same test as the image: drop --health-cmd so Docker keeps CMD / CMD-SHELL.
-    result.pop("health_cmd", None)
-    result.pop("healthcheck", None)
-
-    image_interval = _ns_to_sec(image_cfg.interval) if image_cfg else None
-    image_timeout = _ns_to_sec(image_cfg.timeout) if image_cfg else None
-    image_retries = image_cfg.retries if image_cfg else None
-    image_start_period = _ns_to_sec(image_cfg.start_period) if image_cfg else None
-
-    if result["health_interval"] == image_interval:
-        result.pop("health_interval", None)
-    if result["health_timeout"] == image_timeout:
-        result.pop("health_timeout", None)
-    if result["health_retries"] == image_retries:
-        result.pop("health_retries", None)
-    if result["health_start_period"] == image_start_period:
-        result.pop("health_start_period", None)
-
+    result: dict[str, Any] = {}
+    if test:
+        result["health_test"] = test
+    if test != ["NONE"]:
+        result["healthcheck"] = True
+    _put_durations(result, cfg, image_cfg, inherit_matching=inherit_matching)
     return result

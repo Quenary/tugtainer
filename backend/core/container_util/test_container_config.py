@@ -133,11 +133,13 @@ def test_healthcheck_dropped_when_matching_image():
     res, _ = get_container_config(container, image=image, docker_version=None)
 
     assert res.healthcheck is None
+    assert res.health_test is None
     assert res.health_cmd is None
     assert res.health_interval is None
     assert res.health_timeout is None
     assert res.health_retries is None
     assert res.health_start_period is None
+    assert res.health_start_interval is None
 
 
 def test_healthcheck_override_keeps_cmd_when_different_from_image():
@@ -153,7 +155,14 @@ def test_healthcheck_override_keeps_cmd_when_different_from_image():
     res, _ = get_container_config(container, image=image, docker_version=None)
 
     assert res.healthcheck is True
-    assert res.health_cmd == "/beszel health --url http://127.0.0.1:8090"
+    assert res.health_test == [
+        "CMD",
+        "/beszel",
+        "health",
+        "--url",
+        "http://127.0.0.1:8090",
+    ]
+    assert res.health_cmd is None
 
 
 # workdir parametrized test

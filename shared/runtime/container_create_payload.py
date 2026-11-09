@@ -122,26 +122,51 @@ def _exposed_ports(body: CreateContainerRequestBodySchema) -> dict[str, dict]:
     return ports
 
 
-def _healthcheck(body: CreateContainerRequestBodySchema) -> dict[str, Any] | None:
-    if body.healthcheck is False:
-        return {"Test": ["NONE"]}
-    result: dict[str, Any] = {}
+_HEALTH_INT_FIELDS: tuple[tuple[str, str], ...] = (
+    ("health_interval", "Interval"),
+    ("health_timeout", "Timeout"),
+    ("health_retries", "Retries"),
+    ("health_start_period", "StartPeriod"),
+    ("health_start_interval", "StartInterval"),
+)
+
+
+def _validate_healthcheck(body: CreateContainerRequestBodySchema) -> None:
     if body.health_cmd:
-        result["Test"] = ["CMD-SHELL", body.health_cmd]
-    _set(result, "Interval", _seconds_to_ns(body.health_interval))
-    _set(result, "Timeout", _seconds_to_ns(body.health_timeout))
-    _set(result, "Retries", body.health_retries)
-    _set(result, "StartPeriod", _seconds_to_ns(body.health_start_period))
-    _set(result, "StartInterval", _seconds_to_ns(body.health_start_interval))
+        raise RuntimePreflightError(
+            "Cannot represent health_cmd without changing CMD to CMD-SHELL; "
+            "pass Healthcheck.Test as health_test"
+        )
+    if body.health_test is not None:
+        if not body.health_test or any(
+            not isinstance(part, str) for part in body.health_test
+        ):
+            raise RuntimePreflightError(
+                "Healthcheck.Test must be a non-empty list of strings"
+            )
+    for attr, _engine in _HEALTH_INT_FIELDS:
+        value = getattr(body, attr)
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise RuntimePreflightError(
+                f"Cannot represent {attr}; expected a non-negative integer"
+            )
+
+
+def _healthcheck(body: CreateContainerRequestBodySchema) -> dict[str, Any] | None:
+    _validate_healthcheck(body)
+    if body.health_test is not None:
+        result: dict[str, Any] = {"Test": list(body.health_test)}
+    elif body.healthcheck is False:
+        return {"Test": ["NONE"]}
+    else:
+        result = {}
+    for attr, engine_key in _HEALTH_INT_FIELDS:
+        _set(result, engine_key, getattr(body, attr))
     if body.healthcheck and "Test" not in result:
         return None
     return result or None
-
-
-def _seconds_to_ns(value: int | None) -> int | None:
-    if value is None:
-        return None
-    return value * 1_000_000_000
 
 
 def _host_config(body: CreateContainerRequestBodySchema) -> dict[str, Any]:

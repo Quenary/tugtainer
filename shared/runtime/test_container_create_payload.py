@@ -33,14 +33,24 @@ def _host(payload: dict) -> dict:
             {"Healthcheck": {"Test": ["NONE"]}},
         ),
         (
-            {"health_cmd": "true", "health_interval": 10, "health_retries": 3},
+            {
+                "health_test": ["CMD", "echo", "hello world"],
+                "health_interval": 500_000_000,
+                "health_retries": 3,
+                "health_start_interval": 250_000_000,
+            },
             {
                 "Healthcheck": {
-                    "Test": ["CMD-SHELL", "true"],
-                    "Interval": 10_000_000_000,
+                    "Test": ["CMD", "echo", "hello world"],
+                    "Interval": 500_000_000,
                     "Retries": 3,
+                    "StartInterval": 250_000_000,
                 }
             },
+        ),
+        (
+            {"health_test": ["NONE"]},
+            {"Healthcheck": {"Test": ["NONE"]}},
         ),
     ],
 )
@@ -239,3 +249,22 @@ def test_create_payload_rejects_unsupported_fields(field: str) -> None:
     }
     with pytest.raises(RuntimePreflightError, match=field):
         build_create_request(_body(**{field: values.get(field, "value")}))
+
+
+def test_create_payload_rejects_health_cmd() -> None:
+    with pytest.raises(RuntimePreflightError, match="health_cmd"):
+        build_create_request(_body(health_cmd="true"))
+
+
+def test_create_payload_rejects_negative_health_duration() -> None:
+    with pytest.raises(RuntimePreflightError, match="health_interval"):
+        build_create_request(_body(health_interval=-1))
+
+
+def test_create_payload_rejects_non_string_health_test() -> None:
+    body = CreateContainerRequestBodySchema.model_construct(
+        image="nginx",
+        health_test=["CMD", 1],
+    )
+    with pytest.raises(RuntimePreflightError, match="Healthcheck.Test"):
+        build_create_request(body)

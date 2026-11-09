@@ -58,6 +58,8 @@ class CreateContainerRequestBodySchema(BaseModel):
     groups_add: list[str] | None = None
     healthcheck: bool | None = None
     health_cmd: str | None = None
+    health_test: list[str] | None = None
+    # Durations are nanoseconds, matching Healthcheck inspect fields.
     health_interval: int | None = None
     health_retries: int | None = None
     health_start_period: int | None = None
