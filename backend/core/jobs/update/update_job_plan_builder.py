@@ -14,6 +14,7 @@ from backend.core.container_util.container_labels import (
 )
 from backend.core.container_util.get_service_name import get_service_name
 from backend.core.container_util.is_running_container import is_running_container
+from backend.core.container_util.swarm_managed import swarm_service_name
 from backend.db.session import async_session_maker
 from backend.modules.containers.containers_model import (
     ContainersModel,
@@ -69,18 +70,16 @@ async def build_update_job_plan(
         }
 
     # Filter potentially updatable/affected
-    containers = [
-        c
-        for c in containers
-        if get_container_protected_label(c) is not True
-        and (is_running_container(c) or not update_only_running)
-    ]
-    manual_for = [
-        c
-        for c in manual_for
-        if get_container_protected_label(c) is not True
-        and (is_running_container(c) or not update_only_running)
-    ]
+    def _container_can_be_recreated(c: ContainerInspectResult) -> bool:
+        labels = c.config.labels if c.config else None
+        return (
+            get_container_protected_label(c) is not True
+            and swarm_service_name(labels) is None
+            and (is_running_container(c) or not update_only_running)
+        )
+
+    containers = [c for c in containers if _container_can_be_recreated(c)]
+    manual_for = [c for c in manual_for if _container_can_be_recreated(c)]
 
     to_update: set[str] = set()
     if manual_for:

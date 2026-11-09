@@ -157,6 +157,21 @@ describe('ContainersTableComponent', () => {
       );
     });
 
+    it('drops a Swarm task container', () => {
+      component['selected'].set([
+        runningUpdate,
+        container({
+          name: 'web.1.abc',
+          update_available: true,
+          swarm_service: 'web',
+        }),
+      ]);
+
+      expect(component['updatableSelected']().map((item) => item.name)).toEqual(
+        ['web'],
+      );
+    });
+
     it('includes stopped containers when stopped updates are allowed', () => {
       settings.set({
         [ESettingKey.UPDATE_ONLY_RUNNING]: {

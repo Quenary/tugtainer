@@ -69,6 +69,38 @@ async def test_check_container_exits_without_image_spec(
 
 
 @pytest.mark.asyncio
+async def test_check_container_skips_swarm_task(
+    mocker: MockerFixture,
+) -> None:
+    client = MagicMock()
+    client.image.inspect = AsyncMock()
+    tracker = MagicMock()
+    db = SimpleNamespace(update_available=True)
+    session = _session(db)
+    session.commit = AsyncMock()
+    patch_async_session(mocker, base_module, session)
+    container = _container()
+    assert container.config is not None
+    container.config.labels = {
+        "com.docker.swarm.service.id": "svc-id",
+        "com.docker.swarm.service.name": "web",
+    }
+
+    result = await run_check_container_job(
+        client,
+        SimpleNamespace(id=1, name="host"),  # type: ignore[arg-type]
+        container,
+        tracker=tracker,
+    )
+
+    assert result.result is None
+    client.image.inspect.assert_not_called()
+    assert db.update_available is False
+    session.commit.assert_awaited()
+    tracker.set_container.assert_called_with("web", EJobStatus.DONE, None)
+
+
+@pytest.mark.asyncio
 async def test_check_container_queries_registry_without_repo_digests(
     mocker: MockerFixture,
 ) -> None:

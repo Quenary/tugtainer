@@ -11,6 +11,7 @@ from backend.core.container_util.container_labels import (
 from backend.core.container_util.get_container_health_status_str import (
     get_container_health_status_str,
 )
+from backend.core.container_util.swarm_managed import swarm_service_name
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.images.image_digest_model import ImageDigestModel
 from backend.util.get_version_from_labels import get_version_from_labels
@@ -48,6 +49,7 @@ class ContainersListItem(BaseModel):
     exit_code: int | None
     health: str | None
     protected: bool  # Whether dev.quenary.tugtainer.protected is enabled
+    swarm_service: str | None = None  # Swarm service name when this is a task container
     auto_check_label: bool | None = None  # From dev.quenary.tugtainer.auto_check
     auto_update_label: bool | None = None  # From dev.quenary.tugtainer.auto_update
     host_id: int  # host id is also stored in db, but it must be always defined
@@ -100,6 +102,9 @@ class ContainersListItem(BaseModel):
             "exit_code": docker_cont.state.exit_code if docker_cont.state else None,
             "health": get_container_health_status_str(docker_cont),
             "protected": get_container_protected_label(docker_cont) is True,
+            "swarm_service": swarm_service_name(
+                docker_cont.config.labels if docker_cont.config else None
+            ),
             "auto_check_label": get_container_auto_check_label(docker_cont),
             "auto_update_label": get_container_auto_update_label(docker_cont),
             "current_version": get_version_from_labels(

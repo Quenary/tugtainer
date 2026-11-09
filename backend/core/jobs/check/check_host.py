@@ -4,6 +4,7 @@ from typing import Final
 
 from backend.core.agent_client import AgentClient
 from backend.core.container_util.container_labels import exclude_hidden_containers
+from backend.core.container_util.swarm_managed import swarm_service_name
 from backend.core.jobs.check.check_container import run_check_container_job
 from backend.core.jobs.check.check_util import (
     filter_containers_by_check_enabled,
@@ -16,9 +17,18 @@ from backend.modules.containers.containers_util import (
     get_host_containers,
 )
 from backend.modules.hosts.hosts_model import HostsModel
+from shared.runtime.runtime_models import ContainerInspectResult
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
+
+
+def _is_swarm_task(container: ContainerInspectResult) -> bool:
+    config = container.config
+    labels = config.labels if config is not None else None
+    if not isinstance(labels, dict):
+        return False
+    return swarm_service_name(labels) is not None
 
 
 async def run_check_host_job(
@@ -58,6 +68,10 @@ async def run_check_host_job(
             containers = filter_containers_by_check_enabled(
                 containers, containers_db_map
             )
+        # An unnamed check must not open a slot per task. A named check still
+        # reaches run_check_container_job, which closes the slot without a result.
+        if names is None:
+            containers = [c for c in containers if not _is_swarm_task(c)]
         containers = sort_containers_by_checked_at(containers, containers_db_map)
 
         tracker.set_status(EJobStatus.CHECKING)

@@ -113,6 +113,7 @@ export class ContainersTableComponent {
       (c) =>
         c.update_available &&
         !c.protected &&
+        !c.swarm_service &&
         (c.status === 'running' || !updateOnlyRunning),
     );
   });

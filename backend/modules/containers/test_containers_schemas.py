@@ -47,6 +47,21 @@ def _digest() -> ImageDigestModel:
     )
 
 
+def test_from_sources_reports_swarm_service_name():
+    item = ContainersListItem.from_sources(
+        1,
+        _docker(
+            {
+                "com.docker.swarm.service.id": "svc-id",
+                "com.docker.swarm.service.name": "web",
+            }
+        ),
+        None,
+    )
+
+    assert item.swarm_service == "web"
+
+
 def test_from_sources_reads_current_version_and_auto_labels():
     item = ContainersListItem.from_sources(
         1,

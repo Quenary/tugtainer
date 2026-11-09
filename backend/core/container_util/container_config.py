@@ -31,6 +31,7 @@ from .map_ulimits_to_arg import map_ulimits_to_arg
 from .normalize_ns_mode import normalize_ns_mode
 from .normalize_path import normalize_path
 from .parse_extra_hosts import parse_extra_hosts
+from .swarm_managed import swarm_managed_reason
 from .systemd_managed import systemd_managed_reason
 
 
@@ -49,6 +50,9 @@ def validate_recreation_preflight(
     managed = systemd_managed_reason(config.labels, config.env)
     if managed:
         raise RuntimePreflightError(f"Container {container.name} {managed}")
+    swarm = swarm_managed_reason(config.labels)
+    if swarm:
+        raise RuntimePreflightError(f"Container {container.name} {swarm}")
 
     caps = RuntimeCapabilities.from_version(docker_version)
     # An unknown Docker daemon is checked again when the create body is built.
