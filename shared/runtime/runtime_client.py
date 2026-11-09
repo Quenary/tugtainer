@@ -314,12 +314,14 @@ class RuntimeClient:
     ) -> ContainerInspectResult:
         if not self._negotiated_api_prefix:
             await self.get_version()
-        params = {"name": name} if name else None
         data = (
             payload.model_dump(exclude_unset=True, by_alias=True)
             if isinstance(payload, BaseModel)
-            else payload
+            else dict(payload)
         )
+        if not name and isinstance(data, dict):
+            name = data.pop("name", None) or data.pop("Name", None)
+        params = {"name": name} if name else None
         resp = await self._request(
             "POST", "/containers/create", params=params, json_data=data, timeout=600.0
         )
@@ -582,11 +584,22 @@ class RuntimeClient:
 
         return await self.image_inspect(spec)
 
-    async def image_tag(self, spec_or_id: str, repo: str, tag: str) -> None:
+    async def image_tag(
+        self, spec_or_id: str, repo: str, tag: str | None = None
+    ) -> None:
         if not self._negotiated_api_prefix:
             await self.get_version()
+        if tag is None:
+            if ":" in repo:
+                repo_part, tag_part = repo.rsplit(":", 1)
+            else:
+                repo_part, tag_part = repo, "latest"
+        else:
+            repo_part, tag_part = repo, tag
         resp = await self._request(
-            "POST", f"/images/{spec_or_id}/tag", params={"repo": repo, "tag": tag}
+            "POST",
+            f"/images/{spec_or_id}/tag",
+            params={"repo": repo_part, "tag": tag_part},
         )
         resp.close()
 

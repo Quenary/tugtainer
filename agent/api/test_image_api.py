@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock
+
 import pytest
 from fastapi import HTTPException
 from pytest_mock import MockerFixture
@@ -7,7 +9,10 @@ from agent.api.image_api import is_exists
 
 @pytest.mark.asyncio
 async def test_image_is_exists_raises_when_missing(mocker: MockerFixture):
-    mocker.patch("agent.api.image_api.DOCKER.image.exists", return_value=False)
+    mocker.patch(
+        "agent.api.image_api.RUNTIME_CLIENT.image_exists",
+        new=AsyncMock(return_value=False),
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         await is_exists("missing:latest")

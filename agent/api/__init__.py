@@ -1,4 +1,3 @@
-from .command_api import router as command_router  # noqa: F401
 from .common_api import router as common_router  # noqa: F401
 from .container_api import router as container_router  # noqa: F401
 from .image_api import router as image_router  # noqa: F401

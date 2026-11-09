@@ -1,11 +1,10 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from python_on_whales import DockerException
 
 from agent.auth import verify_signature
-from agent.docker_client import DOCKER
-from agent.unil.asyncall import asyncall
+from agent.docker_client import RUNTIME_CLIENT
+from shared.runtime import RuntimeError
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -13,10 +12,12 @@ router = APIRouter(prefix="/public", tags=["public"])
 @router.get("/health", description="Get health status of the agent")
 async def health():
     try:
-        _ = await asyncall(DOCKER.info)
+        ok = await RUNTIME_CLIENT.ping()
+        if not ok:
+            raise RuntimeError("Runtime ping returned false")
         return "OK"
-    except DockerException as e:
-        message = "Failed to get docker cli info"
+    except (RuntimeError, Exception) as e:
+        message = "Failed to connect to container runtime"
         logging.exception(message)
         raise HTTPException(
             status.HTTP_424_FAILED_DEPENDENCY,

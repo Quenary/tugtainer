@@ -3,12 +3,18 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import HTTPException
 from pytest_mock import MockerFixture
-from python_on_whales import DockerException
 
 from agent.app import (
-    docker_exception_handler,
+    runtime_conflict_handler,
+    runtime_exception_handler,
+    runtime_not_found_handler,
     timeout_exception_handler,
     warn_if_agent_secret_missing,
+)
+from shared.runtime import (
+    RuntimeClientError,
+    RuntimeConflictError,
+    RuntimeNotFoundError,
 )
 
 
@@ -51,24 +57,27 @@ async def test_timeout_exception_handler():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("stdout", "stderr", "fragments"),
-    [
-        (None, None, ["Docker Exception"]),
-        (b"pulled", None, ["Docker Exception", "stdout: pulled"]),
-        (None, b"denied", ["Docker Exception", "stderr: denied"]),
-        (b"out", b"err", ["stdout: out", "stderr: err"]),
-    ],
-)
-async def test_docker_exception_handler(
-    stdout: bytes | None,
-    stderr: bytes | None,
-    fragments: list[str],
-):
-    exc = DockerException(["docker", "info"], 1, stdout=stdout, stderr=stderr)
+async def test_runtime_not_found_handler():
+    exc = RuntimeNotFoundError("container not found")
     with pytest.raises(HTTPException) as exc_info:
-        await docker_exception_handler(MagicMock(), exc)
+        await runtime_not_found_handler(MagicMock(), exc)
+    assert exc_info.value.status_code == 404
+    assert "container not found" in str(exc_info.value.detail)
+
+
+@pytest.mark.asyncio
+async def test_runtime_conflict_handler():
+    exc = RuntimeConflictError("name conflict")
+    with pytest.raises(HTTPException) as exc_info:
+        await runtime_conflict_handler(MagicMock(), exc)
+    assert exc_info.value.status_code == 409
+    assert "name conflict" in str(exc_info.value.detail)
+
+
+@pytest.mark.asyncio
+async def test_runtime_exception_handler():
+    exc = RuntimeClientError("connection refused")
+    with pytest.raises(HTTPException) as exc_info:
+        await runtime_exception_handler(MagicMock(), exc)
     assert exc_info.value.status_code == 424
-    detail = str(exc_info.value.detail)
-    for fragment in fragments:
-        assert fragment in detail
+    assert "connection refused" in str(exc_info.value.detail)

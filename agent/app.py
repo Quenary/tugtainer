@@ -3,10 +3,8 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, status
-from python_on_whales import DockerException
 
 from agent.api import (
-    command_router,
     common_router,
     container_router,
     image_router,
@@ -15,6 +13,13 @@ from agent.api import (
     service_router,
 )
 from agent.config import Config
+from agent.docker_client import RUNTIME_CLIENT
+from shared.runtime import (
+    RuntimeClientError,
+    RuntimeConflictError,
+    RuntimeError,
+    RuntimeNotFoundError,
+)
 from shared.util.endpoint_logging_filter import EndpointLoggingFilter
 
 logging.basicConfig(
@@ -41,14 +46,16 @@ def warn_if_agent_secret_missing() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     warn_if_agent_secret_missing()
-    yield
+    try:
+        yield
+    finally:
+        await RUNTIME_CLIENT.close()
 
 
 app = FastAPI(root_path="/api", lifespan=lifespan)
 app.include_router(public_router)
 app.include_router(container_router)
 app.include_router(image_router)
-app.include_router(command_router)
 app.include_router(network_router)
 app.include_router(common_router)
 app.include_router(service_router)
@@ -62,14 +69,26 @@ async def timeout_exception_handler(request: Request, exc: asyncio.TimeoutError)
     )
 
 
-@app.exception_handler(DockerException)
-async def docker_exception_handler(
+@app.exception_handler(RuntimeNotFoundError)
+async def runtime_not_found_handler(
     request: Request,
-    exc: DockerException,
+    exc: RuntimeNotFoundError,
 ):
-    detail = "Docker Exception"
-    if exc.stdout:
-        detail += f"\nstdout: {exc.stdout}"
-    if exc.stderr:
-        detail += f"\nstderr: {exc.stderr}"
-    raise HTTPException(status.HTTP_424_FAILED_DEPENDENCY, detail)
+    raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+
+
+@app.exception_handler(RuntimeConflictError)
+async def runtime_conflict_handler(
+    request: Request,
+    exc: RuntimeConflictError,
+):
+    raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+
+
+@app.exception_handler(RuntimeClientError)
+@app.exception_handler(RuntimeError)
+async def runtime_exception_handler(
+    request: Request,
+    exc: RuntimeError,
+):
+    raise HTTPException(status.HTTP_424_FAILED_DEPENDENCY, f"Runtime Exception: {exc}")
