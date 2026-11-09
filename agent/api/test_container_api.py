@@ -109,6 +109,37 @@ def test_exec_runs_command_when_allow_exec_true(mocker: MockerFixture):
     )
 
 
+def test_logs_forwards_filters(mocker: MockerFixture):
+    mocker.patch(
+        f"{base_module}.RUNTIME_CLIENT.container_exists",
+        new=AsyncMock(return_value=True),
+    )
+    logs = mocker.patch(
+        f"{base_module}.RUNTIME_CLIENT.container_logs",
+        new=AsyncMock(return_value="line\n"),
+    )
+
+    response = client.post(
+        "/api/container/logs/c1",
+        json={
+            "tail": 20,
+            "timestamps": True,
+            "details": True,
+            "since": "2026-11-09T12:00:00Z",
+            "until": "2026-11-09T13:00:00Z",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == "line\n"
+    kwargs = logs.await_args.kwargs
+    assert kwargs["details"] is True
+    assert kwargs["timestamps"] is True
+    assert kwargs["tail"] == 20
+    assert kwargs["since"] is not None
+    assert kwargs["until"] is not None
+
+
 def test_exec_404_when_container_missing(mocker: MockerFixture):
     mocker.patch(f"{base_module}.Config.ALLOW_EXEC", True)
     mocker.patch(

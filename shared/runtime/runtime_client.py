@@ -469,6 +469,7 @@ class RuntimeClient:
         timestamps: bool = False,
         since: Any = None,
         until: Any = None,
+        details: bool = False,
     ) -> str:
         if not self._negotiated_api_prefix:
             await self.get_version()
@@ -479,6 +480,7 @@ class RuntimeClient:
             "stdout": stdout,
             "stderr": stderr,
             "timestamps": timestamps,
+            "details": details,
         }
         if tail is not None:
             params["tail"] = tail

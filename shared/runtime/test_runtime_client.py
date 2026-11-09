@@ -636,3 +636,29 @@ async def test_container_logs_follow_tty(mocker: MockerFixture, tty: bool) -> No
     text = await client.container_logs("web")
 
     assert text == "plain log\n"
+
+
+@pytest.mark.asyncio
+async def test_container_logs_forwards_details(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    mocker.patch.object(
+        client,
+        "container_inspect",
+        new=AsyncMock(
+            return_value=ContainerInspectResult(config=ContainerConfig(tty=False))
+        ),
+    )
+    response = MagicMock()
+    response.content = _stream(_frame(1, b"line\n"))
+    request = mocker.patch.object(
+        client, "_request", new=AsyncMock(return_value=response)
+    )
+
+    text = await client.container_logs("web", tail=20, timestamps=True, details=True)
+
+    assert text == "line\n"
+    params = request.await_args.kwargs["params"]
+    assert params["details"] is True
+    assert params["timestamps"] is True
+    assert params["tail"] == 20
