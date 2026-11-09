@@ -139,6 +139,31 @@ def test_service_list_manager_returns_services(mocker: MockerFixture):
     assert data[0]["update_status_message"] == "update completed"
 
 
+def test_service_list_reads_service_status_counts(mocker: MockerFixture):
+    _patch_manager(mocker, control_available=True)
+    inspect_data = [
+        make_service_inspect(
+            "svc-status",
+            "web",
+            "nginx:1",
+            replicas=5,
+            running_tasks=1,
+            desired_tasks=3,
+        )
+    ]
+    mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.service_list",
+        new=AsyncMock(return_value=inspect_data),
+    )
+
+    response = client.get("/api/service/list")
+
+    assert response.status_code == 200
+    replicas = response.json()[0]["replicas"]
+    assert replicas["running"] == 1
+    assert replicas["desired"] == 3
+
+
 def test_service_list_replicated_desired_from_mode(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
     inspect_data = [make_service_inspect("svc3", "db", "postgres:16", replicas=4)]

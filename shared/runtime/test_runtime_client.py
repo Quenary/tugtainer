@@ -328,3 +328,29 @@ async def test_image_list_inspects_each_summary(mocker: MockerFixture) -> None:
 
     assert result == [inspected]
     inspect.assert_awaited_once_with("sha256:img")
+
+
+@pytest.mark.asyncio
+async def test_service_list_requests_task_status(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._runtime_type = "docker"
+    payload = [
+        {
+            "ID": "svc1",
+            "ServiceStatus": {"RunningTasks": 2, "DesiredTasks": 3},
+        }
+    ]
+    request = mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=_json_response(mocker, payload)),
+    )
+
+    result = await client.service_list()
+
+    assert request.await_args is not None
+    assert request.await_args.args == ("GET", "/services")
+    assert request.await_args.kwargs["params"] == {"status": True}
+    assert result[0]["ServiceStatus"]["RunningTasks"] == 2
+    assert result[0]["ServiceStatus"]["DesiredTasks"] == 3

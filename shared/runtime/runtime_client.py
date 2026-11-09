@@ -666,7 +666,7 @@ class RuntimeClient:
             await self.get_version()
         if self._runtime_type == "podman":
             return []
-        resp = await self._request("GET", "/services")
+        resp = await self._request("GET", "/services", params={"status": True})
         try:
             return await resp.json()
         finally:
