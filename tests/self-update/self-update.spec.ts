@@ -54,10 +54,17 @@ async function pushNextImage(
   version: string,
   entrypoint = APP_ENTRYPOINT,
 ): Promise<string> {
+  // The test app replaces the image entrypoint so it can forward the
+  // registry. A broken ENTRYPOINT would never run. Replacing the script
+  // the override execs makes that container exit.
+  const broken = entrypoint !== APP_ENTRYPOINT;
+  const rewrite = broken
+    ? `echo ${version} > /app/version && printf '%s\\n' '#!/bin/sh' 'exit 1' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh`
+    : `echo ${version} > /app/version`;
   const builder = await docker.createContainer({
     Image: imageId,
     Entrypoint: ['sh', '-c'],
-    Cmd: [`echo ${version} > /app/version`],
+    Cmd: [rewrite],
   });
   try {
     await builder.start();
@@ -65,7 +72,7 @@ async function pushNextImage(
     const committed = await builder.commit({
       repo: 'localhost:5000/tugtainer',
       tag: 'tests',
-      changes: [`ENTRYPOINT ${entrypoint}`, 'CMD ["python3"]'],
+      changes: [`ENTRYPOINT ${APP_ENTRYPOINT}`, 'CMD ["python3"]'],
     });
     await pushImage(docker, APP_IMAGE);
     await docker.getImage(APP_IMAGE).remove();
@@ -107,11 +114,21 @@ async function getVersion(request: APIRequestContext): Promise<string> {
 async function waitForResult(
   request: APIRequestContext,
 ): Promise<{ status: string; error: string | null }> {
-  await login(request);
   await expect
     .poll(
       async () => {
-        const res = await request.get('/api/self_update/status');
+        let res = await request.get('/api/self_update/status');
+        // The replacement container signs a new JWT, so the session from
+        // before the swap is rejected. Sign in against the container that
+        // is up now and read the status again.
+        if (res.status() === 401) {
+          try {
+            await login(request);
+          } catch {
+            return false;
+          }
+          res = await request.get('/api/self_update/status');
+        }
         const status = res.ok() ? (await res.json()).state?.status : null;
         return FINAL_STATUSES.includes(status);
       },
