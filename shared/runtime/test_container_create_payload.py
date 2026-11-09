@@ -183,6 +183,30 @@ def test_create_payload_primary_network_endpoint() -> None:
     assert endpoint["Links"] == ["db"]
 
 
+def test_create_payload_single_network_has_no_empty_endpoint() -> None:
+    payload, _ = build_create_request(_body(networks=["appnet"]))
+
+    assert payload["HostConfig"]["NetworkMode"] == "appnet"
+    assert "NetworkingConfig" not in payload
+
+
+def test_create_payload_attaches_every_network() -> None:
+    payload, _ = build_create_request(
+        _body(
+            networks=["main", "extra", "main"],
+            ip="172.20.0.8",
+            network_aliases=["web"],
+        )
+    )
+
+    assert payload["HostConfig"]["NetworkMode"] == "main"
+    endpoints = payload["NetworkingConfig"]["EndpointsConfig"]
+    assert list(endpoints) == ["main", "extra"]
+    assert endpoints["main"]["IPAMConfig"]["IPv4Address"] == "172.20.0.8"
+    assert endpoints["main"]["Aliases"] == ["web"]
+    assert endpoints["extra"] == {}
+
+
 def test_create_payload_quoted_gpu_request() -> None:
     payload, _ = build_create_request(
         _body(gpus='"device=gpu0,capabilities=gpu,compute"')

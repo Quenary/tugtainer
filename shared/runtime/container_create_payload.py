@@ -70,9 +70,9 @@ def build_create_request(
     host = _host_config(body)
     if host:
         payload["HostConfig"] = host
-    endpoint = _endpoint(body)
-    if body.networks and endpoint:
-        payload["NetworkingConfig"] = {"EndpointsConfig": {body.networks[0]: endpoint}}
+    networking = _networking_config(body)
+    if networking:
+        payload["NetworkingConfig"] = networking
     return payload, body.name
 
 
@@ -231,6 +231,31 @@ def _host_config(body: CreateContainerRequestBodySchema) -> dict[str, Any]:
     if body.remove:
         host["AutoRemove"] = True
     return host
+
+
+def _networking_config(
+    body: CreateContainerRequestBodySchema,
+) -> dict[str, Any] | None:
+    """Attach every network. Endpoint settings stay on the first one.
+
+    A single network with no extra settings is expressed only as NetworkMode.
+    Further networks need an EndpointsConfig entry or the daemon never connects them.
+    """
+    networks = [network for network in (body.networks or []) if network]
+    if not networks:
+        return None
+    endpoint = _endpoint(body)
+    if len(networks) == 1:
+        if not endpoint:
+            return None
+        return {"EndpointsConfig": {networks[0]: endpoint}}
+    endpoints: dict[str, Any] = {}
+    for index, network in enumerate(networks):
+        if index == 0:
+            endpoints[network] = endpoint or {}
+        else:
+            endpoints.setdefault(network, {})
+    return {"EndpointsConfig": endpoints}
 
 
 def _endpoint(body: CreateContainerRequestBodySchema) -> dict[str, Any]:
