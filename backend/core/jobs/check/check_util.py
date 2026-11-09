@@ -104,8 +104,7 @@ async def get_image_remote_digest(
         local_digest = local_digest.split("@")[-1]
         headers["If-None-Match"] = local_digest
 
-    docker_config = DockerConfig()
-    basic_token = docker_config.get_basic_token(registry)
+    identity_token, basic_token = _docker_registry_auth(registry)
 
     def _on_resp(resp: aiohttp.ClientResponse) -> str | None:
         logger.debug(resp)
@@ -139,6 +138,7 @@ async def get_image_remote_digest(
                         basic_token,
                         ssl,
                         insecure,
+                        identity_token,
                     )
                     headers["Authorization"] = f"Bearer {bearer_token}"
                     auth_applied = True
@@ -291,6 +291,7 @@ async def get_registry_bearer_token(
     basic_token: str | None = None,
     ssl: bool = True,
     insecure: bool = False,
+    identity_token: str | None = None,
 ) -> str:
     """
     Get registry bearer token
@@ -301,6 +302,7 @@ async def get_registry_bearer_token(
     :param basic_token: basic token
     :param ssl: ssl flag for request
     :param insecure: whether the image registry is in INSECURE_REGISTRIES
+    :param identity_token: OAuth refresh token from config.json; takes precedence
     :return: token
     """
 
@@ -314,6 +316,24 @@ async def get_registry_bearer_token(
 
     service = items.get("service")
     scope = items.get("scope") or f"repository:{repo}:pull"
+
+    if identity_token:
+        form = {
+            "grant_type": "refresh_token",
+            "refresh_token": identity_token,
+            "service": service or "",
+            "scope": scope,
+            "client_id": "docker",
+        }
+        async with session.post(
+            realm,
+            data=form,
+            ssl=ssl,
+            allow_redirects=False,
+        ) as resp:
+            resp.raise_for_status()
+            data: dict[str, Any] = await resp.json()
+            return data.get("token") or data.get("access_token") or ""
 
     params = {"service": service, "scope": scope}
 
@@ -331,8 +351,17 @@ async def get_registry_bearer_token(
         allow_redirects=False,
     ) as resp:
         resp.raise_for_status()
-        data: dict[str, Any] = await resp.json()
+        data = await resp.json()
         return data.get("token") or data.get("access_token") or ""
+
+
+def _docker_registry_auth(registry: str) -> tuple[str | None, str | None]:
+    """Identity token when present, otherwise the basic token for the host."""
+    config = DockerConfig()
+    identity_token = config.get_identity_token(registry)
+    if identity_token:
+        return identity_token, None
+    return None, config.get_basic_token(registry)
 
 
 _MANIFEST_ACCEPT: Final = ",".join(
@@ -566,6 +595,7 @@ async def _registry_get_json(
     basic_token: str | None,
     ssl: bool,
     insecure: bool,
+    identity_token: str | None = None,
 ) -> tuple[object, dict[str, str]]:
     """
     GET a registry URL, applying the same Bearer or Basic auth as digest HEAD.
@@ -594,6 +624,7 @@ async def _registry_get_json(
                 basic_token,
                 ssl,
                 insecure,
+                identity_token,
             )
             attempt["Authorization"] = f"Bearer {bearer_token}"
         elif basic_token:
@@ -622,7 +653,7 @@ async def fetch_remote_config_blob(
     if insecure:
         schemes.append("http")
     ssl = not insecure
-    basic_token = DockerConfig().get_basic_token(registry)
+    identity_token, basic_token = _docker_registry_auth(registry)
 
     async with aiohttp.ClientSession(trust_env=True) as session:
         last_error: Exception | None = None
@@ -641,6 +672,7 @@ async def fetch_remote_config_blob(
                     basic_token,
                     ssl,
                     insecure,
+                    identity_token,
                 )
                 used_scheme = scheme
                 break
@@ -674,6 +706,7 @@ async def fetch_remote_config_blob(
                 basic_token,
                 ssl,
                 insecure,
+                identity_token,
             )
         if not config_digest:
             raise ValueError(f"Could not resolve image config digest for {spec}")
@@ -688,6 +721,7 @@ async def fetch_remote_config_blob(
             basic_token,
             ssl,
             insecure,
+            identity_token,
         )
         if not isinstance(blob, dict):
             raise ValueError(f"Image config for {spec} is not a JSON object")

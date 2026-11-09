@@ -122,6 +122,12 @@ def _warn_unsupported_helpers(data: dict[str, Any]) -> None:
 
 
 def _auth_config(serveraddress: str, entry: dict[str, Any]) -> dict[str, str] | None:
+    identity_token = entry.get("identitytoken")
+    if isinstance(identity_token, str) and identity_token.strip():
+        return {
+            "identitytoken": identity_token.strip(),
+            "serveraddress": serveraddress,
+        }
     username = entry.get("username")
     password = entry.get("password")
     if isinstance(username, str) and isinstance(password, str):

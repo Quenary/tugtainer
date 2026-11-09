@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from backend.core.jobs.check.check_util import (
     ImagePlatform,
+    _docker_registry_auth,
     assess_image_update,
     filter_containers_by_check_enabled,
     get_image_remote_digest,
@@ -244,7 +245,10 @@ async def test_get_image_remote_digest_uses_registry_1_for_docker_io(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("docker.io/p3terx/aria2-pro:latest")
@@ -287,7 +291,10 @@ async def test_get_image_remote_digest_bearer_auth_flow(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("nginx:latest")
@@ -297,6 +304,53 @@ async def test_get_image_remote_digest_bearer_auth_flow(
     auth_header = session.head.call_args_list[1].kwargs["headers"]["Authorization"]
     assert auth_header == "Bearer tok"
     assert session.get.call_args.kwargs["allow_redirects"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_registry_bearer_token_exchanges_identity_token() -> None:
+    token_resp = MagicMock()
+    token_resp.raise_for_status = MagicMock()
+    token_resp.json = AsyncMock(return_value={"access_token": "access"})
+    token_resp.__aenter__ = AsyncMock(return_value=token_resp)
+    token_resp.__aexit__ = AsyncMock(return_value=False)
+    session = MagicMock()
+    session.post = MagicMock(return_value=token_resp)
+    session.get = MagicMock()
+
+    result = await get_registry_bearer_token(
+        session,
+        (
+            'Bearer realm="https://auth.example/token",service="acr",'
+            'scope="repository:app:pull"'
+        ),
+        "app",
+        basic_token="unused-basic",
+        identity_token="refresh-token",
+    )
+
+    assert result == "access"
+    session.get.assert_not_called()
+    assert session.post.call_args.args[0] == "https://auth.example/token"
+    assert session.post.call_args.kwargs["data"] == {
+        "grant_type": "refresh_token",
+        "refresh_token": "refresh-token",
+        "service": "acr",
+        "scope": "repository:app:pull",
+        "client_id": "docker",
+    }
+    assert "headers" not in session.post.call_args.kwargs
+
+
+def test_docker_registry_auth_prefers_identity_token(mocker: MockerFixture) -> None:
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(
+            get_identity_token=lambda _registry: "refresh-token",
+            get_basic_token=lambda _registry: "basic-token",
+        ),
+    )
+
+    assert _docker_registry_auth("myregistry.azurecr.io") == ("refresh-token", None)
 
 
 @pytest.mark.asyncio
@@ -317,7 +371,10 @@ async def test_get_image_remote_digest_returns_local_on_304(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("nginx:latest", local_digest)
@@ -365,7 +422,10 @@ async def test_get_image_remote_digest_does_not_treat_lookalike_as_insecure(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value="localhost")
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("localhost.attacker.com/test/image:test")
@@ -396,7 +456,10 @@ async def test_get_image_remote_digest_uses_http_ssl_for_exact_insecure_host(
     )
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("localhost:5000/myimage:dev")
@@ -647,7 +710,10 @@ async def test_get_remote_image_metadata_follows_index_then_config_blob(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     meta = await get_remote_image_metadata(
@@ -693,7 +759,10 @@ async def test_get_remote_image_metadata_reuses_bearer_token_for_the_blob(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
     token = mocker.patch(
         f"{module_path}.get_registry_bearer_token",
@@ -750,7 +819,10 @@ async def test_get_image_remote_digest_strips_etag_quotes(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("ghcr.io/example/app:1")

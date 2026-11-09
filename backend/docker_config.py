@@ -43,15 +43,35 @@ class DockerConfig:
         """
         Get Basic auth token for registry using exact normalized host match.
         """
+        entry = self._auth_entry(registry)
+        if not entry or "auth" not in entry:
+            return None
+        auth = entry["auth"]
+        return auth if isinstance(auth, str) else None
+
+    def get_identity_token(self, registry: str) -> str | None:
+        """
+        OAuth refresh token from an auths entry, as written by ``docker login``.
+
+        When this is set it is the registry credential. Username and password
+        on the same entry are not used.
+        """
+        entry = self._auth_entry(registry)
+        if not entry:
+            return None
+        token = entry.get("identitytoken")
+        if isinstance(token, str) and token.strip():
+            return token.strip()
+        return None
+
+    def _auth_entry(self, registry: str) -> dict[str, Any] | None:
         target = normalize_registry_host(registry)
         if not target:
             return None
-
         for key, entry in self.auths.items():
             if normalize_registry_host(key) != target:
                 continue
-            if entry and "auth" in entry:
-                return entry["auth"]
+            if isinstance(entry, dict):
+                return entry
             return None
-
         return None

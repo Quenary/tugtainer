@@ -61,6 +61,44 @@ def test_registry_auth_decodes_matching_entry(tmp_path: Path) -> None:
     }
 
 
+def test_registry_auth_uses_identity_token_without_password(tmp_path: Path) -> None:
+    _write_config(
+        tmp_path,
+        {"auths": {"myregistry.azurecr.io": {"identitytoken": "refresh-token"}}},
+    )
+
+    auth = registry_auth_for_image("myregistry.azurecr.io/app:1", config_dir=tmp_path)
+
+    assert auth == {
+        "identitytoken": "refresh-token",
+        "serveraddress": "myregistry.azurecr.io",
+    }
+
+
+def test_registry_auth_identity_token_precedes_username_password(
+    tmp_path: Path,
+) -> None:
+    _write_config(
+        tmp_path,
+        {
+            "auths": {
+                "myregistry.azurecr.io": {
+                    "username": "00000000-0000-0000-0000-000000000000",
+                    "password": "secret",
+                    "identitytoken": " refresh-token ",
+                }
+            }
+        },
+    )
+
+    auth = registry_auth_for_image("myregistry.azurecr.io/app:1", config_dir=tmp_path)
+
+    assert auth == {
+        "identitytoken": "refresh-token",
+        "serveraddress": "myregistry.azurecr.io",
+    }
+
+
 def test_registry_auth_uses_username_and_password_fields(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
@@ -146,3 +184,39 @@ async def test_image_pull_sends_registry_auth_header(
     assert request.await_args is not None
     header = request.await_args.kwargs["headers"]["X-Registry-Auth"]
     assert header == encode_registry_auth(auth)
+
+
+@pytest.mark.asyncio
+async def test_image_pull_sends_identity_token_header(
+    mocker: MockerFixture,
+) -> None:
+    auth = {
+        "identitytoken": "refresh-token",
+        "serveraddress": "myregistry.azurecr.io",
+    }
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    response = mocker.MagicMock()
+    request = mocker.patch.object(
+        client,
+        "_request",
+        new=mocker.AsyncMock(return_value=response),
+    )
+
+    async def _empty(_reader: object):
+        if False:
+            yield {}
+
+    mocker.patch(
+        "shared.runtime.runtime_client.parse_json_lines_stream",
+        side_effect=_empty,
+    )
+    mocker.patch.object(client, "image_inspect", new=mocker.AsyncMock())
+
+    await client.image_pull("myregistry.azurecr.io/app:1", auth_config=auth)
+
+    header = request.await_args.kwargs["headers"]["X-Registry-Auth"]
+    decoded = json.loads(base64.urlsafe_b64decode(header))
+    assert decoded == auth
+    assert "username" not in decoded
+    assert "password" not in decoded
