@@ -4,9 +4,6 @@ from inspect import iscoroutinefunction
 from typing import Any, Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +28,9 @@ from backend.modules.images.image_digest_model import ImageDigestModel
 from backend.modules.images.image_digest_util import (
     load_image_digests,
     pending_image_digest,
+)
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
 )
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,

@@ -2,10 +2,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field, field_validator
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-    PortBinding,
-)
 
 from backend.core.container_util.container_labels import (
     get_container_auto_check_label,
@@ -18,6 +14,10 @@ from backend.core.container_util.get_container_health_status_str import (
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.images.image_digest_model import ImageDigestModel
 from backend.util.get_version_from_labels import get_version_from_labels
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    PortBinding,
+)
 
 if TYPE_CHECKING:
     from .containers_model import ContainersModel

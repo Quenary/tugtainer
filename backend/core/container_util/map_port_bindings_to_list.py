@@ -1,12 +1,12 @@
-from python_on_whales.components.container.models import PortBinding
-from python_on_whales.utils import ValidPortMapping
+from shared.runtime.runtime_models import PortBinding
+from shared.schemas.container_schemas import PortMapping
 
 
 def map_port_bindings_to_list(
     bindings: dict[str, list[PortBinding] | None] | None,
-) -> list[ValidPortMapping]:
-    """Map docker inspect PortBindings to list of ValidPortMapping"""
-    result: list[ValidPortMapping] = []
+) -> list[PortMapping]:
+    """Map docker inspect PortBindings to list of PortMapping"""
+    result: list[PortMapping] = []
 
     if not bindings:
         return result

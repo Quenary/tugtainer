@@ -1,11 +1,10 @@
 from dataclasses import dataclass, field
 
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
-
 from backend.core.jobs.jobs_results import ContainerJobOutcome
 from backend.util.get_version_from_labels import get_version_from_labels
+from shared.runtime.runtime_models import (
+    ImageInspectResult,
+)
 
 
 @dataclass

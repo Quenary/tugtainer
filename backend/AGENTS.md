@@ -38,7 +38,7 @@ Convert a row with `Schema.model_validate(row)`.
 
 ## Agents
 
-The backend does not talk to Docker itself. `AgentClient` (`core/agent_client.py`) signs requests (`shared/util/signature.py`) and calls the host agent over aiohttp. Bodies are `shared/schemas/` models. Inspect results come back as `python_on_whales` models (`ContainerInspectResult`, `ImageInspectResult`).
+The backend does not talk to Docker directly. `AgentClient` (`core/agent_client.py`) signs requests (`shared/util/signature.py`) and calls the host agent over aiohttp. Bodies are `shared/schemas/` models. Inspect results come back as project-owned runtime models in `shared.runtime` (`ContainerInspectResult`, `ImageInspectResult`).
 
 `AgentClientManager` keeps one client per enabled host and is filled in `lifespan`. `TugAgentClientError` and aiohttp `ClientError` become HTTP 424.
 

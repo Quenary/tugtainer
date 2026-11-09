@@ -1,3 +1,3 @@
-from python_on_whales import Version
+from shared.runtime.runtime_models import RuntimeVersion
 
-DockerVersionScheme = Version
+DockerVersionScheme = RuntimeVersion

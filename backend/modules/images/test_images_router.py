@@ -2,14 +2,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.modules.images.images_router import get_list
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 
 module_path = "backend.modules.images.images_router"
 

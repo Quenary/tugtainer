@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
@@ -5,23 +6,29 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 
 from backend.core.jobs.check.check_util import (
     ImagePlatform,
+    RegistryBasicAuthError,
+    _docker_registry_auth,
+    _registry_get_json,
+    assess_image_update,
     filter_containers_by_check_enabled,
     get_image_remote_digest,
     get_registry_bearer_token,
     get_remote_image_metadata,
+    image_content_matches,
     is_insecure_registry,
     metadata_from_config_blob,
     next_manifest_step,
     parse_image_spec,
     parse_oci_created,
     sort_containers_by_checked_at,
+)
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+    ImageInspectResult,
 )
 
 module_path = "backend.core.jobs.check.check_util"
@@ -47,6 +54,36 @@ module_path = "backend.core.jobs.check.check_util"
             "localhost:5000",
             "myimage",
             "dev",
+        ),
+        (
+            "localhost:5000/org/app:1",
+            "localhost:5000",
+            "org/app",
+            "1",
+        ),
+        (
+            "localhost:5000/org/app@sha256:abc",
+            "localhost:5000",
+            "org/app",
+            "sha256:abc",
+        ),
+        (
+            "localhost:5000/org/app:1@sha256:abc",
+            "localhost:5000",
+            "org/app",
+            "sha256:abc",
+        ),
+        (
+            "nginx@sha256:abc",
+            "registry-1.docker.io",
+            "library/nginx",
+            "sha256:abc",
+        ),
+        (
+            "repo:tag@sha256:abc",
+            "registry-1.docker.io",
+            "library/repo",
+            "sha256:abc",
         ),
         (
             "library/alpine:3.14",
@@ -211,7 +248,10 @@ async def test_get_image_remote_digest_uses_registry_1_for_docker_io(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("docker.io/p3terx/aria2-pro:latest")
@@ -254,7 +294,10 @@ async def test_get_image_remote_digest_bearer_auth_flow(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("nginx:latest")
@@ -264,6 +307,188 @@ async def test_get_image_remote_digest_bearer_auth_flow(
     auth_header = session.head.call_args_list[1].kwargs["headers"]["Authorization"]
     assert auth_header == "Bearer tok"
     assert session.get.call_args.kwargs["allow_redirects"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_image_remote_digest_identity_token_basic_challenge(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    head_resp = _mock_head_response(
+        401,
+        {"WWW-Authenticate": 'Basic realm="Registry Realm"'},
+    )
+    session = MagicMock()
+    session.head = MagicMock(return_value=head_resp)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+    mocker.patch(f"{module_path}.aiohttp.ClientSession", return_value=session)
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: "refresh-token",
+        ),
+    )
+    exception = mocker.patch.object(
+        logging.getLogger("get_image_remote_digest"), "exception"
+    )
+
+    with caplog.at_level(logging.WARNING):
+        with pytest.raises(RegistryBasicAuthError):
+            await get_image_remote_digest("ghcr.io/example/app:1")
+
+    assert caplog.text.count("identitytoken") == 1
+    assert "Basic" in caplog.text
+    head_resp.raise_for_status.assert_not_called()
+    exception.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_registry_get_json_identity_token_basic_challenge_is_unknown(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    resp = MagicMock()
+    resp.status = 401
+    resp.headers = {"WWW-Authenticate": 'Basic realm="Registry Realm"'}
+    resp.raise_for_status = MagicMock()
+    resp.__aenter__ = AsyncMock(return_value=resp)
+    resp.__aexit__ = AsyncMock(return_value=False)
+    session = MagicMock()
+    session.get = MagicMock(return_value=resp)
+
+    with caplog.at_level(logging.WARNING):
+        with pytest.raises(RegistryBasicAuthError):
+            await _registry_get_json(
+                session,
+                "https://ghcr.io/v2/example/app/manifests/1",
+                {},
+                "example/app",
+                None,
+                True,
+                False,
+                "refresh-token",
+            )
+
+    assert caplog.text.count("identitytoken") == 1
+    resp.raise_for_status.assert_not_called()
+
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(side_effect=RegistryBasicAuthError("ghcr.io")),
+    )
+    exception = mocker.spy(logging.getLogger("assess_image_update"), "exception")
+    local = _image(repo_digests=["example/app@sha256:index"], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update(
+        "ghcr.io/example/app:1", local, local.repo_digests or []
+    )
+
+    assert remote == ["sha256:manifest"]
+    assert update is None
+    exception.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_assess_identity_token_basic_warns_once_for_many_digests(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    head_resp = _mock_head_response(
+        401,
+        {"WWW-Authenticate": 'Basic realm="Registry Realm"'},
+    )
+    session = MagicMock()
+    session.head = MagicMock(return_value=head_resp)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+    mocker.patch(f"{module_path}.aiohttp.ClientSession", return_value=session)
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: "refresh-token",
+        ),
+    )
+    exception = mocker.spy(logging.getLogger("assess_image_update"), "exception")
+    local = _image(
+        repo_digests=[
+            "example/app@sha256:one",
+            "example/app@sha256:two",
+            "example/app@sha256:three",
+        ],
+        layers=["sha256:layer"],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        remote, update = await assess_image_update(
+            "ghcr.io/example/app:1",
+            local,
+            local.repo_digests or [],
+        )
+
+    assert remote == []
+    assert update is None
+    assert caplog.text.count("identitytoken") == 1
+    assert session.head.call_count == 1
+    exception.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_registry_bearer_token_exchanges_identity_token() -> None:
+    token_resp = MagicMock()
+    token_resp.raise_for_status = MagicMock()
+    token_resp.json = AsyncMock(return_value={"access_token": "access"})
+    token_resp.__aenter__ = AsyncMock(return_value=token_resp)
+    token_resp.__aexit__ = AsyncMock(return_value=False)
+    session = MagicMock()
+    session.post = MagicMock(return_value=token_resp)
+    session.get = MagicMock()
+
+    result = await get_registry_bearer_token(
+        session,
+        (
+            'Bearer realm="https://auth.example/token",service="acr",'
+            'scope="repository:app:pull"'
+        ),
+        "app",
+        basic_token="unused-basic",
+        identity_token="refresh-token",
+    )
+
+    assert result == "access"
+    session.get.assert_not_called()
+    assert session.post.call_args.args[0] == "https://auth.example/token"
+    assert session.post.call_args.kwargs["data"] == {
+        "grant_type": "refresh_token",
+        "refresh_token": "refresh-token",
+        "service": "acr",
+        "scope": "repository:app:pull",
+        "client_id": "docker",
+    }
+    assert "headers" not in session.post.call_args.kwargs
+
+
+def test_docker_registry_auth_prefers_identity_token(mocker: MockerFixture) -> None:
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(
+            get_identity_token=lambda _registry: "refresh-token",
+            get_basic_token=lambda _registry: "basic-token",
+        ),
+    )
+
+    assert _docker_registry_auth("myregistry.azurecr.io") == ("refresh-token", None)
 
 
 @pytest.mark.asyncio
@@ -284,7 +509,10 @@ async def test_get_image_remote_digest_returns_local_on_304(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("nginx:latest", local_digest)
@@ -332,7 +560,10 @@ async def test_get_image_remote_digest_does_not_treat_lookalike_as_insecure(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value="localhost")
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("localhost.attacker.com/test/image:test")
@@ -363,7 +594,10 @@ async def test_get_image_remote_digest_uses_http_ssl_for_exact_insecure_host(
     )
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     result = await get_image_remote_digest("localhost:5000/myimage:dev")
@@ -614,7 +848,10 @@ async def test_get_remote_image_metadata_follows_index_then_config_blob(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
 
     meta = await get_remote_image_metadata(
@@ -660,7 +897,10 @@ async def test_get_remote_image_metadata_reuses_bearer_token_for_the_blob(
     mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
     mocker.patch(
         f"{module_path}.DockerConfig",
-        return_value=SimpleNamespace(get_basic_token=lambda _: None),
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
     )
     token = mocker.patch(
         f"{module_path}.get_registry_bearer_token",
@@ -675,3 +915,315 @@ async def test_get_remote_image_metadata_reuses_bearer_token_for_the_blob(
     blob_headers = session.get.call_args_list[2].kwargs["headers"]
     assert blob_headers["Authorization"] == "Bearer tok"
     assert "application/vnd.oci.image.config.v1+json" in blob_headers["Accept"]
+
+
+def _image(
+    *,
+    repo_digests: list[str] | None,
+    layers: list[str] | None,
+    cmd: list[str] | None = None,
+    repo_tags: list[str] | None = None,
+) -> ImageInspectResult:
+    return ImageInspectResult(
+        id="sha256:local",
+        repo_digests=repo_digests,
+        repo_tags=repo_tags,
+        os="linux",
+        architecture="amd64",
+        root_fs={"Layers": layers} if layers is not None else None,
+        config=ContainerConfig(cmd=cmd or ["/bin/app"], env=["PATH=/usr/bin"]),
+    )
+
+
+def _blob(
+    layers: list[str],
+    *,
+    cmd: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "rootfs": {"diff_ids": layers},
+        "config": {"Cmd": cmd or ["/bin/app"], "Env": ["PATH=/usr/bin"]},
+    }
+
+
+@pytest.mark.asyncio
+async def test_get_image_remote_digest_strips_etag_quotes(
+    mocker: MockerFixture,
+):
+    head_resp = _mock_head_response(200, {"Etag": 'W/"sha256:abc123"'})
+    session = MagicMock()
+    session.head = MagicMock(return_value=head_resp)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+    mocker.patch(f"{module_path}.aiohttp.ClientSession", return_value=session)
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=None)
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: None,
+        ),
+    )
+
+    result = await get_image_remote_digest("ghcr.io/example/app:1")
+
+    assert result == "sha256:abc123"
+
+
+@pytest.mark.asyncio
+async def test_assess_quoted_etag_digest_hits_repo_digest_fast_path(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:index"),
+    )
+    fetch = mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(),
+    )
+    local = _image(repo_digests=["example/app@sha256:index"], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update(
+        "ghcr.io/example/app:1", local, local.repo_digests or []
+    )
+
+    assert remote == ["sha256:index"]
+    assert update is False
+    fetch.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_assess_index_digest_matches_platform_manifest_content(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(return_value=_blob(["sha256:layer"])),
+    )
+    local = _image(repo_digests=["example/app@sha256:index"], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update(
+        "ghcr.io/example/app:1", local, local.repo_digests or []
+    )
+
+    assert remote == ["sha256:manifest"]
+    assert update is False
+
+
+@pytest.mark.asyncio
+async def test_assess_empty_repo_digests_matches_config_blob(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    digest = mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(return_value=_blob(["sha256:layer"])),
+    )
+    local = _image(repo_digests=[], repo_tags=[], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update("ghcr.io/example/app:1", local, [])
+
+    digest.assert_awaited_once_with("ghcr.io/example/app:1", None)
+    assert remote == ["sha256:manifest"]
+    assert update is False
+
+
+@pytest.mark.asyncio
+async def test_assess_tagged_local_build_skips_registry(
+    mocker: MockerFixture,
+):
+    digest = mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(),
+    )
+    fetch = mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(),
+    )
+    local = _image(
+        repo_digests=[],
+        repo_tags=["app:local"],
+        layers=["sha256:other"],
+    )
+
+    remote, update = await assess_image_update("app:local", local, [])
+
+    assert remote == []
+    assert update is False
+    digest.assert_not_called()
+    fetch.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_assess_pinned_digest_queries_registry_for_tagged_image(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    digest = mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:pinned"),
+    )
+    fetch = mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(),
+    )
+    local = _image(
+        repo_digests=[],
+        repo_tags=["nginx:alpine"],
+        layers=["sha256:layer"],
+    )
+
+    remote, update = await assess_image_update(
+        "nginx:alpine",
+        local,
+        ["sha256:pinned"],
+    )
+
+    digest.assert_awaited_once_with("nginx:alpine", "sha256:pinned")
+    assert remote == ["sha256:pinned"]
+    assert update is False
+    fetch.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_assess_none_tag_queries_registry(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    digest = mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(return_value=_blob(["sha256:layer"])),
+    )
+    local = _image(
+        repo_digests=[],
+        repo_tags=["<none>:<none>"],
+        layers=["sha256:layer"],
+    )
+
+    remote, update = await assess_image_update("ghcr.io/example/app:1", local, [])
+
+    digest.assert_awaited_once_with("ghcr.io/example/app:1", None)
+    assert remote == ["sha256:manifest"]
+    assert update is False
+
+
+@pytest.mark.asyncio
+async def test_assess_changed_diff_ids_are_available(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(return_value=_blob(["sha256:new-layer"])),
+    )
+    local = _image(repo_digests=["example/app@sha256:index"], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update(
+        "ghcr.io/example/app:1", local, local.repo_digests or []
+    )
+
+    assert remote == ["sha256:manifest"]
+    assert update is True
+
+
+@pytest.mark.asyncio
+async def test_assess_registry_error_is_unknown(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(side_effect=RuntimeError("registry down")),
+    )
+    local = _image(repo_digests=["example/app@sha256:index"], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update(
+        "ghcr.io/example/app:1", local, local.repo_digests or []
+    )
+
+    assert remote == []
+    assert update is None
+
+
+@pytest.mark.asyncio
+async def test_assess_config_fetch_error_is_unknown(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:manifest"),
+    )
+    mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(side_effect=RuntimeError("blob missing")),
+    )
+    local = _image(repo_digests=[], layers=["sha256:layer"])
+
+    remote, update = await assess_image_update("ghcr.io/example/app:1", local, [])
+
+    assert remote == ["sha256:manifest"]
+    assert update is None
+
+
+def test_image_content_matches_requires_rootfs_and_config():
+    same = _image(repo_digests=[], layers=["sha256:layer"], cmd=["/bin/app"])
+    assert (
+        image_content_matches(same, _blob(["sha256:layer"], cmd=["/bin/app"])) is True
+    )
+    assert (
+        image_content_matches(same, _blob(["sha256:layer"], cmd=["/bin/other"]))
+        is False
+    )
+    missing = _image(repo_digests=[], layers=None)
+    assert image_content_matches(missing, _blob(["sha256:layer"])) is None
+
+
+@pytest.mark.asyncio
+async def test_assess_pinned_digest_without_local_image_compares_strings(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:other"),
+    )
+    fetch = mocker.patch(f"{module_path}.fetch_remote_config_blob", new=AsyncMock())
+
+    remote, update = await assess_image_update(
+        "nginx:alpine@sha256:pinned",
+        None,
+        ["sha256:pinned"],
+    )
+
+    assert remote == ["sha256:other"]
+    assert update is True
+    fetch.assert_not_called()

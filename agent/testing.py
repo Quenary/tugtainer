@@ -5,7 +5,6 @@ directly live here so modules do not import ``conftest``.
 """
 
 from typing import Any, Literal
-from unittest.mock import MagicMock
 
 
 def make_swarm_info(
@@ -15,18 +14,19 @@ def make_swarm_info(
     node_id: str | None = None,
     cluster_id: str | None = None,
     with_cluster: bool = True,
-) -> MagicMock:
-    info = MagicMock()
-    swarm = info.swarm
-    swarm.local_node_state = local_node_state
-    swarm.control_available = control_available
-    swarm.node_id = node_id
-    if with_cluster:
-        swarm.cluster = MagicMock()
-        swarm.cluster.id = cluster_id
-    else:
-        swarm.cluster = None
-    return info
+) -> dict[str, Any]:
+    cluster = (
+        {"ID": cluster_id}
+        if with_cluster and cluster_id
+        else ({"ID": None} if with_cluster else None)
+    )
+    swarm = {
+        "LocalNodeState": local_node_state,
+        "ControlAvailable": control_available,
+        "NodeID": node_id,
+        "Cluster": cluster,
+    }
+    return {"Swarm": swarm}
 
 
 def make_service_inspect(

@@ -4,6 +4,7 @@ from typing import Final
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
+from backend.core.agent_protocol import agent_protocol_error
 from backend.core.jobs.jobs_results import ServiceJobResult
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.db.session import async_session_maker
@@ -38,6 +39,13 @@ async def run_update_service_job(
         try:
             logger.info("Starting swarm service update")
             _slot(EJobStatus.PREPARING)
+
+            mismatch = await agent_protocol_error(client)
+            if mismatch:
+                result.result = "failed"
+                result.error = mismatch
+                _slot(EJobStatus.ERROR, result)
+                return result
 
             _slot(EJobStatus.UPDATING)
             await client.service.update(

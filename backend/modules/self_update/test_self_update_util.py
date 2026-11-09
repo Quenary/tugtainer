@@ -6,10 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.core.jobs.jobs_coordinator import HostJobCoordinator, HostJobRuntime
 from backend.exception import TugSelfUpdateError
@@ -25,8 +21,12 @@ from backend.modules.self_update.self_update_util import (
     watch_self_update_result,
 )
 from backend.testing import patch_async_session
-from shared.schemas.container_schemas import CreateContainerRequestBodySchema
-from shared.schemas.docker_version_scheme import DockerVersionScheme
+from shared.agent_protocol import AGENT_UPGRADE_MESSAGE, AgentProtocol
+from shared.runtime.runtime_errors import RuntimePreflightError
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.self_update.self_update_files import read_state, write_state
 from shared.self_update.self_update_schemas import (
     SELF_UPDATE_PLAN_FILE,
@@ -73,10 +73,6 @@ def _container(
     )
 
 
-def _version(api_version: str) -> DockerVersionScheme:
-    return DockerVersionScheme.model_validate({"client": {"api_version": api_version}})
-
-
 def _state(**kwargs) -> SelfUpdateState:
     return SelfUpdateState(
         **{
@@ -112,17 +108,12 @@ class TestGetHelperNetworks:
     def test_keeps_special_modes(self, mode: str) -> None:
         container = _container(network_mode=mode, networks=[])
 
-        assert get_helper_networks(container, None) == [mode]
+        assert get_helper_networks(container) == [mode]
 
     def test_puts_primary_network_first(self) -> None:
         container = _container(network_mode="main", networks=["extra", "main"])
 
-        assert get_helper_networks(container, _version("1.45")) == ["main", "extra"]
-
-    def test_only_primary_network_on_old_api(self) -> None:
-        container = _container(network_mode="main", networks=["extra", "main"])
-
-        assert get_helper_networks(container, _version("1.43")) == ["main"]
+        assert get_helper_networks(container) == ["main", "extra"]
 
 
 class TestGetHelperConfig:
@@ -130,6 +121,7 @@ class TestGetHelperConfig:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("DOCKER_HOST", "tcp://socket-proxy:2375")
+        monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
         container = _container(
             mounts=[
                 {
@@ -152,7 +144,6 @@ class TestGetHelperConfig:
             NEW_IMAGE,
             "tugtainer-self-update",
             "/tugtainer/self_update/plan.json",
-            None,
         )
 
         assert config.model_dump(exclude_unset=True) == {
@@ -178,13 +169,83 @@ class TestGetHelperConfig:
 
     def test_without_docker_host(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("DOCKER_HOST", raising=False)
+        monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
         container = _container()
 
         config = get_helper_config(
-            container, get_data_mount(container), NEW_IMAGE, "h", "/p", None
+            container, get_data_mount(container), NEW_IMAGE, "h", "/p"
         )
 
         assert config.envs is None
+
+    def test_passes_tls_certificate_mount(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("DOCKER_HOST", "tcp://daemon:2376")
+        monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+        monkeypatch.setenv("DOCKER_CERT_PATH", "/certs")
+        container = _container(
+            mounts=[
+                {
+                    "type": "volume",
+                    "name": "tugtainer_data",
+                    "destination": "/tugtainer",
+                },
+                {
+                    "type": "bind",
+                    "source": "/host/certs",
+                    "destination": "/certs",
+                },
+            ]
+        )
+
+        config = get_helper_config(
+            container, get_data_mount(container), NEW_IMAGE, "h", "/p"
+        )
+
+        assert config.envs == {
+            "DOCKER_HOST": "tcp://daemon:2376",
+            "DOCKER_TLS_VERIFY": "1",
+            "DOCKER_CERT_PATH": "/certs",
+        }
+        assert ("/host/certs", "/certs", "ro") in (config.volumes or [])
+
+    def test_refuses_tls_when_cert_directory_is_not_mounted(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("DOCKER_HOST", "tcp://daemon:2376")
+        monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+        monkeypatch.setenv("DOCKER_CERT_PATH", "/certs")
+        container = _container()
+
+        with pytest.raises(TugSelfUpdateError, match="DOCKER_TLS_VERIFY"):
+            get_helper_config(
+                container, get_data_mount(container), NEW_IMAGE, "h", "/p"
+            )
+
+    @pytest.mark.parametrize(
+        "docker_host",
+        ["unix:///var/run/docker.sock", None],
+    )
+    def test_socket_host_ignores_tls_verify(
+        self, monkeypatch: pytest.MonkeyPatch, docker_host: str | None
+    ) -> None:
+        if docker_host is None:
+            monkeypatch.delenv("DOCKER_HOST", raising=False)
+        else:
+            monkeypatch.setenv("DOCKER_HOST", docker_host)
+        monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+        monkeypatch.setenv("DOCKER_CERT_PATH", "/certs")
+        container = _container()
+
+        config = get_helper_config(
+            container, get_data_mount(container), NEW_IMAGE, "h", "/p"
+        )
+
+        envs = config.envs or {}
+        assert "DOCKER_TLS_VERIFY" not in envs
+        assert "DOCKER_CERT_PATH" not in envs
+        assert all("/certs" not in str(volume) for volume in config.volumes or [])
 
 
 def test_get_data_mount_requires_volume() -> None:
@@ -293,6 +354,9 @@ class TestStartSelfUpdate:
             )
         )
         client.common.version = AsyncMock(return_value=None)
+        client.public.version = AsyncMock(
+            return_value=AgentProtocol(version="dev", protocol=2)
+        )
         host = SimpleNamespace(id=1, name="local", container_hc_timeout=90)
         mocker.patch(
             f"{base_module}.find_self",
@@ -322,10 +386,73 @@ class TestStartSelfUpdate:
         assert plan.healthcheck_timeout == 120
         assert plan.db_path == "/tugtainer/tugtainer.db"
 
+        assert plan.api_version is None
+
         helper = client.container.create.await_args.args[0]
         assert helper.name == "tugtainer-self-update"
         assert helper.image == NEW_IMAGE
         client.container.start.assert_awaited_once_with("tugtainer-self-update")
+
+    @pytest.mark.asyncio
+    async def test_helper_connects_secondary_networks_before_start(
+        self, client: AsyncMock, mocker: MockerFixture
+    ) -> None:
+        host = SimpleNamespace(id=1, name="local", container_hc_timeout=90)
+        container = _container(network_mode="main", networks=["extra", "main"])
+        mocker.patch(
+            f"{base_module}.find_self",
+            new=AsyncMock(return_value=(host, client, container)),
+        )
+        order: list[str] = []
+        client.container.create.side_effect = lambda *_args, **_kwargs: order.append(
+            "create"
+        )
+        client.network.connect.side_effect = lambda *_args, **_kwargs: order.append(
+            "connect"
+        )
+        client.container.start.side_effect = lambda *_args, **_kwargs: order.append(
+            "start"
+        )
+
+        await start_self_update()
+
+        helper = client.container.create.await_args.args[0]
+        assert helper.networks == ["main"]
+        connected = client.network.connect.await_args.args[0]
+        assert connected.network == "extra"
+        assert connected.container == "tugtainer-self-update"
+        assert order == ["create", "connect", "start"]
+
+    @pytest.mark.asyncio
+    async def test_protocol_mismatch_does_not_start_helper(
+        self, client: AsyncMock
+    ) -> None:
+        client.public.version = AsyncMock(
+            return_value=AgentProtocol(version="1.0.0", protocol=1)
+        )
+
+        with pytest.raises(TugSelfUpdateError, match=AGENT_UPGRADE_MESSAGE):
+            await start_self_update()
+
+        client.container.create.assert_not_called()
+        client.container.rename.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_preflight_failure_does_not_start_helper(
+        self, client: AsyncMock, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            f"{base_module}.build_create_request",
+            side_effect=RuntimePreflightError(
+                "Image mounts require Docker API >= 1.48"
+            ),
+        )
+
+        with pytest.raises(TugSelfUpdateError, match="Image mounts"):
+            await start_self_update()
+
+        client.container.create.assert_not_called()
+        client.container.start.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_keeps_longer_healthcheck_timeout(
@@ -366,24 +493,19 @@ class TestStartSelfUpdate:
         client.image.pull.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_refuses_disallowed_command(
+    async def test_refuses_quadlet_container(
         self, client: AsyncMock, mocker: MockerFixture, work_dir: Path
     ) -> None:
+        container = _container()
+        if container.config:
+            container.config.labels = {"PODMAN_SYSTEMD_UNIT": "tugtainer.service"}
+        host = SimpleNamespace(id=1, name="local", container_hc_timeout=90)
         mocker.patch(
-            f"{base_module}.get_container_config",
-            return_value=(
-                mocker.Mock(),
-                [["run", "--privileged", "alpine"]],
-            ),
-        )
-        mocker.patch(
-            f"{base_module}.diff_container_config_with_image",
-            side_effect=lambda config, image: CreateContainerRequestBodySchema(
-                image="ghcr.io/quenary/tugtainer:1", name="tugtainer"
-            ),
+            f"{base_module}.find_self",
+            new=AsyncMock(return_value=(host, client, container)),
         )
 
-        with pytest.raises(TugSelfUpdateError, match="Command not allowed"):
+        with pytest.raises(TugSelfUpdateError, match="PODMAN_SYSTEMD_UNIT"):
             await start_self_update()
 
         assert not (work_dir / SELF_UPDATE_PLAN_FILE).exists()

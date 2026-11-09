@@ -6,18 +6,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-from packaging import version
 from pydantic import ValidationError
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-    Mount,
-)
 from sqlalchemy import select
 from sqlalchemy.engine import make_url
 
 from backend.config import Config
 from backend.const import DATA_DIR, SELF_UPDATE_DIR, TUGTAINER_PROTECTED_LABEL
 from backend.core.agent_client import AgentClient, AgentClientManager
+from backend.core.agent_protocol import agent_protocol_error
 from backend.core.container_util.container_config import (
     diff_container_config_with_image,
     get_container_config,
@@ -25,6 +21,7 @@ from backend.core.container_util.container_config import (
 from backend.core.container_util.get_container_image_spec import (
     get_container_image_spec,
 )
+from backend.core.container_util.systemd_managed import systemd_managed_reason
 from backend.core.jobs.jobs_coordinator import host_job_coordinator
 from backend.core.jobs.update.update_util import get_container_healthcheck_timeout
 from backend.core.notifications_core import send_notification
@@ -36,12 +33,20 @@ from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_self_container_id import get_self_container_id
 from backend.util.get_version_from_labels import get_version_from_labels
+from shared.runtime.capabilities import RuntimeCapabilities
+from shared.runtime.container_create_payload import build_create_request
+from shared.runtime.runtime_client import docker_cert_dir, docker_tls_applies
+from shared.runtime.runtime_errors import RuntimePreflightError
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    Mount,
+)
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
-from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
     PullImageRequestBodySchema,
 )
+from shared.schemas.network_schemas import NetworkConnectBodySchema
 from shared.self_update.self_update_files import (
     read_state,
     write_private_file,
@@ -57,7 +62,6 @@ from shared.self_update.self_update_schemas import (
     SelfUpdatePlan,
     SelfUpdateState,
 )
-from shared.util.get_docker_client_api_version import get_docker_client_api_version
 
 logger: Final = logging.getLogger("self_update")
 
@@ -158,10 +162,25 @@ def get_sqlite_db_path() -> str | None:
     return db_path
 
 
-def get_helper_networks(
+def _mount_source_for_path(
     container: ContainerInspectResult,
-    docker_version: DockerVersionScheme | None,
-) -> list[str]:
+    destination: str,
+) -> str | None:
+    """Host path of the mount that contains destination, if the app has one."""
+    target = posixpath.normpath(destination)
+    for mount in container.mounts or []:
+        mounted = posixpath.normpath(mount.destination or mount.target or "")
+        if not mounted or not mount.source:
+            continue
+        if mounted == target:
+            return mount.source
+        prefix = mounted.rstrip("/")
+        if target.startswith(prefix + "/"):
+            return posixpath.normpath(mount.source.rstrip("/") + target[len(prefix) :])
+    return None
+
+
+def get_helper_networks(container: ContainerInspectResult) -> list[str]:
     """
     Networks of the helper, so it reaches the same docker host (e.g. socket-proxy).
     Without addresses and aliases of the app.
@@ -175,10 +194,6 @@ def get_helper_networks(
     if mode in networks:
         networks.remove(mode)
         networks.insert(0, mode)
-    api_version = get_docker_client_api_version(docker_version)
-    # Multiple --network flags need API 1.44
-    if api_version and api_version < version.parse("1.44"):
-        return networks[:1]
     return networks
 
 
@@ -188,13 +203,12 @@ def get_helper_config(
     image_id: str,
     helper_name: str,
     plan_path: str,
-    docker_version: DockerVersionScheme | None,
 ) -> CreateContainerRequestBodySchema:
     """
     One-shot helper from the new image.
     Gets only the docker access and the data volume.
     """
-    volumes: list[tuple[str, str]] = [
+    volumes: list[tuple[str, str] | tuple[str, str, str]] = [
         (str(data_mount.name or data_mount.source), DATA_DIR)
     ]
     docker_host: Final = os.environ.get("DOCKER_HOST")
@@ -204,7 +218,22 @@ def get_helper_config(
     for mount in container.mounts or []:
         if mount.source and mount.destination in socket_paths:
             volumes.append((mount.source, mount.destination))
-    networks: Final = get_helper_networks(container, docker_version)
+    envs: dict[str, str] = {}
+    if docker_host:
+        envs["DOCKER_HOST"] = docker_host
+    if docker_tls_applies(docker_host):
+        cert_dir = str(docker_cert_dir())
+        source = _mount_source_for_path(container, cert_dir)
+        if not source:
+            raise TugSelfUpdateError(
+                "DOCKER_TLS_VERIFY is set but "
+                f"{cert_dir} is not mounted on this container. "
+                "Mount the certificate directory so the helper uses the same TLS files."
+            )
+        envs["DOCKER_TLS_VERIFY"] = os.environ["DOCKER_TLS_VERIFY"]
+        envs["DOCKER_CERT_PATH"] = cert_dir
+        volumes.append((source, cert_dir, "ro"))
+    networks: Final = get_helper_networks(container)[:1]
 
     return CreateContainerRequestBodySchema.model_validate(
         {
@@ -214,7 +243,7 @@ def get_helper_config(
             "command": ["-m", "shared.self_update", plan_path],
             "workdir": "/app",
             "volumes": volumes,
-            **({"envs": {"DOCKER_HOST": docker_host}} if docker_host else {}),
+            **({"envs": envs} if envs else {}),
             **({"networks": networks} if networks else {}),
             # The scheduled update must never touch the helper
             "labels": {TUGTAINER_PROTECTED_LABEL: "true"},
@@ -279,6 +308,9 @@ async def _launch_helper() -> SelfUpdateState:
     Pull the new image, write the plan and start the helper container.
     """
     host, client, container = await find_self()
+    mismatch = await agent_protocol_error(client)
+    if mismatch:
+        raise TugSelfUpdateError(mismatch)
     name: Final = str(container.name)
     old_name: Final = f"{name}{SELF_UPDATE_OLD_SUFFIX}"
     helper_name: Final = f"{name}{SELF_UPDATE_HELPER_SUFFIX}"
@@ -292,6 +324,14 @@ async def _launch_helper() -> SelfUpdateState:
 
     data_mount: Final = get_data_mount(container)
     db_path: Final = get_sqlite_db_path()
+    container_config = container.config
+    managed = systemd_managed_reason(
+        container_config.labels if container_config else None,
+        container_config.env if container_config else None,
+    )
+    if managed:
+        raise TugSelfUpdateError(f"Container {name} {managed}")
+
     image_spec: Final = get_container_image_spec(container)
     if not image_spec or not container.image:
         raise TugSelfUpdateError("Cannot get the image of this app")
@@ -305,8 +345,15 @@ async def _launch_helper() -> SelfUpdateState:
         raise TugSelfUpdateError(f"No newer image for {image_spec}")
 
     docker_version = await client.common.version()
-    config, commands = get_container_config(container, local_image, docker_version)
+    config, network_connects = get_container_config(
+        container, local_image, docker_version
+    )
     config = diff_container_config_with_image(config, remote_image)
+    capabilities = RuntimeCapabilities.from_version(docker_version)
+    try:
+        build_create_request(config, capabilities=capabilities)
+    except RuntimePreflightError as e:
+        raise TugSelfUpdateError(str(e)) from e
 
     async with async_session_maker() as session:
         result = await session.execute(
@@ -335,7 +382,11 @@ async def _launch_helper() -> SelfUpdateState:
             old_version=old_version,
             new_version=new_version,
             create=config,
-            commands=commands,
+            network_connects=network_connects,
+            api_version=capabilities.api_version,
+            runtime_type=capabilities.runtime_type,
+            engine_version=capabilities.engine_version,
+            libpod_api_version=capabilities.libpod_api_version,
             healthcheck_timeout=healthcheck_timeout,
             db_path=db_path,
         )
@@ -358,6 +409,7 @@ async def _launch_helper() -> SelfUpdateState:
 
     try:
         logger.info(f"Starting self-update helper {helper_name}")
+        helper_networks = get_helper_networks(container)
         await client.container.create(
             get_helper_config(
                 container,
@@ -365,9 +417,12 @@ async def _launch_helper() -> SelfUpdateState:
                 remote_image.id,
                 helper_name,
                 str(plan_path),
-                docker_version,
             )
         )
+        for network in helper_networks[1:]:
+            await client.network.connect(
+                NetworkConnectBodySchema(network=network, container=helper_name)
+            )
         await client.container.start(helper_name)
     except Exception:
         logger.exception("Failed to start self-update helper")

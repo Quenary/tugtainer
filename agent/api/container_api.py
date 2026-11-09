@@ -1,14 +1,13 @@
-from typing import Literal, cast
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
 
 from agent.auth import verify_signature
 from agent.config import Config
-from agent.docker_client import DOCKER
-from agent.unil.asyncall import asyncall
+from agent.docker_client import RUNTIME_CLIENT
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+)
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
     ExecContainerRequestBodySchema,
@@ -24,7 +23,7 @@ router = APIRouter(
 
 
 async def is_exists(name_or_id: str) -> Literal[True]:
-    exists = await asyncall(lambda: DOCKER.container.exists(name_or_id))
+    exists = await RUNTIME_CLIENT.container_exists(name_or_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Container not found")
     return True
@@ -33,11 +32,11 @@ async def is_exists(name_or_id: str) -> Literal[True]:
 @router.post(
     "/list",
     description="Get list of all containers",
-    response_model=list[ContainerInspectResult],  # type: ignore
+    response_model=list[ContainerInspectResult],
 )
-async def list(body: GetContainerListBodySchema):
+async def list_containers(body: GetContainerListBodySchema):
     args = body.model_dump(exclude_unset=True)
-    return await asyncall(lambda: DOCKER.container.list(**args))
+    return await RUNTIME_CLIENT.container_list(**args)
 
 
 @router.get(
@@ -46,7 +45,7 @@ async def list(body: GetContainerListBodySchema):
     response_model=bool,
 )
 async def exists(name_or_id: str) -> bool:
-    return await asyncall(lambda: DOCKER.container.exists(name_or_id))
+    return await RUNTIME_CLIENT.container_exists(name_or_id)
 
 
 @router.get(
@@ -55,7 +54,7 @@ async def exists(name_or_id: str) -> bool:
     response_model=ContainerInspectResult,
 )
 async def inspect(name_or_id: str, _=Depends(is_exists)):
-    return await asyncall(lambda: DOCKER.container.inspect(name_or_id))
+    return await RUNTIME_CLIENT.container_inspect(name_or_id)
 
 
 @router.post(
@@ -64,8 +63,7 @@ async def inspect(name_or_id: str, _=Depends(is_exists)):
     response_model=ContainerInspectResult,
 )
 async def create(body: CreateContainerRequestBodySchema):
-    args = body.model_dump(exclude_unset=True)
-    return await asyncall(lambda: DOCKER.container.create(**args), asyncall_timeout=600)
+    return await RUNTIME_CLIENT.container_create(body)
 
 
 @router.post(
@@ -74,10 +72,7 @@ async def create(body: CreateContainerRequestBodySchema):
     response_model=str,
 )
 async def start(name_or_id: str, _=Depends(is_exists)) -> str:
-    await asyncall(
-        lambda: DOCKER.container.start(name_or_id),
-        asyncall_timeout=600,
-    )
+    await RUNTIME_CLIENT.container_start(name_or_id)
     return name_or_id
 
 
@@ -87,10 +82,7 @@ async def start(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
-    await asyncall(
-        lambda: DOCKER.container.stop(name_or_id),
-        asyncall_timeout=600,
-    )
+    await RUNTIME_CLIENT.container_stop(name_or_id)
     return name_or_id
 
 
@@ -100,10 +92,7 @@ async def stop(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def restart(name_or_id: str, _=Depends(is_exists)) -> str:
-    await asyncall(
-        lambda: DOCKER.container.restart(name_or_id),
-        asyncall_timeout=600,
-    )
+    await RUNTIME_CLIENT.container_restart(name_or_id)
     return name_or_id
 
 
@@ -113,10 +102,7 @@ async def restart(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def kill(name_or_id: str, _=Depends(is_exists)) -> str:
-    await asyncall(
-        lambda: DOCKER.container.kill(name_or_id),
-        asyncall_timeout=600,
-    )
+    await RUNTIME_CLIENT.container_kill(name_or_id)
     return name_or_id
 
 
@@ -126,10 +112,7 @@ async def kill(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def pause(name_or_id: str, _=Depends(is_exists)) -> str:
-    await asyncall(
-        lambda: DOCKER.container.pause(name_or_id),
-        asyncall_timeout=600,
-    )
+    await RUNTIME_CLIENT.container_pause(name_or_id)
     return name_or_id
 
 
@@ -139,11 +122,18 @@ async def pause(name_or_id: str, _=Depends(is_exists)) -> str:
     response_model=str,
 )
 async def unpause(name_or_id: str, _=Depends(is_exists)) -> str:
-    await asyncall(
-        lambda: DOCKER.container.unpause(name_or_id),
-        asyncall_timeout=600,
-    )
+    await RUNTIME_CLIENT.container_unpause(name_or_id)
     return name_or_id
+
+
+@router.post(
+    "/rename/{name_or_id}",
+    description="Rename container",
+    response_model=str,
+)
+async def rename(name_or_id: str, new_name: str, _=Depends(is_exists)) -> str:
+    await RUNTIME_CLIENT.container_rename(name_or_id, new_name)
+    return new_name
 
 
 @router.delete(
@@ -151,11 +141,12 @@ async def unpause(name_or_id: str, _=Depends(is_exists)) -> str:
     description="Remove container",
     response_model=str,
 )
-async def remove(name_or_id: str, _=Depends(is_exists)) -> str:
-    await asyncall(
-        lambda: DOCKER.container.remove(name_or_id),
-        asyncall_timeout=600,
-    )
+async def remove(
+    name_or_id: str,
+    force: bool = False,
+    _=Depends(is_exists),
+) -> str:
+    await RUNTIME_CLIENT.container_remove(name_or_id, force=force)
     return name_or_id
 
 
@@ -168,9 +159,9 @@ async def logs(
     name_or_id: str,
     body: GetContainerLogsRequestBody,
     _=Depends(is_exists),
-):
-    return await asyncall(
-        lambda: DOCKER.container.logs(name_or_id, **body.model_dump(exclude_unset=True))
+) -> str:
+    return await RUNTIME_CLIENT.container_logs(
+        name_or_id, **body.model_dump(exclude_unset=True)
     )
 
 
@@ -191,13 +182,7 @@ async def exec_command(
             "Command execution inside containers is disabled on this agent. "
             "Set ALLOW_EXEC=true to enable it.",
         )
-    return cast(
-        str,
-        await asyncall(
-            lambda: DOCKER.container.execute(
-                name_or_id,
-                ["sh", "-c", body.command],
-            ),
-            asyncall_timeout=600,
-        ),
+    return await RUNTIME_CLIENT.container_exec(
+        name_or_id,
+        ["sh", "-c", body.command],
     )

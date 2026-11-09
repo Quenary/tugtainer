@@ -1,10 +1,5 @@
 from datetime import datetime
 
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
-
 from backend.const import (
     TUGTAINER_AUTO_CHECK_LABEL,
     TUGTAINER_AUTO_UPDATE_LABEL,
@@ -12,6 +7,10 @@ from backend.const import (
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.containers.containers_schemas import ContainersListItem
 from backend.modules.images.image_digest_model import ImageDigestModel
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+)
 
 
 def _docker(labels: dict[str, str] | None = None) -> ContainerInspectResult:

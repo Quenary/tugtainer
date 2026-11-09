@@ -3,10 +3,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app import app
@@ -23,6 +19,10 @@ from backend.modules.containers.containers_model import (
 from backend.modules.containers.containers_schemas import (
     ContainerHooks,
     ContainersListItem,
+)
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
 )
 
 base_module = "backend.modules.containers.containers_router"

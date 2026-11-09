@@ -1,39 +1,72 @@
-import logging
-from typing import Final
-
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerHostConfig,
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
+from typing import Any, Final
 
 from backend.util.drop_empty_keys import drop_empty_keys
 from backend.util.subtract_dict import subtract_dict, subtract_dict_items
+from shared.runtime.capabilities import RuntimeCapabilities
+from shared.runtime.runtime_errors import RuntimePreflightError
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerHostConfig,
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
 from shared.schemas.docker_version_scheme import DockerVersionScheme
+from shared.schemas.network_schemas import NetworkConnectBodySchema
 
-from .filter_cli_safe_labels import filter_cli_safe_labels
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
     get_container_restart_policy_str,
 )
-from .map_binds_to_volumes import map_binds_to_volumes
 from .map_device_requests_to_gpus import map_device_requests_to_gpus
 from .map_devices_to_list import map_devices_to_list
 from .map_env_to_dict import map_env_to_dict
 from .map_healthcheck_to_kwargs import map_healthcheck_to_kwargs
 from .map_log_config_to_kwargs import map_log_config_to_kwargs
-from .map_mounts_to_arg import map_mounts_to_arg
+from .map_mounts_to_arg import map_host_mounts
 from .map_tmpfs_dict_to_list import map_tmpfs_dict_to_list
 from .map_ulimits_to_arg import map_ulimits_to_arg
 from .normalize_ns_mode import normalize_ns_mode
 from .normalize_path import normalize_path
 from .parse_extra_hosts import parse_extra_hosts
+from .systemd_managed import systemd_managed_reason
+
+
+def validate_recreation_preflight(
+    container: ContainerInspectResult,
+    docker_version: DockerVersionScheme | None,
+) -> None:
+    """Validate that all create-relevant settings can be preserved on the target daemon."""
+    config = container.config or ContainerConfig()
+    host_config = container.host_config or ContainerHostConfig()
+    if host_config.container_id_file:
+        raise RuntimePreflightError(
+            f"Container {container.name} uses cidfile, which cannot be preserved "
+            "through the engine API."
+        )
+    managed = systemd_managed_reason(config.labels, config.env)
+    if managed:
+        raise RuntimePreflightError(f"Container {container.name} {managed}")
+
+    caps = RuntimeCapabilities.from_version(docker_version)
+    # An unknown Docker daemon is checked again when the create body is built.
+    if caps.runtime_type != "podman" and not caps.api_version:
+        return
+
+    inspect_mounts = list(container.mounts or [])
+    if host_config.mounts:
+        inspect_mounts.extend(host_config.mounts)
+    for m in inspect_mounts:
+        if m.type == "image":
+            caps.require("Image mounts")
+
+    if container.network_settings and container.network_settings.networks:
+        for net_endpoint in container.network_settings.networks.values():
+            if getattr(net_endpoint, "gateway_priority", None) is not None:
+                caps.require("GwPriority")
+                break
 
 
 def diff_container_config_with_image(
@@ -65,13 +98,14 @@ def get_container_config(
     container: ContainerInspectResult,
     image: ImageInspectResult | None,
     docker_version: DockerVersionScheme | None,
-) -> tuple[CreateContainerRequestBodySchema, list[list[str]]]:
+) -> tuple[CreateContainerRequestBodySchema, list[NetworkConnectBodySchema]]:
     """
-    Get container config and commands (e.g. network connect)
+    Get container config and secondary network connects.
     :returns 0: config dict
-    :returns 1: list of docker commands to be executed after container creation, in list format e.g. ["network", "connect", ...]
+    :returns 1: list of secondary NetworkConnectBodySchema items to connect
     """
-    commands: list[list[str]] = []
+    validate_recreation_preflight(container, docker_version)
+
     config: Final = container.config or ContainerConfig()
     host_config: Final = container.host_config or ContainerHostConfig()
 
@@ -83,9 +117,7 @@ def get_container_config(
         map_env_to_dict(image.config.env) if (image and image.config) else None,
     )
 
-    NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(container, docker_version)
-    if NET_COMMANDS:
-        commands += NET_COMMANDS
+    NET_KWARGS, SECONDARY_CONNECTS = get_container_net_kwargs(container)
 
     # Preserve only values that differ from image defaults.
     command: list[str] | None = None
@@ -104,45 +136,35 @@ def get_container_config(
     )
     image_cmd: Final = _to_list(image.config.cmd) if (image and image.config) else []
 
-    # Compare pair of entrypoint/cmd
-    # CLI supports --entrypoint only as a string,
-    # we should move extra args to the start of cmd.
     if current_entrypoint != image_entrypoint or current_cmd != image_cmd:
         if current_entrypoint:
-            # First element of entrypoint is the entrypoint itself
             entrypoint = current_entrypoint[0]
-            # Other elements of entrypoint (like '--') are passed as extra args
             command = current_entrypoint[1:] + current_cmd
         else:
-            # Entrypoint removed or cmd changed.
-            # Docker CLI cannot express an empty entrypoint cleanly,
-            # therefore we only preserve cmd here.
             command = current_cmd
 
     workdir: str | None = None
     if image and image.config and image.config.working_dir != config.working_dir:
         workdir = normalize_path(config.working_dir)
 
-    VOLUMES, MOUNTS = map_binds_to_volumes(host_config.binds, container.mounts)
-
-    # Same for labels: drop the ones inherited unchanged from the old image
-    LABELS, REJECTED_LABELS = filter_cli_safe_labels(
-        subtract_dict_items(
-            config.labels,
-            image.config.labels if (image and image.config) else None,
-        )
+    BINDS, MOUNTS = map_host_mounts(
+        host_config.mounts, host_config.binds, container.mounts
     )
-    if REJECTED_LABELS:
-        logging.warning(
-            f"Labels rejected by docker CLI were dropped while preparing config of {container.name}: {REJECTED_LABELS}"
-        )
+
+    # Drop labels inherited unchanged from the old image
+    LABELS = subtract_dict_items(
+        config.labels,
+        image.config.labels if (image and image.config) else None,
+    )
 
     config_dict = {
         "image": config.image,
         "name": container.name,
         "add_hosts": parse_extra_hosts(host_config.extra_hosts),
         "blkio_weight": host_config.blkio_weight,
-        "blkio_weight_device": host_config.blkio_weight_device,
+        "blkio_weight_device": _device_limits(
+            host_config.blkio_weight_device, "Weight"
+        ),
         "command": command,
         "cap_add": host_config.cap_add,
         "cap_drop": host_config.cap_drop,
@@ -153,15 +175,19 @@ def get_container_config(
         "cpu_rt_period": host_config.cpu_realtime_period,
         "cpu_rt_runtime": host_config.cpu_realtime_runtime,
         "cpu_shares": host_config.cpu_shares,
-        "cpus": host_config.cpu_count,
+        "cpus": (
+            host_config.nano_cpus / 1_000_000_000 if host_config.nano_cpus else None
+        ),
         "cpuset_cpus": host_config.cpuset_cpus,
         "cpuset_mems": host_config.cpuset_mems,
         "devices": map_devices_to_list(host_config.devices),
         "device_cgroup_rules": host_config.device_cgroup_rules,
-        "device_read_bps": host_config.blkio_device_read_bps,
-        "device_read_iops": host_config.blkio_device_read_iops,
-        "device_write_bps": host_config.blkio_device_write_bps,
-        "device_write_iops": host_config.blkio_device_write_iops,
+        "device_read_bps": _device_limits(host_config.blkio_device_read_bps, "Rate"),
+        "device_read_iops": _device_limits(host_config.blkio_device_read_iops, "Rate"),
+        "device_write_bps": _device_limits(host_config.blkio_device_write_bps, "Rate"),
+        "device_write_iops": _device_limits(
+            host_config.blkio_device_write_iops, "Rate"
+        ),
         **NET_KWARGS,
         "domainname": config.domainname,
         "entrypoint": entrypoint,
@@ -183,8 +209,13 @@ def get_container_config(
         "memory_reservation": host_config.memory_reservation,
         "memory_swap": host_config.memory_swap,
         "memory_swappiness": host_config.memory_swappiness,
-        "mounts": map_mounts_to_arg(MOUNTS),
-        "oom_kill": bool(not host_config.oom_kill_disable),
+        "binds": BINDS or None,
+        "mounts": MOUNTS or None,
+        "oom_kill": (
+            None
+            if host_config.oom_kill_disable is None
+            else not host_config.oom_kill_disable
+        ),
         "oom_score_adj": host_config.oom_score_adj,
         "pid": normalize_ns_mode(host_config.pid_mode),
         "pids_limit": host_config.pids_limit,
@@ -196,15 +227,15 @@ def get_container_config(
         "shm_size": host_config.shm_size,
         "stop_signal": config.stop_signal,
         "stop_timeout": config.stop_timeout,
-        "storage_options": host_config.storage_opt,
+        "storage_options": _storage_options(host_config.storage_opt),
         "sysctl": host_config.sysctls,
-        "systemd": config.systemd_mode,
+        "tty": config.tty,
+        "expose": _exposed_tcp_ports(config.exposed_ports),
         "tmpfs": map_tmpfs_dict_to_list(host_config.tmpfs),
         "ulimit": map_ulimits_to_arg(host_config.ulimits),
         "user": config.user,
         "userns": normalize_ns_mode(host_config.userns_mode),
         "uts": normalize_ns_mode(host_config.uts_mode),
-        "volumes": VOLUMES,
         "volume_driver": host_config.volume_driver,
         "volumes_from": host_config.volumes_from,
         "workdir": workdir,
@@ -213,5 +244,38 @@ def get_container_config(
 
     return (
         CreateContainerRequestBodySchema.model_validate(config_dict),
-        commands,
+        SECONDARY_CONNECTS,
     )
+
+
+def _device_limits(items: list[Any] | None, value_key: str) -> list[str] | None:
+    if not items:
+        return None
+    specs: list[str] = []
+    for item in items:
+        if isinstance(item, str):
+            specs.append(item)
+            continue
+        path = item.get("Path") or item.get("path") or ""
+        value = item.get(value_key)
+        if value is None:
+            value = item.get(value_key.lower())
+        specs.append(f"{path}:{value}")
+    return specs
+
+
+def _storage_options(options: dict[str, str] | None) -> list[str] | None:
+    if not options:
+        return None
+    return [f"{key}={value}" for key, value in options.items()]
+
+
+def _exposed_tcp_ports(ports: dict[str, Any] | None) -> list[int] | None:
+    if not ports:
+        return None
+    numbers: list[int] = []
+    for key in ports:
+        port, _, proto = key.partition("/")
+        if proto in ("", "tcp") and port.isdigit():
+            numbers.append(int(port))
+    return numbers or None

@@ -1,73 +1,100 @@
 from typing import Protocol
 
-from python_on_whales import DockerClient
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.utils import run as docker_run_cmd
-
+from shared.runtime.endpoint_settings import endpoint_config_from_connect
+from shared.runtime.runtime_client import RuntimeClient
+from shared.runtime.runtime_models import ContainerInspectResult
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
+from shared.schemas.network_schemas import NetworkConnectBodySchema
 
 
 class SelfUpdateDocker(Protocol):
-    """Plain docker operations used by the self-update helper."""
+    """Plain runtime operations used by the self-update helper."""
 
-    def inspect(self, name_or_id: str) -> ContainerInspectResult: ...
+    async def inspect(self, name_or_id: str) -> ContainerInspectResult: ...
 
-    def exists(self, name_or_id: str) -> bool: ...
+    async def exists(self, name_or_id: str) -> bool: ...
 
-    def image_exists(self, image_id: str) -> bool: ...
+    async def image_exists(self, image_id: str) -> bool: ...
 
-    def rename(self, name_or_id: str, new_name: str) -> None: ...
+    async def rename(self, name_or_id: str, new_name: str) -> None: ...
 
-    def create(self, body: CreateContainerRequestBodySchema) -> str: ...
+    async def create(self, body: CreateContainerRequestBodySchema) -> str: ...
 
-    def start(self, name_or_id: str) -> None: ...
+    async def start(self, name_or_id: str) -> None: ...
 
-    def stop(self, name_or_id: str) -> None: ...
+    async def stop(self, name_or_id: str) -> None: ...
 
-    def remove(self, name_or_id: str) -> None: ...
+    async def remove(self, name_or_id: str) -> None: ...
 
-    def run(self, command: list[str]) -> None: ...
+    async def network_connect(
+        self,
+        network: str,
+        container_id: str,
+        connect_body: NetworkConnectBodySchema | None = None,
+    ) -> None: ...
+
+    async def close(self) -> None: ...
 
 
-class WhalesSelfUpdateDocker:
+class HttpSelfUpdateDocker:
     """
-    SelfUpdateDocker backed by python_on_whales.
-    Uses the docker CLI of the image and the DOCKER_HOST env or socket mount.
+    SelfUpdateDocker backed by direct async RuntimeClient over socket or TCP proxy.
     """
 
-    def __init__(self, client: DockerClient | None = None):
-        self._client = client or DockerClient()
+    def __init__(self, client: RuntimeClient | None = None):
+        self._client = client or RuntimeClient()
 
-    def inspect(self, name_or_id: str) -> ContainerInspectResult:
-        container = self._client.container.inspect(name_or_id)
-        # Same shape as the agent returns: name without the leading slash
-        return container._get_inspect_result().model_copy(
-            update={"name": container.name}
+    async def inspect(self, name_or_id: str) -> ContainerInspectResult:
+        return await self._client.container_inspect(name_or_id)
+
+    async def exists(self, name_or_id: str) -> bool:
+        return await self._client.container_exists(name_or_id)
+
+    async def image_exists(self, image_id: str) -> bool:
+        return await self._client.image_exists(image_id)
+
+    async def rename(self, name_or_id: str, new_name: str) -> None:
+        await self._client.container_rename(name_or_id, new_name)
+
+    async def create(self, body: CreateContainerRequestBodySchema) -> str:
+        container = await self._client.container_create(
+            payload=body,
+            name=body.name,
+        )
+        return str(container.id or "")
+
+    async def start(self, name_or_id: str) -> None:
+        await self._client.container_start(name_or_id)
+
+    async def stop(self, name_or_id: str) -> None:
+        await self._client.container_stop(name_or_id)
+
+    async def remove(self, name_or_id: str) -> None:
+        await self._client.container_remove(name_or_id, force=True)
+
+    async def network_connect(
+        self,
+        network: str,
+        container_id: str,
+        connect_body: NetworkConnectBodySchema | None = None,
+    ) -> None:
+        capabilities = None
+        if connect_body and (
+            connect_body.gateway_priority is not None or connect_body.mac_address
+        ):
+            if not self._client._negotiated_api_prefix:
+                await self._client.get_version()
+            capabilities = self._client.capabilities()
+        endpoint_config = (
+            endpoint_config_from_connect(connect_body, capabilities=capabilities)
+            if connect_body
+            else None
+        )
+        await self._client.network_connect(
+            network_id=network,
+            container_id=container_id,
+            endpoint_config=endpoint_config,
         )
 
-    def exists(self, name_or_id: str) -> bool:
-        return self._client.container.exists(name_or_id)
-
-    def image_exists(self, image_id: str) -> bool:
-        return self._client.image.exists(image_id)
-
-    def rename(self, name_or_id: str, new_name: str) -> None:
-        self._client.container.rename(name_or_id, new_name)
-
-    def create(self, body: CreateContainerRequestBodySchema) -> str:
-        container = self._client.container.create(**body.model_dump(exclude_unset=True))
-        return container.id
-
-    def start(self, name_or_id: str) -> None:
-        self._client.container.start(name_or_id)
-
-    def stop(self, name_or_id: str) -> None:
-        self._client.container.stop(name_or_id)
-
-    def remove(self, name_or_id: str) -> None:
-        self._client.container.remove(name_or_id, force=True)
-
-    def run(self, command: list[str]) -> None:
-        docker_run_cmd(self._client.client_config.docker_cmd + command)
+    async def close(self) -> None:
+        await self._client.close()

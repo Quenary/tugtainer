@@ -1,13 +1,15 @@
+import json
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
 
 from agent.auth import verify_signature
-from agent.docker_client import DOCKER
-from agent.unil.asyncall import asyncall
+from agent.docker_client import RUNTIME_CLIENT
+from shared.runtime.image_prune import format_image_prune_result, prune_filters
+from shared.runtime.registry_auth import registry_auth_for_image
+from shared.runtime.runtime_models import (
+    ImageInspectResult,
+)
 from shared.schemas.image_schemas import (
     GetImageListBodySchema,
     InspectImageRequestBodySchema,
@@ -24,7 +26,7 @@ router = APIRouter(
 
 
 async def is_exists(spec_or_id: str) -> Literal[True]:
-    exists = await asyncall(lambda: DOCKER.image.exists(spec_or_id))
+    exists = await RUNTIME_CLIENT.image_exists(spec_or_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Image not found")
     return True
@@ -37,17 +39,22 @@ async def is_exists(spec_or_id: str) -> Literal[True]:
 )
 async def inspect(body: InspectImageRequestBodySchema):
     _ = await is_exists(body.spec_or_id)
-    return await asyncall(lambda: DOCKER.image.inspect(body.spec_or_id))
+    return await RUNTIME_CLIENT.image_inspect(body.spec_or_id)
 
 
 @router.post(
     "/list",
     description="Get list of images",
-    response_model=list[ImageInspectResult],  # type: ignore
+    response_model=list[ImageInspectResult],
 )
-async def list(body: GetImageListBodySchema):
-    args = body.model_dump(exclude_unset=True)
-    return await asyncall(lambda: DOCKER.image.list(**args))
+async def list_images(body: GetImageListBodySchema):
+    filters = dict(body.filters or {})
+    if body.repository_or_tag:
+        filters["reference"] = [body.repository_or_tag]
+    return await RUNTIME_CLIENT.image_list(
+        all=True if body.all is None else body.all,
+        filters=filters or None,
+    )
 
 
 @router.post(
@@ -55,11 +62,10 @@ async def list(body: GetImageListBodySchema):
     description="Prune volumes",
 )
 async def prune(body: PruneImagesRequestBodySchema) -> str:
-    args = body.model_dump(exclude_unset=True)
-    return await asyncall(
-        lambda: DOCKER.image.prune(**args),
-        asyncall_timeout=600,
+    raw = await RUNTIME_CLIENT.image_prune(
+        filters=prune_filters(body.all, body.filters)
     )
+    return format_image_prune_result(json.loads(raw) if raw else {})
 
 
 @router.post(
@@ -68,9 +74,9 @@ async def prune(body: PruneImagesRequestBodySchema) -> str:
     response_model=ImageInspectResult,
 )
 async def pull(body: PullImageRequestBodySchema):
-    return await asyncall(
-        lambda: DOCKER.image.pull(body.image),
-        asyncall_timeout=600,
+    return await RUNTIME_CLIENT.image_pull(
+        body.image,
+        auth_config=registry_auth_for_image(body.image),
     )
 
 
@@ -80,4 +86,4 @@ async def pull(body: PullImageRequestBodySchema):
 )
 async def tag(body: TagImageRequestBodySchema):
     _ = await is_exists(body.spec_or_id)
-    return await asyncall(lambda: DOCKER.image.tag(body.spec_or_id, body.tag))
+    await RUNTIME_CLIENT.image_tag(body.spec_or_id, body.tag)

@@ -23,7 +23,7 @@ ARG VERSION
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx supervisor curl docker-cli \
+    nginx supervisor curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

@@ -3,15 +3,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.core.jobs.check.check_container import run_check_container_job
 from backend.enums.job_status_enum import EJobStatus
+from backend.modules.settings.settings_enum import ESettingKey
 from backend.testing import patch_async_session
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 
 base_module = "backend.core.jobs.check.check_container"
 
@@ -26,10 +27,14 @@ def _container(image: str | None = "nginx:latest") -> ContainerInspectResult:
     )
 
 
-def _local_image(digests: list[str] | None) -> ImageInspectResult:
+def _local_image(
+    digests: list[str] | None,
+    tags: list[str] | None = None,
+) -> ImageInspectResult:
     return ImageInspectResult(
         id="sha256:local",
         repo_digests=digests,
+        repo_tags=tags,
         config=ContainerConfig(labels={"org.opencontainers.image.version": "1.0.0"}),
     )
 
@@ -64,13 +69,20 @@ async def test_check_container_exits_without_image_spec(
 
 
 @pytest.mark.asyncio
-async def test_check_container_exits_without_repo_digests(
+async def test_check_container_queries_registry_without_repo_digests(
     mocker: MockerFixture,
 ) -> None:
     client = MagicMock()
     client.image.inspect = AsyncMock(return_value=_local_image([]))
     tracker = MagicMock()
     patch_async_session(mocker, base_module, _session(None))
+    mocker.patch(f"{base_module}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
+    assess = mocker.patch(
+        f"{base_module}.assess_image_update",
+        new=AsyncMock(return_value=(["sha256:same"], False)),
+    )
+    mocker.patch(f"{base_module}.insert_or_update_container", new=AsyncMock())
 
     result = await run_check_container_job(
         client,
@@ -79,23 +91,57 @@ async def test_check_container_exits_without_repo_digests(
         tracker=tracker,
     )
 
-    assert result.result is None
+    assess.assert_awaited_once()
+    assert result.result == "not_available"
+    assert result.remote_digests == ["sha256:same"]
+    tracker.set_container.assert_called_with("web", EJobStatus.DONE, result)
+
+
+@pytest.mark.asyncio
+async def test_check_container_does_not_pull_tagged_local_build(
+    mocker: MockerFixture,
+) -> None:
+    client = MagicMock()
+    client.image.inspect = AsyncMock(return_value=_local_image([], tags=["app:local"]))
+    client.image.pull = AsyncMock()
+    tracker = MagicMock()
+    patch_async_session(mocker, base_module, _session(None))
+
+    def settings(key: ESettingKey) -> bool | int:
+        if key == ESettingKey.PULL_BEFORE_CHECK:
+            return True
+        return 0
+
+    mocker.patch(f"{base_module}.SettingsStorage.get", side_effect=settings)
+    insert = mocker.patch(f"{base_module}.insert_or_update_container", new=AsyncMock())
+
+    result = await run_check_container_job(
+        client,
+        SimpleNamespace(id=1, name="host"),  # type: ignore[arg-type]
+        _container(image="app:local"),
+        tracker=tracker,
+    )
+
+    client.image.pull.assert_not_called()
+    assert result.result == "not_available"
+    assert result.remote_digests == []
+    assert insert.await_args.args[3]["update_available"] is False
     tracker.set_container.assert_called_with("web", EJobStatus.DONE, result)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("remote", "stored_remote", "expected", "update_available"),
+    ("assessment", "stored_remote", "expected", "update_available"),
     [
-        ("sha256:new", None, "available", True),
-        ("sha256:local", None, "not_available", False),
-        ("sha256:new", ["sha256:new"], "available(notified)", True),
-        (None, None, None, True),
+        ((["sha256:new"], True), None, "available", True),
+        ((["sha256:local"], False), None, "not_available", False),
+        ((["sha256:new"], True), ["sha256:new"], "available(notified)", True),
+        (([], None), None, None, True),
     ],
 )
 async def test_check_container_digest_outcome(
     mocker: MockerFixture,
-    remote: str | None,
+    assessment: tuple[list[str], bool | None],
     stored_remote: list[str] | None,
     expected: str | None,
     update_available: bool,
@@ -111,8 +157,8 @@ async def test_check_container_digest_outcome(
     mocker.patch(f"{base_module}.asyncio.sleep", new=AsyncMock())
     mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
     mocker.patch(
-        f"{base_module}.get_image_remote_digest",
-        new=AsyncMock(return_value=remote),
+        f"{base_module}.assess_image_update",
+        new=AsyncMock(return_value=assessment),
     )
     mocker.patch(
         f"{base_module}.cache_available_image_metadata",

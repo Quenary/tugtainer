@@ -6,6 +6,12 @@ Tugtainer is a self-hosted application that automates Docker container updates. 
 
 Automatic updates are disabled by default.
 
+## Upgrading to 2.x
+
+> [!WARNING] 
+> A 1.x container cannot update itself to 2.x. Self-update does not perform this upgrade: recreate the app container from `ghcr.io/quenary/tugtainer:2` and keep the `/tugtainer` volume. The database in that volume stays compatible.
+> Update every remote agent to `ghcr.io/quenary/tugtainer-agent:2` in the same change. The 2.x agent API is not compatible with 1.x.
+
 ## Table of contents
 
 - [Main features](#main-features)
@@ -50,7 +56,7 @@ The app starts from [docker-compose.app.yml](./docker-compose.app.yml) or from:
 ```bash
 docker volume create tugtainer_data
 
-docker pull ghcr.io/quenary/tugtainer:1
+docker pull ghcr.io/quenary/tugtainer:2
 
 # AGENT_SECRET is required. Set a strong, unique shared secret.
 docker run -d -p 9412:80 \
@@ -59,7 +65,7 @@ docker run -d -p 9412:80 \
     -e AGENT_SECRET="" \
     -v tugtainer_data:/tugtainer \
     -v /var/run/docker.sock:/var/run/docker.sock:ro \
-    ghcr.io/quenary/tugtainer:1
+    ghcr.io/quenary/tugtainer:2
 ```
 
 On the first start the container logs a one-time setup code (`docker logs tugtainer`). The password is set with that code within 5 minutes. An expired code requires a restart. See [Auth](./docs/AUTH.md).
@@ -73,7 +79,7 @@ Agent URLs that resolve to private or reserved networks are blocked by default. 
 A remote host runs the agent, from [docker-compose.agent.yml](./docker-compose.agent.yml) or from:
 
 ```bash
-docker pull ghcr.io/quenary/tugtainer-agent:1
+docker pull ghcr.io/quenary/tugtainer-agent:2
 
 # AGENT_SECRET is required. Set a strong, unique shared secret.
 docker run -d -p 9413:8001 \
@@ -81,30 +87,41 @@ docker run -d -p 9413:8001 \
     --restart=unless-stopped \
     -e AGENT_SECRET="" \
     -v /var/run/docker.sock:/var/run/docker.sock:ro \
-    ghcr.io/quenary/tugtainer-agent:1
+    ghcr.io/quenary/tugtainer-agent:2
 ```
 
 The host is added under Menu → Hosts. The agent secret matches `AGENT_SECRET` on the agent container. Backend and agent speak HTTP. A reverse proxy can terminate HTTPS.
 
-| Setup | Host URL | SSL | Custom CA |
-| --- | --- | --- | --- |
-| Public CA | `https://…` | on | empty |
-| Private CA or self-signed | `https://…` | on | CA PEM, or the self-signed certificate. The hostname or SAN matches the URL host. |
-| TLS on the agent, no proxy | `https://…` | on | Cert and key mounted into the agent; `--ssl-certfile` and `--ssl-keyfile` via `command` (see [docker-compose.agent.yml](./docker-compose.agent.yml)). The image healthcheck calls `http://localhost:8001` and fails when the agent serves only HTTPS. |
+| Setup                      | Host URL    | SSL | Custom CA                                                                                                                                                                                                                                             |
+| -------------------------- | ----------- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public CA                  | `https://…` | on  | empty                                                                                                                                                                                                                                                 |
+| Private CA or self-signed  | `https://…` | on  | CA PEM, or the self-signed certificate. The hostname or SAN matches the URL host.                                                                                                                                                                     |
+| TLS on the agent, no proxy | `https://…` | on  | Cert and key mounted into the agent; `--ssl-certfile` and `--ssl-keyfile` via `command` (see [docker-compose.agent.yml](./docker-compose.agent.yml)). The image healthcheck calls `http://localhost:8001` and fails when the agent serves only HTTPS. |
+
+### Runtime compatibility
+
+Tugtainer communicates directly with container runtime HTTP APIs over Unix domain sockets or TCP (including socket-proxy).
+
+- **Docker Engine**: Minimum supported Docker Engine is **25.0** (Docker API **1.44**). Version negotiation selects the highest supported API version up to the maximum tested API version **1.48**.
+- **Podman**: Rootless Podman needs `DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock` or that socket mounted into the container. There is no automatic detection and no fallback to the rootful socket.
 
 ### Socket proxy
 
 The app and the agent can run without a direct Docker socket mount. The provided Compose files do this by default. Example proxy: [linuxserver/socket-proxy](https://hub.docker.com/r/linuxserver/socket-proxy).
 
-| Feature | Proxy variables |
-| --- | --- |
-| Check | `CONTAINERS`, `IMAGES`, `POST`, `INFO`, `PING` |
-| Update | `NETWORKS` |
-| Logs | `ALLOW_LOGS` |
-| Start, stop, restart, pause | `ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `ALLOW_PAUSE`, `ALLOW_UNPAUSE` |
-| Swarm | `SERVICES`, `TASKS`, `NODES`, `SWARM` |
+| Feature                     | Proxy variables                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| Discovery & Health          | `VERSION=1`, `PING=1`, `INFO=1`                                                         |
+| Check                       | `CONTAINERS=1`, `IMAGES=1`, `POST=1`                                                    |
+| Update & Recreation         | `CONTAINERS=1`, `IMAGES=1`, `NETWORKS=1`, `POST=1`                                      |
+| Logs                        | `ALLOW_LOGS=1`                                                                          |
+| Hooks & Exec                | `EXEC=1`, `POST=1`                                                                      |
+| Start, stop, restart, pause | `ALLOW_START=1`, `ALLOW_STOP=1`, `ALLOW_RESTARTS=1`, `ALLOW_PAUSE=1`, `ALLOW_UNPAUSE=1` |
+| Swarm                       | `SERVICES=1`, `TASKS=1`, `NODES=1`, `SWARM=1`, `DISTRIBUTION=1`                         |
 
-`DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`.
+`DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`. Supported schemes are `unix://`, `tcp://`, `http://`, and `https://`. `ssh://` is rejected. A non-empty `DOCKER_TLS_VERIFY` turns `tcp://` into HTTPS and verifies the daemon with `ca.pem`, `cert.pem`, and `key.pem`. The directory is `DOCKER_CERT_PATH`, otherwise `DOCKER_CONFIG`, otherwise `~/.docker`. Missing or invalid certificate files fail at connection time. `http://` together with `DOCKER_TLS_VERIFY` is rejected.
+
+The Compose files leave `EXEC` commented out. Uncomment it on a host where update hooks should run. Hooks also need `ALLOW_HOOKS` on the app and `ALLOW_EXEC` on the agent.
 
 ## Environment
 

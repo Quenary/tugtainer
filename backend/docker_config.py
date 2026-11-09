@@ -1,47 +1,12 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Final
-from urllib.parse import urlparse
+from typing import Any
 
 from backend.config import Config
+from shared.runtime.registry_auth import normalize_registry_host
 
-_DOCKER_HUB_HOSTS: Final[frozenset[str]] = frozenset(
-    {
-        "docker.io",
-        "index.docker.io",
-        "registry-1.docker.io",
-    }
-)
-
-
-def normalize_registry_host(value: str) -> str:
-    """
-    Normalize a docker config auth key or image registry to host[:port].
-
-    URL-form keys such as https://ghcr.io/v1/ become ghcr.io.
-    Docker Hub aliases (docker.io, index.docker.io, registry-1.docker.io)
-    canonicalise to registry-1.docker.io.
-    """
-    raw = value.strip()
-    if not raw:
-        return ""
-
-    parsed = urlparse(raw if "://" in raw else f"//{raw}")
-    host = (parsed.hostname or "").casefold()
-    if not host:
-        return ""
-
-    if host in _DOCKER_HUB_HOSTS:
-        return "registry-1.docker.io"
-
-    if ":" in host:
-        host = f"[{host}]"
-
-    port = parsed.port
-    if port is not None:
-        return f"{host}:{port}"
-    return host
+__all__ = ["DockerConfig", "normalize_registry_host"]
 
 
 class DockerConfig:
@@ -78,15 +43,35 @@ class DockerConfig:
         """
         Get Basic auth token for registry using exact normalized host match.
         """
+        entry = self._auth_entry(registry)
+        if not entry or "auth" not in entry:
+            return None
+        auth = entry["auth"]
+        return auth if isinstance(auth, str) else None
+
+    def get_identity_token(self, registry: str) -> str | None:
+        """
+        OAuth refresh token from an auths entry, as written by ``docker login``.
+
+        When this is set it is the registry credential. Username and password
+        on the same entry are not used.
+        """
+        entry = self._auth_entry(registry)
+        if not entry:
+            return None
+        token = entry.get("identitytoken")
+        if isinstance(token, str) and token.strip():
+            return token.strip()
+        return None
+
+    def _auth_entry(self, registry: str) -> dict[str, Any] | None:
         target = normalize_registry_host(registry)
         if not target:
             return None
-
         for key, entry in self.auths.items():
             if normalize_registry_host(key) != target:
                 continue
-            if entry and "auth" in entry:
-                return entry["auth"]
+            if isinstance(entry, dict):
+                return entry
             return None
-
         return None

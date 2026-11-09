@@ -6,10 +6,6 @@ import pytest
 from aiohttp import ClientResponseError
 from multidict import CIMultiDict, CIMultiDictProxy
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 from yarl import URL
 
 from backend.const import LOCAL_AGENT_URL, TUGTAINER_HIDDEN_LABEL
@@ -17,6 +13,10 @@ from backend.core.agent_client import AgentClient, build_agent_ssl
 from backend.exception import TugAgentClientError
 from backend.modules.hosts.test_hosts_schemas import TEST_CA_PEM
 from backend.util.pinned_ip_resolver import PinnedIpResolver
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+)
 from shared.schemas.container_schemas import GetContainerListBodySchema
 
 
@@ -62,6 +62,32 @@ async def test_request_keeps_hostname_and_disables_redirects(
     assert kwargs["ssl"] is True
     assert "x-tugtainer-timestamp" in kwargs["headers"]
     assert "x-tugtainer-signature" in kwargs["headers"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("force", "query"),
+    [(False, "false"), (True, "true")],
+)
+async def test_container_remove_sends_force_as_query_string(
+    mocker: MockerFixture,
+    force: bool,
+    query: str,
+):
+    mocker.patch(
+        "backend.core.agent_client.validate_agent_url_against_ssrf",
+        new=AsyncMock(return_value=set()),
+    )
+    cm = _mock_response(mocker, body='"web"')
+    session = MagicMock()
+    session.closed = False
+    session.request = MagicMock(return_value=cm)
+    client = AgentClient(id=1, url="https://agent.example.com", secret="secret")
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+
+    await client.container.remove("web", force=force)
+
+    assert session.request.call_args.kwargs["params"] == {"force": query}
 
 
 @pytest.mark.asyncio

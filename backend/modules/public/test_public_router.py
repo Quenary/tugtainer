@@ -140,14 +140,13 @@ async def test_get_update_count(
 
 @pytest.mark.asyncio
 async def test_get_update_count_skips_hidden(mocker: MockerFixture):
-    from python_on_whales.components.container.models import (
-        ContainerConfig,
-        ContainerInspectResult,
-    )
-
     from backend.const import TUGTAINER_HIDDEN_LABEL
     from backend.modules.containers.containers_model import ContainersModel
     from backend.modules.hosts.hosts_model import HostsModel
+    from shared.runtime.runtime_models import (
+        ContainerConfig,
+        ContainerInspectResult,
+    )
 
     mocker.patch(f"{module_path}.Config.ENABLE_PUBLIC_API", True)
 

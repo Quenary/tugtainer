@@ -3,13 +3,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 
 from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.core.jobs.update.update_host import run_update_host_job
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+)
 
 base_module = "backend.core.jobs.update.update_host"
 

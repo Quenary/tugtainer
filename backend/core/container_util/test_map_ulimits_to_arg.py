@@ -1,10 +1,10 @@
 import pytest
-from python_on_whales.components.container.models import (
-    ContainerUlimit,
-)
 
 from backend.core.container_util.map_ulimits_to_arg import (
     map_ulimits_to_arg,
+)
+from shared.runtime.runtime_models import (
+    ContainerUlimit,
 )
 
 

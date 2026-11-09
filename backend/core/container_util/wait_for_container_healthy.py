@@ -1,8 +1,7 @@
-from python_on_whales.components.container.models import (
+from backend.core.agent_client import AgentClient
+from shared.runtime.runtime_models import (
     ContainerInspectResult,
 )
-
-from backend.core.agent_client import AgentClient
 from shared.util.wait_for_container_healthy import (
     wait_for_container_healthy as _wait_for_container_healthy,
 )
