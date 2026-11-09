@@ -203,6 +203,8 @@ def test_service_list_global_mode_ignores_replicated_default(mocker: MockerFixtu
 
 def test_service_update(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
+    auth = {"username": "user", "password": "secret", "serveraddress": "ghcr.io"}
+    mocker.patch("agent.api.service_api.registry_auth_for_image", return_value=auth)
     update_mock = mocker.patch(
         "agent.api.service_api.RUNTIME_CLIENT.service_update",
         new=AsyncMock(),
@@ -210,14 +212,15 @@ def test_service_update(mocker: MockerFixture):
 
     response = client.post(
         "/api/service/update",
-        json={"service_id": "svc1", "image": "nginx:1.25"},
+        json={"service_id": "svc1", "image": "ghcr.io/org/app:1"},
     )
 
     assert response.status_code == 200
     assert response.json() == "svc1"
     update_mock.assert_awaited_once_with(
         "svc1",
-        "nginx:1.25",
+        "ghcr.io/org/app:1",
+        auth_config=auth,
     )
 
 

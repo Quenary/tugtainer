@@ -4,8 +4,11 @@ import pytest
 from fastapi import HTTPException
 from pytest_mock import MockerFixture
 
-from agent.api.image_api import is_exists, list_images
-from shared.schemas.image_schemas import GetImageListBodySchema
+from agent.api.image_api import is_exists, list_images, pull
+from shared.schemas.image_schemas import (
+    GetImageListBodySchema,
+    PullImageRequestBodySchema,
+)
 
 
 @pytest.mark.asyncio
@@ -43,3 +46,17 @@ async def test_list_images_passes_repository_or_tag_as_reference(
         all=False,
         filters={"dangling": ["true"], "reference": ["nginx:1"]},
     )
+
+
+@pytest.mark.asyncio
+async def test_pull_passes_registry_auth(mocker: MockerFixture) -> None:
+    auth = {"username": "user", "password": "secret", "serveraddress": "ghcr.io"}
+    mocker.patch("agent.api.image_api.registry_auth_for_image", return_value=auth)
+    image_pull = mocker.patch(
+        "agent.api.image_api.RUNTIME_CLIENT.image_pull",
+        new=AsyncMock(),
+    )
+
+    await pull(PullImageRequestBodySchema(image="ghcr.io/org/app:1"))
+
+    image_pull.assert_awaited_once_with("ghcr.io/org/app:1", auth_config=auth)

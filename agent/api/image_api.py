@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from agent.auth import verify_signature
 from agent.docker_client import RUNTIME_CLIENT
+from shared.runtime.registry_auth import registry_auth_for_image
 from shared.runtime.runtime_models import (
     ImageInspectResult,
 )
@@ -68,7 +69,10 @@ async def prune(body: PruneImagesRequestBodySchema) -> str:
     response_model=ImageInspectResult,
 )
 async def pull(body: PullImageRequestBodySchema):
-    return await RUNTIME_CLIENT.image_pull(body.image)
+    return await RUNTIME_CLIENT.image_pull(
+        body.image,
+        auth_config=registry_auth_for_image(body.image),
+    )
 
 
 @router.post(

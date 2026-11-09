@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from agent.auth import verify_signature
 from agent.docker_client import RUNTIME_CLIENT
+from shared.runtime.registry_auth import registry_auth_for_image
 from shared.schemas.service_schemas import (
     ServiceListItemSchema,
     ServiceReplicasSchema,
@@ -97,7 +98,11 @@ async def inspect_service(name_or_id: str) -> dict[str, Any]:
 )
 async def update_service(body: ServiceUpdateRequestBody) -> str:
     await _check_swarm_manager()
-    await RUNTIME_CLIENT.service_update(body.service_id, body.image)
+    await RUNTIME_CLIENT.service_update(
+        body.service_id,
+        body.image,
+        auth_config=registry_auth_for_image(body.image),
+    )
     return body.service_id
 
 
