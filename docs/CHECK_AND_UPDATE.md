@@ -1,14 +1,14 @@
 # Check and update
 
-A container built from a local image, with no registry digest, is not checked. The same rule applies to a Swarm service.
+A locally built image that still has a tag and no registry digest is not checked. An untagged image with no repo digests is compared with the registry. The same rules apply to a Swarm service.
 
 ## Check
 
 ```mermaid
 flowchart TD
-  Start[Check] --> Local{Registry digest?}
-  Local -- no --> Skip[Skip]
-  Local -- yes --> Pull{PULL_BEFORE_CHECK?}
+  Start[Check] --> Local{Tagged local build?}
+  Local -- yes --> Skip[Skip]
+  Local -- no --> Pull{PULL_BEFORE_CHECK?}
   Pull -- yes --> DoPull[Pull]
   Pull -- no --> Digest[Read the remote digest]
   DoPull --> Digest

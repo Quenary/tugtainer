@@ -188,6 +188,7 @@ async def test_check_service_queries_registry_without_repo_digests(
     local_img = MagicMock()
     local_img.id = "sha256:local123"
     local_img.repo_digests = []
+    local_img.repo_tags = None
     local_img.config = None
     client.image.inspect = AsyncMock(return_value=local_img)
 
@@ -254,3 +255,44 @@ async def test_check_service_pull_before_check(
     assert client.image.pull.called
     assert result.result == "available"
     assert result.local_digests == ["nginx@sha256:pulled_digest"]
+
+
+@pytest.mark.asyncio
+async def test_check_service_does_not_pull_tagged_local_build(
+    mocker: MockerFixture, mock_session: MagicMock
+):
+    host = SimpleNamespace(id=1, name="test-host")
+    client = MagicMock()
+    tracker = MagicMock()
+    service = make_service(name="web", image="app:local")
+
+    local_img = MagicMock()
+    local_img.id = "sha256:local123"
+    local_img.repo_digests = []
+    local_img.repo_tags = ["app:local"]
+    local_img.config = None
+    client.image.inspect = AsyncMock(return_value=local_img)
+    client.image.pull = AsyncMock()
+
+    def settings_mock(key: object) -> bool | int:
+        if str(key) == "PULL_BEFORE_CHECK":
+            return True
+        return 0
+
+    mocker.patch(f"{base_module}.SettingsStorage.get", side_effect=settings_mock)
+    assess = mocker.patch(
+        f"{base_module}.assess_image_update",
+        AsyncMock(return_value=([], False)),
+    )
+
+    result = await run_check_service_job(
+        client,
+        host,  # type: ignore[arg-type]
+        service,
+        tracker=tracker,
+    )
+
+    client.image.pull.assert_not_called()
+    assess.assert_awaited_once()
+    assert result.result == "not_available"
+    assert result.remote_digests == []

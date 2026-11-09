@@ -6,6 +6,7 @@ from pytest_mock import MockerFixture
 
 from backend.core.jobs.check.check_container import run_check_container_job
 from backend.enums.job_status_enum import EJobStatus
+from backend.modules.settings.settings_enum import ESettingKey
 from backend.testing import patch_async_session
 from shared.runtime.runtime_models import (
     ContainerConfig,
@@ -26,10 +27,14 @@ def _container(image: str | None = "nginx:latest") -> ContainerInspectResult:
     )
 
 
-def _local_image(digests: list[str] | None) -> ImageInspectResult:
+def _local_image(
+    digests: list[str] | None,
+    tags: list[str] | None = None,
+) -> ImageInspectResult:
     return ImageInspectResult(
         id="sha256:local",
         repo_digests=digests,
+        repo_tags=tags,
         config=ContainerConfig(labels={"org.opencontainers.image.version": "1.0.0"}),
     )
 
@@ -89,6 +94,38 @@ async def test_check_container_queries_registry_without_repo_digests(
     assess.assert_awaited_once()
     assert result.result == "not_available"
     assert result.remote_digests == ["sha256:same"]
+    tracker.set_container.assert_called_with("web", EJobStatus.DONE, result)
+
+
+@pytest.mark.asyncio
+async def test_check_container_does_not_pull_tagged_local_build(
+    mocker: MockerFixture,
+) -> None:
+    client = MagicMock()
+    client.image.inspect = AsyncMock(return_value=_local_image([], tags=["app:local"]))
+    client.image.pull = AsyncMock()
+    tracker = MagicMock()
+    patch_async_session(mocker, base_module, _session(None))
+
+    def settings(key: ESettingKey) -> bool | int:
+        if key == ESettingKey.PULL_BEFORE_CHECK:
+            return True
+        return 0
+
+    mocker.patch(f"{base_module}.SettingsStorage.get", side_effect=settings)
+    insert = mocker.patch(f"{base_module}.insert_or_update_container", new=AsyncMock())
+
+    result = await run_check_container_job(
+        client,
+        SimpleNamespace(id=1, name="host"),  # type: ignore[arg-type]
+        _container(image="app:local"),
+        tracker=tracker,
+    )
+
+    client.image.pull.assert_not_called()
+    assert result.result == "not_available"
+    assert result.remote_digests == []
+    assert insert.await_args.args[3]["update_available"] is False
     tracker.set_container.assert_called_with("web", EJobStatus.DONE, result)
 
 

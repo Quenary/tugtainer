@@ -887,6 +887,16 @@ def image_content_matches(
     )
 
 
+def image_is_local_build(image: ImageInspectResult | None) -> bool:
+    """Tagged image with no registry digest: built locally, not an untagged pull."""
+    if image is None:
+        return False
+    tags = image.repo_tags
+    if not isinstance(tags, list) or not any(tags):
+        return False
+    return not image.repo_digests
+
+
 async def assess_image_update(
     spec: str,
     local_image: ImageInspectResult | None,
@@ -899,8 +909,15 @@ async def assess_image_update(
     platform config blob is compared. None means the registry could not be
     read, or the local image has no rootfs to compare after a digest miss.
     A service pinned only by digest (no local inspect) is compared as a string.
+    A tagged image with no RepoDigests is a local build and is not checked.
     """
     logger: Final = logging.getLogger("assess_image_update")
+    if image_is_local_build(local_image):
+        logger.debug(
+            "Local image %s has tags and no repo digests; skipping registry",
+            spec,
+        )
+        return [], False
     delay: Final = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
     candidates: list[str | None] = list(local_digests) or [None]
     remote: str | None = None

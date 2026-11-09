@@ -5,7 +5,10 @@ from typing import Final
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
-from backend.core.jobs.check.check_util import assess_image_update
+from backend.core.jobs.check.check_util import (
+    assess_image_update,
+    image_is_local_build,
+)
 from backend.core.jobs.jobs_results import ContainerJobOutcome, ServiceJobResult
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.db.session import async_session_maker
@@ -87,8 +90,13 @@ async def run_check_service_job(
                 logger.info(f"Using pinned digest from service image: {pinned_digest}")
                 local_digests = [pinned_digest]
 
-            # 3. Pull image only if PULL_BEFORE_CHECK setting is explicitly enabled
-            if not local_digests and SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK):
+            # 3. Pull image only if PULL_BEFORE_CHECK setting is explicitly enabled.
+            # A tagged local build has no registry digest; pulling would fetch a foreign tag.
+            if (
+                not local_digests
+                and not image_is_local_build(local_image)
+                and SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK)
+            ):
                 try:
                     logger.info(
                         f"Pulling image {spec_base} because PULL_BEFORE_CHECK is enabled"
@@ -129,7 +137,8 @@ async def run_check_service_job(
 
             # Pull image before digests if PULL_BEFORE_CHECK is enabled and not already pulled
             if (
-                SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK)
+                not image_is_local_build(local_image)
+                and SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK)
                 and not result.remote_image
             ):
                 try:

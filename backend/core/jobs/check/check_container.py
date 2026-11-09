@@ -10,6 +10,7 @@ from backend.core.container_util.get_container_image_spec import (
 )
 from backend.core.jobs.check.check_util import (
     assess_image_update,
+    image_is_local_build,
 )
 from backend.core.jobs.jobs_results import (
     ContainerJobOutcome,
@@ -109,7 +110,9 @@ async def run_check_container_job(
 
             # pull image before digests
             # https://github.com/Quenary/tugtainer/issues/114
-            if SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK):
+            if not image_is_local_build(local_image) and SettingsStorage.get(
+                ESettingKey.PULL_BEFORE_CHECK
+            ):
                 logger.info("Pulling image before remote digests")
                 remote_image: Final = await client.image.pull(
                     PullImageRequestBodySchema(image=image_spec)

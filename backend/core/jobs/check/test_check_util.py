@@ -784,10 +784,12 @@ def _image(
     repo_digests: list[str] | None,
     layers: list[str] | None,
     cmd: list[str] | None = None,
+    repo_tags: list[str] | None = None,
 ) -> ImageInspectResult:
     return ImageInspectResult(
         id="sha256:local",
         repo_digests=repo_digests,
+        repo_tags=repo_tags,
         os="linux",
         architecture="amd64",
         root_fs={"Layers": layers} if layers is not None else None,
@@ -893,13 +895,39 @@ async def test_assess_empty_repo_digests_matches_config_blob(
         f"{module_path}.fetch_remote_config_blob",
         new=AsyncMock(return_value=_blob(["sha256:layer"])),
     )
-    local = _image(repo_digests=[], layers=["sha256:layer"])
+    local = _image(repo_digests=[], repo_tags=[], layers=["sha256:layer"])
 
     remote, update = await assess_image_update("ghcr.io/example/app:1", local, [])
 
     digest.assert_awaited_once_with("ghcr.io/example/app:1", None)
     assert remote == ["sha256:manifest"]
     assert update is False
+
+
+@pytest.mark.asyncio
+async def test_assess_tagged_local_build_skips_registry(
+    mocker: MockerFixture,
+):
+    digest = mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(),
+    )
+    fetch = mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(),
+    )
+    local = _image(
+        repo_digests=[],
+        repo_tags=["app:local"],
+        layers=["sha256:other"],
+    )
+
+    remote, update = await assess_image_update("app:local", local, [])
+
+    assert remote == []
+    assert update is False
+    digest.assert_not_called()
+    fetch.assert_not_called()
 
 
 @pytest.mark.asyncio
