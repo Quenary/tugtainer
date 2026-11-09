@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import ContainerInspectResult
 
+from shared.runtime.runtime_models import ContainerInspectResult
 from shared.util.wait_for_container_healthy import wait_for_container_healthy
 
 base_module = "shared.util.wait_for_container_healthy"

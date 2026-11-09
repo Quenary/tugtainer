@@ -1,36 +1,36 @@
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
-
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
+from typing import Any
 
 
-def _health_status(container: ContainerInspectResult) -> str:
-    if not container.state or not container.state.health:
+def _health_status(container: Any) -> str:
+    state = getattr(container, "state", None)
+    if not state or not getattr(state, "health", None):
         return "unknown"
-    return container.state.health.status or "unknown"
+    return getattr(state.health, "status", None) or "unknown"
 
 
-def _is_running(container: ContainerInspectResult) -> bool:
-    return bool(container.state and container.state.status == "running")
+def _is_running(container: Any) -> bool:
+    state = getattr(container, "state", None)
+    return bool(state and getattr(state, "status", None) == "running")
 
 
 async def wait_for_container_healthy(
-    inspect: Callable[[str], Awaitable[ContainerInspectResult]],
-    container: ContainerInspectResult,
+    inspect: Callable[[str], Awaitable[Any]],
+    container: Any,
     timeout: int = 60,
     interval: float = 5,
-) -> tuple[bool, ContainerInspectResult]:
+) -> tuple[bool, Any]:
     """
     Wait for container healthy status or timeout.
     If the healthcheck property is missing,
     wait only for running state.
     :param inspect: async function returning fresh inspect data by container id
     """
-    has_healthcheck = bool(container.state and container.state.health)
-    id = container.id
+    state = getattr(container, "state", None)
+    has_healthcheck = bool(state and getattr(state, "health", None))
+    id = getattr(container, "id", None)
     if not id:
         return False, container
     start = time.time()

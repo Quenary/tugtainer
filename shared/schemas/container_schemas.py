@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import (
     Literal,
 )
 
 from pydantic import BaseModel, Field
-from python_on_whales.utils import ValidPath, ValidPortMapping
+
+PortMapping = int | str | tuple[int | str, ...]
 
 
 class GetContainerListBodySchema(BaseModel):
@@ -26,7 +28,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     cap_drop: list[str] | None = None
     cgroup_parent: str | None = None
     cgroupns: str | None = None
-    cidfile: ValidPath | None = None
+    cidfile: str | Path | None = None
     cpu_period: int | None = None
     cpu_quota: int | None = None
     cpu_rt_period: int | None = None
@@ -49,7 +51,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     domainname: str | None = None
     entrypoint: str | None = None
     envs: dict[str, str] | None = None
-    env_files: ValidPath | list[ValidPath] | None = None
+    env_files: str | Path | list[str | Path] | None = None
     env_host: bool | None = None
     expose: int | list[int] | None = None
     gpus: int | str | None = None
@@ -69,7 +71,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     isolation: str | None = None
     kernel_memory: int | str | None = None
     labels: dict[str, str] | None = None
-    label_files: list[ValidPath] | None = None
+    label_files: list[str | Path] | None = None
     link: list[str] | None = None
     link_local_ip: list[str] | None = None
     log_driver: str | None = None
@@ -90,7 +92,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     platform: str | None = None
     pod: str | None = None
     privileged: bool | None = None
-    publish: list[ValidPortMapping] | None = None
+    publish: list[PortMapping] | None = None
     publish_all: bool | None = None
     pull: str | None = None
     read_only: bool | None = None
@@ -105,7 +107,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     storage_options: list[str] | None = None
     sysctl: dict[str, str] | None = None
     systemd: bool | Literal["always"] | None = None
-    tmpfs: list[ValidPath] | None = None
+    tmpfs: list[str | Path] | None = None
     tty: bool | None = None
     tz: str | None = None
     ulimit: list[str] | None = None
@@ -113,11 +115,11 @@ class CreateContainerRequestBodySchema(BaseModel):
     userns: str | None = None
     uts: str | None = None
     volumes: (
-        list[tuple[ValidPath, ValidPath] | tuple[ValidPath, ValidPath, str]] | None
+        list[tuple[str | Path, str | Path] | tuple[str | Path, str | Path, str]] | None
     ) = None
     volume_driver: str | None = None
     volumes_from: list[str] | None = None
-    workdir: ValidPath | None = None
+    workdir: str | Path | None = None
 
 
 class GetContainerLogsRequestBody(BaseModel):
