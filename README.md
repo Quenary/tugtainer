@@ -6,11 +6,16 @@ Tugtainer is a self-hosted application that automates Docker container updates. 
 
 Automatic updates are disabled by default.
 
+## Upgrading to 2.x
+
+> [!WARNING] 
+> A 1.x container cannot update itself to 2.x. Self-update does not perform this upgrade: recreate the app container from `ghcr.io/quenary/tugtainer:2` and keep the `/tugtainer` volume. The database in that volume stays compatible.
+> Update every remote agent to `ghcr.io/quenary/tugtainer-agent:2` in the same change. The 2.x agent API is not compatible with 1.x.
+
 ## Table of contents
 
 - [Main features](#main-features)
 - [Deploy](#deploy)
-- [Upgrading to 2.x](#upgrading-to-2x)
 - [Private registries](./docs/PRIVATE_REGISTRIES.md)
 - [Custom labels](./docs/CUSTOM_LABELS.md)
 - [Hooks](./docs/HOOKS.md)
@@ -117,12 +122,6 @@ The app and the agent can run without a direct Docker socket mount. The provided
 `DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`. Supported schemes are `unix://`, `tcp://`, `http://`, and `https://`. `ssh://` is rejected. `DOCKER_TLS_VERIFY` and `DOCKER_CERT_PATH` are not read; TLS is an `https://` URL.
 
 The Compose files leave `EXEC` commented out. Uncomment it on a host where update hooks should run. Hooks also need `ALLOW_HOOKS` on the app and `ALLOW_EXEC` on the agent.
-
-## Upgrading to 2.x
-
-A 1.x container cannot update itself to 2.x. Self-update does not perform this upgrade: recreate the app container from `ghcr.io/quenary/tugtainer:2` and keep the `/tugtainer` volume. The database in that volume stays compatible.
-
-Update every remote agent to `ghcr.io/quenary/tugtainer-agent:2` in the same change. The 2.x agent API is not compatible with 1.x.
 
 ## Environment
 
