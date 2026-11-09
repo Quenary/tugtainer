@@ -25,9 +25,9 @@ The helper is named `<name>-self-update`. It receives only the app's Docker acce
 
 If the new container cannot be removed, or the database cannot be restored, rollback stops and reports `failed`. The old version does not start beside the new one or on a migrated database. After startup the app (new or restored) waits for the helper, reports the result once, and drops the helper's journal. A leftover `<name>-old` is removed only when that journal records it as the old container of a successful update.
 
-## Migration from 1.x to 2.0.0
+## Migration from 1.x
 
-Upgrading from pre-2.0.0 releases to 2.0.0 requires manual container recreation. The self-update helper strictly validates the plan version (`version: 2`) and safely aborts before any destructive changes if a legacy plan format is supplied. Existing database state and application volumes in `/tugtainer` remain fully compatible.
+Upgrading the app container is manual. See [Upgrading to 2.x](../README.md#upgrading-to-2x). The helper accepts only a plan with `version: 2` and stops before it changes anything when the plan is older.
 
 ## Podman and systemd
 

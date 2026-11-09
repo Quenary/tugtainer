@@ -141,6 +141,14 @@ class RuntimeClient:
                     clean_url = host.replace("tcp://", "http://", 1)
                     self._base_url = clean_url.rstrip("/")
                     connector = aiohttp.TCPConnector(ssl=self._ssl_context)
+                elif "://" in host:
+                    scheme = host.split("://", 1)[0]
+                    raise RuntimeClientError(
+                        f"Unsupported DOCKER_HOST scheme '{scheme}'. "
+                        "Use unix://, tcp://, http://, or https://. "
+                        "ssh:// is not supported, and DOCKER_TLS_VERIFY and "
+                        "DOCKER_CERT_PATH are not read."
+                    )
                 else:
                     connector = aiohttp.UnixConnector(path=host)
                     self._base_url = "http://localhost"

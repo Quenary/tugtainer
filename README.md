@@ -10,6 +10,7 @@ Automatic updates are disabled by default.
 
 - [Main features](#main-features)
 - [Deploy](#deploy)
+- [Upgrading to 2.x](#upgrading-to-2x)
 - [Private registries](./docs/PRIVATE_REGISTRIES.md)
 - [Custom labels](./docs/CUSTOM_LABELS.md)
 - [Hooks](./docs/HOOKS.md)
@@ -50,7 +51,7 @@ The app starts from [docker-compose.app.yml](./docker-compose.app.yml) or from:
 ```bash
 docker volume create tugtainer_data
 
-docker pull ghcr.io/quenary/tugtainer:1
+docker pull ghcr.io/quenary/tugtainer:2
 
 # AGENT_SECRET is required. Set a strong, unique shared secret.
 docker run -d -p 9412:80 \
@@ -59,7 +60,7 @@ docker run -d -p 9412:80 \
     -e AGENT_SECRET="" \
     -v tugtainer_data:/tugtainer \
     -v /var/run/docker.sock:/var/run/docker.sock:ro \
-    ghcr.io/quenary/tugtainer:1
+    ghcr.io/quenary/tugtainer:2
 ```
 
 On the first start the container logs a one-time setup code (`docker logs tugtainer`). The password is set with that code within 5 minutes. An expired code requires a restart. See [Auth](./docs/AUTH.md).
@@ -73,7 +74,7 @@ Agent URLs that resolve to private or reserved networks are blocked by default. 
 A remote host runs the agent, from [docker-compose.agent.yml](./docker-compose.agent.yml) or from:
 
 ```bash
-docker pull ghcr.io/quenary/tugtainer-agent:1
+docker pull ghcr.io/quenary/tugtainer-agent:2
 
 # AGENT_SECRET is required. Set a strong, unique shared secret.
 docker run -d -p 9413:8001 \
@@ -81,7 +82,7 @@ docker run -d -p 9413:8001 \
     --restart=unless-stopped \
     -e AGENT_SECRET="" \
     -v /var/run/docker.sock:/var/run/docker.sock:ro \
-    ghcr.io/quenary/tugtainer-agent:1
+    ghcr.io/quenary/tugtainer-agent:2
 ```
 
 The host is added under Menu → Hosts. The agent secret matches `AGENT_SECRET` on the agent container. Backend and agent speak HTTP. A reverse proxy can terminate HTTPS.
@@ -113,7 +114,15 @@ The app and the agent can run without a direct Docker socket mount. The provided
 | Start, stop, restart, pause | `ALLOW_START=1`, `ALLOW_STOP=1`, `ALLOW_RESTARTS=1`, `ALLOW_PAUSE=1`, `ALLOW_UNPAUSE=1` |
 | Swarm                       | `SERVICES=1`, `TASKS=1`, `NODES=1`, `SWARM=1`                                           |
 
-`DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`.
+`DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`. Supported schemes are `unix://`, `tcp://`, `http://`, and `https://`. `ssh://` is rejected. `DOCKER_TLS_VERIFY` and `DOCKER_CERT_PATH` are not read; TLS is an `https://` URL.
+
+The Compose files leave `EXEC` commented out. Uncomment it on a host where update hooks should run. Hooks also need `ALLOW_HOOKS` on the app and `ALLOW_EXEC` on the agent.
+
+## Upgrading to 2.x
+
+A 1.x container cannot update itself to 2.x. Self-update does not perform this upgrade: recreate the app container from `ghcr.io/quenary/tugtainer:2` and keep the `/tugtainer` volume. The database in that volume stays compatible.
+
+Update every remote agent to `ghcr.io/quenary/tugtainer-agent:2` in the same change. The 2.x agent API is not compatible with 1.x.
 
 ## Environment
 

@@ -37,6 +37,27 @@ def test_parse_version_tuple():
     assert parse_version_tuple(None) == (0, 0)
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "host",
+    ["ssh://user@example", "npipe:////./pipe/docker_engine"],
+)
+async def test_unsupported_docker_host_scheme(host: str):
+    client = RuntimeClient(host)
+    with pytest.raises(RuntimeClientError, match="Unsupported DOCKER_HOST scheme"):
+        await client._get_session()
+
+
+@pytest.mark.asyncio
+async def test_plain_socket_path_uses_unix_connector():
+    client = RuntimeClient("/tmp/tugtainer-no-such.sock")
+    session = await client._get_session()
+    try:
+        assert isinstance(session.connector, aiohttp.UnixConnector)
+    finally:
+        await client.close()
+
+
 def test_encode_registry_auth():
     auth = {"serveraddress": "ghcr.io", "username": "user", "password": "secret"}
     encoded = encode_registry_auth(auth)

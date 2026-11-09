@@ -27,6 +27,8 @@ services:
       ALLOW_RESTARTS: 1
       ALLOW_PAUSE: 1
       ALLOW_UNPAUSE: 1
+      # Uncomment to allow exec inside containers (update hooks).
+      # EXEC: 1
       # Uncomment if using swarm:
       # SERVICES: 1
       # TASKS: 1
@@ -46,7 +48,7 @@ services:
     depends_on:
       - socket-proxy
     container_name: tugtainer
-    image: ghcr.io/quenary/tugtainer:1
+    image: ghcr.io/quenary/tugtainer:2
     volumes:
       - tugtainer_data:/tugtainer
       # You can uncomment this to mount socket directly,

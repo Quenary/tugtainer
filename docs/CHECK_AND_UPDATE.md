@@ -56,7 +56,7 @@ Optional [hooks](HOOKS.md) run around stop, update, and rollback when both gates
 
 ### Configuration preservation and preflight
 
-Container recreation sends typed JSON specifications directly to the runtime API without intermediate CLI shell escaping:
+Container recreation sends the Engine API create body:
 
 - All labels, environment variables, mounts, port bindings, device requests (GPUs), ulimits, and sysctls are preserved faithfully.
 - Anonymous volume identities are retained across recreations.

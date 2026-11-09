@@ -22,6 +22,8 @@ services:
       ALLOW_RESTARTS: 1
       ALLOW_PAUSE: 1
       ALLOW_UNPAUSE: 1
+      # Uncomment to allow exec inside containers (update hooks).
+      # EXEC: 1
       # Uncomment if using swarm:
       # SERVICES: 1
       # TASKS: 1
