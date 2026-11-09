@@ -48,7 +48,7 @@ async def run_update_service_job(
                 return result
 
             _slot(EJobStatus.UPDATING)
-            await client.service.update(
+            response = await client.service.update(
                 ServiceUpdateRequestBody(
                     service_id=service.id,
                     image=service.image,
@@ -69,11 +69,16 @@ async def run_update_service_job(
 
             if s_db:
                 s_db.update_available = False
-                s_db.updated_at = now()
+                if response.applied:
+                    s_db.updated_at = now()
                 await session.commit()
 
-            result.result = "updated"
-            logger.info(f"Service {service.name} successfully updated")
+            if response.applied:
+                result.result = "updated"
+                logger.info(f"Service {service.name} successfully updated")
+            else:
+                result.result = "not_available"
+                logger.info(f"Service {service.name} is already up to date")
             _slot(EJobStatus.DONE, result)
             return result
         except Exception as e:

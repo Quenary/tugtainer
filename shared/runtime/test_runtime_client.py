@@ -810,9 +810,10 @@ async def test_service_update_resolves_tagged_digest(mocker: MockerFixture) -> N
     )
     auth = {"username": "user", "password": "secret", "serveraddress": "docker.io"}
 
-    await client.service_update(
+    applied = await client.service_update(
         "svc1", "docker.io/library/nginx:1@sha256:old", auth_config=auth
     )
+    assert applied is True
 
     distribution, update = request.await_args_list
     assert distribution.args[0] == "GET"
@@ -837,7 +838,8 @@ async def test_service_update_skips_unchanged_digest(mocker: MockerFixture) -> N
         new=AsyncMock(return_value=_distribution("sha256:same")),
     )
 
-    await client.service_update("svc1", "nginx:1@sha256:same")
+    applied = await client.service_update("svc1", "nginx:1@sha256:same")
+    assert applied is False
 
     request.assert_awaited_once()
     assert request.await_args.args[1] == "/distribution/nginx:1/json"
@@ -861,7 +863,8 @@ async def test_service_update_keeps_digest_only_reference(
         client, "_request", new=AsyncMock(return_value=response)
     )
 
-    await client.service_update("svc1", "nginx@sha256:pinned")
+    applied = await client.service_update("svc1", "nginx@sha256:pinned")
+    assert applied is True
 
     request.assert_awaited_once()
     assert request.await_args.args[0] == "POST"

@@ -206,7 +206,7 @@ async def test_agent_client_swarm_info_and_service(mocker: MockerFixture):
                         "replicas": {"running": 1, "desired": 1},
                     }
                 ],
-                "s1",
+                {"service_id": "s1", "applied": True},
             ]
         ),
     )
@@ -221,10 +221,11 @@ async def test_agent_client_swarm_info_and_service(mocker: MockerFixture):
 
     from shared.schemas.service_schemas import ServiceUpdateRequestBody
 
-    updated_id = await client.service.update(
+    updated = await client.service.update(
         ServiceUpdateRequestBody(service_id="s1", image="nginx:alpine")
     )
-    assert updated_id == "s1"
+    assert updated.service_id == "s1"
+    assert updated.applied is True
 
 
 def _response_error(status_code: int = 500) -> ClientResponseError:
