@@ -72,7 +72,24 @@ def test_docker_cert_dir_defaults_to_docker_home(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("DOCKER_CERT_PATH", raising=False)
+    monkeypatch.delenv("DOCKER_CONFIG", raising=False)
     assert docker_cert_dir() == Path.home() / ".docker"
+
+
+def test_docker_cert_dir_prefers_cert_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("DOCKER_CERT_PATH", str(tmp_path / "certs"))
+    monkeypatch.setenv("DOCKER_CONFIG", str(tmp_path / "config"))
+    assert docker_cert_dir() == tmp_path / "certs"
+
+
+def test_docker_cert_dir_uses_docker_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("DOCKER_CERT_PATH", raising=False)
+    monkeypatch.setenv("DOCKER_CONFIG", str(tmp_path / "config"))
+    assert docker_cert_dir() == tmp_path / "config"
 
 
 def test_load_docker_tls_context_verifies_server(tmp_path: Path) -> None:

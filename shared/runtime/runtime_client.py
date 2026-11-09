@@ -117,10 +117,22 @@ def docker_tls_verify_enabled(
     return env.get("DOCKER_TLS_VERIFY", "") != ""
 
 
-def docker_cert_dir(environ: Mapping[str, str] | None = None) -> Path:
-    """Directory with ca.pem, cert.pem, and key.pem. Defaults to ~/.docker."""
+def docker_config_dir(environ: Mapping[str, str] | None = None) -> Path:
+    """Directory of config.json. DOCKER_CONFIG, otherwise ~/.docker."""
     env = os.environ if environ is None else environ
-    return Path(env.get("DOCKER_CERT_PATH") or "~/.docker").expanduser()
+    return Path(env.get("DOCKER_CONFIG") or "~/.docker").expanduser()
+
+
+def docker_cert_dir(environ: Mapping[str, str] | None = None) -> Path:
+    """Directory with ca.pem, cert.pem, and key.pem.
+
+    DOCKER_CERT_PATH, otherwise the Docker config directory.
+    """
+    env = os.environ if environ is None else environ
+    cert_path = env.get("DOCKER_CERT_PATH")
+    if cert_path:
+        return Path(cert_path).expanduser()
+    return docker_config_dir(env)
 
 
 def load_docker_tls_context(

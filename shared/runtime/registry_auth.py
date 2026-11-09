@@ -2,12 +2,11 @@ import base64
 import binascii
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any, Final
 from urllib.parse import urlparse
 
-from shared.runtime.runtime_client import split_image_ref
+from shared.runtime.runtime_client import docker_config_dir, split_image_ref
 
 logger: Final = logging.getLogger("runtime.auth")
 
@@ -57,10 +56,6 @@ def image_registry_host(spec: str) -> str:
     if first and ("." in first or ":" in first or first == "localhost"):
         return first
     return "docker.io"
-
-
-def docker_config_dir() -> Path:
-    return Path(os.environ.get("DOCKER_CONFIG") or "~/.docker").expanduser()
 
 
 def registry_auth_for_image(
