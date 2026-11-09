@@ -10,8 +10,15 @@ from shared.runtime.runtime_client import (
     parse_version_tuple,
     split_image_ref,
 )
-from shared.runtime.runtime_errors import IncompatibleRuntimeError
-from shared.runtime.runtime_models import ImageInspectResult
+from shared.runtime.runtime_errors import (
+    IncompatibleRuntimeError,
+    RuntimeNotFoundError,
+)
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ContainerState,
+    ImageInspectResult,
+)
 
 
 def test_parse_version_tuple():
@@ -233,3 +240,91 @@ async def test_image_tag_reference_params(
         "repo": expected_repo,
         "tag": expected_tag,
     }
+
+
+def _json_response(mocker: MockerFixture, payload: object):
+    response = mocker.MagicMock()
+    response.json = AsyncMock(return_value=payload)
+    return response
+
+
+@pytest.mark.asyncio
+async def test_container_list_inspects_each_summary(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    summary = {
+        "Id": "abc",
+        "Names": ["/web"],
+        "State": "running",
+        "Status": "Up 3 seconds",
+    }
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=_json_response(mocker, [summary])),
+    )
+    inspected = ContainerInspectResult(
+        id="abc",
+        name="web",
+        state=ContainerState(status="running", running=True),
+    )
+    inspect = mocker.patch.object(
+        client,
+        "container_inspect",
+        new=AsyncMock(return_value=inspected),
+    )
+
+    result = await client.container_list()
+
+    assert result == [inspected]
+    inspect.assert_awaited_once_with("abc")
+
+
+@pytest.mark.asyncio
+async def test_container_list_skips_removed_container(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    summaries = [
+        {"Id": "gone", "State": "running"},
+        {"Id": "kept", "State": "exited"},
+    ]
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=_json_response(mocker, summaries)),
+    )
+    kept = ContainerInspectResult(id="kept", name="kept")
+
+    async def inspect_one(item_id: str) -> ContainerInspectResult:
+        if item_id == "gone":
+            raise RuntimeNotFoundError("gone")
+        return kept
+
+    mocker.patch.object(client, "container_inspect", new=inspect_one)
+
+    result = await client.container_list()
+
+    assert result == [kept]
+
+
+@pytest.mark.asyncio
+async def test_image_list_inspects_each_summary(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    summary = {"Id": "sha256:img", "RepoTags": ["nginx:1"], "Created": 1710000000}
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=_json_response(mocker, [summary])),
+    )
+    inspected = ImageInspectResult(id="sha256:img", repo_tags=["nginx:1"])
+    inspect = mocker.patch.object(
+        client,
+        "image_inspect",
+        new=AsyncMock(return_value=inspected),
+    )
+
+    result = await client.image_list()
+
+    assert result == [inspected]
+    inspect.assert_awaited_once_with("sha256:img")

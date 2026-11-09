@@ -4,7 +4,8 @@ import json
 import logging
 import os
 import ssl as ssl_lib
-from typing import Any, Final
+from collections.abc import Awaitable, Callable
+from typing import Any, Final, TypeVar
 
 import aiohttp
 from pydantic import BaseModel
@@ -31,6 +32,9 @@ logger: Final = logging.getLogger("runtime.client")
 
 CLIENT_MIN_DOCKER_API: Final = (1, 44)
 CLIENT_MAX_DOCKER_API: Final = (1, 48)
+LIST_INSPECT_CONCURRENCY: Final = 8
+
+T = TypeVar("T")
 
 
 def parse_version_tuple(v_str: str | None) -> tuple[int, int]:
@@ -303,9 +307,9 @@ class RuntimeClient:
         resp = await self._request("GET", "/containers/json", params=params)
         try:
             items = await resp.json()
-            return [ContainerInspectResult.model_validate(c) for c in items]
         finally:
             resp.close()
+        return await self._inspect_listed(items, self.container_inspect)
 
     async def container_inspect(self, name_or_id: str) -> ContainerInspectResult:
         if not self._negotiated_api_prefix:
@@ -566,9 +570,31 @@ class RuntimeClient:
         resp = await self._request("GET", "/images/json", params=params)
         try:
             items = await resp.json()
-            return [ImageInspectResult.model_validate(img) for img in items]
         finally:
             resp.close()
+        return await self._inspect_listed(items, self.image_inspect)
+
+    async def _inspect_listed(
+        self,
+        items: list[dict[str, Any]],
+        inspect_one: Callable[[str], Awaitable[T]],
+    ) -> list[T]:
+        """Inspect each summary id. Skip objects removed between list and inspect."""
+        ids = [
+            item_id for item in items if (item_id := item.get("Id") or item.get("id"))
+        ]
+        semaphore = asyncio.Semaphore(LIST_INSPECT_CONCURRENCY)
+
+        async def inspect_id(item_id: str) -> T | None:
+            async with semaphore:
+                try:
+                    return await inspect_one(item_id)
+                except RuntimeNotFoundError:
+                    logger.debug("Skipping %s removed during list", item_id)
+                    return None
+
+        inspected = await asyncio.gather(*(inspect_id(item_id) for item_id in ids))
+        return [item for item in inspected if item is not None]
 
     async def image_pull(
         self,

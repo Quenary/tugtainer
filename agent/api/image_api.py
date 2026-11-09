@@ -45,8 +45,13 @@ async def inspect(body: InspectImageRequestBodySchema):
     response_model=list[ImageInspectResult],
 )
 async def list_images(body: GetImageListBodySchema):
-    args = body.model_dump(exclude_unset=True)
-    return await RUNTIME_CLIENT.image_list(**args)
+    filters = dict(body.filters or {})
+    if body.repository_or_tag:
+        filters["reference"] = [body.repository_or_tag]
+    return await RUNTIME_CLIENT.image_list(
+        all=True if body.all is None else body.all,
+        filters=filters or None,
+    )
 
 
 @router.post(

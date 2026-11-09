@@ -4,7 +4,8 @@ import pytest
 from fastapi import HTTPException
 from pytest_mock import MockerFixture
 
-from agent.api.image_api import is_exists
+from agent.api.image_api import is_exists, list_images
+from shared.schemas.image_schemas import GetImageListBodySchema
 
 
 @pytest.mark.asyncio
@@ -19,3 +20,26 @@ async def test_image_is_exists_raises_when_missing(mocker: MockerFixture):
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Image not found"
+
+
+@pytest.mark.asyncio
+async def test_list_images_passes_repository_or_tag_as_reference(
+    mocker: MockerFixture,
+) -> None:
+    image_list = mocker.patch(
+        "agent.api.image_api.RUNTIME_CLIENT.image_list",
+        new=AsyncMock(return_value=[]),
+    )
+
+    await list_images(
+        GetImageListBodySchema(
+            repository_or_tag="nginx:1",
+            filters={"dangling": ["true"]},
+            all=False,
+        )
+    )
+
+    image_list.assert_awaited_once_with(
+        all=False,
+        filters={"dangling": ["true"], "reference": ["nginx:1"]},
+    )
