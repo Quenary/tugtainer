@@ -117,19 +117,6 @@ class SettingsStorage:
         return dict(cls._VALUES)
 
     @classmethod
-    async def load_one(cls, key: ESettingKey):
-        """Load setting by key from db"""
-        async with async_session_maker() as session:
-            result = await session.execute(
-                select(SettingModel).where(SettingModel.key == key.value)
-            )
-            setting = result.scalar_one_or_none()
-            if setting:
-                cls._VALUES[key] = get_setting_typed_value(
-                    setting.value, setting.value_type
-                )
-
-    @classmethod
     async def load_all(cls):
         """Load all settings from db"""
         async with async_session_maker() as session:
@@ -145,7 +132,7 @@ class SettingsStorage:
 
 
 @event.listens_for(SettingModel, "after_update")
-def update_setting_value(mapper, connection, target: SettingModel):
+def update_setting_value(_mapper, _connection, target: SettingModel):
     """Update values by db event"""
     try:
         key = ESettingKey(target.key)

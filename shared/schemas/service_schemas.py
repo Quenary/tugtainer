@@ -31,8 +31,3 @@ class ServiceListItemSchema(BaseModel):
 class ServiceUpdateRequestBody(BaseModel):
     service_id: str
     image: str
-
-
-class ServicePatchBodySchema(BaseModel):
-    check_enabled: bool | None = None
-    update_enabled: bool | None = None

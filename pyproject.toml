@@ -18,7 +18,6 @@ dependencies = [
     "fastapi~=0.141.1",
     "jinja2~=3.1.6",
     "packaging~=26.3",
-    "paho-mqtt~=2.1.0",
     "PyJWT[crypto]~=2.15.1",
     "python-socketio>=5.16.4",
     "uvicorn~=0.40.0",

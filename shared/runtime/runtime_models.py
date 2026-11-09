@@ -167,9 +167,6 @@ class ContainerConfig(RuntimeBaseModel):
     exposed_ports: dict[str, Any] | None = Field(
         default=None, validation_alias=AliasChoices("ExposedPorts", "exposed_ports")
     )
-    systemd_mode: str | bool | None = Field(
-        default=None, validation_alias=AliasChoices("SystemdMode", "systemd_mode")
-    )
 
 
 class ContainerDevice(RuntimeBaseModel):
