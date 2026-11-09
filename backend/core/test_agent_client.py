@@ -65,6 +65,32 @@ async def test_request_keeps_hostname_and_disables_redirects(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("force", "query"),
+    [(False, "false"), (True, "true")],
+)
+async def test_container_remove_sends_force_as_query_string(
+    mocker: MockerFixture,
+    force: bool,
+    query: str,
+):
+    mocker.patch(
+        "backend.core.agent_client.validate_agent_url_against_ssrf",
+        new=AsyncMock(return_value=set()),
+    )
+    cm = _mock_response(mocker, body='"web"')
+    session = MagicMock()
+    session.closed = False
+    session.request = MagicMock(return_value=cm)
+    client = AgentClient(id=1, url="https://agent.example.com", secret="secret")
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+
+    await client.container.remove("web", force=force)
+
+    assert session.request.call_args.kwargs["params"] == {"force": query}
+
+
+@pytest.mark.asyncio
 async def test_session_uses_pinned_resolver_without_dns_cache():
     client = AgentClient(id=1, url="https://agent.example.com")
     session = await client._get_session()

@@ -305,7 +305,7 @@ class AgentClientContainer:
         data = await self._agent_client._request(
             "DELETE",
             f"/api/container/remove/{name_or_id}",
-            params={"force": force},
+            params={"force": str(force).lower()},
             timeout=self._agent_client._long_timeout,
         )
         return str(data)
