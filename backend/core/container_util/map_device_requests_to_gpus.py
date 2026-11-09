@@ -1,6 +1,6 @@
 from typing import Final
 
-from python_on_whales.components.container.models import (
+from shared.runtime.runtime_models import (
     ContainerDeviceRequest,
 )
 

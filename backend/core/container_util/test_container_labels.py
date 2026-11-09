@@ -1,8 +1,4 @@
 import pytest
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 
 from backend.const import (
     TUGTAINER_AUTO_CHECK_LABEL,
@@ -17,6 +13,10 @@ from backend.core.container_util.container_labels import (
     get_container_hidden_label,
     get_container_protected_label,
     parse_bool_label,
+)
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
 )
 
 

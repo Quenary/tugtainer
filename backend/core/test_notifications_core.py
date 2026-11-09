@@ -2,10 +2,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from jinja2.sandbox import SandboxedEnvironment
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 
 from backend.config import Config
 from backend.const import DEFAULT_NOTIFICATION_TEMPLATE
@@ -22,6 +18,10 @@ from backend.exception import (
     TugNotificationException,
     TugUrlValidationError,
     TugUrlValidationSSRFError,
+)
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
 )
 
 

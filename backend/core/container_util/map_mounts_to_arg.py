@@ -1,4 +1,4 @@
-from python_on_whales.components.container.models import Mount
+from shared.runtime.runtime_models import Mount
 
 
 def map_mounts_to_arg(

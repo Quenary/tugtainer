@@ -6,10 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.core.jobs.jobs_coordinator import HostJobCoordinator, HostJobRuntime
 from backend.exception import TugSelfUpdateError
@@ -25,7 +21,10 @@ from backend.modules.self_update.self_update_util import (
     watch_self_update_result,
 )
 from backend.testing import patch_async_session
-from shared.schemas.container_schemas import CreateContainerRequestBodySchema
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.self_update.self_update_files import read_state, write_state
 from shared.self_update.self_update_schemas import (
@@ -366,24 +365,19 @@ class TestStartSelfUpdate:
         client.image.pull.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_refuses_disallowed_command(
+    async def test_refuses_quadlet_container(
         self, client: AsyncMock, mocker: MockerFixture, work_dir: Path
     ) -> None:
+        container = _container()
+        if container.config:
+            container.config.labels = {"PODMAN_SYSTEMD_UNIT": "tugtainer.service"}
+        host = SimpleNamespace(id=1, name="local", container_hc_timeout=90)
         mocker.patch(
-            f"{base_module}.get_container_config",
-            return_value=(
-                mocker.Mock(),
-                [["run", "--privileged", "alpine"]],
-            ),
-        )
-        mocker.patch(
-            f"{base_module}.diff_container_config_with_image",
-            side_effect=lambda config, image: CreateContainerRequestBodySchema(
-                image="ghcr.io/quenary/tugtainer:1", name="tugtainer"
-            ),
+            f"{base_module}.find_self",
+            new=AsyncMock(return_value=(host, client, container)),
         )
 
-        with pytest.raises(TugSelfUpdateError, match="Command not allowed"):
+        with pytest.raises(TugSelfUpdateError, match="systemd/Quadlet"):
             await start_self_update()
 
         assert not (work_dir / SELF_UPDATE_PLAN_FILE).exists()

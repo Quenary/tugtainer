@@ -8,10 +8,6 @@ from typing import Final
 
 from packaging import version
 from pydantic import ValidationError
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-    Mount,
-)
 from sqlalchemy import select
 from sqlalchemy.engine import make_url
 
@@ -36,6 +32,10 @@ from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_self_container_id import get_self_container_id
 from backend.util.get_version_from_labels import get_version_from_labels
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    Mount,
+)
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
 from shared.schemas.docker_version_scheme import DockerVersionScheme
 from shared.schemas.image_schemas import (
@@ -292,6 +292,16 @@ async def _launch_helper() -> SelfUpdateState:
 
     data_mount: Final = get_data_mount(container)
     db_path: Final = get_sqlite_db_path()
+    labels = container.config.labels or {} if container.config else {}
+    if (
+        "PODMAN_SYSTEMD_UNIT" in labels
+        or labels.get("manager") == "systemd"
+        or any("quadlet" in k.lower() for k in labels)
+    ):
+        raise TugSelfUpdateError(
+            "Self-update is not supported for systemd/Quadlet-managed containers"
+        )
+
     image_spec: Final = get_container_image_spec(container)
     if not image_spec or not container.image:
         raise TugSelfUpdateError("Cannot get the image of this app")
@@ -305,7 +315,9 @@ async def _launch_helper() -> SelfUpdateState:
         raise TugSelfUpdateError(f"No newer image for {image_spec}")
 
     docker_version = await client.common.version()
-    config, commands = get_container_config(container, local_image, docker_version)
+    config, network_connects = get_container_config(
+        container, local_image, docker_version
+    )
     config = diff_container_config_with_image(config, remote_image)
 
     async with async_session_maker() as session:
@@ -335,7 +347,7 @@ async def _launch_helper() -> SelfUpdateState:
             old_version=old_version,
             new_version=new_version,
             create=config,
-            commands=commands,
+            network_connects=network_connects,
             healthcheck_timeout=healthcheck_timeout,
             db_path=db_path,
         )

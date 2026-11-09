@@ -2,13 +2,6 @@ import asyncio
 import logging
 from typing import Final, cast
 
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
-
 from backend.config import Config
 from backend.core.agent_client import AgentClient
 from backend.core.container_util.container_config import (
@@ -40,7 +33,10 @@ from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.jitter import jitter
-from shared.schemas.command_schemas import RunCommandRequestBodySchema
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
@@ -134,13 +130,13 @@ async def execute_update_job(
             # Prepare config
             try:
                 logger.info(f"Getting config for {item.name}")
-                config, commands = get_container_config(
+                config, network_connects = get_container_config(
                     item.container,
                     item.local_image,
                     docker_version,
                 )
                 item.config = config
-                item.commands = commands
+                item.network_connects = network_connects
             except Exception as e:
                 logger.exception(f"Failed to get config for {item.name}")
                 item.errors.append(e)
@@ -208,20 +204,16 @@ async def execute_update_job(
             return
         raise Exception(f"{item.name} is unhealthy!")
 
-    async def _run_commands(item: UpdateJobPlanItem):
-        """Run commands after container started"""
-        for c in item.commands:
+    async def _connect_secondary_networks(item: UpdateJobPlanItem):
+        """Connect secondary networks before starting container"""
+        for conn in item.network_connects:
             try:
-                logger.info(f"Running command: {c}")
-                out, err = await client.command.run(
-                    RunCommandRequestBodySchema(command=c)
-                )
-                if out:
-                    logger.info(out)
-                if err:
-                    logger.error(err)
+                logger.info(f"Connecting {item.name} to network: {conn.network}")
+                await client.network.connect(conn)
             except Exception as e:
-                logger.exception(f"Error while running command {c}")
+                logger.exception(
+                    f"Error while connecting {item.name} to network {conn.network}"
+                )
                 item.errors.append(e)
 
     # Updating and/or starting containers in order
@@ -267,6 +259,7 @@ async def execute_update_job(
 
                     logger.info("Recreating container...")
                     item.container = await client.container.create(merged_config)
+                    await _connect_secondary_networks(item)
                     if not item.was_running:
                         logger.info(
                             "Container recreated. It wasn't running before update, consider as success and continue..."
@@ -276,7 +269,6 @@ async def execute_update_job(
 
                     logger.info("Starting container...")
                     await client.container.start(item.name)
-                    await _run_commands(item)
                     item.container = await client.container.inspect(item.name)
 
                     logger.info("Waiting for healthchecks...")
@@ -355,10 +347,10 @@ async def execute_update_job(
                 try:
                     logger.warning("Creating container with previous configuration...")
                     item.container = await client.container.create(config)
+                    await _connect_secondary_networks(item)
 
                     logger.warning("Starting container...")
                     await client.container.start(item.name)
-                    await _run_commands(item)
                     item.container = await client.container.inspect(item.name)
                     item.result = "rolled_back"
                     hook_errors = await run_hooks(

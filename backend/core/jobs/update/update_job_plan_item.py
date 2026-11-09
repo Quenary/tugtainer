@@ -1,17 +1,15 @@
 from dataclasses import dataclass, field
 from typing import Final, cast
 
-from python_on_whales.components.container.models import (
+from backend.core.jobs.jobs_results import ContainerJobOutcome
+from shared.runtime.runtime_models import (
     ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
-
-from backend.core.jobs.jobs_results import ContainerJobOutcome
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
+from shared.schemas.network_schemas import NetworkConnectBodySchema
 
 
 @dataclass
@@ -21,7 +19,7 @@ class UpdateJobPlanItem:
     :param container: container object
     :param image_spec: image spec e.g. quenary/tugtainer:latest
     :param config: kwargs for create/run
-    :param commands: list of commands to be executed after container starts
+    :param network_connects: list of secondary NetworkConnectBodySchema items to connect
     :param local_image: current image
     :param remote_image: new pulled image
     :param result: result of the action
@@ -31,7 +29,7 @@ class UpdateJobPlanItem:
     image_spec: Final[str | None] = None
     was_running: Final[bool | None] = None
     config: CreateContainerRequestBodySchema | None = None
-    commands: list[list[str]] = field(default_factory=list)
+    network_connects: list[NetworkConnectBodySchema] = field(default_factory=list)
     local_image: ImageInspectResult | None = None
     remote_image: ImageInspectResult | None = None
     result: ContainerJobOutcome | None = None

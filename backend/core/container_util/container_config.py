@@ -1,23 +1,23 @@
-import logging
 from typing import Final
 
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerHostConfig,
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
+from packaging import version
 
 from backend.util.drop_empty_keys import drop_empty_keys
 from backend.util.subtract_dict import subtract_dict, subtract_dict_items
+from shared.runtime.runtime_errors import RuntimePreflightError
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerHostConfig,
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
 from shared.schemas.docker_version_scheme import DockerVersionScheme
+from shared.schemas.network_schemas import NetworkConnectBodySchema
+from shared.util.get_docker_client_api_version import get_docker_client_api_version
 
-from .filter_cli_safe_labels import filter_cli_safe_labels
 from .get_container_net_kwargs import get_container_net_kwargs
 from .get_container_restart_policy_str import (
     get_container_restart_policy_str,
@@ -34,6 +34,35 @@ from .map_ulimits_to_arg import map_ulimits_to_arg
 from .normalize_ns_mode import normalize_ns_mode
 from .normalize_path import normalize_path
 from .parse_extra_hosts import parse_extra_hosts
+
+
+def validate_recreation_preflight(
+    container: ContainerInspectResult,
+    docker_version: DockerVersionScheme | None,
+) -> None:
+    """Validate that all create-relevant settings can be preserved on the target daemon."""
+    api_ver = get_docker_client_api_version(docker_version)
+    if not api_ver:
+        return
+
+    # Check image mounts (requires API >= 1.48)
+    if container.mounts:
+        for m in container.mounts:
+            if m.type == "image" and api_ver < version.parse("1.48"):
+                raise RuntimePreflightError(
+                    f"Container {container.name} uses image mounts which require Docker API >= 1.48, "
+                    f"but target daemon negotiated {api_ver}."
+                )
+
+    # Check network gateway priority (requires API >= 1.48)
+    if container.network_settings and container.network_settings.networks:
+        for net_name, net_endpoint in container.network_settings.networks.items():
+            if getattr(net_endpoint, "gateway_priority", None) is not None:
+                if api_ver < version.parse("1.48"):
+                    raise RuntimePreflightError(
+                        f"Container {container.name} uses network GatewayPriority on '{net_name}' "
+                        f"which requires Docker API >= 1.48, but target daemon negotiated {api_ver}."
+                    )
 
 
 def diff_container_config_with_image(
@@ -65,13 +94,14 @@ def get_container_config(
     container: ContainerInspectResult,
     image: ImageInspectResult | None,
     docker_version: DockerVersionScheme | None,
-) -> tuple[CreateContainerRequestBodySchema, list[list[str]]]:
+) -> tuple[CreateContainerRequestBodySchema, list[NetworkConnectBodySchema]]:
     """
-    Get container config and commands (e.g. network connect)
+    Get container config and secondary network connects.
     :returns 0: config dict
-    :returns 1: list of docker commands to be executed after container creation, in list format e.g. ["network", "connect", ...]
+    :returns 1: list of secondary NetworkConnectBodySchema items to connect
     """
-    commands: list[list[str]] = []
+    validate_recreation_preflight(container, docker_version)
+
     config: Final = container.config or ContainerConfig()
     host_config: Final = container.host_config or ContainerHostConfig()
 
@@ -83,9 +113,7 @@ def get_container_config(
         map_env_to_dict(image.config.env) if (image and image.config) else None,
     )
 
-    NET_KWARGS, NET_COMMANDS = get_container_net_kwargs(container, docker_version)
-    if NET_COMMANDS:
-        commands += NET_COMMANDS
+    NET_KWARGS, SECONDARY_CONNECTS = get_container_net_kwargs(container, docker_version)
 
     # Preserve only values that differ from image defaults.
     command: list[str] | None = None
@@ -104,19 +132,11 @@ def get_container_config(
     )
     image_cmd: Final = _to_list(image.config.cmd) if (image and image.config) else []
 
-    # Compare pair of entrypoint/cmd
-    # CLI supports --entrypoint only as a string,
-    # we should move extra args to the start of cmd.
     if current_entrypoint != image_entrypoint or current_cmd != image_cmd:
         if current_entrypoint:
-            # First element of entrypoint is the entrypoint itself
             entrypoint = current_entrypoint[0]
-            # Other elements of entrypoint (like '--') are passed as extra args
             command = current_entrypoint[1:] + current_cmd
         else:
-            # Entrypoint removed or cmd changed.
-            # Docker CLI cannot express an empty entrypoint cleanly,
-            # therefore we only preserve cmd here.
             command = current_cmd
 
     workdir: str | None = None
@@ -125,17 +145,11 @@ def get_container_config(
 
     VOLUMES, MOUNTS = map_binds_to_volumes(host_config.binds, container.mounts)
 
-    # Same for labels: drop the ones inherited unchanged from the old image
-    LABELS, REJECTED_LABELS = filter_cli_safe_labels(
-        subtract_dict_items(
-            config.labels,
-            image.config.labels if (image and image.config) else None,
-        )
+    # Drop labels inherited unchanged from the old image
+    LABELS = subtract_dict_items(
+        config.labels,
+        image.config.labels if (image and image.config) else None,
     )
-    if REJECTED_LABELS:
-        logging.warning(
-            f"Labels rejected by docker CLI were dropped while preparing config of {container.name}: {REJECTED_LABELS}"
-        )
 
     config_dict = {
         "image": config.image,
@@ -213,5 +227,5 @@ def get_container_config(
 
     return (
         CreateContainerRequestBodySchema.model_validate(config_dict),
-        commands,
+        SECONDARY_CONNECTS,
     )

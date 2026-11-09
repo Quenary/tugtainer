@@ -4,7 +4,6 @@ from collections.abc import Coroutine
 from typing import Final, TypedDict, cast
 
 from jinja2.sandbox import SandboxedEnvironment
-from python_on_whales.components.container.models import ContainerInspectResult
 from sqlalchemy import select
 
 from backend.const import (
@@ -32,6 +31,7 @@ from backend.modules.health.health_model import (
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
+from shared.runtime.runtime_models import ContainerInspectResult
 from shared.schemas.container_schemas import GetContainerListBodySchema
 
 logger: Final = logging.getLogger("check_health")

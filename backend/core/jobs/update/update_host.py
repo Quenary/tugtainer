@@ -2,10 +2,6 @@ import logging
 from collections.abc import Sequence
 from typing import Final
 
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-
 from backend.core.agent_client import AgentClient
 from backend.core.container_util.container_labels import exclude_hidden_containers
 from backend.core.jobs.jobs_tracker import HostJobTracker
@@ -13,6 +9,9 @@ from backend.core.jobs.update.update_job_executor import execute_update_job
 from backend.core.jobs.update.update_job_plan_builder import build_update_job_plan
 from backend.enums.job_status_enum import EJobStatus
 from backend.modules.hosts.hosts_model import HostsModel
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+)
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )

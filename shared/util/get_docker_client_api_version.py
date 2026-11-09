@@ -12,13 +12,14 @@ def get_docker_client_api_version(
     api_str = getattr(docker_version, "negotiated_api", None) or getattr(
         docker_version, "api_version", None
     )
-    if not api_str and hasattr(docker_version, "client") and docker_version.client:
-        client_obj = docker_version.client
-        api_str = (
-            client_obj.get("ApiVersion")
-            if isinstance(client_obj, dict)
-            else getattr(client_obj, "api_version", None)
-        )
+    if not api_str and getattr(docker_version, "client", None):
+        client_obj = getattr(docker_version, "client", None)
+        if isinstance(client_obj, dict):
+            api_str = client_obj.get("ApiVersion") or client_obj.get("api_version")
+        else:
+            api_str = getattr(client_obj, "api_version", None) or getattr(
+                client_obj, "ApiVersion", None
+            )
     if not api_str:
         return None
     try:

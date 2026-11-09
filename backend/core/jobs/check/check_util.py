@@ -6,12 +6,6 @@ from typing import Any, Final, Literal, cast
 from urllib.parse import urlencode, urlparse
 
 import aiohttp
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
 
 from backend.core.container_util.container_labels import (
     get_container_auto_check_label,
@@ -23,6 +17,10 @@ from backend.modules.containers.containers_model import (
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_version_from_labels import get_version_from_labels
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 
 
 def filter_containers_by_check_enabled(

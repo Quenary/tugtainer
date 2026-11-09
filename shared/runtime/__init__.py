@@ -11,7 +11,9 @@ from .runtime_errors import (
 )
 from .runtime_models import (
     ContainerConfig,
+    ContainerDevice,
     ContainerDeviceRequest,
+    ContainerEndpointIPAMConfig,
     ContainerHealthCheck,
     ContainerHealthState,
     ContainerHostConfig,
@@ -24,6 +26,7 @@ from .runtime_models import (
     Mount,
     NetworkEndpointIPAMConfig,
     NetworkEndpointSettings,
+    NetworkInspectResult,
     NetworkSettings,
     PortBinding,
     RuntimeVersion,
@@ -31,7 +34,9 @@ from .runtime_models import (
 
 __all__ = [
     "ContainerConfig",
+    "ContainerDevice",
     "ContainerDeviceRequest",
+    "ContainerEndpointIPAMConfig",
     "ContainerHealthCheck",
     "ContainerHealthState",
     "ContainerHostConfig",
@@ -45,6 +50,7 @@ __all__ = [
     "Mount",
     "NetworkEndpointIPAMConfig",
     "NetworkEndpointSettings",
+    "NetworkInspectResult",
     "NetworkSettings",
     "PortBinding",
     "RuntimeClient",

@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import shutil
@@ -62,8 +61,8 @@ def load_plan(plan_path: Path) -> SelfUpdatePlan:
 class SelfUpdateRunner:
     """
     Execute a self-update plan:
-    rename old to <name>-old, create new under the real name, stop old,
-    snapshot the database, start new and wait for health.
+    rename old to <name>-old, create new under the real name, connect secondary networks,
+    stop old, snapshot the database, start new and wait for health.
     The old container is only stopped until the new one is healthy.
     Every step is recorded in the state file, so a rollback
     (or a later cleanup) knows exactly what has been done.
@@ -106,30 +105,30 @@ class SelfUpdateRunner:
         self._save()
         logger.info(f"Self-update finished with status {status}")
 
-    def run(self) -> SelfUpdateState:
+    async def run(self) -> SelfUpdateState:
         self._state.status = ESelfUpdateStatus.RUNNING
         self._save()
         try:
-            self._precheck()
+            await self._precheck()
         except Exception as e:
             logger.exception("Self-update aborted")
             self._finish(ESelfUpdateStatus.ABORTED, str(e))
             return self._state
         try:
-            self._swap()
+            await self._swap()
         except Exception as e:
             logger.exception("Self-update failed, rolling back")
             self._state.error = str(e)
             self._save()
-            self._rollback()
+            await self._rollback()
             return self._state
-        self._cleanup_after_success()
+        await self._cleanup_after_success()
         self._finish(ESelfUpdateStatus.SUCCEEDED)
         return self._state
 
-    def _precheck(self) -> None:
+    async def _precheck(self) -> None:
         plan = self._plan
-        old = self._docker.inspect(plan.container_id)
+        old = await self._docker.inspect(plan.container_id)
         if old.id != plan.container_id:
             raise SelfUpdateAbort(f"Container {plan.container_id} not found")
         if old.name != plan.container_name:
@@ -140,24 +139,30 @@ class SelfUpdateRunner:
             raise SelfUpdateAbort(
                 f"Container runs image {old.image}, expected {plan.old_image_id}"
             )
-        if not self._docker.image_exists(plan.new_image_id):
+        if not await self._docker.image_exists(plan.new_image_id):
             raise SelfUpdateAbort(f"Image {plan.new_image_id} not found")
-        if self._docker.exists(self._old_name):
+        if await self._docker.exists(self._old_name):
             raise SelfUpdateAbort(f"Container {self._old_name} already exists")
 
-    def _swap(self) -> None:
+    async def _swap(self) -> None:
         plan = self._plan
 
         logger.info(f"Renaming {plan.container_name} to {self._old_name}")
-        self._docker.rename(plan.container_id, self._old_name)
+        await self._docker.rename(plan.container_id, self._old_name)
         self._record(ESelfUpdatePhase.OLD_RENAMED)
 
         logger.info(f"Creating {plan.container_name}")
-        self._state.new_container_id = self._docker.create(plan.create)
+        self._state.new_container_id = await self._docker.create(plan.create)
         self._record(ESelfUpdatePhase.NEW_CREATED)
 
+        for connect in plan.network_connects:
+            logger.info(f"Connecting network {connect.network}")
+            await self._docker.network_connect(
+                connect.network, self._state.new_container_id, connect
+            )
+
         logger.info(f"Stopping {self._old_name}")
-        self._docker.stop(plan.container_id)
+        await self._docker.stop(plan.container_id)
         self._record(ESelfUpdatePhase.OLD_STOPPED)
 
         if plan.db_path:
@@ -166,32 +171,24 @@ class SelfUpdateRunner:
 
         new_id = self._state.new_container_id
         logger.info(f"Starting {plan.container_name}")
-        self._docker.start(new_id)
+        await self._docker.start(new_id)
         self._record(ESelfUpdatePhase.NEW_STARTED)
-        for command in plan.commands:
-            logger.info(f"Running command: {command}")
-            self._docker.run(command)
 
         logger.info("Waiting for healthchecks...")
-        healthy, _ = asyncio.run(
-            wait_for_container_healthy(
-                self._inspect_async,
-                self._docker.inspect(new_id),
-                plan.healthcheck_timeout,
-                self._health_interval,
-            )
+        healthy, _ = await wait_for_container_healthy(
+            self._docker.inspect,
+            await self._docker.inspect(new_id),
+            plan.healthcheck_timeout,
+            self._health_interval,
         )
         if not healthy:
             raise Exception(f"{plan.container_name} is unhealthy")
         self._record(ESelfUpdatePhase.NEW_HEALTHY)
 
-    async def _inspect_async(self, name_or_id: str):
-        return await asyncio.to_thread(self._docker.inspect, name_or_id)
-
-    def _cleanup_after_success(self) -> None:
+    async def _cleanup_after_success(self) -> None:
         try:
             logger.info(f"Removing {self._old_name}")
-            self._docker.remove(self._plan.container_id)
+            await self._docker.remove(self._plan.container_id)
             self._record(ESelfUpdatePhase.OLD_REMOVED)
         except Exception as e:
             # The backend removes it later, as its id is recorded
@@ -199,15 +196,15 @@ class SelfUpdateRunner:
             self._state.warnings.append(f"Failed to remove {self._old_name}: {e}")
         shutil.rmtree(self._backup_dir, ignore_errors=True)
 
-    def _rollback(self) -> None:
+    async def _rollback(self) -> None:
         plan = self._plan
         state = self._state
         errors: list[str] = []
 
-        def _step(phase: ESelfUpdatePhase, description: str, func) -> bool:
+        async def _step(phase: ESelfUpdatePhase, description: str, coro) -> bool:
             try:
                 logger.warning(description)
-                func()
+                await coro
                 self._record(phase)
                 return True
             except Exception as e:
@@ -215,42 +212,43 @@ class SelfUpdateRunner:
                 errors.append(f"{description}: {e}")
                 return False
 
-        def _rollback_steps() -> None:
+        async def _rollback_steps() -> None:
             if state.has_phase(ESelfUpdatePhase.NEW_CREATED) and state.new_container_id:
                 new_id = state.new_container_id
-                if not _step(
+                if not await _step(
                     ESelfUpdatePhase.NEW_REMOVED,
                     f"Removing new container {new_id}",
-                    lambda: self._docker.remove(new_id),
+                    self._docker.remove(new_id),
                 ):
-                    # It may still use the database, the name and the ports
                     return
             if state.has_phase(ESelfUpdatePhase.DB_SNAPSHOT) and plan.db_path:
                 db_path = Path(plan.db_path)
-                if not _step(
-                    ESelfUpdatePhase.DB_RESTORED,
-                    "Restoring database snapshot",
-                    lambda: self._restore_db(db_path),
-                ):
-                    # Do not start the old version on a migrated database
+                try:
+                    logger.warning("Restoring database snapshot")
+                    self._restore_db(db_path)
+                    self._record(ESelfUpdatePhase.DB_RESTORED)
+                except Exception as e:
+                    logger.exception(
+                        "Rollback step failed: Restoring database snapshot"
+                    )
+                    errors.append(f"Restoring database snapshot: {e}")
                     return
             if state.has_phase(ESelfUpdatePhase.OLD_RENAMED):
-                _step(
+                await _step(
                     ESelfUpdatePhase.OLD_RENAMED_BACK,
                     f"Renaming {self._old_name} back to {plan.container_name}",
-                    lambda: self._docker.rename(plan.container_id, plan.container_name),
+                    self._docker.rename(plan.container_id, plan.container_name),
                 )
-            # Check the actual state, the stop may have failed half way
-            old = self._docker.inspect(plan.container_id)
+            old = await self._docker.inspect(plan.container_id)
             if not (old.state and old.state.status == "running"):
-                _step(
+                await _step(
                     ESelfUpdatePhase.OLD_STARTED,
                     f"Starting {plan.container_name}",
-                    lambda: self._docker.start(plan.container_id),
+                    self._docker.start(plan.container_id),
                 )
 
         try:
-            _rollback_steps()
+            await _rollback_steps()
         except Exception as e:
             logger.exception("Rollback failed")
             errors.append(str(e))
@@ -262,10 +260,10 @@ class SelfUpdateRunner:
         shutil.rmtree(self._backup_dir, ignore_errors=True)
         self._finish(ESelfUpdateStatus.ROLLED_BACK)
 
-    def _db_files(self, db_path: Path) -> list[Path]:
-        return [db_path] + [
-            db_path.with_name(db_path.name + s) for s in SQLITE_SIDE_SUFFIXES
-        ]
+    def _db_files(self, db_path: Path):
+        yield db_path
+        for suffix in SQLITE_SIDE_SUFFIXES:
+            yield db_path.with_name(f"{db_path.name}{suffix}")
 
     def _snapshot_db(self, db_path: Path) -> None:
         """
@@ -291,7 +289,7 @@ class SelfUpdateRunner:
                 file.unlink(missing_ok=True)
 
 
-def run_self_update(
+async def run_self_update(
     docker: SelfUpdateDocker, plan_path: Path
 ) -> SelfUpdateState | None:
     """
@@ -314,4 +312,4 @@ def run_self_update(
     if not state or state.status != ESelfUpdateStatus.PENDING:
         logger.error("Self-update aborted: no pending state file")
         return state
-    return SelfUpdateRunner(docker, plan, work_dir, state).run()
+    return await SelfUpdateRunner(docker, plan, work_dir, state).run()

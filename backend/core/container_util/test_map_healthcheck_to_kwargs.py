@@ -1,10 +1,10 @@
 import pytest
-from python_on_whales.components.container.models import (
-    ContainerHealthCheck,
-)
 
 from backend.core.container_util.map_healthcheck_to_kwargs import (
     map_healthcheck_to_kwargs,
+)
+from shared.runtime.runtime_models import (
+    ContainerHealthCheck,
 )
 
 NS = 1_000_000_000

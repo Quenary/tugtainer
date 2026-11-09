@@ -2,7 +2,6 @@ import asyncio
 import logging
 from typing import Final
 
-from python_on_whales.components.image.models import ImageInspectResult
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
@@ -21,6 +20,7 @@ from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_version_from_labels import get_version_from_labels
 from backend.util.jitter import jitter
 from backend.util.now import now
+from shared.runtime.runtime_models import ImageInspectResult
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
     PullImageRequestBodySchema,

@@ -5,10 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from python_on_whales.components.container.models import (
+from shared.runtime.runtime_models import (
     ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
     ImageInspectResult,
 )
 

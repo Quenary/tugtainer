@@ -2,9 +2,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final, cast
 
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
 from sqlalchemy import select
 
 from backend.const import (
@@ -25,6 +22,9 @@ from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.now import now
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+)
 
 from .update_util import (
     get_compose_id,

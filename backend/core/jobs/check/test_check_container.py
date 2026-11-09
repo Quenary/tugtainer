@@ -3,15 +3,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.core.jobs.check.check_container import run_check_container_job
 from backend.enums.job_status_enum import EJobStatus
 from backend.testing import patch_async_session
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 
 base_module = "backend.core.jobs.check.check_container"
 

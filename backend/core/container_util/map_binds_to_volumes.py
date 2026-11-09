@@ -1,6 +1,6 @@
 import posixpath
 
-from python_on_whales.components.container.models import Mount
+from shared.runtime.runtime_models import Mount
 
 VolumeTuple = tuple[str, str] | tuple[str, str, str]
 

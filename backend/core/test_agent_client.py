@@ -6,10 +6,6 @@ import pytest
 from aiohttp import ClientResponseError
 from multidict import CIMultiDict, CIMultiDictProxy
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 from yarl import URL
 
 from backend.const import LOCAL_AGENT_URL, TUGTAINER_HIDDEN_LABEL
@@ -17,6 +13,10 @@ from backend.core.agent_client import AgentClient, build_agent_ssl
 from backend.exception import TugAgentClientError
 from backend.modules.hosts.test_hosts_schemas import TEST_CA_PEM
 from backend.util.pinned_ip_resolver import PinnedIpResolver
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+)
 from shared.schemas.container_schemas import GetContainerListBodySchema
 
 

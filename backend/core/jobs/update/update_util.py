@@ -1,8 +1,5 @@
 import logging
 
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
@@ -13,6 +10,9 @@ from backend.modules.containers.containers_model import (
 )
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.util.now import now
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+)
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 
 logger = logging.getLogger("update_util")

@@ -1,14 +1,14 @@
-from python_on_whales.components.container.models import (
+from backend.core.container_util.get_container_net_kwargs import (
+    get_container_net_kwargs,
+)
+from shared.runtime.runtime_models import (
     ContainerEndpointIPAMConfig,
     ContainerHostConfig,
     ContainerInspectResult,
     NetworkInspectResult,
     NetworkSettings,
 )
-
-from backend.core.container_util.get_container_net_kwargs import (
-    get_container_net_kwargs,
-)
+from shared.schemas.network_schemas import NetworkConnectBodySchema
 
 
 def _container(
@@ -34,11 +34,17 @@ def test_primary_network_taken_from_network_mode():
         network_mode="z_primary",
     )
 
-    kwargs, commands = get_container_net_kwargs(container, None)
+    kwargs, connects = get_container_net_kwargs(container, None)
 
     assert kwargs["networks"] == ["z_primary"]
     assert kwargs["network_aliases"] == ["main"]
-    assert commands == [["network", "connect", "--alias", "alt", "a_secondary", "app"]]
+    assert connects == [
+        NetworkConnectBodySchema(
+            network="a_secondary",
+            container="app",
+            aliases=["alt"],
+        )
+    ]
 
 
 def test_primary_network_falls_back_to_first_when_mode_not_attached():
@@ -49,10 +55,10 @@ def test_primary_network_falls_back_to_first_when_mode_not_attached():
         network_mode="default",
     )
 
-    kwargs, commands = get_container_net_kwargs(container, None)
+    kwargs, connects = get_container_net_kwargs(container, None)
 
     assert kwargs["networks"] == ["bridge"]
-    assert commands == []
+    assert connects == []
 
 
 def test_primary_network_static_ip_follows_network_mode():
@@ -68,18 +74,15 @@ def test_primary_network_static_ip_follows_network_mode():
         network_mode="z_primary",
     )
 
-    kwargs, commands = get_container_net_kwargs(container, None)
+    kwargs, connects = get_container_net_kwargs(container, None)
 
     assert kwargs["ip"] == "172.31.0.5"
-    assert commands == [
-        [
-            "network",
-            "connect",
-            "--ip",
-            "172.31.1.5",
-            "a_secondary",
-            "app",
-        ]
+    assert connects == [
+        NetworkConnectBodySchema(
+            network="a_secondary",
+            container="app",
+            ipv4_address="172.31.1.5",
+        )
     ]
 
 
@@ -107,21 +110,15 @@ def test_secondary_endpoint_links_are_preserved_as_connect_args():
         network_mode="primary",
     )
 
-    _, commands = get_container_net_kwargs(container, None)
+    _, connects = get_container_net_kwargs(container, None)
 
-    assert commands == [
-        [
-            "network",
-            "connect",
-            "--alias",
-            "svc",
-            "--link",
-            "db:database",
-            "--link",
-            "cache:redis",
-            "secondary",
-            "app",
-        ]
+    assert connects == [
+        NetworkConnectBodySchema(
+            network="secondary",
+            container="app",
+            aliases=["svc"],
+            links=["db:database", "cache:redis"],
+        )
     ]
 
 

@@ -1,18 +1,15 @@
 from datetime import datetime
 
-from python_on_whales.components.container.models import (
+from backend.core.jobs.jobs_results import (
+    ContainerJobResult,
+    JobNotificationResult,
+)
+from shared.runtime.runtime_models import (
     ContainerConfig,
     ContainerHostConfig,
     ContainerInspectResult,
     ContainerState,
-)
-from python_on_whales.components.image.models import (
     ImageInspectResult,
-)
-
-from backend.core.jobs.jobs_results import (
-    ContainerJobResult,
-    JobNotificationResult,
 )
 
 _NOW = datetime.now()

@@ -1,9 +1,9 @@
 import pytest
-from python_on_whales.components.container.models import Mount
 
 from backend.core.container_util.map_binds_to_volumes import (
     map_binds_to_volumes,
 )
+from shared.runtime.runtime_models import Mount
 
 # Mounts as docker inspect reports them
 CONFIG = Mount(

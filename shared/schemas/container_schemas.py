@@ -61,6 +61,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     health_interval: int | None = None
     health_retries: int | None = None
     health_start_period: int | None = None
+    health_start_interval: int | None = None
     health_timeout: int | None = None
     hostname: str | None = None
     init: bool | None = None
@@ -134,9 +135,8 @@ class ExecContainerRequestBodySchema(BaseModel):
     """
     Request body for POST /api/container/exec/{name_or_id}.
     `command` is a raw shell command line, executed inside the target
-    container as `sh -c "<command>"`. There is no allowlist here (unlike
-    RunCommandRequestBodySchema/command_validator) — this endpoint is
-    intentionally arbitrary-command by design and is gated by the agent's
+    container as `sh -c "<command>"`. This endpoint is intentionally
+    arbitrary-command by design for container hooks and is gated by the agent's
     ALLOW_EXEC config flag instead.
     """
 

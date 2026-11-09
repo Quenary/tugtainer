@@ -1,14 +1,14 @@
 import pytest
-from python_on_whales.components.container.models import (
+
+from backend.core.container_util.container_config import get_container_config
+from shared.runtime.runtime_models import (
     ContainerConfig,
     ContainerHealthCheck,
     ContainerHostConfig,
     ContainerInspectResult,
+    ImageInspectResult,
     Mount,
 )
-from python_on_whales.components.image.models import ImageInspectResult
-
-from backend.core.container_util.container_config import get_container_config
 
 
 # Fields mapping generic test case
@@ -226,32 +226,27 @@ def test_init_and_pid_preserved(init, pid_mode, expected_init, expected_pid):
     assert res.pid == expected_pid
 
 
-# Docker CLI refuses only labels with empty or whitespaced keys,
-# anything else must be preserved (#193)
-def test_labels_rejected_by_cli_are_dropped():
+# In direct HTTP API, all labels are preserved without CLI escaping constraints
+def test_labels_all_preserved_in_direct_api():
+    labels = {
+        "homepage.group": "Infra",
+        "pangolin.public-resources.ntfy.rules[0].action": "pass",
+        "ru.название": "значение",
+        "with.value": "value with spaces",
+        "* Regular Improvements": "",
+        "tab\tkey": "1",
+        "": "no key",
+    }
     container = ContainerInspectResult(
         config=ContainerConfig(
             image="test_image",
-            labels={
-                "homepage.group": "Infra",
-                "pangolin.public-resources.ntfy.rules[0].action": "pass",
-                "ru.название": "значение",
-                "with.value": "value with spaces",
-                "* Regular Improvements": "",
-                "tab\tkey": "1",
-                "": "no key",
-            },
+            labels=labels,
         )
     )
 
     res, _ = get_container_config(container, image=None, docker_version=None)
 
-    assert res.labels == {
-        "homepage.group": "Infra",
-        "pangolin.public-resources.ntfy.rules[0].action": "pass",
-        "ru.название": "значение",
-        "with.value": "value with spaces",
-    }
+    assert res.labels == labels
 
 
 # Binds created with -v should be recreated with -v,
@@ -339,3 +334,58 @@ def test_env_and_labels_kept_without_image():
     res, _ = get_container_config(container, image=None, docker_version=None)
     assert res.envs == {"A": "1"}
     assert res.labels == {"l": "v"}
+
+
+def test_preflight_rejects_image_mount_on_api_below_1_48():
+    from shared.runtime.runtime_errors import RuntimePreflightError
+    from shared.runtime.runtime_models import RuntimeVersion
+
+    container = ContainerInspectResult(
+        name="image-mount-container",
+        config=ContainerConfig(image="app:latest"),
+        mounts=[Mount(type="image", source="someimage:latest", destination="/data")],
+    )
+    ver = RuntimeVersion(api_version="1.47")
+
+    with pytest.raises(RuntimePreflightError) as exc_info:
+        get_container_config(container, image=None, docker_version=ver)
+    assert "require Docker API >= 1.48" in str(exc_info.value)
+
+
+def test_preflight_allows_image_mount_on_api_1_48():
+    from shared.runtime.runtime_models import RuntimeVersion
+
+    container = ContainerInspectResult(
+        name="image-mount-container",
+        config=ContainerConfig(image="app:latest"),
+        mounts=[Mount(type="image", source="someimage:latest", destination="/data")],
+    )
+    ver = RuntimeVersion(api_version="1.48")
+
+    res, _ = get_container_config(container, image=None, docker_version=ver)
+    assert res.name == "image-mount-container"
+
+
+def test_anonymous_volume_identity_preserved():
+    container = ContainerInspectResult(
+        name="db-container",
+        config=ContainerConfig(image="postgres:16"),
+        host_config=ContainerHostConfig(),
+        mounts=[
+            Mount(
+                type="volume",
+                name="a1b2c3d4e5f60000000000000000000000000000000000000000000000000000",
+                source="/var/lib/docker/volumes/a1b2c3.../_data",
+                destination="/var/lib/postgresql/data",
+                rw=True,
+            )
+        ],
+    )
+    res, _ = get_container_config(container, image=None, docker_version=None)
+    assert res.mounts == [
+        [
+            "type=volume",
+            "dst=/var/lib/postgresql/data",
+            "source=a1b2c3d4e5f60000000000000000000000000000000000000000000000000000",
+        ]
+    ]

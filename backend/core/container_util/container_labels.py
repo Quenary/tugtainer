@@ -1,14 +1,13 @@
 from collections.abc import Sequence
 
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-
 from backend.const import (
     TUGTAINER_AUTO_CHECK_LABEL,
     TUGTAINER_AUTO_UPDATE_LABEL,
     TUGTAINER_HIDDEN_LABEL,
     TUGTAINER_PROTECTED_LABEL,
+)
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
 )
 
 

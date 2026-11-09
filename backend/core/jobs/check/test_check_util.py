@@ -5,10 +5,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
 
 from backend.core.jobs.check.check_util import (
     ImagePlatform,
@@ -22,6 +18,10 @@ from backend.core.jobs.check.check_util import (
     parse_image_spec,
     parse_oci_created,
     sort_containers_by_checked_at,
+)
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
 )
 
 module_path = "backend.core.jobs.check.check_util"
