@@ -68,6 +68,8 @@ async def get_image_remote_digest(
 ) -> str | None:
     """
     Get image digest from registry using HEAD request.
+
+    Raises RegistryBasicAuthError when an identitytoken cannot answer Basic auth.
     :param spec: image spec e.g. ghcr.io/quenary/tugtainer:1
     :param local_digest: local digest to utilize If-None-Match 304 response
     :return: new image digest if any or local_digest
@@ -148,7 +150,7 @@ async def get_image_remote_digest(
                     auth_applied = True
                 elif identity_token and _basic_auth_challenge(auth_header):
                     _warn_identity_token_basic(logger, registry)
-                    return None
+                    raise RegistryBasicAuthError(registry)
 
                 if auth_applied:
                     async with session.head(url, headers=headers, ssl=ssl) as resp2:
@@ -961,6 +963,8 @@ async def assess_image_update(
             if found:
                 remote = found
                 break
+        except RegistryBasicAuthError:
+            break
         except Exception:
             logger.exception(f"Failed to get remote digest for {spec} {digest}")
         finally:

@@ -336,10 +336,10 @@ async def test_get_image_remote_digest_identity_token_basic_challenge(
     )
 
     with caplog.at_level(logging.WARNING):
-        result = await get_image_remote_digest("ghcr.io/example/app:1")
+        with pytest.raises(RegistryBasicAuthError):
+            await get_image_remote_digest("ghcr.io/example/app:1")
 
-    assert result is None
-    assert "identitytoken" in caplog.text
+    assert caplog.text.count("identitytoken") == 1
     assert "Basic" in caplog.text
     head_resp.raise_for_status.assert_not_called()
     exception.assert_not_called()
@@ -394,6 +394,53 @@ async def test_registry_get_json_identity_token_basic_challenge_is_unknown(
 
     assert remote == ["sha256:manifest"]
     assert update is None
+    exception.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_assess_identity_token_basic_warns_once_for_many_digests(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    head_resp = _mock_head_response(
+        401,
+        {"WWW-Authenticate": 'Basic realm="Registry Realm"'},
+    )
+    session = MagicMock()
+    session.head = MagicMock(return_value=head_resp)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+    mocker.patch(f"{module_path}.aiohttp.ClientSession", return_value=session)
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    mocker.patch(
+        f"{module_path}.DockerConfig",
+        return_value=SimpleNamespace(
+            get_basic_token=lambda _: None,
+            get_identity_token=lambda _: "refresh-token",
+        ),
+    )
+    exception = mocker.spy(logging.getLogger("assess_image_update"), "exception")
+    local = _image(
+        repo_digests=[
+            "example/app@sha256:one",
+            "example/app@sha256:two",
+            "example/app@sha256:three",
+        ],
+        layers=["sha256:layer"],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        remote, update = await assess_image_update(
+            "ghcr.io/example/app:1",
+            local,
+            local.repo_digests or [],
+        )
+
+    assert remote == []
+    assert update is None
+    assert caplog.text.count("identitytoken") == 1
+    assert session.head.call_count == 1
     exception.assert_not_called()
 
 
