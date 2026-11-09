@@ -57,6 +57,15 @@ async def test_raw_fallback_when_not_multiplexed():
 
 
 @pytest.mark.asyncio
+async def test_incomplete_header_ends_stream():
+    reader = _make_reader(b"short")
+
+    text = await read_stream_as_text(reader, is_tty=False)
+
+    assert text == ""
+
+
+@pytest.mark.asyncio
 async def test_truncated_stream_raises():
     incomplete = struct.pack(">BxxxI", 1, 100) + b"only 10 bytes"
     reader = _make_reader(incomplete)

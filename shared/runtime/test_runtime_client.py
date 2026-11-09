@@ -1,5 +1,7 @@
-from unittest.mock import AsyncMock
+import struct
+from unittest.mock import AsyncMock, MagicMock
 
+import aiohttp
 import pytest
 from pytest_mock import MockerFixture
 
@@ -12,9 +14,13 @@ from shared.runtime.runtime_client import (
 )
 from shared.runtime.runtime_errors import (
     IncompatibleRuntimeError,
+    RuntimeClientError,
+    RuntimeConflictError,
+    RuntimeExecError,
     RuntimeNotFoundError,
 )
 from shared.runtime.runtime_models import (
+    ContainerConfig,
     ContainerInspectResult,
     ContainerState,
     ImageInspectResult,
@@ -391,3 +397,216 @@ async def test_container_create_sends_engine_body(mocker: MockerFixture) -> None
         "name": "web",
         "platform": "linux/amd64",
     }
+
+
+class _Response:
+    def __init__(
+        self,
+        status: int,
+        body: str = "",
+        json_body: object | None = None,
+    ) -> None:
+        self.status = status
+        self._body = body
+        self._json_body = json_body
+        self.closed = False
+
+    async def text(self) -> str:
+        return self._body
+
+    async def json(self) -> object:
+        if self._json_body is None:
+            raise ValueError("not json")
+        return self._json_body
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _Session:
+    def __init__(
+        self, response: _Response | None = None, error: Exception | None = None
+    ):
+        self._response = response
+        self._error = error
+
+    async def request(self, **_kwargs: object) -> _Response:
+        if self._error:
+            raise self._error
+        assert self._response is not None
+        return self._response
+
+
+def _client_with_session(mocker: MockerFixture, session: _Session) -> RuntimeClient:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._base_url = "http://localhost"
+    mocker.patch.object(client, "_get_session", new=AsyncMock(return_value=session))
+    return client
+
+
+@pytest.mark.parametrize(
+    ("status", "error_type"),
+    [
+        (404, RuntimeNotFoundError),
+        (409, RuntimeConflictError),
+        (400, RuntimeClientError),
+        (500, RuntimeClientError),
+    ],
+)
+@pytest.mark.asyncio
+async def test_request_maps_error_status(
+    mocker: MockerFixture,
+    status: int,
+    error_type: type[Exception],
+) -> None:
+    response = _Response(status, body="detail", json_body={"message": "detail"})
+    client = _client_with_session(mocker, _Session(response))
+
+    with pytest.raises(error_type) as exc_info:
+        await client._request("GET", "/containers/missing/json")
+
+    assert getattr(exc_info.value, "status_code", None) == status
+    assert response.closed is True
+
+
+@pytest.mark.asyncio
+async def test_request_timeout(mocker: MockerFixture) -> None:
+    client = _client_with_session(mocker, _Session(error=TimeoutError()))
+
+    with pytest.raises(RuntimeClientError, match="timeout"):
+        await client._request("GET", "/_ping", use_api_prefix=False)
+
+
+@pytest.mark.asyncio
+async def test_request_connection_error(mocker: MockerFixture) -> None:
+    client = _client_with_session(
+        mocker,
+        _Session(error=aiohttp.ClientConnectionError("refused")),
+    )
+
+    with pytest.raises(RuntimeClientError, match="Connection error"):
+        await client._request("GET", "/containers/json")
+
+
+def _stream(data: bytes) -> aiohttp.StreamReader:
+    reader = aiohttp.StreamReader(MagicMock(), limit=2**16)
+    reader.feed_data(data)
+    reader.feed_eof()
+    return reader
+
+
+def _frame(stream_type: int, payload: bytes) -> bytes:
+    return struct.pack(">BxxxI", stream_type, len(payload)) + payload
+
+
+@pytest.mark.asyncio
+async def test_container_exec_nonzero_includes_stderr(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    created = MagicMock()
+    created.json = AsyncMock(return_value={"Id": "exec1"})
+    started = MagicMock()
+    started.content = _stream(_frame(2, b"boom\n"))
+    inspected = MagicMock()
+    inspected.json = AsyncMock(return_value={"ExitCode": 2})
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(side_effect=[created, started, inspected]),
+    )
+
+    with pytest.raises(RuntimeExecError) as exc_info:
+        await client.container_exec("web", ["false"])
+
+    assert exc_info.value.exit_code == 2
+    assert exc_info.value.stderr == "boom\n"
+
+
+@pytest.mark.asyncio
+async def test_image_pull_raises_on_stream_error(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    response = MagicMock()
+    response.content = _stream(
+        b'{"errorDetail": {"message": "unauthorized"}, "error": "unauthorized"}\n'
+    )
+    mocker.patch.object(client, "_request", new=AsyncMock(return_value=response))
+
+    with pytest.raises(RuntimeClientError, match="unauthorized"):
+        await client.image_pull("ghcr.io/org/app:1")
+
+
+@pytest.mark.asyncio
+async def test_service_update_sends_version_index(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._runtime_type = "docker"
+    mocker.patch.object(
+        client,
+        "service_inspect",
+        new=AsyncMock(
+            return_value={
+                "Version": {"Index": 7},
+                "Spec": {"TaskTemplate": {"ContainerSpec": {"Image": "nginx:1"}}},
+            }
+        ),
+    )
+    response = MagicMock()
+    request = mocker.patch.object(
+        client, "_request", new=AsyncMock(return_value=response)
+    )
+
+    await client.service_update("svc1", "nginx:2")
+
+    assert request.await_args is not None
+    assert request.await_args.kwargs["params"] == {"version": 7}
+    image = request.await_args.kwargs["json_data"]["TaskTemplate"]["ContainerSpec"]
+    assert image["Image"] == "nginx:2"
+
+
+@pytest.mark.asyncio
+async def test_service_update_requires_version_index(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._runtime_type = "docker"
+    mocker.patch.object(
+        client,
+        "service_inspect",
+        new=AsyncMock(return_value={"Spec": {"TaskTemplate": {}}}),
+    )
+
+    with pytest.raises(RuntimeClientError, match="Version.Index"):
+        await client.service_update("svc1", "nginx:2")
+
+
+@pytest.mark.asyncio
+async def test_service_update_rejected_on_podman() -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.41"
+    client._runtime_type = "podman"
+
+    with pytest.raises(IncompatibleRuntimeError, match="Podman"):
+        await client.service_update("svc1", "nginx:2")
+
+
+@pytest.mark.parametrize("tty", [False, True])
+@pytest.mark.asyncio
+async def test_container_logs_follow_tty(mocker: MockerFixture, tty: bool) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    mocker.patch.object(
+        client,
+        "container_inspect",
+        new=AsyncMock(
+            return_value=ContainerInspectResult(config=ContainerConfig(tty=tty))
+        ),
+    )
+    raw = b"plain log\n" if tty else _frame(1, b"plain log\n")
+    response = MagicMock()
+    response.content = _stream(raw)
+    mocker.patch.object(client, "_request", new=AsyncMock(return_value=response))
+
+    text = await client.container_logs("web")
+
+    assert text == "plain log\n"
