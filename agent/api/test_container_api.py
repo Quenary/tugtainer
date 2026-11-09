@@ -43,7 +43,7 @@ def test_container_action_returns_id(
     assert response.status_code == 200
     assert response.json() == "c1"
     if client_method == "container_remove":
-        action.assert_awaited_once_with("c1", force=True)
+        action.assert_awaited_once_with("c1", force=False)
     else:
         action.assert_awaited_once_with("c1")
 
@@ -63,6 +63,22 @@ def test_rename_container(mocker: MockerFixture):
     assert response.status_code == 200
     assert response.json() == "c2"
     rename_mock.assert_awaited_once_with("c1", "c2")
+
+
+def test_remove_forwards_force_query(mocker: MockerFixture) -> None:
+    mocker.patch(
+        f"{base_module}.RUNTIME_CLIENT.container_exists",
+        new=AsyncMock(return_value=True),
+    )
+    remove = mocker.patch(
+        f"{base_module}.RUNTIME_CLIENT.container_remove",
+        new=AsyncMock(),
+    )
+
+    response = client.delete("/api/container/remove/c1?force=true")
+
+    assert response.status_code == 200
+    remove.assert_awaited_once_with("c1", force=True)
 
 
 def test_exec_forbidden_when_allow_exec_false(mocker: MockerFixture):

@@ -486,7 +486,7 @@ class RuntimeClient:
         resp.close()
 
     async def container_remove(
-        self, name_or_id: str, force: bool = True, volumes: bool = False
+        self, name_or_id: str, force: bool = False, volumes: bool = False
     ) -> None:
         if not self._negotiated_api_prefix:
             await self.get_version()

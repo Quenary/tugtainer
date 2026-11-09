@@ -141,8 +141,12 @@ async def rename(name_or_id: str, new_name: str, _=Depends(is_exists)) -> str:
     description="Remove container",
     response_model=str,
 )
-async def remove(name_or_id: str, _=Depends(is_exists)) -> str:
-    await RUNTIME_CLIENT.container_remove(name_or_id, force=True)
+async def remove(
+    name_or_id: str,
+    force: bool = False,
+    _=Depends(is_exists),
+) -> str:
+    await RUNTIME_CLIENT.container_remove(name_or_id, force=force)
     return name_or_id
 
 

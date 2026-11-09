@@ -58,7 +58,7 @@ upload_to_repository = false
 commit_version_number = false
 tag_format = "v{version}"
 
-[semantic_release.commit_parser_options]
+[tool.semantic_release.commit_parser_options]
 minor_tags = ["feat"]
 patch_tags = ["fix", "perf"]
 other_allowed_tags = ["build", "chore", "ci", "docs", "style", "refactor", "test"]

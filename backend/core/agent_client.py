@@ -301,10 +301,11 @@ class AgentClientContainer:
         )
         return str(data)
 
-    async def remove(self, name_or_id: str) -> str:
+    async def remove(self, name_or_id: str, force: bool = False) -> str:
         data = await self._agent_client._request(
             "DELETE",
             f"/api/container/remove/{name_or_id}",
+            params={"force": force},
             timeout=self._agent_client._long_timeout,
         )
         return str(data)
