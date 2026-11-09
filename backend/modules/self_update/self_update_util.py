@@ -35,6 +35,7 @@ from backend.util.get_self_container_id import get_self_container_id
 from backend.util.get_version_from_labels import get_version_from_labels
 from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.container_create_payload import build_create_request
+from shared.runtime.runtime_client import docker_cert_dir, docker_tls_verify_enabled
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
@@ -162,6 +163,24 @@ def get_sqlite_db_path() -> str | None:
     return db_path
 
 
+def _mount_source_for_path(
+    container: ContainerInspectResult,
+    destination: str,
+) -> str | None:
+    """Host path of the mount that contains destination, if the app has one."""
+    target = posixpath.normpath(destination)
+    for mount in container.mounts or []:
+        mounted = posixpath.normpath(mount.destination or mount.target or "")
+        if not mounted or not mount.source:
+            continue
+        if mounted == target:
+            return mount.source
+        prefix = mounted.rstrip("/")
+        if target.startswith(prefix + "/"):
+            return posixpath.normpath(mount.source.rstrip("/") + target[len(prefix) :])
+    return None
+
+
 def get_helper_networks(
     container: ContainerInspectResult,
     docker_version: DockerVersionScheme | None,
@@ -195,7 +214,7 @@ def get_helper_config(
     One-shot helper from the new image.
     Gets only the docker access and the data volume.
     """
-    volumes: list[tuple[str, str]] = [
+    volumes: list[tuple[str, str] | tuple[str, str, str]] = [
         (str(data_mount.name or data_mount.source), DATA_DIR)
     ]
     docker_host: Final = os.environ.get("DOCKER_HOST")
@@ -205,6 +224,21 @@ def get_helper_config(
     for mount in container.mounts or []:
         if mount.source and mount.destination in socket_paths:
             volumes.append((mount.source, mount.destination))
+    envs: dict[str, str] = {}
+    if docker_host:
+        envs["DOCKER_HOST"] = docker_host
+    if docker_tls_verify_enabled():
+        cert_dir = str(docker_cert_dir())
+        source = _mount_source_for_path(container, cert_dir)
+        if not source:
+            raise TugSelfUpdateError(
+                "DOCKER_TLS_VERIFY is set but "
+                f"{cert_dir} is not mounted on this container. "
+                "Mount the certificate directory so the helper uses the same TLS files."
+            )
+        envs["DOCKER_TLS_VERIFY"] = os.environ["DOCKER_TLS_VERIFY"]
+        envs["DOCKER_CERT_PATH"] = cert_dir
+        volumes.append((source, cert_dir, "ro"))
     networks: Final = get_helper_networks(container, docker_version)[:1]
 
     return CreateContainerRequestBodySchema.model_validate(
@@ -215,7 +249,7 @@ def get_helper_config(
             "command": ["-m", "shared.self_update", plan_path],
             "workdir": "/app",
             "volumes": volumes,
-            **({"envs": {"DOCKER_HOST": docker_host}} if docker_host else {}),
+            **({"envs": envs} if envs else {}),
             **({"networks": networks} if networks else {}),
             # The scheduled update must never touch the helper
             "labels": {TUGTAINER_PROTECTED_LABEL: "true"},

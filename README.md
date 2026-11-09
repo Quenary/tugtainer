@@ -119,7 +119,7 @@ The app and the agent can run without a direct Docker socket mount. The provided
 | Start, stop, restart, pause | `ALLOW_START=1`, `ALLOW_STOP=1`, `ALLOW_RESTARTS=1`, `ALLOW_PAUSE=1`, `ALLOW_UNPAUSE=1` |
 | Swarm                       | `SERVICES=1`, `TASKS=1`, `NODES=1`, `SWARM=1`, `DISTRIBUTION=1`                         |
 
-`DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`. Supported schemes are `unix://`, `tcp://`, `http://`, and `https://`. `ssh://` is rejected. `DOCKER_TLS_VERIFY` and `DOCKER_CERT_PATH` are not read; TLS is an `https://` URL.
+`DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`. Supported schemes are `unix://`, `tcp://`, `http://`, and `https://`. `ssh://` is rejected. A non-empty `DOCKER_TLS_VERIFY` turns `tcp://` into HTTPS and verifies the daemon with `ca.pem`, `cert.pem`, and `key.pem` from `DOCKER_CERT_PATH` (default `~/.docker`). Missing or invalid certificate files fail at connection time. `http://` together with `DOCKER_TLS_VERIFY` is rejected.
 
 The Compose files leave `EXEC` commented out. Uncomment it on a host where update hooks should run. Hooks also need `ALLOW_HOOKS` on the app and `ALLOW_EXEC` on the agent.
 

@@ -155,6 +155,7 @@ class TestGetHelperConfig:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("DOCKER_HOST", "tcp://socket-proxy:2375")
+        monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
         container = _container(
             mounts=[
                 {
@@ -203,6 +204,7 @@ class TestGetHelperConfig:
 
     def test_without_docker_host(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("DOCKER_HOST", raising=False)
+        monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
         container = _container()
 
         config = get_helper_config(
@@ -210,6 +212,50 @@ class TestGetHelperConfig:
         )
 
         assert config.envs is None
+
+    def test_passes_tls_certificate_mount(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("DOCKER_HOST", "tcp://daemon:2376")
+        monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+        monkeypatch.setenv("DOCKER_CERT_PATH", "/certs")
+        container = _container(
+            mounts=[
+                {
+                    "type": "volume",
+                    "name": "tugtainer_data",
+                    "destination": "/tugtainer",
+                },
+                {
+                    "type": "bind",
+                    "source": "/host/certs",
+                    "destination": "/certs",
+                },
+            ]
+        )
+
+        config = get_helper_config(
+            container, get_data_mount(container), NEW_IMAGE, "h", "/p", None
+        )
+
+        assert config.envs == {
+            "DOCKER_HOST": "tcp://daemon:2376",
+            "DOCKER_TLS_VERIFY": "1",
+            "DOCKER_CERT_PATH": "/certs",
+        }
+        assert ("/host/certs", "/certs", "ro") in (config.volumes or [])
+
+    def test_refuses_tls_when_cert_directory_is_not_mounted(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+        monkeypatch.setenv("DOCKER_CERT_PATH", "/certs")
+        container = _container()
+
+        with pytest.raises(TugSelfUpdateError, match="DOCKER_TLS_VERIFY"):
+            get_helper_config(
+                container, get_data_mount(container), NEW_IMAGE, "h", "/p", None
+            )
 
 
 def test_get_data_mount_requires_volume() -> None:

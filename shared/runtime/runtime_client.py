@@ -4,8 +4,9 @@ import json
 import logging
 import os
 import ssl as ssl_lib
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any, Final, TypeVar
 
 import aiohttp
@@ -108,6 +109,66 @@ def format_log_time(value: Any) -> str:
     return str(value)
 
 
+def docker_tls_verify_enabled(
+    environ: Mapping[str, str] | None = None,
+) -> bool:
+    """True when DOCKER_TLS_VERIFY is set to any non-empty value."""
+    env = os.environ if environ is None else environ
+    return env.get("DOCKER_TLS_VERIFY", "") != ""
+
+
+def docker_cert_dir(environ: Mapping[str, str] | None = None) -> Path:
+    """Directory with ca.pem, cert.pem, and key.pem. Defaults to ~/.docker."""
+    env = os.environ if environ is None else environ
+    return Path(env.get("DOCKER_CERT_PATH") or "~/.docker").expanduser()
+
+
+def load_docker_tls_context(
+    cert_dir: Path | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> ssl_lib.SSLContext:
+    """
+    TLS context for a remote daemon.
+
+    Verifies the server with ca.pem and presents cert.pem and key.pem.
+    Missing or invalid files raise RuntimeClientError. There is no HTTP fallback.
+    """
+    directory = cert_dir or docker_cert_dir(environ)
+    ca_file = directory / "ca.pem"
+    cert_file = directory / "cert.pem"
+    key_file = directory / "key.pem"
+    missing = [path for path in (ca_file, cert_file, key_file) if not path.is_file()]
+    if missing:
+        names = ", ".join(str(path) for path in missing)
+        raise RuntimeClientError(
+            "DOCKER_TLS_VERIFY is set but TLS files are missing: "
+            f"{names}. Expected ca.pem, cert.pem, and key.pem in {directory}."
+        )
+    context = ssl_lib.SSLContext(ssl_lib.PROTOCOL_TLS_CLIENT)
+    try:
+        context.load_verify_locations(cafile=str(ca_file))
+        context.load_cert_chain(certfile=str(cert_file), keyfile=str(key_file))
+    except (ssl_lib.SSLError, OSError) as exc:
+        raise RuntimeClientError(
+            f"Invalid Docker TLS files in {directory}: {exc}"
+        ) from exc
+    context.check_hostname = True
+    context.verify_mode = ssl_lib.CERT_REQUIRED
+    return context
+
+
+def _tcp_base_url(host: str, tls_verify: bool) -> str:
+    if host.startswith("http://") and tls_verify:
+        raise RuntimeClientError(
+            "DOCKER_TLS_VERIFY is set but DOCKER_HOST uses http://. "
+            "Use tcp:// or https:// so the connection is not plain HTTP."
+        )
+    if host.startswith("tcp://"):
+        scheme = "https" if tls_verify else "http"
+        return f"{scheme}://{host.removeprefix('tcp://')}".rstrip("/")
+    return host.rstrip("/")
+
+
 def encode_registry_auth(auth_dict: dict[str, Any] | None) -> str | None:
     """Base64url-encode auth configuration JSON, keeping padding.
 
@@ -161,16 +222,24 @@ class RuntimeClient:
                     or host.startswith("http://")
                     or host.startswith("https://")
                 ):
-                    clean_url = host.replace("tcp://", "http://", 1)
-                    self._base_url = clean_url.rstrip("/")
-                    connector = aiohttp.TCPConnector(ssl=self._ssl_context)
+                    tls_verify = docker_tls_verify_enabled()
+                    self._base_url = _tcp_base_url(host, tls_verify)
+                    if tls_verify:
+                        connector_ssl: ssl_lib.SSLContext | bool = (
+                            load_docker_tls_context()
+                        )
+                    elif self._base_url.startswith("https://"):
+                        connector_ssl = self._ssl_context
+                    else:
+                        connector_ssl = False
+                    connector = aiohttp.TCPConnector(ssl=connector_ssl)
                 elif "://" in host:
                     scheme = host.split("://", 1)[0]
                     raise RuntimeClientError(
                         f"Unsupported DOCKER_HOST scheme '{scheme}'. "
                         "Use unix://, tcp://, http://, or https://. "
-                        "ssh:// is not supported, and DOCKER_TLS_VERIFY and "
-                        "DOCKER_CERT_PATH are not read."
+                        "ssh:// is not supported. Set DOCKER_TLS_VERIFY and "
+                        "DOCKER_CERT_PATH for TLS to a tcp:// or https:// daemon."
                     )
                 else:
                     connector = aiohttp.UnixConnector(path=host)

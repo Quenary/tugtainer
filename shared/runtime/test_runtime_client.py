@@ -1,7 +1,11 @@
 import base64
 import json
+import ssl
 import struct
+import subprocess
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
@@ -11,8 +15,10 @@ from pytest_mock import MockerFixture
 from shared.runtime.runtime_client import (
     CLIENT_MAX_DOCKER_API,
     RuntimeClient,
+    docker_cert_dir,
     encode_registry_auth,
     format_log_time,
+    load_docker_tls_context,
     parse_version_tuple,
     split_image_ref,
 )
@@ -31,6 +37,120 @@ from shared.runtime.runtime_models import (
     ImageInspectResult,
 )
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
+
+
+def _write_tls_material(directory: Path, *, valid: bool) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    if not valid:
+        for name in ("ca.pem", "cert.pem", "key.pem"):
+            (directory / name).write_text("not a certificate", encoding="utf-8")
+        return
+    subprocess.run(
+        [
+            "openssl",
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-nodes",
+            "-keyout",
+            str(directory / "key.pem"),
+            "-out",
+            str(directory / "cert.pem"),
+            "-days",
+            "1",
+            "-subj",
+            "/CN=localhost",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    (directory / "ca.pem").write_bytes((directory / "cert.pem").read_bytes())
+
+
+def test_docker_cert_dir_defaults_to_docker_home(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("DOCKER_CERT_PATH", raising=False)
+    assert docker_cert_dir() == Path.home() / ".docker"
+
+
+def test_load_docker_tls_context_verifies_server(tmp_path: Path) -> None:
+    _write_tls_material(tmp_path, valid=True)
+
+    context = load_docker_tls_context(tmp_path)
+
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname is True
+
+
+def test_load_docker_tls_context_missing_file(tmp_path: Path) -> None:
+    (tmp_path / "ca.pem").write_text("ca", encoding="utf-8")
+    (tmp_path / "cert.pem").write_text("cert", encoding="utf-8")
+
+    with pytest.raises(RuntimeClientError, match="key.pem"):
+        load_docker_tls_context(tmp_path)
+
+
+def test_load_docker_tls_context_invalid_pem(tmp_path: Path) -> None:
+    _write_tls_material(tmp_path, valid=False)
+
+    with pytest.raises(RuntimeClientError, match="Invalid Docker TLS files"):
+        load_docker_tls_context(tmp_path)
+
+
+@pytest.mark.asyncio
+async def test_tcp_without_tls_stays_http(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
+    client = RuntimeClient("tcp://daemon:2375")
+    session = await client._get_session()
+    try:
+        assert client._base_url == "http://daemon:2375"
+        connector = cast(Any, session.connector)
+        assert isinstance(connector, aiohttp.TCPConnector)
+        assert connector._ssl is False
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_tcp_with_tls_verify_uses_https(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _write_tls_material(tmp_path, valid=True)
+    monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+    monkeypatch.setenv("DOCKER_CERT_PATH", str(tmp_path))
+    client = RuntimeClient("tcp://daemon:2376")
+    session = await client._get_session()
+    try:
+        assert client._base_url == "https://daemon:2376"
+        tls_context = cast(Any, session.connector)._ssl
+        assert isinstance(tls_context, ssl.SSLContext)
+        assert tls_context.verify_mode == ssl.CERT_REQUIRED
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_http_with_tls_verify_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+    client = RuntimeClient("http://daemon:2375")
+    with pytest.raises(RuntimeClientError, match="plain HTTP"):
+        await client._get_session()
+
+
+@pytest.mark.asyncio
+async def test_unix_ignores_tls_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+    monkeypatch.setenv("DOCKER_CERT_PATH", "/missing-certs")
+    client = RuntimeClient("unix:///tmp/tugtainer-no-such.sock")
+    session = await client._get_session()
+    try:
+        assert isinstance(session.connector, aiohttp.UnixConnector)
+    finally:
+        await client.close()
 
 
 def test_parse_version_tuple():
