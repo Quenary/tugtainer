@@ -19,6 +19,7 @@ from .runtime_errors import (
     IncompatibleRuntimeError,
     RuntimeClientError,
     RuntimeConflictError,
+    RuntimeEngineError,
     RuntimeExecError,
     RuntimeNotFoundError,
     StreamTruncatedError,
@@ -784,6 +785,10 @@ class RuntimeClient:
         if self._runtime_type == "podman":
             raise IncompatibleRuntimeError("Swarm service update unsupported on Podman")
 
+        resolved = await self._resolve_service_image(new_image, auth_config)
+        if resolved is None:
+            return
+
         current = await self.service_inspect(service_id)
         version_index = current.get("Version", {}).get("Index")
         if version_index is None:
@@ -797,7 +802,7 @@ class RuntimeClient:
 
         task_template = spec.setdefault("TaskTemplate", {})
         container_spec = task_template.setdefault("ContainerSpec", {})
-        container_spec["Image"] = new_image
+        container_spec["Image"] = resolved
 
         headers: dict[str, str] = {}
         auth_header = encode_registry_auth(auth_config)
@@ -813,6 +818,61 @@ class RuntimeClient:
             timeout=60.0,
         )
         resp.close()
+
+    async def _resolve_service_image(
+        self,
+        image: str,
+        auth_config: dict[str, Any] | None,
+    ) -> str | None:
+        """Pin a tagged reference to the registry digest.
+
+        Returns None when that digest is already the one in ``image``, so the
+        caller skips the service update. A reference with no tag is unchanged.
+        """
+        repo, tag, digest = split_image_ref(image)
+        if not tag:
+            return image
+        reference = f"{repo}:{tag}"
+        resolved = await self._distribution_digest(reference, auth_config)
+        if digest == resolved:
+            return None
+        return f"{reference}@{resolved}"
+
+    async def _distribution_digest(
+        self,
+        reference: str,
+        auth_config: dict[str, Any] | None,
+    ) -> str:
+        headers: dict[str, str] = {}
+        auth_header = encode_registry_auth(auth_config)
+        if auth_header:
+            headers["X-Registry-Auth"] = auth_header
+        try:
+            resp = await self._request(
+                "GET",
+                f"/distribution/{reference}/json",
+                headers=headers,
+            )
+        except RuntimeEngineError as exc:
+            raise RuntimeClientError(
+                f"Could not resolve the registry digest for {reference}"
+            ) from exc
+        try:
+            try:
+                data = await resp.json()
+            except (aiohttp.ContentTypeError, json.JSONDecodeError, ValueError) as exc:
+                raise RuntimeClientError(
+                    f"Could not read the registry digest for {reference}"
+                ) from exc
+        finally:
+            resp.close()
+        descriptor = data.get("Descriptor") if isinstance(data, dict) else None
+        digest = descriptor.get("digest") if isinstance(descriptor, dict) else None
+        if not isinstance(digest, str) or not digest.startswith("sha256:"):
+            raise RuntimeClientError(
+                f"Registry digest for {reference} was not a sha256 digest"
+            )
+        return digest
 
     async def service_logs(
         self,

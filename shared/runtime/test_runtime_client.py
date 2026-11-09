@@ -619,32 +619,129 @@ async def test_image_pull_raises_on_stream_error(mocker: MockerFixture) -> None:
         await client.image_pull("ghcr.io/org/app:1")
 
 
+def _distribution(digest: str) -> MagicMock:
+    response = MagicMock()
+    response.json = AsyncMock(return_value={"Descriptor": {"digest": digest}})
+    response.close = MagicMock()
+    return response
+
+
+def _service(image: str, index: int = 7) -> dict[str, object]:
+    return {
+        "Version": {"Index": index},
+        "Spec": {"TaskTemplate": {"ContainerSpec": {"Image": image}}},
+    }
+
+
 @pytest.mark.asyncio
-async def test_service_update_sends_version_index(mocker: MockerFixture) -> None:
+async def test_service_update_resolves_tagged_digest(mocker: MockerFixture) -> None:
     client = RuntimeClient()
     client._negotiated_api_prefix = "/v1.48"
     client._runtime_type = "docker"
     mocker.patch.object(
         client,
         "service_inspect",
-        new=AsyncMock(
-            return_value={
-                "Version": {"Index": 7},
-                "Spec": {"TaskTemplate": {"ContainerSpec": {"Image": "nginx:1"}}},
-            }
-        ),
+        new=AsyncMock(return_value=_service("nginx:1@sha256:old")),
+    )
+    updated = MagicMock()
+    request = mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(side_effect=[_distribution("sha256:new"), updated]),
+    )
+    auth = {"username": "user", "password": "secret", "serveraddress": "docker.io"}
+
+    await client.service_update(
+        "svc1", "docker.io/library/nginx:1@sha256:old", auth_config=auth
+    )
+
+    distribution, update = request.await_args_list
+    assert distribution.args[0] == "GET"
+    assert distribution.args[1] == "/distribution/docker.io/library/nginx:1/json"
+    assert distribution.kwargs["headers"]["X-Registry-Auth"] == encode_registry_auth(
+        auth
+    )
+    assert update.kwargs["params"] == {"version": 7}
+    image = update.kwargs["json_data"]["TaskTemplate"]["ContainerSpec"]["Image"]
+    assert image == "docker.io/library/nginx:1@sha256:new"
+
+
+@pytest.mark.asyncio
+async def test_service_update_skips_unchanged_digest(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._runtime_type = "docker"
+    inspect = mocker.patch.object(client, "service_inspect", new=AsyncMock())
+    request = mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=_distribution("sha256:same")),
+    )
+
+    await client.service_update("svc1", "nginx:1@sha256:same")
+
+    request.assert_awaited_once()
+    assert request.await_args.args[1] == "/distribution/nginx:1/json"
+    inspect.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_service_update_keeps_digest_only_reference(
+    mocker: MockerFixture,
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._runtime_type = "docker"
+    mocker.patch.object(
+        client,
+        "service_inspect",
+        new=AsyncMock(return_value=_service("nginx@sha256:pinned")),
     )
     response = MagicMock()
     request = mocker.patch.object(
         client, "_request", new=AsyncMock(return_value=response)
     )
 
-    await client.service_update("svc1", "nginx:2")
+    await client.service_update("svc1", "nginx@sha256:pinned")
 
-    assert request.await_args is not None
-    assert request.await_args.kwargs["params"] == {"version": 7}
+    request.assert_awaited_once()
+    assert request.await_args.args[0] == "POST"
     image = request.await_args.kwargs["json_data"]["TaskTemplate"]["ContainerSpec"]
-    assert image["Image"] == "nginx:2"
+    assert image["Image"] == "nginx@sha256:pinned"
+
+
+@pytest.mark.asyncio
+async def test_service_update_registry_failure_does_not_post(
+    mocker: MockerFixture,
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._runtime_type = "docker"
+    inspect = mocker.patch.object(client, "service_inspect", new=AsyncMock())
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(side_effect=RuntimeClientError("denied")),
+    )
+
+    with pytest.raises(RuntimeClientError, match="registry digest"):
+        await client.service_update("svc1", "nginx:1")
+
+    inspect.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_service_update_bad_distribution_payload(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    client._runtime_type = "docker"
+    response = MagicMock()
+    response.json = AsyncMock(return_value={"Descriptor": {}})
+    response.close = MagicMock()
+    mocker.patch.object(client, "_request", new=AsyncMock(return_value=response))
+
+    with pytest.raises(RuntimeClientError, match="sha256"):
+        await client.service_update("svc1", "nginx:1@sha256:old")
 
 
 @pytest.mark.asyncio
@@ -659,7 +756,7 @@ async def test_service_update_requires_version_index(mocker: MockerFixture) -> N
     )
 
     with pytest.raises(RuntimeClientError, match="Version.Index"):
-        await client.service_update("svc1", "nginx:2")
+        await client.service_update("svc1", "nginx@sha256:pinned")
 
 
 @pytest.mark.asyncio

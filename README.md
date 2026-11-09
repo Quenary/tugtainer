@@ -112,7 +112,7 @@ The app and the agent can run without a direct Docker socket mount. The provided
 | Logs                        | `ALLOW_LOGS=1`                                                                          |
 | Hooks & Exec                | `EXEC=1`, `POST=1`                                                                      |
 | Start, stop, restart, pause | `ALLOW_START=1`, `ALLOW_STOP=1`, `ALLOW_RESTARTS=1`, `ALLOW_PAUSE=1`, `ALLOW_UNPAUSE=1` |
-| Swarm                       | `SERVICES=1`, `TASKS=1`, `NODES=1`, `SWARM=1`                                           |
+| Swarm                       | `SERVICES=1`, `TASKS=1`, `NODES=1`, `SWARM=1`, `DISTRIBUTION=1`                         |
 
 `DOCKER_HOST` on the app or the agent points at the proxy, for example `tcp://my-socket-proxy:port`. Supported schemes are `unix://`, `tcp://`, `http://`, and `https://`. `ssh://` is rejected. `DOCKER_TLS_VERIFY` and `DOCKER_CERT_PATH` are not read; TLS is an `https://` URL.
 
