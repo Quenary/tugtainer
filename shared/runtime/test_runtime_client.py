@@ -1,3 +1,5 @@
+import base64
+import json
 import struct
 from unittest.mock import AsyncMock, MagicMock
 
@@ -36,10 +38,13 @@ def test_parse_version_tuple():
 
 
 def test_encode_registry_auth():
-    auth = {"serveraddress": "ghcr.io", "username": "user", "password": "token"}
+    auth = {"serveraddress": "ghcr.io", "username": "user", "password": "secret"}
     encoded = encode_registry_auth(auth)
     assert encoded is not None
-    assert "=" not in encoded  # Must be stripped padding
+    raw = json.dumps(auth).encode()
+    assert encoded == base64.urlsafe_b64encode(raw).decode("ascii")
+    assert encoded.endswith("=")
+    assert json.loads(base64.urlsafe_b64decode(encoded)) == auth
 
 
 @pytest.mark.asyncio

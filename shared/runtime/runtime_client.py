@@ -86,11 +86,16 @@ def _create_payload(
 
 
 def encode_registry_auth(auth_dict: dict[str, Any] | None) -> str | None:
-    """Base64url encode auth configuration JSON without padding."""
+    """Base64url-encode auth configuration JSON, keeping padding.
+
+    The Engine API decodes ``X-Registry-Auth`` with Go's ``URLEncoding``,
+    which requires ``=`` padding. A stripped header is ignored, and the
+    daemon then pulls with no credentials.
+    """
     if not auth_dict:
         return None
     raw = json.dumps(auth_dict).encode("utf-8")
-    return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    return base64.urlsafe_b64encode(raw).decode("ascii")
 
 
 class RuntimeClient:
