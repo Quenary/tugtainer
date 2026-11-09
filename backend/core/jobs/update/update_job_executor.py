@@ -4,6 +4,7 @@ from typing import Final, cast
 
 from backend.config import Config
 from backend.core.agent_client import AgentClient
+from backend.core.agent_protocol import agent_protocol_error
 from backend.core.container_util.container_config import (
     diff_container_config_with_image,
     get_container_config,
@@ -88,6 +89,24 @@ async def execute_update_job(
         if c.name in plan.to_update or c.name in plan.affected
     ]
     items_map: Final = {item.name: item for item in items}
+
+    mismatch = await agent_protocol_error(client)
+    if mismatch:
+        refused: list[ContainerJobResult] = []
+        for item in items:
+            if item.name not in plan.to_update:
+                continue
+            item.result = "failed"
+            item.error = mismatch
+            item_result = ContainerJobResult(
+                container=item.container,
+                image_spec=item.image_spec,
+                result="failed",
+                error=mismatch,
+            )
+            refused.append(item_result)
+            _slot(item.name, EJobStatus.ERROR, item_result)
+        return refused
 
     hooks_map: Final = (
         await get_hooks_map(host.id, list(items_map.keys()))

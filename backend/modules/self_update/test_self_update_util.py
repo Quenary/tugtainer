@@ -21,6 +21,7 @@ from backend.modules.self_update.self_update_util import (
     watch_self_update_result,
 )
 from backend.testing import patch_async_session
+from shared.agent_protocol import AGENT_UPGRADE_MESSAGE, AgentProtocol
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
@@ -317,6 +318,9 @@ class TestStartSelfUpdate:
             )
         )
         client.common.version = AsyncMock(return_value=None)
+        client.public.version = AsyncMock(
+            return_value=AgentProtocol(version="dev", protocol=2)
+        )
         host = SimpleNamespace(id=1, name="local", container_hc_timeout=90)
         mocker.patch(
             f"{base_module}.find_self",
@@ -382,6 +386,20 @@ class TestStartSelfUpdate:
         assert connected.network == "extra"
         assert connected.container == "tugtainer-self-update"
         assert order == ["create", "connect", "start"]
+
+    @pytest.mark.asyncio
+    async def test_protocol_mismatch_does_not_start_helper(
+        self, client: AsyncMock
+    ) -> None:
+        client.public.version = AsyncMock(
+            return_value=AgentProtocol(version="1.0.0", protocol=1)
+        )
+
+        with pytest.raises(TugSelfUpdateError, match=AGENT_UPGRADE_MESSAGE):
+            await start_self_update()
+
+        client.container.create.assert_not_called()
+        client.container.rename.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_preflight_failure_does_not_start_helper(

@@ -15,6 +15,7 @@ from backend.exception import TugAgentClientError
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_util import validate_agent_url_against_ssrf
 from backend.util.pinned_ip_resolver import PinnedIpResolver
+from shared.agent_protocol import AgentProtocol
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
     ImageInspectResult,
@@ -204,6 +205,10 @@ class AgentClientPublic:
 
     async def access(self):
         return await self._agent_client._request("GET", "/api/public/access")
+
+    async def version(self) -> AgentProtocol:
+        data = await self._agent_client._request("GET", "/api/public/version")
+        return AgentProtocol.model_validate(data)
 
 
 class AgentClientContainer:

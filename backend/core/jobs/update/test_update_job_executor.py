@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from backend.core.jobs.update.update_job_executor import execute_update_job
 from backend.core.jobs.update.update_job_plan_builder import UpdateJobPlan
 from backend.enums.hook_name_enum import EHookName
+from shared.agent_protocol import AGENT_UPGRADE_MESSAGE, AgentProtocol
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import RuntimeVersion
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
@@ -28,6 +29,9 @@ async def test_pre_update_hook_failure_skips_stop(mocker: MockerFixture) -> None
     client.container.inspect = AsyncMock(return_value=container)
     client.container.stop = AsyncMock()
     client.container.start = AsyncMock()
+    client.public.version = AsyncMock(
+        return_value=AgentProtocol(version="dev", protocol=2)
+    )
 
     mocker.patch(f"{base_module}.SettingsStorage.get", return_value=0)
     mocker.patch(f"{base_module}.asyncio.sleep", new=AsyncMock())
@@ -93,6 +97,9 @@ def _client() -> MagicMock:
     client.container.remove = AsyncMock()
     client.container.start = AsyncMock()
     client.container.exists = AsyncMock(return_value=True)
+    client.public.version = AsyncMock(
+        return_value=AgentProtocol(version="dev", protocol=2)
+    )
     return client
 
 
@@ -158,3 +165,32 @@ async def test_preflight_failure_leaves_container_and_dependent(
     assert web_result.result == "failed"
     assert web_result.error is not None
     assert "VolumeOptions.Subpath" in web_result.error
+
+
+@pytest.mark.asyncio
+async def test_protocol_mismatch_does_not_stop_or_remove() -> None:
+    web = _running("web")
+    client = _client()
+    client.public.version = AsyncMock(
+        return_value=AgentProtocol(version="1.0.0", protocol=1)
+    )
+    plan = UpdateJobPlan(
+        to_update={"web"},
+        affected=set(),
+        order=["web"],
+        healthcheck_timeouts={"web": 1},
+    )
+
+    results = await execute_update_job(
+        client,
+        SimpleNamespace(id=1, name="host"),  # type: ignore[arg-type]
+        [web],  # type: ignore[list-item]
+        plan,
+        docker_version=None,
+    )
+
+    client.container.stop.assert_not_called()
+    client.container.remove.assert_not_called()
+    client.image.pull.assert_not_called()
+    assert results[0].result == "failed"
+    assert results[0].error == AGENT_UPGRADE_MESSAGE

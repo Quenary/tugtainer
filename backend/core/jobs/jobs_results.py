@@ -67,6 +67,7 @@ class ServiceJobResult:
     current_version: str | None = None
     available_version: str | None = None
     available_created: datetime | None = None
+    error: str | None = None
 
     @property
     def name(self) -> str:

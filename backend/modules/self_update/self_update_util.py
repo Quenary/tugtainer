@@ -13,6 +13,7 @@ from sqlalchemy.engine import make_url
 from backend.config import Config
 from backend.const import DATA_DIR, SELF_UPDATE_DIR, TUGTAINER_PROTECTED_LABEL
 from backend.core.agent_client import AgentClient, AgentClientManager
+from backend.core.agent_protocol import agent_protocol_error
 from backend.core.container_util.container_config import (
     diff_container_config_with_image,
     get_container_config,
@@ -278,6 +279,9 @@ async def _launch_helper() -> SelfUpdateState:
     Pull the new image, write the plan and start the helper container.
     """
     host, client, container = await find_self()
+    mismatch = await agent_protocol_error(client)
+    if mismatch:
+        raise TugSelfUpdateError(mismatch)
     name: Final = str(container.name)
     old_name: Final = f"{name}{SELF_UPDATE_OLD_SUFFIX}"
     helper_name: Final = f"{name}{SELF_UPDATE_HELPER_SUFFIX}"
