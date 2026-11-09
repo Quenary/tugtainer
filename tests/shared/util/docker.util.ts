@@ -6,26 +6,54 @@ export function getDocker(): Docker {
   return new Docker({ socketPath: SOCKET_PATH });
 }
 
+export async function engineApiVersion(
+  docker: Docker,
+): Promise<[number, number]> {
+  const version = await docker.version();
+  const [major, minor] = version.ApiVersion.split('.').map((part) =>
+    Number(part),
+  );
+  return [major || 0, minor || 0];
+}
+
+export function apiAtLeast(
+  api: [number, number],
+  major: number,
+  minor: number,
+): boolean {
+  return api[0] > major || (api[0] === major && api[1] >= minor);
+}
+
 export async function pullImage(docker: Docker, image: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    docker.pull(image, {}, (err, stream) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      if (!stream) {
-        reject(new Error(`Pull returned empty stream for ${image}`));
-        return;
-      }
-      docker.modem.followProgress(stream, (followErr) => {
-        if (followErr) {
-          reject(followErr);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      docker.pull(image, {}, (err, stream) => {
+        if (err) {
+          reject(err);
           return;
         }
-        resolve();
+        if (!stream) {
+          reject(new Error(`Pull returned empty stream for ${image}`));
+          return;
+        }
+        docker.modem.followProgress(stream, (followErr) => {
+          if (followErr) {
+            reject(followErr);
+            return;
+          }
+          resolve();
+        });
       });
     });
-  });
+  } catch (err) {
+    // Parallel pulls of the same public tag often fail on a registry handshake
+    // while the image is already local. Keep that image; a missing one still fails.
+    try {
+      await docker.getImage(image).inspect();
+    } catch {
+      throw err;
+    }
+  }
 }
 
 export async function removeContainerIfExists(

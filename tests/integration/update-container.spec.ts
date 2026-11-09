@@ -2,10 +2,21 @@ import { mergeTests, expect, type APIRequestContext } from '@playwright/test';
 import { jobResults, type HostState } from '../shared/types/jobs.types';
 import { test as authTest } from '../fixtures/auth-request.fixture';
 import { test as outdatedAlpineExtraNetworkTest } from '../fixtures/outdated-alpine-extra-network.fixture';
-import { pickPreservedConfig } from '../shared/util/container-config.util';
-import { execInContainer, getDocker } from '../shared/util/docker.util';
 import {
+  pickHostMounts,
+  pickPreservedConfig,
+  preservedHostMounts,
+} from '../shared/util/container-config.util';
+import {
+  execInContainer,
+  getDocker,
+  removeContainerIfExists,
+  removeImageTagIfExists,
+} from '../shared/util/docker.util';
+import {
+  imageName,
   publishFailingHealthcheck,
+  publishImageHealthcheck,
   replacePublishedTag,
 } from '../shared/util/registry.util';
 import { getEnabledHost } from './hosts.util';
@@ -32,10 +43,6 @@ function extraEndpoint(
   const endpoint = networks![extraNetwork];
   expect(endpoint, `expected attachment to ${extraNetwork}`).toBeTruthy();
   return endpoint;
-}
-
-function mountTargets(mounts: { Target?: string }[] | undefined): string[] {
-  return (mounts ?? []).map((mount) => mount.Target ?? '').sort();
 }
 
 async function checkAvailable(
@@ -109,10 +116,11 @@ test.describe('update container with extra network', () => {
       ]),
     );
     expect(before.HostConfig.Binds).toEqual(
-      expect.arrayContaining([expect.stringContaining(':/bind:ro')]),
+      expect.arrayContaining([expect.stringContaining(':/bind:ro,z')]),
     );
-    expect(before.HostConfig.Mounts?.map((mount) => mount.Target)).toEqual(
-      expect.arrayContaining(['/mount']),
+    expect(before.Config.Healthcheck?.Test).toEqual(['CMD', 'true']);
+    expect(pickHostMounts(before).map((mount) => mount.target)).toEqual(
+      expect.arrayContaining(['/mount', '/mnt/bind', '/mnt/tmpfs', '/anon']),
     );
     await execInContainer(docker, container.name, [
       'sh',
@@ -172,10 +180,13 @@ test.describe('update container with extra network', () => {
       ]),
     );
     expect(after.HostConfig.Binds).toEqual(before.HostConfig.Binds);
+    expect(after.Config.Healthcheck?.Test).toEqual(['CMD', 'true']);
     // Anonymous volumes gain a source id when they are reattached.
-    expect(mountTargets(after.HostConfig.Mounts)).toEqual(
-      mountTargets(before.HostConfig.Mounts),
-    );
+    expect(preservedHostMounts(after, before)).toEqual(pickHostMounts(before));
+    const primary = after.NetworkSettings.Networks?.[
+      container.primaryNetwork
+    ] as { GwPriority?: number } | undefined;
+    expect(primary?.GwPriority ?? null).toBe(container.gatewayPriority);
     const data = await execInContainer(docker, container.name, [
       'sh',
       '-c',
@@ -243,9 +254,9 @@ test.describe('update edge cases', () => {
       );
       expect(updateRes.ok(), await updateRes.text()).toBeTruthy();
       const state = await watch.waitUntilSettled({ names: [created.name] });
-      expect(jobResults(state, [created.name])[0]?.result ?? null).not.toBe(
-        'updated',
-      );
+      const item = jobResults(state, [created.name])[0];
+      expect(item?.result ?? null).not.toBe('updated');
+      expect(item?.error ?? '').toContain('uses cidfile');
 
       const after = await created.docker.getContainer(created.name).inspect();
       expect(after.Id).toBe(before.Id);
@@ -253,6 +264,57 @@ test.describe('update edge cases', () => {
       expect(after.Name).toBe(before.Name);
     } finally {
       await created.cleanup();
+    }
+  });
+
+  test('adopts the new image healthcheck when the container did not override it', async ({
+    authorizedRequest: request,
+  }, testInfo) => {
+    await allowLocalRegistry(request);
+    const host = await getEnabledHost(request);
+    const suffix = `inherit-${testInfo.workerIndex}-${testInfo.parallelIndex}`;
+    const image = imageName(`tugtainer-test/${suffix}`, 'app');
+    const name = `tugtainer-test-${suffix}`;
+    const docker = getDocker();
+    const inherited =
+      'HEALTHCHECK --interval=1s --timeout=1s --retries=3 CMD ["true"]';
+    const replacement =
+      'HEALTHCHECK --interval=1s --timeout=1s --retries=3 CMD ["echo","updated"]';
+    await publishImageHealthcheck(docker, 'alpine:3.20', image, inherited);
+    let previousId: string | null = null;
+    try {
+      const created = await docker.createContainer({
+        Image: image,
+        name,
+        Labels: { 'dev.quenary.tugtainer.test': 'inherit-healthcheck' },
+      });
+      await created.start();
+      const before = await created.inspect();
+      previousId = before.Image;
+      expect(before.Config.Healthcheck?.Test).toEqual(['CMD', 'true']);
+
+      await publishImageHealthcheck(docker, 'alpine:3.20', image, replacement, {
+        dropLocal: true,
+      });
+      await checkAvailable(request, host.id, name, image);
+      const updateRes = await request.post(
+        `/api/containers/update/${host.id}/${name}`,
+      );
+      expect(updateRes.ok(), await updateRes.text()).toBeTruthy();
+      await waitForResult(request, host.id, name, 'updated');
+
+      const after = await docker.getContainer(name).inspect();
+      expect(after.Id).not.toBe(before.Id);
+      expect(after.State.Running).toBe(true);
+      expect(after.Config.Healthcheck?.Test).toEqual([
+        'CMD',
+        'echo',
+        'updated',
+      ]);
+    } finally {
+      await removeContainerIfExists(docker, name);
+      await removeImageTagIfExists(docker, image);
+      await removeImageTagIfExists(docker, previousId ?? image);
     }
   });
 

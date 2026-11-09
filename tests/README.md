@@ -88,10 +88,19 @@ upgrading.
   socket-proxy.
 - `fixtures/outdated-alpine-extra-network.fixture.ts` starts an outdated
   container with the host and network settings recreate has to keep: static
-  addresses, ports, health, resources, mounts, and a read-only bind.
-  `shared/util/container-config.util.ts` `pickPreservedConfig` compares those
-  fields before and after an update. Image id, runtime state, image labels,
-  and addresses assigned by Docker are not part of that comparison.
+  addresses, ports, an exec-form healthcheck with nanosecond durations and
+  `StartInterval`, resources, long-syntax mount options, a read-only bind with
+  a SELinux flag, and `GwPriority` when the daemon API is 1.48 or newer.
+  `VolumeOptions.Subpath` and `TmpfsOptions.Options` are set only when the
+  daemon API allows them. `shared/util/container-config.util.ts`
+  `pickPreservedConfig` compares those fields before and after an update, and
+  `pickHostMounts` compares `HostConfig.Mounts`. Image id, runtime state,
+  image labels, and addresses assigned by Docker are not part of that
+  comparison.
+- `integration/prune-images.spec.ts` prunes only images labeled
+  `dev.quenary.tugtainer.prune=<suffix>`, so a dangling prune and a
+  `prune_all` prune do not delete alpine or registry images used by other
+  tests.
 - Registry scenarios push to `registry:2` on `localhost:5000`. The daemon
   pulls that name from the published port. The app container forwards its own
   `localhost:5000` to the registry service so digest checks use the same name.

@@ -1,7 +1,9 @@
 import { test as base } from '@playwright/test';
 import type Docker from 'dockerode';
 import {
+  apiAtLeast,
   connectContainerToNetwork,
+  engineApiVersion,
   getDocker,
   pullImage,
   removeContainerIfExists,
@@ -49,6 +51,7 @@ export interface OutdatedAlpineExtraNetwork {
   publishedPort: string;
   dataPath: string;
   anonPath: string;
+  gatewayPriority: number | null;
 }
 
 async function cleanup(): Promise<void> {
@@ -61,6 +64,25 @@ async function cleanup(): Promise<void> {
   await removeNetworkIfExists(docker, EXTRA_NET);
   await removeNetworkIfExists(docker, PRIMARY_NET);
   await removeImageTagIfExists(docker, STALE_TAG);
+}
+
+async function mkdirVolumeSubpath(docker: Docker): Promise<void> {
+  const prep = await docker.createContainer({
+    Image: SOURCE_IMAGE,
+    Cmd: ['mkdir', '-p', '/v/kept'],
+    HostConfig: {
+      Mounts: [{ Type: 'volume', Source: MOUNT_VOLUME, Target: '/v' }],
+    },
+  });
+  try {
+    await prep.start();
+    const status = await prep.wait();
+    if (status.StatusCode !== 0) {
+      throw new Error(`failed to create volume subpath: ${status.StatusCode}`);
+    }
+  } finally {
+    await prep.remove({ force: true });
+  }
 }
 
 function labeledNetwork(
@@ -110,6 +132,13 @@ export const test = base.extend<{
         Name: DATA_VOLUME,
         Labels: { 'dev.quenary.tugtainer.test': TEST_LABEL },
       });
+      const api = await engineApiVersion(docker);
+      const volumeSubpath = apiAtLeast(api, 1, 45);
+      const tmpfsOptions = apiAtLeast(api, 1, 46);
+      const gatewayPriority = apiAtLeast(api, 1, 48) ? 10 : null;
+      if (volumeSubpath) {
+        await mkdirVolumeSubpath(docker);
+      }
       await docker.createNetwork(labeledNetwork(EXTRA_NET, EXTRA_SUBNET));
       await docker.createNetwork(labeledNetwork(PRIMARY_NET, PRIMARY_SUBNET));
 
@@ -148,11 +177,12 @@ export const test = base.extend<{
         Tty: true,
         ExposedPorts: { '8080/tcp': {} },
         Healthcheck: {
-          Test: ['CMD-SHELL', 'exit 0'],
+          Test: ['CMD', 'true'],
           Interval: 1_000_000_000,
           Timeout: 1_000_000_000,
           Retries: 3,
           StartPeriod: 1_000_000_000,
+          StartInterval: 1_000_000_000,
         },
         HostConfig: {
           NetworkMode: PRIMARY_NET,
@@ -190,13 +220,44 @@ export const test = base.extend<{
           GroupAdd: ['65534'],
           OomScoreAdj: 100,
           IpcMode: 'private',
-          // -v binds stay in HostConfig.Binds, --mount ones in HostConfig.Mounts
-          Binds: [`${DATA_VOLUME}:/data`, `${BIND_VOLUME}:/bind:ro`],
+          // -v binds stay in HostConfig.Binds, including the SELinux flag.
+          // --mount ones stay in HostConfig.Mounts with their options.
+          Binds: [`${DATA_VOLUME}:/data`, `${BIND_VOLUME}:/bind:ro,z`],
           Mounts: [
-            { Type: 'volume', Source: MOUNT_VOLUME, Target: '/mount' },
+            {
+              Type: 'bind',
+              Source: '/tmp',
+              Target: '/mnt/bind',
+              ReadOnly: true,
+              BindOptions: {
+                Propagation: 'rprivate',
+                NonRecursive: true,
+                CreateMountpoint: true,
+                ReadOnlyNonRecursive: true,
+              },
+            },
+            {
+              Type: 'volume',
+              Source: MOUNT_VOLUME,
+              Target: '/mount',
+              VolumeOptions: {
+                NoCopy: true,
+                Labels: { 'dev.quenary.tugtainer.test': TEST_LABEL },
+                ...(volumeSubpath ? { Subpath: 'kept' } : {}),
+              },
+            },
             { Type: 'volume', Target: '/anon' },
-            { Type: 'tmpfs', Target: '/mnt/tmpfs' },
-          ] as Docker.MountConfig,
+            {
+              Type: 'tmpfs',
+              Target: '/mnt/tmpfs',
+              TmpfsOptions: {
+                SizeBytes: 16 * 1024 * 1024,
+                Mode: 0o755,
+                // API 1.48 stores this as a list of string lists.
+                ...(tmpfsOptions ? { Options: [['noexec']] } : {}),
+              },
+            },
+          ] as unknown as Docker.MountConfig,
         },
         NetworkingConfig: {
           EndpointsConfig: {
@@ -204,7 +265,10 @@ export const test = base.extend<{
               IPAMConfig: { IPv4Address: PRIMARY_IP },
               Aliases: [PRIMARY_ALIAS],
               MacAddress: PRIMARY_MAC,
-            },
+              ...(gatewayPriority != null
+                ? { GwPriority: gatewayPriority }
+                : {}),
+            } as Docker.EndpointSettings,
           },
         },
       });
@@ -228,6 +292,7 @@ export const test = base.extend<{
         publishedPort: PUBLISHED_PORT,
         dataPath: '/data/marker',
         anonPath: '/anon/marker',
+        gatewayPriority,
       });
     } finally {
       await cleanup();

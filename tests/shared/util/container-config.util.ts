@@ -92,6 +92,7 @@ interface PreservedConfig {
     timeout: number;
     retries: number;
     startPeriod: number;
+    startInterval: number;
   } | null;
   binds: string[];
   mounts: {
@@ -132,6 +133,7 @@ interface PreservedConfig {
     {
       ipv4: string | null;
       mac: string | null;
+      gwPriority: number | null;
       aliases: string[];
       links: string[];
     }
@@ -182,6 +184,7 @@ function healthcheck(
     timeout: value.Timeout ?? 0,
     retries: value.Retries ?? 0,
     startPeriod: value.StartPeriod ?? 0,
+    startInterval: value.StartInterval ?? 0,
   };
 }
 
@@ -221,6 +224,87 @@ function mounts(
     .sort((left, right) => left.destination.localeCompare(right.destination));
 }
 
+export interface HostMountSpec {
+  type: string;
+  target: string;
+  source: string | null;
+  readOnly: boolean;
+  bindOptions: string | null;
+  volumeOptions: string | null;
+  tmpfsOptions: string | null;
+}
+
+interface EngineMount {
+  Type?: string;
+  Target?: string;
+  Source?: string;
+  ReadOnly?: boolean;
+  BindOptions?: Record<string, unknown> | null;
+  VolumeOptions?: Record<string, unknown> | null;
+  TmpfsOptions?: Record<string, unknown> | null;
+}
+
+/** Long-syntax mounts from HostConfig, including options recreate must copy. */
+export function pickHostMounts(
+  inspect: Docker.ContainerInspectInfo,
+): HostMountSpec[] {
+  const mounts = (inspect.HostConfig?.Mounts ?? []) as EngineMount[];
+  return mounts
+    .map((mount) => ({
+      type: mount.Type ?? '',
+      target: mount.Target ?? '',
+      source: mount.Source || null,
+      readOnly: mount.ReadOnly === true,
+      bindOptions: stableOptions(mount.BindOptions),
+      volumeOptions: stableOptions(mount.VolumeOptions),
+      tmpfsOptions: stableOptions(mount.TmpfsOptions),
+    }))
+    .sort((left, right) => left.target.localeCompare(right.target));
+}
+
+/**
+ * Anonymous volumes have no source until recreate fills the name from the
+ * runtime mount. Compare the options either way.
+ */
+export function preservedHostMounts(
+  after: Docker.ContainerInspectInfo,
+  before: Docker.ContainerInspectInfo,
+): HostMountSpec[] {
+  const prior = new Map(
+    pickHostMounts(before).map((mount) => [mount.target, mount]),
+  );
+  return pickHostMounts(after).map((mount) => {
+    const previous = prior.get(mount.target);
+    if (previous && !previous.source) {
+      return { ...mount, source: null };
+    }
+    return mount;
+  });
+}
+
+function stableOptions(
+  value: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!value || Object.keys(value).length === 0) {
+    return null;
+  }
+  return JSON.stringify(sortJson(value));
+}
+
+function sortJson(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => sortJson(item));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => [key, sortJson(item)]),
+    );
+  }
+  return value ?? null;
+}
+
 function networks(
   inspect: Docker.ContainerInspectInfo,
 ): PreservedConfig['networks'] {
@@ -242,6 +326,8 @@ function networks(
         name === primary && ipv4 && endpoint.MacAddress
           ? endpoint.MacAddress.toLowerCase()
           : null,
+      gwPriority:
+        (endpoint as { GwPriority?: number | null }).GwPriority ?? null,
       aliases: sorted(
         (endpoint.Aliases ?? []).filter(
           (alias: string) => !/^[0-9a-f]{12}$/.test(alias),

@@ -52,7 +52,10 @@ export async function publishCommitted(
     await builder.start();
     await builder.wait();
     const { repo, tag } = splitTag(target);
-    const marker = source.replace(/:/g, '-');
+    // A repeated commit of the same source and label reuses the image id,
+    // and that id then collects a RepoDigest for every registry it is pushed
+    // to. Check walks those digests, so the marker has to be unique.
+    const marker = `${source.replace(/:/g, '-')}-${Date.now().toString(36)}-${Math.random().toString(16).slice(2)}`;
     await builder.commit({
       repo,
       tag,
@@ -74,6 +77,37 @@ export async function replacePublishedTag(
 ): Promise<void> {
   await publishFrom(docker, source, target, auth);
   await removeImageTagIfExists(docker, target);
+}
+
+/** Publish a committed image whose healthcheck is the given Dockerfile instruction. */
+export async function publishImageHealthcheck(
+  docker: Docker,
+  source: string,
+  target: string,
+  healthcheck: string,
+  options?: { dropLocal?: boolean },
+): Promise<void> {
+  await pullImage(docker, source);
+  const builder = await docker.createContainer({
+    Image: source,
+    Cmd: ['/bin/true'],
+  });
+  try {
+    await builder.start();
+    await builder.wait();
+    const { repo, tag } = splitTag(target);
+    await builder.commit({
+      repo,
+      tag,
+      changes: ['CMD ["/bin/sleep", "infinity"]', healthcheck],
+    });
+  } finally {
+    await builder.remove({ force: true });
+  }
+  await pushTag(docker, target);
+  if (options?.dropLocal) {
+    await removeImageTagIfExists(docker, target);
+  }
 }
 
 export async function publishFailingHealthcheck(

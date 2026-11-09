@@ -1,11 +1,11 @@
 import { expect, type APIRequestContext } from '@playwright/test';
 import type Docker from 'dockerode';
 import { login, test } from '../fixtures/auth-request.fixture';
-import { getDocker } from '../shared/util/docker.util';
+import { getDocker, removeNetworkIfExists } from '../shared/util/docker.util';
 
 const APP_CONTAINER = 'tests-tugtainer';
+const EXTRA_NET = 'tugtainer-test-self-update-extra';
 const APP_IMAGE = 'localhost:5000/tugtainer:tests';
-const NEXT_VERSION = 'tests-next';
 const BROKEN_VERSION = 'tests-broken';
 const APP_ENTRYPOINT = '["/app/entrypoint.sh"]';
 const BROKEN_ENTRYPOINT = '["sh", "-c", "exit 1"]';
@@ -210,36 +210,65 @@ test.describe('self-update', () => {
     authorizedRequest: request,
   }) => {
     const docker = getDocker();
-    const before = await docker.getContainer(APP_CONTAINER).inspect();
-    expect(before.Config.Image).toBe(APP_IMAGE);
+    await removeNetworkIfExists(docker, EXTRA_NET);
+    await docker.createNetwork({
+      Name: EXTRA_NET,
+      CheckDuplicate: true,
+      Labels: { 'dev.quenary.tugtainer.test': 'self-update' },
+    });
+    try {
+      const before = await docker.getContainer(APP_CONTAINER).inspect();
+      expect(before.Config.Image).toBe(APP_IMAGE);
 
-    // Same image in the registry: refused before anything is touched.
-    // The tag may point to the broken image pulled by the rollback test.
-    await docker
-      .getImage(before.Image)
-      .tag({ repo: 'localhost:5000/tugtainer', tag: 'tests' });
-    await pushImage(docker, APP_IMAGE);
-    const noUpdate = await request.post('/api/self_update/start');
-    expect(noUpdate.status()).toBe(409);
-    expect((await noUpdate.json()).detail).toContain('No newer image');
+      // Same image in the registry: refused before anything is touched.
+      // The tag may point to the broken image pulled by the rollback test.
+      await docker
+        .getImage(before.Image)
+        .tag({ repo: 'localhost:5000/tugtainer', tag: 'tests' });
+      await pushImage(docker, APP_IMAGE);
+      const noUpdate = await request.post('/api/self_update/start');
+      expect(noUpdate.status()).toBe(409);
+      expect((await noUpdate.json()).detail).toContain('No newer image');
 
-    const nextImageId = await pushNextImage(docker, before.Image, NEXT_VERSION);
+      await docker.getNetwork(EXTRA_NET).connect({ Container: APP_CONTAINER });
+      // A repeated suite still serves the previous run's version, so the
+      // marker has to change or the wait returns before the swap.
+      const nextVersion = `tests-next-${Date.now().toString(36)}`;
+      const nextImageId = await pushNextImage(
+        docker,
+        before.Image,
+        nextVersion,
+      );
 
-    const start = await request.post('/api/self_update/start');
-    expect(start.status(), await start.text()).toBe(202);
+      const start = await request.post('/api/self_update/start');
+      expect(start.status(), await start.text()).toBe(202);
 
-    await waitForVersion(request, NEXT_VERSION);
-    const state = await waitForResult(request);
-    expect(state.status, state.error ?? '').toBe('succeeded');
+      await waitForVersion(request, nextVersion);
+      const state = await waitForResult(request);
+      expect(state.status, state.error ?? '').toBe('succeeded');
 
-    const after = await docker.getContainer(APP_CONTAINER).inspect();
-    expect(after.Id).not.toBe(before.Id);
-    expect(after.Image).toBe(nextImageId);
-    expect(after.Config.Image).toBe(APP_IMAGE);
-    expect(after.Mounts.map((m) => m.Destination)).toContain('/tugtainer');
-    expect(await containerExists(docker, `${APP_CONTAINER}-old`)).toBe(false);
-    await expect
-      .poll(() => containerExists(docker, `${APP_CONTAINER}-self-update`))
-      .toBe(false);
+      const after = await docker.getContainer(APP_CONTAINER).inspect();
+      expect(after.Id).not.toBe(before.Id);
+      expect(after.Image).toBe(nextImageId);
+      expect(after.Config.Image).toBe(APP_IMAGE);
+      expect(after.Mounts.map((m) => m.Destination)).toContain('/tugtainer');
+      expect(Object.keys(after.NetworkSettings.Networks ?? {})).toEqual(
+        expect.arrayContaining(['tugtainer-tests', EXTRA_NET]),
+      );
+      expect(await containerExists(docker, `${APP_CONTAINER}-old`)).toBe(false);
+      await expect
+        .poll(() => containerExists(docker, `${APP_CONTAINER}-self-update`))
+        .toBe(false);
+    } finally {
+      try {
+        await docker.getNetwork(EXTRA_NET).disconnect({
+          Container: APP_CONTAINER,
+          Force: true,
+        });
+      } catch {
+        // The replacement container may already have left the network.
+      }
+      await removeNetworkIfExists(docker, EXTRA_NET);
+    }
   });
 });
