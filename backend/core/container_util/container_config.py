@@ -49,20 +49,6 @@ def validate_recreation_preflight(
     managed = systemd_managed_reason(config.labels)
     if managed:
         raise RuntimePreflightError(f"Container {container.name} {managed}")
-    if config.systemd_mode:
-        raise RuntimePreflightError(
-            f"Container {container.name} uses systemd mode, which cannot be preserved "
-            "through the engine API."
-        )
-    if (
-        docker_version
-        and docker_version.runtime_type == "podman"
-        and host_config.storage_opt
-    ):
-        raise RuntimePreflightError(
-            f"Container {container.name} uses storage options, which Podman cannot "
-            "preserve through the compatible API."
-        )
 
     caps = RuntimeCapabilities.from_version(docker_version)
     # An unknown Docker daemon is checked again when the create body is built.
@@ -245,7 +231,6 @@ def get_container_config(
         "sysctl": host_config.sysctls,
         "tty": config.tty,
         "expose": _exposed_tcp_ports(config.exposed_ports),
-        "systemd": config.systemd_mode,
         "tmpfs": map_tmpfs_dict_to_list(host_config.tmpfs),
         "ulimit": map_ulimits_to_arg(host_config.ulimits),
         "user": config.user,

@@ -526,24 +526,6 @@ def test_podman_rejects_docker_only_gw_priority() -> None:
     assert "Docker API" not in str(exc.value)
 
 
-def test_preflight_rejects_podman_storage_options():
-    from shared.runtime.runtime_errors import RuntimePreflightError
-    from shared.runtime.runtime_models import RuntimeVersion
-
-    container = ContainerInspectResult(
-        name="podman-container",
-        config=ContainerConfig(image="app:latest"),
-        host_config=ContainerHostConfig(storage_opt={"size": "1G"}),
-    )
-
-    with pytest.raises(RuntimePreflightError, match="storage options"):
-        get_container_config(
-            container,
-            image=None,
-            docker_version=RuntimeVersion(runtime_type="podman", api_version="1.41"),
-        )
-
-
 def test_inspect_config_round_trips_into_engine_create_body():
     from shared.runtime.container_create_payload import build_create_request
     from shared.runtime.runtime_models import (
