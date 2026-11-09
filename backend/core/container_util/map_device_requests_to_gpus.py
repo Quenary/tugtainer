@@ -12,8 +12,7 @@ def map_device_requests_to_gpus(
     if not device_requests:
         return None
 
-    # Docker CLI --gpus flag only supports nvidia driver stack for now.
-    # CDI devices, even if they represent a GPU, cannot be used with --gpus.
+    # Only an nvidia device request is preserved. CDI devices are left out.
     gpu_req: ContainerDeviceRequest | None = next(
         (dr for dr in device_requests if dr.driver and dr.driver.lower() == "nvidia"),
         None,

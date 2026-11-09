@@ -185,8 +185,8 @@ def test_workdir_logic(c_workdir, i_workdir, expected_workdir):
     assert res.workdir == expected_workdir
 
 
-# Podman inspect returns "private" for default UTS/userns modes;
-# Docker CLI only accepts "" or "host" (#220).
+# Podman inspect returns "private" for the default UTS and user namespace.
+# Omit it so the engine create body does not send an invalid mode (#220).
 @pytest.mark.parametrize(
     "uts_mode, userns_mode, expected_uts, expected_userns",
     [
