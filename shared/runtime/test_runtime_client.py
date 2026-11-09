@@ -1,6 +1,7 @@
 import base64
 import json
 import struct
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
@@ -11,6 +12,7 @@ from shared.runtime.runtime_client import (
     CLIENT_MAX_DOCKER_API,
     RuntimeClient,
     encode_registry_auth,
+    format_log_time,
     parse_version_tuple,
     split_image_ref,
 )
@@ -662,3 +664,40 @@ async def test_container_logs_forwards_details(mocker: MockerFixture) -> None:
     assert params["details"] is True
     assert params["timestamps"] is True
     assert params["tail"] == 20
+
+
+def test_format_log_time() -> None:
+    moment = datetime(2026, 11, 9, 12, 0, tzinfo=UTC)
+    assert format_log_time(moment) == str(int(moment.timestamp()))
+    assert format_log_time(moment.replace(tzinfo=None)) == str(int(moment.timestamp()))
+    assert format_log_time("10m") == "10m"
+    assert format_log_time(1_700_000_000) == "1700000000"
+    hour_ago = int(format_log_time(timedelta(hours=1)))
+    expected = int((datetime.now(UTC) - timedelta(hours=1)).timestamp())
+    assert abs(hour_ago - expected) <= 1
+
+
+@pytest.mark.asyncio
+async def test_container_logs_sends_unix_timestamps(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    mocker.patch.object(
+        client,
+        "container_inspect",
+        new=AsyncMock(
+            return_value=ContainerInspectResult(config=ContainerConfig(tty=False))
+        ),
+    )
+    response = MagicMock()
+    response.content = _stream(_frame(1, b"line\n"))
+    request = mocker.patch.object(
+        client, "_request", new=AsyncMock(return_value=response)
+    )
+    since = datetime(2026, 11, 9, 12, 0, tzinfo=UTC)
+    until = since + timedelta(hours=1)
+
+    await client.container_logs("web", since=since, until=until)
+
+    params = request.await_args.kwargs["params"]
+    assert params["since"] == str(int(since.timestamp()))
+    assert params["until"] == str(int(until.timestamp()))

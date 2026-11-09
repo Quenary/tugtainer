@@ -5,6 +5,7 @@ import logging
 import os
 import ssl as ssl_lib
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
 from typing import Any, Final, TypeVar
 
 import aiohttp
@@ -83,6 +84,22 @@ def _create_payload(
     if isinstance(payload, BaseModel):
         return payload.model_dump(exclude_unset=True, by_alias=True), name, None
     return dict(payload), name, None
+
+
+def format_log_time(value: Any) -> str:
+    """Value for the engine logs ``since`` and ``until`` query.
+
+    The daemon accepts unix seconds or RFC3339. ``str(datetime)`` is neither,
+    and ``str(timedelta)`` is not a Go duration.
+    """
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return str(int(value.timestamp()))
+    if isinstance(value, timedelta):
+        moment = datetime.now(UTC) - value
+        return str(int(moment.timestamp()))
+    return str(value)
 
 
 def encode_registry_auth(auth_dict: dict[str, Any] | None) -> str | None:
@@ -485,9 +502,9 @@ class RuntimeClient:
         if tail is not None:
             params["tail"] = tail
         if since is not None:
-            params["since"] = since
+            params["since"] = format_log_time(since)
         if until is not None:
-            params["until"] = until
+            params["until"] = format_log_time(until)
 
         resp = await self._request(
             "GET", f"/containers/{name_or_id}/logs", params=params
