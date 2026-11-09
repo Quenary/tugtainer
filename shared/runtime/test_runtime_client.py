@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -6,8 +8,10 @@ from shared.runtime.runtime_client import (
     RuntimeClient,
     encode_registry_auth,
     parse_version_tuple,
+    split_image_ref,
 )
 from shared.runtime.runtime_errors import IncompatibleRuntimeError
+from shared.runtime.runtime_models import ImageInspectResult
 
 
 def test_parse_version_tuple():
@@ -121,3 +125,111 @@ async def test_get_version_podman_detection(mocker: MockerFixture):
     assert version_info.libpod_api_version == "5.2.0"
     # Podman does NOT raise for ApiVersion < 1.44
     assert client._negotiated_api_prefix == "/v1.41"
+
+
+DIGEST = "sha256:" + "a" * 64
+
+
+@pytest.mark.parametrize(
+    ("spec", "repo", "tag", "digest"),
+    [
+        ("nginx", "nginx", None, None),
+        ("nginx:1", "nginx", "1", None),
+        ("localhost:5000/app", "localhost:5000/app", None, None),
+        ("localhost:5000/app:tests", "localhost:5000/app", "tests", None),
+        (f"repo@{DIGEST}", "repo", None, DIGEST),
+        (f"repo:tag@{DIGEST}", "repo", "tag", DIGEST),
+    ],
+)
+def test_split_image_ref(
+    spec: str,
+    repo: str,
+    tag: str | None,
+    digest: str | None,
+) -> None:
+    assert split_image_ref(spec) == (repo, tag, digest)
+
+
+async def _empty_pull_stream(_reader: object):
+    if False:
+        yield {}
+
+
+@pytest.mark.parametrize(
+    ("spec", "params"),
+    [
+        ("nginx", {"fromImage": "nginx", "tag": "latest"}),
+        ("nginx:1", {"fromImage": "nginx", "tag": "1"}),
+        (
+            "localhost:5000/app",
+            {"fromImage": "localhost:5000/app", "tag": "latest"},
+        ),
+        (
+            "localhost:5000/app:tests",
+            {"fromImage": "localhost:5000/app", "tag": "tests"},
+        ),
+        (f"repo@{DIGEST}", {"fromImage": f"repo@{DIGEST}"}),
+        (f"repo:tag@{DIGEST}", {"fromImage": f"repo@{DIGEST}"}),
+    ],
+)
+@pytest.mark.asyncio
+async def test_image_pull_reference_params(
+    mocker: MockerFixture,
+    spec: str,
+    params: dict[str, str],
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    response = mocker.MagicMock()
+    request = mocker.patch.object(
+        client, "_request", new=AsyncMock(return_value=response)
+    )
+    mocker.patch(
+        "shared.runtime.runtime_client.parse_json_lines_stream",
+        side_effect=_empty_pull_stream,
+    )
+    mocker.patch.object(
+        client,
+        "image_inspect",
+        new=AsyncMock(return_value=ImageInspectResult(id="sha256:pulled")),
+    )
+
+    await client.image_pull(spec)
+
+    assert request.await_args is not None
+    assert request.await_args.args == ("POST", "/images/create")
+    assert request.await_args.kwargs["params"] == params
+
+
+@pytest.mark.parametrize(
+    ("repo", "expected_repo", "expected_tag"),
+    [
+        ("nginx", "nginx", "latest"),
+        ("nginx:1", "nginx", "1"),
+        ("localhost:5000/app", "localhost:5000/app", "latest"),
+        ("localhost:5000/app:tests", "localhost:5000/app", "tests"),
+        (f"repo@{DIGEST}", "repo", "latest"),
+        (f"repo:tag@{DIGEST}", "repo", "tag"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_image_tag_reference_params(
+    mocker: MockerFixture,
+    repo: str,
+    expected_repo: str,
+    expected_tag: str,
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    response = mocker.MagicMock()
+    request = mocker.patch.object(
+        client, "_request", new=AsyncMock(return_value=response)
+    )
+
+    await client.image_tag("sha256:source", repo)
+
+    assert request.await_args is not None
+    assert request.await_args.kwargs["params"] == {
+        "repo": expected_repo,
+        "tag": expected_tag,
+    }

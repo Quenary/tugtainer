@@ -44,6 +44,23 @@ def parse_version_tuple(v_str: str | None) -> tuple[int, int]:
         return (0, 0)
 
 
+def split_image_ref(spec: str) -> tuple[str, str | None, str | None]:
+    """Split an image reference into repository, tag, and digest.
+
+    A digest is the part after ``@``. A tag is the part after the last ``:``
+    that appears after the last ``/``, so registry ports stay in the repository.
+    """
+    name, sep, digest_part = spec.partition("@")
+    digest = digest_part if sep and digest_part else None
+    last_slash = name.rfind("/")
+    colon = name.rfind(":")
+    tag: str | None = None
+    if colon > last_slash:
+        tag = name[colon + 1 :] or None
+        name = name[:colon]
+    return name, tag, digest
+
+
 def encode_registry_auth(auth_dict: dict[str, Any] | None) -> str | None:
     """Base64url encode auth configuration JSON without padding."""
     if not auth_dict:
@@ -562,9 +579,11 @@ class RuntimeClient:
         if not self._negotiated_api_prefix:
             await self.get_version()
 
-        from_image, _, tag = spec.partition(":")
-        tag = tag or "latest"
-        params: dict[str, Any] = {"fromImage": from_image, "tag": tag}
+        repo, tag, digest = split_image_ref(spec)
+        if digest:
+            params: dict[str, Any] = {"fromImage": f"{repo}@{digest}"}
+        else:
+            params = {"fromImage": repo, "tag": tag or "latest"}
         if platform:
             params["platform"] = platform
 
@@ -590,10 +609,8 @@ class RuntimeClient:
         if not self._negotiated_api_prefix:
             await self.get_version()
         if tag is None:
-            if ":" in repo:
-                repo_part, tag_part = repo.rsplit(":", 1)
-            else:
-                repo_part, tag_part = repo, "latest"
+            repo_part, tag_part, _digest = split_image_ref(repo)
+            tag_part = tag_part or "latest"
         else:
             repo_part, tag_part = repo, tag
         resp = await self._request(
