@@ -213,6 +213,7 @@ class TestGetHelperConfig:
     def test_refuses_tls_when_cert_directory_is_not_mounted(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        monkeypatch.setenv("DOCKER_HOST", "tcp://daemon:2376")
         monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
         monkeypatch.setenv("DOCKER_CERT_PATH", "/certs")
         container = _container()
@@ -221,6 +222,30 @@ class TestGetHelperConfig:
             get_helper_config(
                 container, get_data_mount(container), NEW_IMAGE, "h", "/p"
             )
+
+    @pytest.mark.parametrize(
+        "docker_host",
+        ["unix:///var/run/docker.sock", None],
+    )
+    def test_socket_host_ignores_tls_verify(
+        self, monkeypatch: pytest.MonkeyPatch, docker_host: str | None
+    ) -> None:
+        if docker_host is None:
+            monkeypatch.delenv("DOCKER_HOST", raising=False)
+        else:
+            monkeypatch.setenv("DOCKER_HOST", docker_host)
+        monkeypatch.setenv("DOCKER_TLS_VERIFY", "1")
+        monkeypatch.setenv("DOCKER_CERT_PATH", "/certs")
+        container = _container()
+
+        config = get_helper_config(
+            container, get_data_mount(container), NEW_IMAGE, "h", "/p"
+        )
+
+        envs = config.envs or {}
+        assert "DOCKER_TLS_VERIFY" not in envs
+        assert "DOCKER_CERT_PATH" not in envs
+        assert all("/certs" not in str(volume) for volume in config.volumes or [])
 
 
 def test_get_data_mount_requires_volume() -> None:

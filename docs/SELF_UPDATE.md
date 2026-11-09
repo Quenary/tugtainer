@@ -21,7 +21,7 @@ flowchart TD
   Roll -- cannot finish --> Failed[Report failed and leave the old container stopped]
 ```
 
-The helper is named `<name>-self-update`. It receives only the app's Docker access (`DOCKER_HOST`, `DOCKER_TLS_VERIFY`, `DOCKER_CERT_PATH`, the certificate directory mount, and networks, or the socket mount) and the data volume. The label `dev.quenary.tugtainer.protected` keeps scheduled updates away from it, and it is removed when it exits. The old container is renamed `<name>-old` and is removed only after the new one is healthy. Every network is kept on Docker and on Podman: the primary network is set when the container is created, and the others are connected before it starts. The helper is attached the same way, so a socket-proxy on another network stays reachable. A pulled image that matches the running one stops with "No newer image". A pinned tag such as `:1.44.3` follows that tag; the dialog's GitHub comparison can disagree with it.
+The helper is named `<name>-self-update`. It receives only the app's Docker access (`DOCKER_HOST`, networks, and either the socket mount or, for `tcp://` and `https://` with `DOCKER_TLS_VERIFY`, the TLS variables and the certificate directory mount) and the data volume. The label `dev.quenary.tugtainer.protected` keeps scheduled updates away from it, and it is removed when it exits. The old container is renamed `<name>-old` and is removed only after the new one is healthy. Every network is kept on Docker and on Podman: the primary network is set when the container is created, and the others are connected before it starts. The helper is attached the same way, so a socket-proxy on another network stays reachable. A pulled image that matches the running one stops with "No newer image". A pinned tag such as `:1.44.3` follows that tag; the dialog's GitHub comparison can disagree with it.
 
 If the new container cannot be removed, or the database cannot be restored, rollback stops and reports `failed`. The old version does not start beside the new one or on a migrated database. After startup the app (new or restored) waits for the helper, reports the result once, and drops the helper's journal. A leftover `<name>-old` is removed only when that journal records it as the old container of a successful update.
 
@@ -38,7 +38,7 @@ Upgrading the app container is manual. See [Upgrading to 2.x](../README.md#upgra
 
 - `/tugtainer` is a volume or a bind mount. Otherwise the update is refused.
 - With the default SQLite database, the file lives inside `/tugtainer`. Other databases are not copied, so a failed update cannot undo their migrations.
-- The helper uses the app's Docker access. `DOCKER_HOST`, `DOCKER_TLS_VERIFY`, and `DOCKER_CERT_PATH` are passed through, and the certificate directory is mounted read-only when TLS is enabled. Self-update is refused when that directory is not already mounted on the app.
+- The helper uses the app's Docker access. `DOCKER_HOST` is passed through. `DOCKER_TLS_VERIFY` and `DOCKER_CERT_PATH` are passed through, and the certificate directory is mounted read-only, only when the host is `tcp://` or `https://` and `DOCKER_TLS_VERIFY` is set. Self-update is refused when that directory is not already mounted on the app.
 - The provided socket-proxy allows renames when `CONTAINERS=1` and `POST=1`.
 - Without `JWT_SECRET_KEY` the new container generates a new secret and existing sessions end.
 

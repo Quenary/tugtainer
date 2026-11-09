@@ -35,7 +35,7 @@ from backend.util.get_self_container_id import get_self_container_id
 from backend.util.get_version_from_labels import get_version_from_labels
 from shared.runtime.capabilities import RuntimeCapabilities
 from shared.runtime.container_create_payload import build_create_request
-from shared.runtime.runtime_client import docker_cert_dir, docker_tls_verify_enabled
+from shared.runtime.runtime_client import docker_cert_dir, docker_tls_applies
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import (
     ContainerInspectResult,
@@ -221,7 +221,7 @@ def get_helper_config(
     envs: dict[str, str] = {}
     if docker_host:
         envs["DOCKER_HOST"] = docker_host
-    if docker_tls_verify_enabled():
+    if docker_tls_applies(docker_host):
         cert_dir = str(docker_cert_dir())
         source = _mount_source_for_path(container, cert_dir)
         if not source:

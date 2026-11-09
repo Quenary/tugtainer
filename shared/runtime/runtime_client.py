@@ -117,6 +117,21 @@ def docker_tls_verify_enabled(
     return env.get("DOCKER_TLS_VERIFY", "") != ""
 
 
+def docker_tls_applies(
+    host: str | None,
+    environ: Mapping[str, str] | None = None,
+) -> bool:
+    """True when this host uses the Docker TLS client files.
+
+    A non-empty DOCKER_TLS_VERIFY applies to tcp:// and https:// only.
+    A Unix socket ignores it. http:// with DOCKER_TLS_VERIFY is rejected
+    separately because that scheme is plain HTTP.
+    """
+    if not host or not docker_tls_verify_enabled(environ):
+        return False
+    return host.startswith("tcp://") or host.startswith("https://")
+
+
 def docker_config_dir(environ: Mapping[str, str] | None = None) -> Path:
     """Directory of config.json. DOCKER_CONFIG, otherwise ~/.docker."""
     env = os.environ if environ is None else environ
@@ -236,7 +251,7 @@ class RuntimeClient:
                 ):
                     tls_verify = docker_tls_verify_enabled()
                     self._base_url = _tcp_base_url(host, tls_verify)
-                    if tls_verify:
+                    if docker_tls_applies(host):
                         connector_ssl: ssl_lib.SSLContext | bool = (
                             load_docker_tls_context()
                         )
