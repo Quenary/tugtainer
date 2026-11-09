@@ -131,6 +131,28 @@ async def test_tcp_without_tls_stays_http(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
+async def test_https_without_tls_verify_uses_default_ssl(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
+    client = RuntimeClient("https://daemon:2376")
+    session = await client._get_session()
+    try:
+        assert client._base_url == "https://daemon:2376"
+        assert cast(Any, session.connector)._ssl is True
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_https_rejects_ssl_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DOCKER_TLS_VERIFY", raising=False)
+    client = RuntimeClient("https://daemon:2376", ssl_context=None)  # type: ignore[arg-type]
+    with pytest.raises(AssertionError):
+        await client._get_session()
+
+
+@pytest.mark.asyncio
 async def test_tcp_with_tls_verify_uses_https(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

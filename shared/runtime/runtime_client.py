@@ -184,6 +184,12 @@ def load_docker_tls_context(
     return context
 
 
+def _require_connector_ssl(value: object) -> ssl_lib.SSLContext | bool:
+    """Value for aiohttp.TCPConnector. ssl=None is deprecated in aiohttp 3.14."""
+    assert isinstance(value, (ssl_lib.SSLContext, bool))
+    return value
+
+
 def _tcp_base_url(host: str, tls_verify: bool) -> str:
     if host.startswith("http://") and tls_verify:
         raise RuntimeClientError(
@@ -220,7 +226,7 @@ class RuntimeClient:
     ):
         self._raw_host = docker_host or os.environ.get("DOCKER_HOST")
         self._timeout = timeout
-        self._ssl_context = ssl_context
+        self._ssl_context: ssl_lib.SSLContext | bool = ssl_context
         self._session: aiohttp.ClientSession | None = None
         self._session_lock: Final = asyncio.Lock()
         self._base_url: str = "http://localhost"
@@ -251,15 +257,16 @@ class RuntimeClient:
                 ):
                     tls_verify = docker_tls_verify_enabled()
                     self._base_url = _tcp_base_url(host, tls_verify)
+                    connector_ssl: ssl_lib.SSLContext | bool
                     if docker_tls_applies(host):
-                        connector_ssl: ssl_lib.SSLContext | bool = (
-                            load_docker_tls_context()
-                        )
+                        connector_ssl = load_docker_tls_context()
                     elif self._base_url.startswith("https://"):
                         connector_ssl = self._ssl_context
                     else:
                         connector_ssl = False
-                    connector = aiohttp.TCPConnector(ssl=connector_ssl)
+                    connector = aiohttp.TCPConnector(
+                        ssl=_require_connector_ssl(connector_ssl)
+                    )
                 elif "://" in host:
                     scheme = host.split("://", 1)[0]
                     raise RuntimeClientError(
