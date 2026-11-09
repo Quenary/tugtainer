@@ -554,7 +554,9 @@ class NetworkEndpointSettings(RuntimeBaseModel):
     )
     gateway_priority: int | None = Field(
         default=None,
-        validation_alias=AliasChoices("GatewayPriority", "gateway_priority"),
+        validation_alias=AliasChoices(
+            "GwPriority", "GatewayPriority", "gateway_priority"
+        ),
     )
 
 

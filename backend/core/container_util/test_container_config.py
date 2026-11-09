@@ -366,6 +366,136 @@ def test_preflight_allows_image_mount_on_api_1_48():
     assert res.name == "image-mount-container"
 
 
+def test_preflight_rejects_cidfile():
+    from shared.runtime.runtime_errors import RuntimePreflightError
+
+    container = ContainerInspectResult(
+        name="cid-container",
+        config=ContainerConfig(image="app:latest"),
+        host_config=ContainerHostConfig(container_id_file="/tmp/cid"),
+    )
+
+    with pytest.raises(RuntimePreflightError, match="cidfile"):
+        get_container_config(container, image=None, docker_version=None)
+
+
+def test_preflight_rejects_podman_storage_options():
+    from shared.runtime.runtime_errors import RuntimePreflightError
+    from shared.runtime.runtime_models import RuntimeVersion
+
+    container = ContainerInspectResult(
+        name="podman-container",
+        config=ContainerConfig(image="app:latest"),
+        host_config=ContainerHostConfig(storage_opt={"size": "1G"}),
+    )
+
+    with pytest.raises(RuntimePreflightError, match="storage options"):
+        get_container_config(
+            container,
+            image=None,
+            docker_version=RuntimeVersion(runtime_type="podman", api_version="1.41"),
+        )
+
+
+def test_inspect_config_round_trips_into_engine_create_body():
+    from shared.runtime.container_create_payload import build_create_request
+    from shared.runtime.runtime_models import (
+        ContainerRestartPolicy,
+        NetworkEndpointSettings,
+        NetworkSettings,
+        PortBinding,
+    )
+
+    container = ContainerInspectResult(
+        name="app",
+        config=ContainerConfig(
+            image="app:1",
+            env=["FOO=bar"],
+            labels={"keep": "yes"},
+            hostname="app",
+            user="app",
+            tty=True,
+            exposed_ports={"80/tcp": {}},
+            stop_signal="SIGTERM",
+            stop_timeout=10,
+        ),
+        host_config=ContainerHostConfig(
+            nano_cpus=500_000_000,
+            memory=64 * 1024 * 1024,
+            memory_reservation=32 * 1024 * 1024,
+            restart_policy=ContainerRestartPolicy(
+                name="on-failure", maximum_retry_count=3
+            ),
+            cap_add=["NET_ADMIN"],
+            cap_drop=["MKNOD"],
+            security_opt=["no-new-privileges"],
+            readonly_rootfs=True,
+            shm_size=67108864,
+            pids_limit=100,
+            sysctls={"net.ipv4.ip_unprivileged_port_start": "0"},
+            extra_hosts=["db:10.0.0.5"],
+            port_bindings={
+                "80/tcp": [PortBinding(host_ip="127.0.0.1", host_port="8080")]
+            },
+            binds=["/srv/data:/data:ro"],
+            network_mode="appnet",
+        ),
+        network_settings=NetworkSettings(
+            networks={
+                "appnet": NetworkEndpointSettings(
+                    aliases=["app"],
+                    ipam_config={"IPv4Address": "172.20.0.8"},
+                    mac_address="02:42:ac:14:00:08",
+                    gateway_priority=10,
+                )
+            }
+        ),
+        mounts=[
+            Mount(
+                type="bind",
+                source="/srv/data",
+                destination="/data",
+                mode="ro",
+                rw=False,
+            )
+        ],
+    )
+
+    schema, _ = get_container_config(container, image=None, docker_version=None)
+    payload, name = build_create_request(schema)
+
+    assert name == "app"
+    assert payload["Image"] == "app:1"
+    assert payload["Env"] == ["FOO=bar"]
+    assert payload["Labels"] == {"keep": "yes"}
+    assert payload["Hostname"] == "app"
+    assert payload["User"] == "app"
+    assert payload["Tty"] is True
+    assert payload["ExposedPorts"] == {"80/tcp": {}}
+    assert payload["StopSignal"] == "SIGTERM"
+    host = payload["HostConfig"]
+    assert host["NanoCpus"] == 500_000_000
+    assert host["Memory"] == 64 * 1024 * 1024
+    assert host["MemoryReservation"] == 32 * 1024 * 1024
+    assert host["RestartPolicy"] == {"Name": "on-failure", "MaximumRetryCount": 3}
+    assert host["CapAdd"] == ["NET_ADMIN"]
+    assert host["CapDrop"] == ["MKNOD"]
+    assert host["SecurityOpt"] == ["no-new-privileges"]
+    assert host["ReadonlyRootfs"] is True
+    assert host["Binds"] == ["/srv/data:/data:ro"]
+    assert host["PortBindings"] == {
+        "80/tcp": [{"HostIp": "127.0.0.1", "HostPort": "8080"}]
+    }
+    assert host["NetworkMode"] == "appnet"
+    assert host["Sysctls"] == {"net.ipv4.ip_unprivileged_port_start": "0"}
+    assert host["ExtraHosts"] == ["db:10.0.0.5"]
+    endpoint = payload["NetworkingConfig"]["EndpointsConfig"]["appnet"]
+    assert endpoint["Aliases"] == ["app"]
+    assert endpoint["IPAMConfig"]["IPv4Address"] == "172.20.0.8"
+    assert endpoint["MacAddress"] == "02:42:ac:14:00:08"
+    assert endpoint["GwPriority"] == 10
+
+
 def test_anonymous_volume_identity_preserved():
     container = ContainerInspectResult(
         name="db-container",

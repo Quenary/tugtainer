@@ -60,6 +60,7 @@ Container recreation sends typed JSON specifications directly to the runtime API
 - Anonymous volume identities are retained across recreations.
 - Secondary networks are attached before container startup.
 - **Preflight validation**: recreate configurations are checked against daemon API capabilities (such as image mounts and `GwPriority` requiring API 1.48) _before_ stopping or removing the running container. If a capability is unavailable, the update aborts cleanly with no downtime.
+- Recreation uses the Docker-compatible `POST /containers/create` endpoint on Docker and on Podman. A container that records a cidfile or systemd mode fails preflight and stays running. Podman storage options fail the same way. Env files, label files, a host-env copy, pods, and a pull policy are not engine API fields; a create request that sets them fails before the container is replaced.
 
 ## Update delay
 

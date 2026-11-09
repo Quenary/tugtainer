@@ -19,6 +19,7 @@ from shared.runtime.runtime_models import (
     ContainerState,
     ImageInspectResult,
 )
+from shared.schemas.container_schemas import CreateContainerRequestBodySchema
 
 
 def test_parse_version_tuple():
@@ -354,3 +355,39 @@ async def test_service_list_requests_task_status(mocker: MockerFixture) -> None:
     assert request.await_args.kwargs["params"] == {"status": True}
     assert result[0]["ServiceStatus"]["RunningTasks"] == 2
     assert result[0]["ServiceStatus"]["DesiredTasks"] == 3
+
+
+@pytest.mark.asyncio
+async def test_container_create_sends_engine_body(mocker: MockerFixture) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.48"
+    response = mocker.MagicMock()
+    response.json = AsyncMock(return_value={"Id": "created"})
+    request = mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=response),
+    )
+    mocker.patch.object(
+        client,
+        "container_inspect",
+        new=AsyncMock(return_value=ContainerInspectResult(id="created")),
+    )
+
+    await client.container_create(
+        CreateContainerRequestBodySchema(
+            image="nginx",
+            name="web",
+            command=["nginx"],
+            platform="linux/amd64",
+        )
+    )
+
+    assert request.await_args is not None
+    assert request.await_args.kwargs["json_data"]["Image"] == "nginx"
+    assert request.await_args.kwargs["json_data"]["Cmd"] == ["nginx"]
+    assert "image" not in request.await_args.kwargs["json_data"]
+    assert request.await_args.kwargs["params"] == {
+        "name": "web",
+        "platform": "linux/amd64",
+    }

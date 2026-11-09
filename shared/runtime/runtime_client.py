@@ -10,6 +10,9 @@ from typing import Any, Final, TypeVar
 import aiohttp
 from pydantic import BaseModel
 
+from shared.schemas.container_schemas import CreateContainerRequestBodySchema
+
+from .container_create_payload import build_create_request
 from .runtime_errors import (
     IncompatibleRuntimeError,
     RuntimeClientError,
@@ -63,6 +66,23 @@ def split_image_ref(spec: str) -> tuple[str, str | None, str | None]:
         tag = name[colon + 1 :] or None
         name = name[:colon]
     return name, tag, digest
+
+
+def _create_payload(
+    payload: dict[str, Any] | BaseModel,
+    name: str | None,
+) -> tuple[dict[str, Any], str | None, str | None]:
+    body: CreateContainerRequestBodySchema | None = None
+    if isinstance(payload, CreateContainerRequestBodySchema):
+        body = payload
+    elif isinstance(payload, dict) and "image" in payload and "Image" not in payload:
+        body = CreateContainerRequestBodySchema.model_validate(payload)
+    if body is not None:
+        data, schema_name = build_create_request(body)
+        return data, name or schema_name, body.platform
+    if isinstance(payload, BaseModel):
+        return payload.model_dump(exclude_unset=True, by_alias=True), name, None
+    return dict(payload), name, None
 
 
 def encode_registry_auth(auth_dict: dict[str, Any] | None) -> str | None:
@@ -335,14 +355,12 @@ class RuntimeClient:
     ) -> ContainerInspectResult:
         if not self._negotiated_api_prefix:
             await self.get_version()
-        data = (
-            payload.model_dump(exclude_unset=True, by_alias=True)
-            if isinstance(payload, BaseModel)
-            else dict(payload)
-        )
-        if not name and isinstance(data, dict):
-            name = data.pop("name", None) or data.pop("Name", None)
-        params = {"name": name} if name else None
+        data, name, platform = _create_payload(payload, name)
+        params: dict[str, Any] = {}
+        if name:
+            params["name"] = name
+        if platform:
+            params["platform"] = platform
         resp = await self._request(
             "POST", "/containers/create", params=params, json_data=data, timeout=600.0
         )

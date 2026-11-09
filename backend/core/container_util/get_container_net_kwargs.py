@@ -42,6 +42,7 @@ def get_container_net_kwargs(
     IP6: str | None = None
     LINK: list[str] = HOST_CONFIG.links or []
     MAC_ADDRESS: str | None = None
+    GATEWAY_PRIORITY: int | None = None
     NETWORKS: list[str] = []
     NETWORK_ALIASES: list[str] = []
     PUBLISH: list[PortMapping] = map_port_bindings_to_list(HOST_CONFIG.port_bindings)
@@ -72,6 +73,7 @@ def get_container_net_kwargs(
             # preserve mac address if static ips used
             # https://github.com/Quenary/tugtainer/issues/126
             MAC_ADDRESS = MAIN_NETWORK.mac_address or CONFIG.mac_address
+        GATEWAY_PRIORITY = MAIN_NETWORK.gateway_priority
         for net in NETWORKS_KEYS:
             if net == MAIN_KEY:
                 continue
@@ -130,6 +132,7 @@ def get_container_net_kwargs(
         "ip6": IP6,
         "link": LINK,
         "mac_address": MAC_ADDRESS,
+        "gateway_priority": GATEWAY_PRIORITY,
         "networks": NETWORKS,
         "network_aliases": NETWORK_ALIASES,
         "publish": PUBLISH,

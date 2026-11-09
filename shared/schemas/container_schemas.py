@@ -35,8 +35,8 @@ class CreateContainerRequestBodySchema(BaseModel):
     cpu_rt_runtime: int | None = None
     cpu_shares: int | None = None
     cpus: float | None = None
-    cpuset_cpus: list[int] | None = None
-    cpuset_mems: list[int] | None = None
+    cpuset_cpus: list[int] | str | None = None
+    cpuset_mems: list[int] | str | None = None
     detach: bool | None = None
     devices: list[str] | None = None
     device_cgroup_rules: list[str] | None = None
@@ -68,6 +68,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     interactive: bool | None = None
     ip: str | None = None
     ip6: str | None = None
+    gateway_priority: int | None = None
     ipc: str | None = None
     isolation: str | None = None
     kernel_memory: int | str | None = None
