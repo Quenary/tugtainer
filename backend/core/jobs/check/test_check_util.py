@@ -1022,6 +1022,38 @@ async def test_assess_tagged_local_build_skips_registry(
 
 
 @pytest.mark.asyncio
+async def test_assess_pinned_digest_queries_registry_for_tagged_image(
+    mocker: MockerFixture,
+):
+    mocker.patch(f"{module_path}.asyncio.sleep", new=AsyncMock())
+    mocker.patch(f"{module_path}.SettingsStorage.get", return_value=0)
+    digest = mocker.patch(
+        f"{module_path}.get_image_remote_digest",
+        new=AsyncMock(return_value="sha256:pinned"),
+    )
+    fetch = mocker.patch(
+        f"{module_path}.fetch_remote_config_blob",
+        new=AsyncMock(),
+    )
+    local = _image(
+        repo_digests=[],
+        repo_tags=["nginx:alpine"],
+        layers=["sha256:layer"],
+    )
+
+    remote, update = await assess_image_update(
+        "nginx:alpine",
+        local,
+        ["sha256:pinned"],
+    )
+
+    digest.assert_awaited_once_with("nginx:alpine", "sha256:pinned")
+    assert remote == ["sha256:pinned"]
+    assert update is False
+    fetch.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_assess_changed_diff_ids_are_available(
     mocker: MockerFixture,
 ):

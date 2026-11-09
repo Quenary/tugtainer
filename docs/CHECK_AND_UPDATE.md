@@ -1,6 +1,6 @@
 # Check and update
 
-A locally built image that still has a tag and no registry digest is not checked. An untagged image with no repo digests is compared with the registry. The same rules apply to a Swarm service.
+A locally built image that still has a tag and no known digest is not checked. An untagged image with no repo digests is compared with the registry. The same rules apply to a Swarm service, except a pinned service digest is still checked when the manager copy has tags and no RepoDigests.
 
 ## Check
 
@@ -84,7 +84,7 @@ A rollback or a failure does not record a previous image: the container is still
 
 Adding a host, and later status checks, set the Swarm flag when the agent is a manager. The host dashboard then shows Swarm services.
 
-A check inspects the image on the manager first. If that yields no repo digest, a digest already pinned in the service image (`repo:tag@sha256:…`) is used. If there is still none, the image is pulled only when `PULL_BEFORE_CHECK` is on; otherwise the service is skipped. When `PULL_BEFORE_CHECK` is on and the image was not pulled in that step, it is pulled again before the remote digest is read. A differing remote digest marks the service available. A failed lookup keeps the previous conclusion. Version and build time follow the container rules.
+A check inspects the image on the manager first. If that yields no repo digest, a digest already pinned in the service image (`repo:tag@sha256:…`) is used, including when that manager copy has tags and no RepoDigests. If there is still none, the image is pulled only when `PULL_BEFORE_CHECK` is on; otherwise the service is skipped. When `PULL_BEFORE_CHECK` is on and the image was not pulled in that step, it is pulled again before the remote digest is read. A differing remote digest marks the service available. A failed lookup keeps the previous conclusion. Version and build time follow the container rules.
 
 A scheduled check includes services with check enabled. A scheduled update includes services with update enabled and an available image. A manual check or update ignores those switches. A manual update does not require an available image.
 

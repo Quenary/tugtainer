@@ -933,10 +933,12 @@ async def assess_image_update(
     platform config blob is compared. None means the registry could not be
     read, or the local image has no rootfs to compare after a digest miss.
     A service pinned only by digest (no local inspect) is compared as a string.
-    A tagged image with no RepoDigests is a local build and is not checked.
+    A tagged image with no RepoDigests and no known digest is a local build
+    and is not checked. A known digest, such as a pinned service digest, is
+    still compared.
     """
     logger: Final = logging.getLogger("assess_image_update")
-    if image_is_local_build(local_image):
+    if image_is_local_build(local_image) and not local_digests:
         logger.debug(
             "Local image %s has tags and no repo digests; skipping registry",
             spec,
