@@ -59,3 +59,13 @@ These rules apply to `backend/`, `agent/`, and `shared/`. Ruff and mypy are conf
 After substantive edits, run the checks for the touched packages. Commands are in [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). Commit messages follow Conventional Commits (see Commits there).
 
 No AI attribution anywhere: commit messages, PR titles, and descriptions must not contain `Co-authored-by` trailers, `@cursor` or other agent mentions, or "Generated with …" lines, and an AI tool is never listed as an author. The agent is an assistant; the human author is responsible for the change.
+
+## Resources
+
+- [Docker Engine API and version compatibility](https://docs.docker.com/reference/api/engine/)
+- [Docker Engine API v1.44 reference — minimum supported API](https://docs.docker.com/reference/api/engine/version/v1.44/)
+- [Docker Engine API version history](https://docs.docker.com/reference/api/engine/version-history/)
+- [Docker Engine deprecated features and APIs](https://docs.docker.com/engine/deprecated/)
+- [Docker daemon access, Unix sockets and TLS](https://docs.docker.com/engine/security/protect-access/)
+- [Podman API service — Docker compatibility, sockets and security](https://docs.podman.io/en/stable/markdown/podman-system-service.1.html)
+- [Podman API reference — Compat and Libpod endpoints](https://docs.podman.io/en/stable/_static/api.html)
