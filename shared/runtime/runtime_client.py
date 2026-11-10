@@ -882,8 +882,12 @@ class RuntimeClient:
         service_id: str,
         new_image: str,
         auth_config: dict[str, Any] | None = None,
-    ) -> None:
-        """Update Swarm service spec with optimistic concurrency via Version.Index."""
+    ) -> bool:
+        """Update Swarm service spec with optimistic concurrency via Version.Index.
+
+        Returns False when the resolved digest is already current and no update
+        is submitted. Returns True after Swarm accepts the spec change.
+        """
         if not self._negotiated_api_prefix:
             await self.get_version()
         if self._runtime_type == "podman":
@@ -891,7 +895,7 @@ class RuntimeClient:
 
         resolved = await self._resolve_service_image(new_image, auth_config)
         if resolved is None:
-            return
+            return False
 
         current = await self.service_inspect(service_id)
         version_index = current.get("Version", {}).get("Index")
@@ -922,6 +926,7 @@ class RuntimeClient:
             timeout=60.0,
         )
         resp.close()
+        return True
 
     async def _resolve_service_image(
         self,

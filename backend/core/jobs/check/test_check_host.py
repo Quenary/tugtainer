@@ -12,6 +12,11 @@ from shared.runtime.runtime_models import (
     ContainerInspectResult,
 )
 
+SWARM_LABELS = {
+    "com.docker.swarm.service.id": "svc-id",
+    "com.docker.swarm.service.name": "web",
+}
+
 base_module = "backend.core.jobs.check.check_host"
 
 
@@ -86,3 +91,84 @@ async def test_run_check_host_job_skips_hidden(mocker: MockerFixture):
 
     assert ok is True
     assert called == ["visible"]
+
+
+@pytest.mark.asyncio
+async def test_run_check_host_job_skips_swarm_tasks_without_names(
+    mocker: MockerFixture,
+):
+    host = SimpleNamespace(id=1, name="host")
+    client = MagicMock()
+    plain = ContainerInspectResult(id="a", name="plain")
+    task = ContainerInspectResult(
+        id="b",
+        name="web.1.abc",
+        config=ContainerConfig(labels=SWARM_LABELS),
+    )
+    labeled = ContainerInspectResult(
+        id="c",
+        name="labeled.1.abc",
+        config=ContainerConfig(
+            labels={**SWARM_LABELS, "dev.quenary.tugtainer.auto_check": "true"}
+        ),
+    )
+    client.container.list = AsyncMock(return_value=[plain, task, labeled])
+
+    patch_async_session(mocker, base_module, MagicMock())
+    mocker.patch(f"{base_module}.get_host_containers", AsyncMock(return_value=[]))
+    called: list[str] = []
+
+    async def check_one(_client, _host, container, tracker=None):
+        called.append(container.name)
+
+    mocker.patch(f"{base_module}.run_check_container_job", side_effect=check_one)
+
+    ok = await run_check_host_job(
+        host,  # type: ignore[arg-type]
+        client,
+        manual=True,
+    )
+
+    assert ok is True
+    assert called == ["plain"]
+
+    called.clear()
+    ok = await run_check_host_job(
+        host,  # type: ignore[arg-type]
+        client,
+        manual=False,
+    )
+
+    assert ok is True
+    assert called == []
+
+
+@pytest.mark.asyncio
+async def test_run_check_host_job_named_check_keeps_swarm_task(
+    mocker: MockerFixture,
+):
+    host = SimpleNamespace(id=1, name="host")
+    client = MagicMock()
+    task = ContainerInspectResult(
+        id="b",
+        name="web.1.abc",
+        config=ContainerConfig(labels=SWARM_LABELS),
+    )
+    client.container.list = AsyncMock(return_value=[task])
+    patch_async_session(mocker, base_module, MagicMock())
+    mocker.patch(f"{base_module}.get_host_containers", AsyncMock(return_value=[]))
+    called: list[str] = []
+
+    async def check_one(_client, _host, container, tracker=None):
+        called.append(container.name)
+
+    mocker.patch(f"{base_module}.run_check_container_job", side_effect=check_one)
+
+    ok = await run_check_host_job(
+        host,  # type: ignore[arg-type]
+        client,
+        names=["web.1.abc"],
+    )
+
+    assert ok is True
+    assert called == ["web.1.abc"]

@@ -58,7 +58,9 @@
 <p-button-group>
   <p-button
     [loading]="_loading === 'check'"
-    [disabled]="_hostActionLoading || _loading"
+    [disabled]="_hostActionLoading || _loading || cantCheck()"
+    [pTooltip]="'CONTAINERS.UPDATE_DISABLED_HINTS.SWARM' | translate"
+    [tooltipDisabled]="!cantCheck()"
     [label]="'CONTAINERS.CHECK' | translate"
     (onClick)="OnCheck.emit()"></p-button>
   <p-button
@@ -77,5 +79,8 @@
   }
   @if (_item.protected) {
     {{ 'CONTAINERS.UPDATE_DISABLED_HINTS.PROTECTED' | translate }}
+  }
+  @if (_item.swarm_service) {
+    {{ 'CONTAINERS.UPDATE_DISABLED_HINTS.SWARM' | translate }}
   }
 </ng-template>

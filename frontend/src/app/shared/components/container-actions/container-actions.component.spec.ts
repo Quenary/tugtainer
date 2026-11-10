@@ -79,6 +79,21 @@ describe('ContainerActionsComponent', () => {
     });
   });
 
+  describe('check', () => {
+    it('allows a container that is not a Swarm task', () => {
+      expect(component['cantCheck']()).toBe(false);
+    });
+
+    it('blocks a Swarm task container', () => {
+      fixture.componentRef.setInput(
+        'item',
+        container({ swarm_service: 'web' }),
+      );
+
+      expect(component['cantCheck']()).toBe(true);
+    });
+  });
+
   describe('update', () => {
     it('allows a running container that has an update', () => {
       expect(component['cantUpdate']()).toBe(false);
@@ -113,6 +128,16 @@ describe('ContainerActionsComponent', () => {
 
     it('blocks a protected container and explains why', () => {
       fixture.componentRef.setInput('item', container({ protected: true }));
+
+      expect(component['cantUpdate']()).toBe(true);
+      expect(component['showUpdateTooltip']()).toBe(true);
+    });
+
+    it('blocks a Swarm task container and explains why', () => {
+      fixture.componentRef.setInput(
+        'item',
+        container({ swarm_service: 'web' }),
+      );
 
       expect(component['cantUpdate']()).toBe(true);
       expect(component['showUpdateTooltip']()).toBe(true);

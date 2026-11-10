@@ -207,7 +207,7 @@ def test_service_update(mocker: MockerFixture):
     mocker.patch("agent.api.service_api.registry_auth_for_image", return_value=auth)
     update_mock = mocker.patch(
         "agent.api.service_api.RUNTIME_CLIENT.service_update",
-        new=AsyncMock(),
+        new=AsyncMock(return_value=True),
     )
 
     response = client.post(
@@ -216,7 +216,7 @@ def test_service_update(mocker: MockerFixture):
     )
 
     assert response.status_code == 200
-    assert response.json() == "svc1"
+    assert response.json() == {"service_id": "svc1", "applied": True}
     update_mock.assert_awaited_once_with(
         "svc1",
         "ghcr.io/org/app:1",

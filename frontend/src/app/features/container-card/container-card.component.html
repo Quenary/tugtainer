@@ -39,6 +39,15 @@
                 [pTooltip]="'CONTAINERS.PROTECTED_CONTAINER_HINT' | translate">
               </p-tag>
             }
+            @if (_item.swarm_service) {
+              <p-tag
+                class="general-content-state-tag"
+                severity="info"
+                icon="pi pi-share-alt"
+                [value]="'CONTAINERS.SWARM_MANAGED' | translate"
+                [pTooltip]="'CONTAINERS.SWARM_MANAGED_HINT' | translate">
+              </p-tag>
+            }
             @if (_item.update_available) {
               <p-tag
                 class="general-content-state-tag"
@@ -74,26 +83,28 @@
 
           <p-divider></p-divider>
 
-          <app-boolean-field>
-            @if (
-              _item.auto_check_label !== null && _item.auto_check_label !== undefined
-            ) {
-              <p-tag
-                [severity]="_item.auto_check_label ? 'success' : 'secondary'"
-                [icon]="_item.auto_check_label ? 'pi pi-check' : 'pi pi-times'"
-                [value]="(_item.auto_check_label ? 'GENERAL.ON' : 'GENERAL.OFF') | translate"
-                [pTooltip]="'CONTAINERS.AUTO_CHECK_LABEL_HINT' | translate" />
-            } @else {
-              <p-toggle-switch
-                inputId="container-check-enabled"
-                [ngModel]="_item.check_enabled"
-                (ngModelChange)="patchContainer({ check_enabled: $event })"></p-toggle-switch>
-            }
-            <label for="container-check-enabled">
-              {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
-            </label>
-          </app-boolean-field>
-          @if (!_item.protected) {
+          @if (!_item.swarm_service) {
+            <app-boolean-field>
+              @if (
+                _item.auto_check_label !== null && _item.auto_check_label !== undefined
+              ) {
+                <p-tag
+                  [severity]="_item.auto_check_label ? 'success' : 'secondary'"
+                  [icon]="_item.auto_check_label ? 'pi pi-check' : 'pi pi-times'"
+                  [value]="(_item.auto_check_label ? 'GENERAL.ON' : 'GENERAL.OFF') | translate"
+                  [pTooltip]="'CONTAINERS.AUTO_CHECK_LABEL_HINT' | translate" />
+              } @else {
+                <p-toggle-switch
+                  inputId="container-check-enabled"
+                  [ngModel]="_item.check_enabled"
+                  (ngModelChange)="patchContainer({ check_enabled: $event })"></p-toggle-switch>
+              }
+              <label for="container-check-enabled">
+                {{ 'CONTAINERS.CHECK_ENABLED' | translate }}
+              </label>
+            </app-boolean-field>
+          }
+          @if (!_item.protected && !_item.swarm_service) {
             <app-boolean-field>
               @if (
                 _item.auto_update_label !== null && _item.auto_update_label !== undefined

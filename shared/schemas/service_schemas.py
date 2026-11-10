@@ -31,3 +31,8 @@ class ServiceListItemSchema(BaseModel):
 class ServiceUpdateRequestBody(BaseModel):
     service_id: str
     image: str
+
+
+class ServiceUpdateResponse(BaseModel):
+    service_id: str
+    applied: bool

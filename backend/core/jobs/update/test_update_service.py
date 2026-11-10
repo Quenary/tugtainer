@@ -10,6 +10,7 @@ from backend.core.jobs.update.update_service import run_update_service_job
 from backend.enums.job_status_enum import EJobStatus
 from backend.testing import make_service, patch_async_session
 from shared.agent_protocol import AGENT_UPGRADE_MESSAGE, AgentProtocol
+from shared.schemas.service_schemas import ServiceUpdateResponse
 
 base_module = "backend.core.jobs.update.update_service"
 
@@ -39,7 +40,9 @@ async def test_run_update_service_job_success(
     session, mock_db_svc = mock_session
     host = SimpleNamespace(id=1, name="test-host")
     client = MagicMock()
-    client.service.update = AsyncMock()
+    client.service.update = AsyncMock(
+        return_value=ServiceUpdateResponse(service_id="svc-123", applied=True)
+    )
     client.public.version = AsyncMock(
         return_value=AgentProtocol(version="dev", protocol=2)
     )
@@ -67,6 +70,37 @@ async def test_run_update_service_job_success(
 
 
 @pytest.mark.asyncio
+async def test_run_update_service_job_unchanged_is_not_updated(
+    mocker: MockerFixture, mock_session: tuple[MagicMock, MagicMock]
+):
+    session, mock_db_svc = mock_session
+    host = SimpleNamespace(id=1, name="test-host")
+    client = MagicMock()
+    client.service.update = AsyncMock(
+        return_value=ServiceUpdateResponse(service_id="svc-123", applied=False)
+    )
+    client.public.version = AsyncMock(
+        return_value=AgentProtocol(version="dev", protocol=2)
+    )
+    tracker = MagicMock()
+    service = make_service(name="web", image="nginx:alpine", service_id="svc-123")
+
+    result = await run_update_service_job(
+        client,
+        host,  # type: ignore[arg-type]
+        service,
+        tracker=tracker,
+    )
+
+    assert result.result == "not_available"
+    assert result.error is None
+    assert mock_db_svc.update_available is False
+    assert mock_db_svc.updated_at is None
+    assert session.commit.called
+    tracker.set_container.assert_called_with("web", EJobStatus.DONE, result)
+
+
+@pytest.mark.asyncio
 async def test_run_update_service_job_failure(
     mocker: MockerFixture, mock_session: tuple[MagicMock, MagicMock]
 ):
@@ -88,6 +122,7 @@ async def test_run_update_service_job_failure(
     )
 
     assert result.result == "failed"
+    assert result.error == "Docker API error"
     tracker.set_container.assert_called_with("web", EJobStatus.ERROR, result)
 
 

@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from backend.core.jobs.check.check_services import run_check_services_job
+from backend.exception import TugAgentClientError
 from backend.testing import make_service, patch_async_session
 
 base_module = "backend.core.jobs.check.check_services"
@@ -64,3 +65,25 @@ async def test_run_check_services_job_empty_list(mocker: MockerFixture):
 
     assert ok is True
     tracker.set_status.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_run_check_services_job_stale_swarm_is_not_a_failure(
+    mocker: MockerFixture,
+):
+    host = SimpleNamespace(id=1, name="test-host")
+    client = MagicMock()
+    client.service.list = AsyncMock(
+        side_effect=TugAgentClientError(
+            "Agent request error", "http://agent", "GET", 503, "not a manager"
+        )
+    )
+    patch_async_session(mocker, base_module, MagicMock())
+
+    ok = await run_check_services_job(
+        host,  # type: ignore[arg-type]
+        client,
+        tracker=MagicMock(),
+    )
+
+    assert ok is True

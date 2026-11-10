@@ -8,6 +8,7 @@ from backend.core.agent_client import AgentClient
 from backend.core.container_util.get_container_image_spec import (
     get_container_image_spec,
 )
+from backend.core.container_util.swarm_managed import swarm_managed_reason
 from backend.core.jobs.check.check_util import (
     assess_image_update,
     image_is_local_build,
@@ -70,6 +71,25 @@ async def run_check_container_job(
         try:
             logger.info("Checking container update availability")
             _slot(EJobStatus.PREPARING)
+
+            labels = container.config.labels if container.config else None
+            if swarm_managed_reason(labels):
+                logger.info("Swarm task container; skipping registry check")
+                c_db_swarm: Final = (
+                    await session.execute(
+                        select(ContainersModel)
+                        .where(
+                            ContainersModel.host_id == host.id,
+                            ContainersModel.name == container.name,
+                        )
+                        .limit(1)
+                    )
+                ).scalar_one_or_none()
+                if c_db_swarm and c_db_swarm.update_available:
+                    c_db_swarm.update_available = False
+                    await session.commit()
+                _slot(EJobStatus.DONE)
+                return result
 
             image_spec: Final = get_container_image_spec(container)
             if not image_spec:

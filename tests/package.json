@@ -11,6 +11,7 @@
     "app:down": "docker compose -p tugtainer-tests-app -f docker-compose.app.yml down -v",
     "test:docker": "docker compose -p tugtainer-tests-runner -f docker-compose.test.yml run --rm playwright",
     "test:all": "trap 'npm run app:down' EXIT; npm run app:up && npm run test:docker",
+    "test:all:swarm": "bash ./scripts/test-all-swarm.sh",
     "lint": "eslint .",
     "prettier-check": "prettier --check ."
   },

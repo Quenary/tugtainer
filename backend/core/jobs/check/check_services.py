@@ -5,8 +5,10 @@ from typing import Final
 from backend.core.agent_client import AgentClient
 from backend.core.jobs.check.check_service import run_check_service_job
 from backend.core.jobs.jobs_tracker import HostJobTracker
+from backend.core.jobs.jobs_util import stale_swarm_error
 from backend.db.session import async_session_maker
 from backend.enums.job_status_enum import EJobStatus
+from backend.exception import TugAgentClientError
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.services.services_util import get_host_services
 
@@ -48,6 +50,15 @@ async def run_check_services_job(
             )
 
         return True
+    except TugAgentClientError as e:
+        if stale_swarm_error(e):
+            logger.warning(
+                "Host %s is not a Swarm manager; skipping service check",
+                host.name,
+            )
+            return True
+        logger.exception("Failed to check swarm services")
+        return False
     except Exception:
         logger.exception("Failed to check swarm services")
         return False

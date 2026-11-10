@@ -227,6 +227,7 @@ CONTAINERS:
   UPDATE_DISABLED_HINTS:
     PROTECTED: Защищённый контейнер нельзя обновить из приложения.
     NOT_RUNNING: Контейнер должен быть в состоянии running.
+    SWARM: Контейнер принадлежит сервису Swarm. Обновляйте сервис.
   CHECK: Проверить
   MAIN_BTN_HINT: |-
     Зависимые контейнеры останавливаются и запускаются вместе с обновляемыми.
@@ -235,6 +236,10 @@ CONTAINERS:
   PROTECTED_CONTAINER_HINT:
     Контейнер помечен меткой dev.quenary.tugtainer.protected
     и не может быть обновлён из приложения.
+  SWARM_MANAGED: Swarm
+  SWARM_MANAGED_HINT: |-
+    Это задача сервиса Swarm.
+    Обновляйте сервис, а не контейнер.
   AUTO_CHECK_LABEL_HINT: |-
     Проверка обновлений настроена через лейбл контейнера dev.quenary.tugtainer.auto_check.
   AUTO_UPDATE_LABEL_HINT: |-

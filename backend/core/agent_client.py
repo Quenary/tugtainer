@@ -41,6 +41,7 @@ from shared.schemas.network_schemas import (
 from shared.schemas.service_schemas import (
     ServiceListItemSchema,
     ServiceUpdateRequestBody,
+    ServiceUpdateResponse,
     SwarmInfoSchema,
 )
 from shared.util.custom_json_dumps import custom_json_dumps
@@ -436,14 +437,14 @@ class AgentClientService:
         )
         return data or {}
 
-    async def update(self, body: ServiceUpdateRequestBody) -> str:
+    async def update(self, body: ServiceUpdateRequestBody) -> ServiceUpdateResponse:
         data = await self._agent_client._request(
             "POST",
             "/api/service/update",
             body,
             timeout=self._agent_client._long_timeout,
         )
-        return str(data)
+        return ServiceUpdateResponse.model_validate(data)
 
     async def logs(
         self,

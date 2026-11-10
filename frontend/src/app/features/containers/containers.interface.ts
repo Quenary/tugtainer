@@ -23,6 +23,8 @@ export interface IContainerListItem {
   status: EContainerStatus;
   health: string;
   protected: boolean;
+  /** Swarm service name when this container is a service task. */
+  swarm_service?: string | null;
   auto_check_label?: boolean | null;
   auto_update_label?: boolean | null;
   check_enabled: boolean;

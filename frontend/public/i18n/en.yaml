@@ -226,6 +226,7 @@ CONTAINERS:
   UPDATE_DISABLED_HINTS:
     PROTECTED: The protected container cannot be updated from the app.
     NOT_RUNNING: The container must be in running state.
+    SWARM: This container belongs to a Swarm service. Update the service instead.
   CHECK: Check
   MAIN_BTN_HINT: |-
     Dependents of updated containers are stopped and started with them.
@@ -234,6 +235,10 @@ CONTAINERS:
   PROTECTED_CONTAINER_HINT:
     This container labeled with dev.quenary.tugtainer.protected
     and cannot be updated from the app.
+  SWARM_MANAGED: Swarm
+  SWARM_MANAGED_HINT: |-
+    This container is a task of a Swarm service.
+    Update the service instead of recreating the container.
   AUTO_CHECK_LABEL_HINT: |-
     Check for updates is configured via container label dev.quenary.tugtainer.auto_check.
   AUTO_UPDATE_LABEL_HINT: |-

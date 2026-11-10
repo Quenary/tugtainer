@@ -10,6 +10,7 @@ from shared.schemas.service_schemas import (
     ServiceListItemSchema,
     ServiceReplicasSchema,
     ServiceUpdateRequestBody,
+    ServiceUpdateResponse,
 )
 
 logger: Final = logging.getLogger(__name__)
@@ -94,16 +95,16 @@ async def inspect_service(name_or_id: str) -> dict[str, Any]:
 @router.post(
     "/update",
     description="Update a swarm service to a new image (detached rolling update)",
-    response_model=str,
+    response_model=ServiceUpdateResponse,
 )
-async def update_service(body: ServiceUpdateRequestBody) -> str:
+async def update_service(body: ServiceUpdateRequestBody) -> ServiceUpdateResponse:
     await _check_swarm_manager()
-    await RUNTIME_CLIENT.service_update(
+    applied = await RUNTIME_CLIENT.service_update(
         body.service_id,
         body.image,
         auth_config=registry_auth_for_image(body.image),
     )
-    return body.service_id
+    return ServiceUpdateResponse(service_id=body.service_id, applied=applied)
 
 
 @router.get(

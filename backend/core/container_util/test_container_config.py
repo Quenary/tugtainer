@@ -406,6 +406,26 @@ def test_preflight_rejects_systemd_managed_container(
         get_container_config(container, image=None, docker_version=None)
 
 
+def test_preflight_rejects_swarm_task_container() -> None:
+    from shared.runtime.runtime_errors import RuntimePreflightError
+
+    container = ContainerInspectResult(
+        name="web.1.abc",
+        config=ContainerConfig(
+            image="nginx:latest",
+            labels={
+                "com.docker.swarm.service.id": "svc-id",
+                "com.docker.swarm.service.name": "web",
+            },
+        ),
+    )
+
+    with pytest.raises(RuntimePreflightError, match="managed by Swarm service web"):
+        get_container_config(container, image=None, docker_version=None)
+    with pytest.raises(RuntimePreflightError, match="update the service instead"):
+        get_container_config(container, image=None, docker_version=None)
+
+
 @pytest.mark.parametrize(
     ("labels", "env"),
     [
