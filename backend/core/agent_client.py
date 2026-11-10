@@ -8,12 +8,6 @@ import aiohttp
 from aiohttp.typedefs import Query
 from fastapi import status
 from pydantic import BaseModel, TypeAdapter
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
 from sqlalchemy import select
 
 from backend.db.session import async_session_maker
@@ -21,7 +15,11 @@ from backend.exception import TugAgentClientError
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.hosts.hosts_util import validate_agent_url_against_ssrf
 from backend.util.pinned_ip_resolver import PinnedIpResolver
-from shared.schemas.command_schemas import RunCommandRequestBodySchema
+from shared.agent_protocol import AgentProtocol
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
     ExecContainerRequestBodySchema,
@@ -36,10 +34,14 @@ from shared.schemas.image_schemas import (
     PullImageRequestBodySchema,
     TagImageRequestBodySchema,
 )
-from shared.schemas.network_schemas import NetworkDisconnectBodySchema
+from shared.schemas.network_schemas import (
+    NetworkConnectBodySchema,
+    NetworkDisconnectBodySchema,
+)
 from shared.schemas.service_schemas import (
     ServiceListItemSchema,
     ServiceUpdateRequestBody,
+    ServiceUpdateResponse,
     SwarmInfoSchema,
 )
 from shared.util.custom_json_dumps import custom_json_dumps
@@ -82,7 +84,6 @@ class AgentClient:
         self.public: Final = AgentClientPublic(self)
         self.container: Final = AgentClientContainer(self)
         self.image: Final = AgentClientImage(self)
-        self.command: Final = AgentClientCommand(self)
         self.network: Final = AgentClientNetwork(self)
         self.common: Final = AgentClientCommon(self)
         self.service: Final = AgentClientService(self)
@@ -206,6 +207,10 @@ class AgentClientPublic:
     async def access(self):
         return await self._agent_client._request("GET", "/api/public/access")
 
+    async def version(self) -> AgentProtocol:
+        data = await self._agent_client._request("GET", "/api/public/version")
+        return AgentProtocol.model_validate(data)
+
 
 class AgentClientContainer:
     def __init__(self, agent_client: AgentClient):
@@ -288,10 +293,20 @@ class AgentClientContainer:
         )
         return str(data)
 
-    async def remove(self, name_or_id: str) -> str:
+    async def rename(self, name_or_id: str, new_name: str) -> str:
+        data = await self._agent_client._request(
+            "POST",
+            f"/api/container/rename/{name_or_id}",
+            params={"new_name": new_name},
+            timeout=self._agent_client._long_timeout,
+        )
+        return str(data)
+
+    async def remove(self, name_or_id: str, force: bool = False) -> str:
         data = await self._agent_client._request(
             "DELETE",
             f"/api/container/remove/{name_or_id}",
+            params={"force": str(force).lower()},
             timeout=self._agent_client._long_timeout,
         )
         return str(data)
@@ -357,30 +372,20 @@ class AgentClientImage:
         return await self._agent_client._request("POST", "/api/image/tag", body)
 
 
-class AgentClientCommand:
-    def __init__(self, agent_client: AgentClient):
-        self._agent_client = agent_client
-
-    async def run(self, body: RunCommandRequestBodySchema) -> tuple[str, str]:
-        data = await self._agent_client._request(
-            "POST",
-            "/api/command/run",
-            body,
-            timeout=self._agent_client._long_timeout,
-        )
-        if not data:
-            return ("", "")
-        if isinstance(data, str):
-            return (data, "")
-        try:
-            return TypeAdapter(tuple[str, str]).validate_python(data)
-        except Exception:
-            return (str(data), "")
-
-
 class AgentClientNetwork:
     def __init__(self, agent_client: AgentClient):
         self._agent_client = agent_client
+
+    async def connect(
+        self,
+        body: NetworkConnectBodySchema,
+    ) -> None:
+        await self._agent_client._request(
+            "POST",
+            "/api/network/connect",
+            body,
+            timeout=self._agent_client._long_timeout,
+        )
 
     async def disconnect(
         self,
@@ -432,14 +437,14 @@ class AgentClientService:
         )
         return data or {}
 
-    async def update(self, body: ServiceUpdateRequestBody) -> str:
+    async def update(self, body: ServiceUpdateRequestBody) -> ServiceUpdateResponse:
         data = await self._agent_client._request(
             "POST",
             "/api/service/update",
             body,
             timeout=self._agent_client._long_timeout,
         )
-        return str(data)
+        return ServiceUpdateResponse.model_validate(data)
 
     async def logs(
         self,

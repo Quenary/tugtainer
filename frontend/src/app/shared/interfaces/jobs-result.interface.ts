@@ -19,6 +19,7 @@ export interface IContainerJobResult {
   remote_image: IImageInspectResult | null;
   local_digests: string[];
   remote_digests: string[];
+  error?: string | null;
 }
 
 export interface IServiceJobResult {
@@ -28,6 +29,7 @@ export interface IServiceJobResult {
   service_id?: string | null;
   local_digests: string[];
   remote_digests: string[];
+  error?: string | null;
 }
 
 export type TJobItemResult = IContainerJobResult | IServiceJobResult;

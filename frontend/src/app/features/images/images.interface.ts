@@ -12,30 +12,24 @@ export interface IPruneImageRequestBodySchema {
   all: boolean;
 }
 
-export interface IImagePruneResult {
-  ImagesDeleted: Record<string, string>[];
-  SpaceReclaimed: number;
-}
-
 export interface IImageInspectResult {
-  Id: string;
-  RepoTags: string[];
-  RepoDigests: string[];
-  Parent: string;
-  Comment: string;
-  Created: string;
-  Container: string;
-  ContainerConfig: Record<string, unknown>;
-  DockerVersion: string;
-  Author: string;
-  Config: Record<string, unknown>;
-  Architecture: string;
-  Os: string;
-  OsVersion: string;
-  Variant: string;
-  Size: number;
-  VirtualSize: number;
-  GraphDriver: Record<string, unknown>;
-  RootFS: Record<string, unknown>;
-  Metadata: Record<string, unknown>;
+  id?: string | null;
+  repo_tags?: string[] | null;
+  repo_digests?: string[] | null;
+  parent?: string | null;
+  comment?: string | null;
+  created?: string | null;
+  container?: string | null;
+  container_config?: Record<string, unknown> | null;
+  docker_version?: string | null;
+  author?: string | null;
+  config?: Record<string, unknown> | null;
+  architecture?: string | null;
+  os?: string | null;
+  variant?: string | null;
+  size?: number | null;
+  virtual_size?: number | null;
+  graph_driver?: Record<string, unknown> | null;
+  root_fs?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
 }

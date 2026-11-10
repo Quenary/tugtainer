@@ -23,6 +23,7 @@ class HostJobRuntime:
     job: Job | None = None
     error: BaseException | None = None
     started: bool = False
+    require_available: bool = False
 
 
 def _preview_job(runtime: HostJobRuntime) -> Job:
@@ -37,21 +38,35 @@ def merge_or_append_job(
     kind: JobKind,
     names: set[str] | None,
     manual: bool,
+    require_available: bool = False,
 ) -> HostJobRuntime:
     """
     Merge into the last unstarted job when it has the same kind.
     Consecutive same-kind requests are batched; a started job is left alone.
+
+    ``update_services`` is merged only when ``manual`` and ``require_available``
+    match. Combining those flags would drop the availability filter and update
+    every service.
     """
     if jobs:
         last = jobs[-1]
-        if not last.started and last.kind == kind:
+        same_service_policy = last.kind != "update_services" or (
+            last.manual == manual and last.require_available == require_available
+        )
+        if not last.started and last.kind == kind and same_service_policy:
             if last.names is None or names is None:
                 last.names = None
             else:
                 last.names |= names
             last.manual = last.manual or manual
+            last.require_available = last.require_available and require_available
             return last
-    runtime = HostJobRuntime(kind=kind, names=names, manual=manual)
+    runtime = HostJobRuntime(
+        kind=kind,
+        names=names,
+        manual=manual,
+        require_available=require_available,
+    )
     jobs.append(runtime)
     return runtime
 
@@ -108,11 +123,14 @@ class HostJobCoordinator:
         names: list[str] | None = None,
         manual: bool = False,
         wait: bool = False,
+        require_available: bool = False,
     ) -> HostJobRuntime:
         names_set: set[str] | None = None if names is None else set(names)
         async with self._lock(host.id):
             jobs = self._queues.setdefault(host.id, [])
-            runtime = merge_or_append_job(jobs, kind, names_set, manual)
+            runtime = merge_or_append_job(
+                jobs, kind, names_set, manual, require_available
+            )
             pending = [j for j in jobs if not j.started]
             started = next((j for j in jobs if j.started and not j.done.is_set()), None)
             if started:
@@ -212,6 +230,7 @@ class HostJobCoordinator:
                                 else True,
                                 names=names_list,
                                 tracker=tracker,
+                                require_available=runtime.require_available,
                             )
                         else:
                             ok = False

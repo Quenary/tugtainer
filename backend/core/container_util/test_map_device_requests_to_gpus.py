@@ -1,10 +1,10 @@
 import pytest
-from python_on_whales.components.container.models import (
-    ContainerDeviceRequest,
-)
 
 from backend.core.container_util.map_device_requests_to_gpus import (
     map_device_requests_to_gpus,
+)
+from shared.runtime.runtime_models import (
+    ContainerDeviceRequest,
 )
 
 

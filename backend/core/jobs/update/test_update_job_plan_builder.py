@@ -241,6 +241,35 @@ async def test_build_update_job_plan(
 
 
 @pytest.mark.asyncio
+async def test_build_update_job_plan_excludes_swarm_tasks(mocker):
+    task = DummyContainer(
+        name="web.1.abc",
+        labels={
+            "com.docker.swarm.service.id": "svc-id",
+            "com.docker.swarm.service.name": "web",
+        },
+    )
+    api = DummyContainer(name="api")
+    _patch_common(
+        mocker,
+        [DummyDB("web.1.abc"), DummyDB("api", update_available=False)],
+        {"api": {"web.1.abc"}, "web.1.abc": set()},
+    )
+    host = mocker.Mock()
+    host.id = 1
+
+    plan = await build_update_job_plan(
+        host,
+        cast(Any, [task, api]),
+        cast(Any, [task]),
+    )
+
+    assert plan.to_update == set()
+    assert plan.affected == set()
+    assert plan.order == []
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "db_kwargs, settings, manual_for, expected_to_update",
     [

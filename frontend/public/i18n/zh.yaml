@@ -220,6 +220,7 @@ CONTAINERS:
   UPDATE_DISABLED_HINTS:
     PROTECTED: 受保护的容器无法从此应用更新。
     NOT_RUNNING: 容器必须处于运行状态。
+    SWARM: 此容器属于 Swarm 服务。请更新服务，而不是重建容器。
   CHECK: 检查
   MAIN_BTN_HINT: |-
     被更新容器的依赖项会一并停止并启动。
@@ -227,6 +228,8 @@ CONTAINERS:
   PROTECTED: 受保护
   PROTECTED_CONTAINER_HINT: 此容器标记为 dev.quenary.tugtainer.protected，
     无法从此应用更新。
+  SWARM_MANAGED: Swarm
+  SWARM_MANAGED_HINT: 此容器是 Swarm 服务的任务。请更新服务。
   AUTO_CHECK_LABEL_HINT: |-
     检查更新已通过容器标签 dev.quenary.tugtainer.auto_check 配置。
   AUTO_UPDATE_LABEL_HINT: |-

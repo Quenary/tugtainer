@@ -112,9 +112,22 @@ jobs:
         id: install
         run: npm ci
 
+      - name: Enable Swarm
+        if: always() && steps.install.outcome == 'success'
+        run: |
+          state=$(docker info --format '{{.Swarm.LocalNodeState}}')
+          if [ "$state" != active ]; then
+            docker swarm init --advertise-addr 127.0.0.1 || { echo "::warning::swarm init failed, Swarm specs will be skipped"; echo "TUGTAINER_SWARM=0" >> "$GITHUB_ENV"; }
+          fi
+          docker info --format '{{.Swarm.LocalNodeState}} {{.Swarm.ControlAvailable}}'
+
       - name: Run application tests
         if: always() && steps.install.outcome == 'success'
         run: npm run test:all
+
+      - name: Leave Swarm
+        if: always()
+        run: docker swarm leave --force || true
 
       - name: Run lint
         if: always() && steps.install.outcome == 'success'

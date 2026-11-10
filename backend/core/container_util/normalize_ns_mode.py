@@ -1,10 +1,10 @@
 def normalize_ns_mode(mode: str | None) -> str | None:
     """
-    Normalize namespace mode for docker CLI create/run.
+    Namespace mode for the engine create body.
 
-    Docker CLI accepts '' (default/private) or 'host' for --uts/--userns.
-    Podman inspect often returns the literal 'private' for the default mode,
-    which Docker CLI rejects as invalid.
+    Podman inspect returns ``private`` for the default UTS and user namespace.
+    The engine treats an omitted mode as private, and ``private`` is not a
+    valid HostConfig value on Docker.
     """
     if not mode or mode == "private":
         return None

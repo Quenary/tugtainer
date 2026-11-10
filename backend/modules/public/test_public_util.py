@@ -1,15 +1,15 @@
 import pytest
 from pytest_mock import MockerFixture
-from python_on_whales.components.container.models import (
-    ContainerConfig,
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.const import TUGTAINER_HIDDEN_LABEL
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.public.public_util import get_host_summary
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 
 module_path = "backend.modules.public.public_util"
 

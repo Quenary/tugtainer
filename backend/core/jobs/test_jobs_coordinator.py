@@ -40,6 +40,42 @@ def test_merge_or_append_different_kind_appends() -> None:
     assert jobs[1].kind == "update"
 
 
+def test_merge_or_append_update_services_same_policy() -> None:
+    jobs: list[HostJobRuntime] = []
+    first = merge_or_append_job(
+        jobs, "update_services", {"a"}, True, require_available=True
+    )
+    second = merge_or_append_job(
+        jobs, "update_services", {"b"}, True, require_available=True
+    )
+    assert first is second
+    assert len(jobs) == 1
+    assert jobs[0].names == {"a", "b"}
+    assert jobs[0].manual is True
+    assert jobs[0].require_available is True
+
+
+def test_merge_or_append_update_services_different_policy_appends() -> None:
+    jobs: list[HostJobRuntime] = []
+    merge_or_append_job(jobs, "update_services", None, False, require_available=False)
+    merge_or_append_job(jobs, "update_services", None, True, require_available=True)
+    assert len(jobs) == 2
+    assert jobs[0].manual is False
+    assert jobs[0].require_available is False
+    assert jobs[1].manual is True
+    assert jobs[1].require_available is True
+    assert jobs[1].names is None
+
+
+def test_merge_or_append_container_update_merges_manual() -> None:
+    jobs: list[HostJobRuntime] = []
+    first = merge_or_append_job(jobs, "update", None, False)
+    second = merge_or_append_job(jobs, "update", None, True)
+    assert first is second
+    assert len(jobs) == 1
+    assert jobs[0].manual is True
+
+
 def test_merge_or_append_started_job_is_not_merged() -> None:
     jobs: list[HostJobRuntime] = []
     first = merge_or_append_job(jobs, "check", {"a"}, True)
@@ -184,7 +220,12 @@ async def test_jobs_coordinator_handles_swarm_services_jobs(mocker) -> None:
         return True
 
     async def mock_update_services(
-        _host, _client, manual=False, names=None, tracker=None
+        _host,
+        _client,
+        manual=False,
+        names=None,
+        tracker=None,
+        require_available=False,
     ):
         called_jobs.append(("update_services", list(names) if names else None))
         return True

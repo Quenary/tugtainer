@@ -1,12 +1,11 @@
 import pytest
-from python_on_whales.components.container.models import ContainerConfig
-from python_on_whales.components.image.models import ImageInspectResult
 
 from backend.core.jobs.update.update_previous_image import (
     PreviousImage,
     get_previous_image,
     get_previous_image_for_result,
 )
+from shared.runtime.runtime_models import ContainerConfig, ImageInspectResult
 
 
 def _image(

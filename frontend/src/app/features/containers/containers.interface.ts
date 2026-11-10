@@ -23,6 +23,8 @@ export interface IContainerListItem {
   status: EContainerStatus;
   health: string;
   protected: boolean;
+  /** Swarm service name when this container is a service task. */
+  swarm_service?: string | null;
   auto_check_label?: boolean | null;
   auto_update_label?: boolean | null;
   check_enabled: boolean;
@@ -58,35 +60,32 @@ export interface IContainerPort {
  * Container inspect result
  */
 export interface IContainerInspectResult {
-  Id: string;
-  Created: string;
-  Path: string;
-  Args: string[];
-  State: Record<string, unknown>;
-  Image: string;
-  Pod: string;
-  ResolvConfPath: string;
-  HostnamePath: string;
-  HostsPath: string;
-  LogPath: string;
-  Node: string;
-  Name: string;
-  RestartCount: number;
-  Driver: string;
-  Platform: string;
-  MountLabel: string;
-  ProcessLabel: string;
-  AppArmorProfile: string;
-  ExecIDs: string[];
-  HostConfig: Record<string, unknown>;
-  GraphDriver: Record<string, unknown>;
-  SizeRw: number;
-  SizeRootFs: number;
-  Mounts: Record<string, unknown>[];
-  Config: Record<string, unknown>;
-  NetworkSettings: Record<string, unknown>;
-  Namespace: string;
-  IsInfra: boolean;
+  id?: string | null;
+  created?: string | null;
+  path?: string | null;
+  args?: string[] | null;
+  state?: Record<string, unknown> | null;
+  image?: string | null;
+  resolv_conf_path?: string | null;
+  hostname_path?: string | null;
+  hosts_path?: string | null;
+  log_path?: string | null;
+  name?: string | null;
+  restart_count?: number | null;
+  driver?: string | null;
+  platform?: string | null;
+  mount_label?: string | null;
+  process_label?: string | null;
+  app_armor_profile?: string | null;
+  exec_ids?: string[] | null;
+  host_config?: Record<string, unknown> | null;
+  graph_driver?: Record<string, unknown> | null;
+  size_rw?: number | null;
+  size_root_fs?: number | null;
+  mounts?: Record<string, unknown>[] | null;
+  config?: Record<string, unknown> | null;
+  network_settings?: Record<string, unknown> | null;
+  pod?: string | null;
 }
 /**
  * Container full info

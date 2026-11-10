@@ -2,14 +2,14 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Final
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
-from shared.schemas.command_validator import command_validator
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
+from shared.schemas.network_schemas import NetworkConnectBodySchema
 
 # Bump on any incompatible change of SelfUpdatePlan.
 # The helper refuses plans of other versions without touching anything.
-SELF_UPDATE_PLAN_VERSION: Final = 1
+SELF_UPDATE_PLAN_VERSION: Final = 2
 
 # File names inside the self-update work dir on the data volume
 SELF_UPDATE_PLAN_FILE: Final = "plan.json"
@@ -41,18 +41,14 @@ class SelfUpdatePlan(BaseModel):
     old_version: str | None = None
     new_version: str | None = None
     create: CreateContainerRequestBodySchema
-    # Docker commands to run after the new container started,
-    # e.g. ["network", "connect", ...]
-    commands: list[list[str]] = []
+    network_connects: list[NetworkConnectBodySchema] = Field(default_factory=list)
+    api_version: str | None = None
+    runtime_type: str | None = None
+    engine_version: str | None = None
+    libpod_api_version: str | None = None
     healthcheck_timeout: int
     # Absolute path of the SQLite database on the data volume, if any
     db_path: str | None = None
-
-    @field_validator("commands")
-    @classmethod
-    def validate_commands(cls, commands: list[list[str]]) -> list[list[str]]:
-        # Same allowlist as the agent applies to the normal update path
-        return [command_validator(command) for command in commands]
 
 
 class ESelfUpdateStatus(StrEnum):

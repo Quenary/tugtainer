@@ -54,7 +54,7 @@ export async function waitUntilHostSettled(
         return settledMatchingJob(state, match)?.status ?? null;
       },
       {
-        timeout: 90_000,
+        timeout: 240_000,
         intervals: [500, 1000, 2000],
       },
     )

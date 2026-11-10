@@ -1,10 +1,28 @@
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import (
+    Any,
     Literal,
 )
 
 from pydantic import BaseModel, Field
-from python_on_whales.utils import ValidPath, ValidPortMapping
+
+
+class CreateMount(BaseModel):
+    """Engine API mount preserved on recreate."""
+
+    type: str
+    target: str
+    source: str | None = None
+    read_only: bool | None = None
+    consistency: str | None = None
+    bind_options: dict[str, Any] | None = None
+    volume_options: dict[str, Any] | None = None
+    tmpfs_options: dict[str, Any] | None = None
+    image_options: dict[str, Any] | None = None
+
+
+PortMapping = int | str | tuple[int | str, ...]
 
 
 class GetContainerListBodySchema(BaseModel):
@@ -26,15 +44,15 @@ class CreateContainerRequestBodySchema(BaseModel):
     cap_drop: list[str] | None = None
     cgroup_parent: str | None = None
     cgroupns: str | None = None
-    cidfile: ValidPath | None = None
+    cidfile: str | Path | None = None
     cpu_period: int | None = None
     cpu_quota: int | None = None
     cpu_rt_period: int | None = None
     cpu_rt_runtime: int | None = None
     cpu_shares: int | None = None
     cpus: float | None = None
-    cpuset_cpus: list[int] | None = None
-    cpuset_mems: list[int] | None = None
+    cpuset_cpus: list[int] | str | None = None
+    cpuset_mems: list[int] | str | None = None
     detach: bool | None = None
     devices: list[str] | None = None
     device_cgroup_rules: list[str] | None = None
@@ -49,27 +67,32 @@ class CreateContainerRequestBodySchema(BaseModel):
     domainname: str | None = None
     entrypoint: str | None = None
     envs: dict[str, str] | None = None
-    env_files: ValidPath | list[ValidPath] | None = None
+    env_files: str | Path | list[str | Path] | None = None
     env_host: bool | None = None
     expose: int | list[int] | None = None
     gpus: int | str | None = None
     groups_add: list[str] | None = None
     healthcheck: bool | None = None
     health_cmd: str | None = None
+    health_test: list[str] | None = None
+    # Durations are nanoseconds, matching Healthcheck inspect fields.
     health_interval: int | None = None
     health_retries: int | None = None
     health_start_period: int | None = None
+    health_start_interval: int | None = None
     health_timeout: int | None = None
     hostname: str | None = None
     init: bool | None = None
     interactive: bool | None = None
     ip: str | None = None
     ip6: str | None = None
+    gateway_priority: int | None = None
+    driver_opts: dict[str, str] | None = None
     ipc: str | None = None
     isolation: str | None = None
     kernel_memory: int | str | None = None
     labels: dict[str, str] | None = None
-    label_files: list[ValidPath] | None = None
+    label_files: list[str | Path] | None = None
     link: list[str] | None = None
     link_local_ip: list[str] | None = None
     log_driver: str | None = None
@@ -79,7 +102,8 @@ class CreateContainerRequestBodySchema(BaseModel):
     memory_reservation: int | str | None = None
     memory_swap: int | str | None = None
     memory_swappiness: int | None = None
-    mounts: list[list[str]] | None = None
+    mounts: list[CreateMount] | None = None
+    binds: list[str] | None = None
     name: str | None = None
     networks: list[str] | None = None
     network_aliases: list[str] | None = None
@@ -90,7 +114,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     platform: str | None = None
     pod: str | None = None
     privileged: bool | None = None
-    publish: list[ValidPortMapping] | None = None
+    publish: list[PortMapping] | None = None
     publish_all: bool | None = None
     pull: str | None = None
     read_only: bool | None = None
@@ -105,7 +129,7 @@ class CreateContainerRequestBodySchema(BaseModel):
     storage_options: list[str] | None = None
     sysctl: dict[str, str] | None = None
     systemd: bool | Literal["always"] | None = None
-    tmpfs: list[ValidPath] | None = None
+    tmpfs: list[str | Path] | None = None
     tty: bool | None = None
     tz: str | None = None
     ulimit: list[str] | None = None
@@ -113,11 +137,11 @@ class CreateContainerRequestBodySchema(BaseModel):
     userns: str | None = None
     uts: str | None = None
     volumes: (
-        list[tuple[ValidPath, ValidPath] | tuple[ValidPath, ValidPath, str]] | None
+        list[tuple[str | Path, str | Path] | tuple[str | Path, str | Path, str]] | None
     ) = None
     volume_driver: str | None = None
     volumes_from: list[str] | None = None
-    workdir: ValidPath | None = None
+    workdir: str | Path | None = None
 
 
 class GetContainerLogsRequestBody(BaseModel):
@@ -132,9 +156,8 @@ class ExecContainerRequestBodySchema(BaseModel):
     """
     Request body for POST /api/container/exec/{name_or_id}.
     `command` is a raw shell command line, executed inside the target
-    container as `sh -c "<command>"`. There is no allowlist here (unlike
-    RunCommandRequestBodySchema/command_validator) — this endpoint is
-    intentionally arbitrary-command by design and is gated by the agent's
+    container as `sh -c "<command>"`. This endpoint is intentionally
+    arbitrary-command by design for container hooks and is gated by the agent's
     ALLOW_EXEC config flag instead.
     """
 

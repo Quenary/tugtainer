@@ -145,6 +145,22 @@ def test_get_basic_token(auths, registry, expected):
     assert result == expected
 
 
+def test_get_identity_token_is_stripped_and_kept_beside_basic_auth():
+    DockerConfig._instance = None
+    docker_config = DockerConfig()
+    docker_config.auths = {
+        "myregistry.azurecr.io": {
+            "auth": "dXNlcjpwYXNz",
+            "username": "user",
+            "password": "pass",
+            "identitytoken": " refresh-token ",
+        }
+    }
+
+    assert docker_config.get_identity_token("myregistry.azurecr.io") == "refresh-token"
+    assert docker_config.get_basic_token("myregistry.azurecr.io") == "dXNlcjpwYXNz"
+
+
 @pytest.mark.parametrize(
     "value, expected",
     [

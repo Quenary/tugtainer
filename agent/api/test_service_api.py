@@ -1,5 +1,4 @@
-import json
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,16 +15,10 @@ def _patch_manager(mocker: MockerFixture, *, control_available: bool) -> None:
         control_available=control_available,
         local_node_state="active",
     )
-    mocker.patch("agent.api.service_api.DOCKER.info", return_value=info)
-
-
-def _patch_services(mocker: MockerFixture, *service_ids: str) -> None:
-    services = []
-    for service_id in service_ids:
-        svc = MagicMock()
-        svc.id = service_id
-        services.append(svc)
-    mocker.patch("agent.api.service_api.DOCKER.service.list", return_value=services)
+    mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.get_info",
+        new=AsyncMock(return_value=info),
+    )
 
 
 @pytest.mark.parametrize(
@@ -81,7 +74,10 @@ def test_swarm_info(
         cluster_id=cluster_id,
         with_cluster=with_cluster,
     )
-    mocker.patch("agent.api.common_api.DOCKER.info", return_value=info)
+    mocker.patch(
+        "agent.api.common_api.RUNTIME_CLIENT.get_info",
+        new=AsyncMock(return_value=info),
+    )
 
     response = client.get("/api/common/swarm-info")
 
@@ -99,19 +95,19 @@ def test_service_list_not_manager(mocker: MockerFixture):
 
 def test_service_list_empty(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
-    mocker.patch("agent.api.service_api.DOCKER.service.list", return_value=[])
-    run = mocker.patch("agent.api.service_api.run")
+    mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.service_list",
+        new=AsyncMock(return_value=[]),
+    )
 
     response = client.get("/api/service/list")
 
     assert response.status_code == 200
     assert response.json() == []
-    run.assert_not_called()
 
 
 def test_service_list_manager_returns_services(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
-    _patch_services(mocker, "svc1")
     inspect_data = [
         make_service_inspect(
             "svc1",
@@ -126,8 +122,8 @@ def test_service_list_manager_returns_services(mocker: MockerFixture):
         )
     ]
     mocker.patch(
-        "agent.api.service_api.run",
-        return_value=json.dumps(inspect_data),
+        "agent.api.service_api.RUNTIME_CLIENT.service_list",
+        new=AsyncMock(return_value=inspect_data),
     )
 
     response = client.get("/api/service/list")
@@ -143,44 +139,39 @@ def test_service_list_manager_returns_services(mocker: MockerFixture):
     assert data[0]["update_status_message"] == "update completed"
 
 
-def test_service_list_replicas_from_service_ls(mocker: MockerFixture):
+def test_service_list_reads_service_status_counts(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
-    _patch_services(mocker, "svc2")
     inspect_data = [
-        make_service_inspect("svc2", "app", "app:1.0", replicas=2),
+        make_service_inspect(
+            "svc-status",
+            "web",
+            "nginx:1",
+            replicas=5,
+            running_tasks=1,
+            desired_tasks=3,
+        )
     ]
-    ls_data = '{"ID":"svc2","Name":"app","Replicas":"2/2"}\n'
-
-    def mock_run(cmd: list[str]) -> str:
-        if "inspect" in cmd:
-            return json.dumps(inspect_data)
-        if "ls" in cmd:
-            return ls_data
-        return ""
-
-    mocker.patch("agent.api.service_api.run", side_effect=mock_run)
+    mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.service_list",
+        new=AsyncMock(return_value=inspect_data),
+    )
 
     response = client.get("/api/service/list")
 
     assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "app"
-    assert data[0]["replicas"]["running"] == 2
-    assert data[0]["replicas"]["desired"] == 2
+    replicas = response.json()[0]["replicas"]
+    assert replicas["running"] == 1
+    assert replicas["desired"] == 3
 
 
 def test_service_list_replicated_desired_from_mode(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
-    _patch_services(mocker, "svc3")
     inspect_data = [make_service_inspect("svc3", "db", "postgres:16", replicas=4)]
 
-    def mock_run(cmd: list[str]) -> str:
-        if "inspect" in cmd:
-            return json.dumps(inspect_data)
-        return ""
-
-    mocker.patch("agent.api.service_api.run", side_effect=mock_run)
+    mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.service_list",
+        new=AsyncMock(return_value=inspect_data),
+    )
 
     response = client.get("/api/service/list")
 
@@ -192,17 +183,14 @@ def test_service_list_replicated_desired_from_mode(mocker: MockerFixture):
 
 def test_service_list_global_mode_ignores_replicated_default(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
-    _patch_services(mocker, "svc4")
     inspect_data = [
         make_service_inspect("svc4", "agent", "agent:latest", mode="global")
     ]
 
-    def mock_run(cmd: list[str]) -> str:
-        if "inspect" in cmd:
-            return json.dumps(inspect_data)
-        return "not-json\n"
-
-    mocker.patch("agent.api.service_api.run", side_effect=mock_run)
+    mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.service_list",
+        new=AsyncMock(return_value=inspect_data),
+    )
 
     response = client.get("/api/service/list")
 
@@ -213,43 +201,26 @@ def test_service_list_global_mode_ignores_replicated_default(mocker: MockerFixtu
     assert item["replicas"]["desired"] is None
 
 
-def test_service_list_non_digit_replica_counts(mocker: MockerFixture):
-    _patch_manager(mocker, control_available=True)
-    _patch_services(mocker, "svc5")
-    inspect_data = [make_service_inspect("svc5", "job", "job:1", replicas=1)]
-    ls_data = '{"ID":"svc5","Name":"job","Replicas":"x/2"}\n'
-
-    def mock_run(cmd: list[str]) -> str:
-        if "inspect" in cmd:
-            return json.dumps(inspect_data)
-        return ls_data
-
-    mocker.patch("agent.api.service_api.run", side_effect=mock_run)
-
-    response = client.get("/api/service/list")
-
-    assert response.status_code == 200
-    replicas = response.json()[0]["replicas"]
-    assert replicas["running"] == 0
-    assert replicas["desired"] == 2
-
-
 def test_service_update(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
-    update_mock = mocker.patch("agent.api.service_api.DOCKER.service.update")
+    auth = {"username": "user", "password": "secret", "serveraddress": "ghcr.io"}
+    mocker.patch("agent.api.service_api.registry_auth_for_image", return_value=auth)
+    update_mock = mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.service_update",
+        new=AsyncMock(return_value=True),
+    )
 
     response = client.post(
         "/api/service/update",
-        json={"service_id": "svc1", "image": "nginx:1.25"},
+        json={"service_id": "svc1", "image": "ghcr.io/org/app:1"},
     )
 
     assert response.status_code == 200
-    assert response.json() == "svc1"
-    update_mock.assert_called_once_with(
+    assert response.json() == {"service_id": "svc1", "applied": True}
+    update_mock.assert_awaited_once_with(
         "svc1",
-        image="nginx:1.25",
-        detach=True,
-        with_registry_authentication=True,
+        "ghcr.io/org/app:1",
+        auth_config=auth,
     )
 
 
@@ -264,31 +235,34 @@ def test_service_update(mocker: MockerFixture):
 def test_service_logs(mocker: MockerFixture, logs: str | None, expected: str):
     _patch_manager(mocker, control_available=True)
     logs_mock = mocker.patch(
-        "agent.api.service_api.DOCKER.service.logs",
-        return_value=logs,
+        "agent.api.service_api.RUNTIME_CLIENT.service_logs",
+        new=AsyncMock(return_value=logs or ""),
     )
 
     response = client.get("/api/service/logs/svc1?tail=50")
 
     assert response.status_code == 200
     assert response.json() == expected
-    logs_mock.assert_called_once_with("svc1", tail=50, timestamps=False)
+    logs_mock.assert_awaited_once_with("svc1", tail=50, timestamps=False)
 
 
 def test_service_inspect_not_found(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
-    mocker.patch("agent.api.service_api.run", return_value="[]")
+    mocker.patch(
+        "agent.api.service_api.RUNTIME_CLIENT.service_inspect",
+        new=AsyncMock(return_value=None),
+    )
 
     response = client.get("/api/service/inspect/missing")
 
     assert response.status_code == 404
 
 
-def test_service_inspect_returns_first_object(mocker: MockerFixture):
+def test_service_inspect_returns_object(mocker: MockerFixture):
     _patch_manager(mocker, control_available=True)
     mocker.patch(
-        "agent.api.service_api.run",
-        return_value=json.dumps([{"ID": "svc1", "Spec": {"Name": "web"}}]),
+        "agent.api.service_api.RUNTIME_CLIENT.service_inspect",
+        new=AsyncMock(return_value={"ID": "svc1", "Spec": {"Name": "web"}}),
     )
 
     response = client.get("/api/service/inspect/svc1")

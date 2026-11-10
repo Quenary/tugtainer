@@ -18,6 +18,24 @@ services:
       POST: 1
       TZ: UTC
       VERSION: 1
+      # CONTAINERS=1 does not allow these engine calls on its own.
+      # Recreate uses start, stop, and restart. Logs and exec serve health
+      # checks and hooks. Pause matches the client even when a test does not
+      # call it.
+      ALLOW_LOGS: 1
+      ALLOW_START: 1
+      ALLOW_STOP: 1
+      ALLOW_RESTARTS: 1
+      ALLOW_PAUSE: 1
+      ALLOW_UNPAUSE: 1
+      EXEC: 1
+      SERVICES: 1
+      TASKS: 1
+      NODES: 1
+      SWARM: 1
+      DISTRIBUTION: 1
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
@@ -28,15 +46,66 @@ services:
 
   # The self-update test pushes a newer image of the app tag here.
   # Published on the host, as the docker daemon pulls from localhost:5000.
+  # The same network as the app, so the in-app forwarder can reach this
+  # service by name. A service without a network would stay on the project
+  # default network, which the app does not join.
   registry:
     image: registry:2
     container_name: tests-registry
     ports:
       - '5000:5000'
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
+    networks:
+      - tugtainer-tests
+
+  # Test-only credentials. The password is not a secret.
+  # tugtest / tugtest-secret, published on the host so the daemon can pull
+  # localhost:5001. The app reads the matching auths entry from config.json.
+  private-registry:
+    image: registry:2
+    container_name: tests-private-registry
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - ./fixtures/private-registry/htpasswd:/auth/htpasswd:ro
+    ports:
+      - '5001:5000'
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
+    networks:
+      - tugtainer-tests
+
+  # Same password file, but config.json has no auths entry for this port.
+  # A pull without X-Registry-Auth is rejected.
+  unauthorized-registry:
+    image: registry:2
+    container_name: tests-unauthorized-registry
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - ./fixtures/private-registry/htpasswd:/auth/htpasswd:ro
+    ports:
+      - '5002:5000'
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
+    networks:
+      - tugtainer-tests
 
   app:
     container_name: tests-tugtainer
     image: localhost:5000/tugtainer:tests
+    # The daemon pulls localhost:5000 from the published registry port.
+    # The app's own localhost is not that port, so digest checks forward it
+    # to the registry service. The product image does not do this.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - python /opt/registry-forward.py & exec /app/entrypoint.sh
     build:
       context: ..
       dockerfile: Dockerfile.app
@@ -50,6 +119,9 @@ services:
       DOCKER_HOST: tcp://socket-proxy:2375
     volumes:
       - tugtainer_data_tests:/tugtainer
+      - ./fixtures/registry-forward.py:/opt/registry-forward.py:ro
+      # Test credentials for localhost:5001. See private-registry above.
+      - ./fixtures/private-registry/config.json:/root/.docker/config.json:ro
     networks:
       tugtainer-tests:
         aliases:
@@ -62,9 +134,13 @@ services:
       timeout: 5s
       retries: 30
       start_period: 15s
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     depends_on:
       - socket-proxy
       - registry
+      - private-registry
+      - unauthorized-registry
 
 volumes:
   tugtainer_data_tests:

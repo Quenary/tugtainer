@@ -1,3 +1,4 @@
-from python_on_whales import DockerClient
+from agent.config import Config
+from shared.runtime import RuntimeClient
 
-DOCKER = DockerClient()
+RUNTIME_CLIENT = RuntimeClient(timeout=float(Config.DOCKER_TIMEOUT))

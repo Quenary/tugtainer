@@ -10,11 +10,10 @@ RUN uv sync --locked --no-dev
 # Runtime image
 FROM python:3.13-slim AS runtime
 WORKDIR /app
-ARG VERSION
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl docker-cli \
+    curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -28,6 +27,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Environment
 COPY .env* /app/
+ARG VERSION
 RUN echo "$VERSION" > /app/version
 
 EXPOSE 8001

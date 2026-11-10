@@ -15,6 +15,15 @@ export default defineConfig({
     {
       name: 'integration',
       testDir: './integration',
+      testIgnore: '**/swarm-schedule.spec.ts',
+    },
+    {
+      // Global check/update touches every container on the engine, so this
+      // file stays out of the parallel integration project.
+      name: 'swarm-schedule',
+      testDir: './integration',
+      testMatch: '**/swarm-schedule.spec.ts',
+      dependencies: ['integration'],
     },
     {
       name: 'e2e',
@@ -25,7 +34,7 @@ export default defineConfig({
       // Replaces the app container, so it runs after everything else
       name: 'self-update',
       testDir: './self-update',
-      dependencies: ['integration', 'e2e'],
+      dependencies: ['integration', 'e2e', 'swarm-schedule'],
       retries: 0,
     },
   ],

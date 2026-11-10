@@ -1,9 +1,9 @@
 import pytest
-from python_on_whales.components.container.models import PortBinding
 
 from backend.core.container_util.map_port_bindings_to_list import (
     map_port_bindings_to_list,
 )
+from shared.runtime.runtime_models import PortBinding
 
 
 @pytest.mark.parametrize(

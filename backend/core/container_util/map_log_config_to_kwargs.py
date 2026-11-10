@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from typing import Any
 
-from python_on_whales.components.container.models import (
+from shared.runtime.runtime_models import (
     ContainerLogConfig,
 )
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def normalize_path(value: Path | str | None) -> str | None:
-    """Normalize path before passing it as argument to python_on_whales"""
+    """Normalize path before passing it as argument to container runtime"""
     if not value:
         return None
     if isinstance(value, Path):

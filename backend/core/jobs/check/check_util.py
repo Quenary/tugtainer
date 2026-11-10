@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from dataclasses import dataclass
@@ -6,12 +7,6 @@ from typing import Any, Final, Literal, cast
 from urllib.parse import urlencode, urlparse
 
 import aiohttp
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
 
 from backend.core.container_util.container_labels import (
     get_container_auto_check_label,
@@ -23,6 +18,13 @@ from backend.modules.containers.containers_model import (
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_version_from_labels import get_version_from_labels
+from backend.util.jitter import jitter
+from shared.runtime.runtime_models import (
+    ContainerConfig,
+    ContainerHealthCheck,
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 
 
 def filter_containers_by_check_enabled(
@@ -66,6 +68,8 @@ async def get_image_remote_digest(
 ) -> str | None:
     """
     Get image digest from registry using HEAD request.
+
+    Raises RegistryBasicAuthError when an identitytoken cannot answer Basic auth.
     :param spec: image spec e.g. ghcr.io/quenary/tugtainer:1
     :param local_digest: local digest to utilize If-None-Match 304 response
     :return: new image digest if any or local_digest
@@ -102,15 +106,15 @@ async def get_image_remote_digest(
         local_digest = local_digest.split("@")[-1]
         headers["If-None-Match"] = local_digest
 
-    docker_config = DockerConfig()
-    basic_token = docker_config.get_basic_token(registry)
+    identity_token, basic_token = _docker_registry_auth(registry)
 
     def _on_resp(resp: aiohttp.ClientResponse) -> str | None:
         logger.debug(resp)
         resp.raise_for_status()
         if resp.status == 304:
-            return local_digest
-        return resp.headers.get("Docker-Content-Digest") or resp.headers.get("Etag")
+            return normalize_registry_digest(local_digest)
+        raw = resp.headers.get("Docker-Content-Digest") or resp.headers.get("Etag")
+        return normalize_registry_digest(raw)
 
     async def _do_request(
         session: aiohttp.ClientSession,
@@ -136,6 +140,7 @@ async def get_image_remote_digest(
                         basic_token,
                         ssl,
                         insecure,
+                        identity_token,
                     )
                     headers["Authorization"] = f"Bearer {bearer_token}"
                     auth_applied = True
@@ -143,6 +148,9 @@ async def get_image_remote_digest(
                     logger.info("Fallback to Basic auth")
                     headers["Authorization"] = f"Basic {basic_token}"
                     auth_applied = True
+                elif identity_token and _basic_auth_challenge(auth_header):
+                    _warn_identity_token_basic(logger, registry)
+                    raise RegistryBasicAuthError(registry)
 
                 if auth_applied:
                     async with session.head(url, headers=headers, ssl=ssl) as resp2:
@@ -174,16 +182,72 @@ async def get_image_remote_digest(
         return None
 
 
+class RegistryBasicAuthError(Exception):
+    """An identitytoken cannot answer a Basic authentication challenge."""
+
+
+def _basic_auth_challenge(auth_header: str) -> bool:
+    scheme = auth_header.strip().split(" ", 1)[0].casefold()
+    return scheme == "basic"
+
+
+def _warn_identity_token_basic(logger: logging.Logger, registry: str) -> None:
+    logger.warning(
+        "Registry %s requires Basic authentication, but config.json only has "
+        "an identitytoken. Basic-auth registries need username/password (auth).",
+        registry,
+    )
+
+
+def normalize_registry_digest(value: str | None) -> str | None:
+    """Digest token without RFC quotes or a weak-validator prefix."""
+    if value is None:
+        return None
+    token = value.strip()
+    if token[:2].upper() == "W/":
+        token = token[2:].strip()
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in {'"', "'"}:
+        token = token[1:-1]
+    token = token.strip()
+    return token or None
+
+
+def digest_in_repo_digests(
+    digest: str | None,
+    repo_digests: list[str] | None,
+) -> bool:
+    """True when the registry digest is already one of the image's repo digests."""
+    token = normalize_registry_digest(digest)
+    if not token or not repo_digests:
+        return False
+    for repo in repo_digests:
+        normalized = normalize_registry_digest(repo) or ""
+        if token == normalized or token in normalized:
+            return True
+    return False
+
+
 def parse_image_spec(spec: str) -> tuple[str, str, str]:
     """
-    Convert spec to registry, repo, tag
-    """
-    tag = "latest"
+    Convert spec to registry, repo, and manifest reference.
 
-    if ":" in spec and "/" in spec and spec.rfind(":") > spec.rfind("/"):
-        spec, tag = spec.rsplit(":", 1)
-    elif ":" in spec and spec.count(":") == 1 and "/" not in spec:
-        spec, tag = spec.rsplit(":", 1)
+    A digest (`repo@sha256:…`) is the manifest reference. A tag in front of
+    it is ignored. A registry port (`localhost:5000/app:tag`) is not a tag:
+    the tag is the colon after the last slash.
+    """
+    digest: str | None = None
+    if "@" in spec:
+        spec, digest = spec.rsplit("@", 1)
+
+    name_and_tag = _split_tag(spec)
+    if name_and_tag is not None:
+        spec = name_and_tag[0]
+    if digest is not None:
+        tag = digest
+    elif name_and_tag is not None:
+        tag = name_and_tag[1]
+    else:
+        tag = "latest"
 
     parts = spec.split("/")
 
@@ -203,6 +267,17 @@ def parse_image_spec(spec: str) -> tuple[str, str, str]:
         repo = f"library/{repo}"
 
     return registry, repo, tag
+
+
+def _split_tag(spec: str) -> tuple[str, str] | None:
+    """Split `name:tag` without treating a registry port as the tag."""
+    if ":" in spec and "/" in spec and spec.rfind(":") > spec.rfind("/"):
+        name, tag = spec.rsplit(":", 1)
+        return name, tag
+    if ":" in spec and spec.count(":") == 1 and "/" not in spec:
+        name, tag = spec.rsplit(":", 1)
+        return name, tag
+    return None
 
 
 def is_insecure_registry(
@@ -238,6 +313,7 @@ async def get_registry_bearer_token(
     basic_token: str | None = None,
     ssl: bool = True,
     insecure: bool = False,
+    identity_token: str | None = None,
 ) -> str:
     """
     Get registry bearer token
@@ -248,6 +324,7 @@ async def get_registry_bearer_token(
     :param basic_token: basic token
     :param ssl: ssl flag for request
     :param insecure: whether the image registry is in INSECURE_REGISTRIES
+    :param identity_token: OAuth refresh token from config.json; takes precedence
     :return: token
     """
 
@@ -261,6 +338,24 @@ async def get_registry_bearer_token(
 
     service = items.get("service")
     scope = items.get("scope") or f"repository:{repo}:pull"
+
+    if identity_token:
+        form = {
+            "grant_type": "refresh_token",
+            "refresh_token": identity_token,
+            "service": service or "",
+            "scope": scope,
+            "client_id": "docker",
+        }
+        async with session.post(
+            realm,
+            data=form,
+            ssl=ssl,
+            allow_redirects=False,
+        ) as resp:
+            resp.raise_for_status()
+            data: dict[str, Any] = await resp.json()
+            return data.get("token") or data.get("access_token") or ""
 
     params = {"service": service, "scope": scope}
 
@@ -278,8 +373,17 @@ async def get_registry_bearer_token(
         allow_redirects=False,
     ) as resp:
         resp.raise_for_status()
-        data: dict[str, Any] = await resp.json()
+        data = await resp.json()
         return data.get("token") or data.get("access_token") or ""
+
+
+def _docker_registry_auth(registry: str) -> tuple[str | None, str | None]:
+    """Identity token when present, otherwise the basic token for the host."""
+    config = DockerConfig()
+    identity_token = config.get_identity_token(registry)
+    if identity_token:
+        return identity_token, None
+    return None, config.get_basic_token(registry)
 
 
 _MANIFEST_ACCEPT: Final = ",".join(
@@ -513,6 +617,7 @@ async def _registry_get_json(
     basic_token: str | None,
     ssl: bool,
     insecure: bool,
+    identity_token: str | None = None,
 ) -> tuple[object, dict[str, str]]:
     """
     GET a registry URL, applying the same Bearer or Basic auth as digest HEAD.
@@ -541,10 +646,15 @@ async def _registry_get_json(
                 basic_token,
                 ssl,
                 insecure,
+                identity_token,
             )
             attempt["Authorization"] = f"Bearer {bearer_token}"
         elif basic_token:
             attempt["Authorization"] = f"Basic {basic_token}"
+        elif identity_token and _basic_auth_challenge(auth_header):
+            registry = urlparse(url).hostname or url
+            _warn_identity_token_basic(logger, registry)
+            raise RegistryBasicAuthError(registry)
         else:
             resp.raise_for_status()
 
@@ -552,18 +662,16 @@ async def _registry_get_json(
         return await _read(resp2), attempt
 
 
-async def get_remote_image_metadata(
+async def fetch_remote_config_blob(
     spec: str,
     platform: ImagePlatform | None = None,
-) -> RemoteImageMetadata:
+) -> dict[str, Any]:
     """
-    Read version and created for the image currently pointed at by a tag.
+    Image config blob for the tag, after walking an index to the local platform.
 
-    Fetches the manifest, follows one index entry when the tag is multi-arch,
-    then fetches that image's config blob. Raises if the registry cannot
-    be read; callers must not cache a failed lookup.
+    Raises if the registry cannot be read or the blob is not an image config.
     """
-    logger: Final = logging.getLogger("get_remote_image_metadata")
+    logger: Final = logging.getLogger("fetch_remote_config_blob")
     registry, repo, tag = parse_image_spec(spec)
     insecure_registries = SettingsStorage.get(ESettingKey.INSECURE_REGISTRIES)
     insecure = is_insecure_registry(registry, insecure_registries)
@@ -571,7 +679,7 @@ async def get_remote_image_metadata(
     if insecure:
         schemes.append("http")
     ssl = not insecure
-    basic_token = DockerConfig().get_basic_token(registry)
+    identity_token, basic_token = _docker_registry_auth(registry)
 
     async with aiohttp.ClientSession(trust_env=True) as session:
         last_error: Exception | None = None
@@ -590,6 +698,7 @@ async def get_remote_image_metadata(
                     basic_token,
                     ssl,
                     insecure,
+                    identity_token,
                 )
                 used_scheme = scheme
                 break
@@ -623,6 +732,7 @@ async def get_remote_image_metadata(
                 basic_token,
                 ssl,
                 insecure,
+                identity_token,
             )
         if not config_digest:
             raise ValueError(f"Could not resolve image config digest for {spec}")
@@ -637,5 +747,245 @@ async def get_remote_image_metadata(
             basic_token,
             ssl,
             insecure,
+            identity_token,
         )
-        return metadata_from_config_blob(blob)
+        if not isinstance(blob, dict):
+            raise ValueError(f"Image config for {spec} is not a JSON object")
+        return blob
+
+
+async def get_remote_image_metadata(
+    spec: str,
+    platform: ImagePlatform | None = None,
+) -> RemoteImageMetadata:
+    """
+    Read version and created for the image currently pointed at by a tag.
+
+    Fetches the manifest, follows one index entry when the tag is multi-arch,
+    then fetches that image's config blob. Raises if the registry cannot
+    be read; callers must not cache a failed lookup.
+    """
+    blob = await fetch_remote_config_blob(spec, platform)
+    return metadata_from_config_blob(blob)
+
+
+def _string_list(value: object) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value else []
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return [str(value)]
+
+
+def _text(value: object) -> str:
+    if value is None:
+        return ""
+    return str(value)
+
+
+def _label_map(value: object) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    return {str(key): "" if item is None else str(item) for key, item in value.items()}
+
+
+def _mapping_signature(value: object) -> tuple[tuple[str, str], ...]:
+    if not isinstance(value, dict):
+        return ()
+    items = [
+        (str(key), "" if item is None else str(item)) for key, item in value.items()
+    ]
+    return tuple(sorted(items))
+
+
+def _number(value: object) -> int:
+    if isinstance(value, bool) or value is None or value == "":
+        return 0
+    if isinstance(value, int):
+        return value
+    return 0
+
+
+def _health_signature(value: object) -> tuple[Any, ...]:
+    if isinstance(value, ContainerHealthCheck):
+        test = _string_list(value.test)
+        numbers = (
+            _number(value.interval),
+            _number(value.timeout),
+            _number(value.retries),
+            _number(value.start_period),
+            _number(value.start_interval),
+        )
+    elif isinstance(value, dict):
+        test = _string_list(value.get("Test", value.get("test")))
+        numbers = (
+            _number(value.get("Interval", value.get("interval"))),
+            _number(value.get("Timeout", value.get("timeout"))),
+            _number(value.get("Retries", value.get("retries"))),
+            _number(value.get("StartPeriod", value.get("start_period"))),
+            _number(value.get("StartInterval", value.get("start_interval"))),
+        )
+    else:
+        return ()
+    if not test and numbers == (0, 0, 0, 0, 0):
+        return ()
+    return (tuple(test), numbers)
+
+
+def _local_config_signature(local: ContainerConfig | None) -> tuple[Any, ...]:
+    """Fields that change what the image runs. Created and history are ignored."""
+    return (
+        _string_list(local.env if local else None),
+        _string_list(local.cmd if local else None),
+        _string_list(local.entrypoint if local else None),
+        _label_map(local.labels if local else None),
+        _text(local.user if local else None),
+        _text(local.working_dir if local else None),
+        _mapping_signature(local.exposed_ports if local else None),
+        _mapping_signature(local.volumes if local else None),
+        _text(local.stop_signal if local else None),
+        _health_signature(local.healthcheck if local else None),
+    )
+
+
+def _remote_config_signature(remote: object) -> tuple[Any, ...]:
+    remote_config = remote if isinstance(remote, dict) else {}
+
+    def remote_value(*keys: str) -> object:
+        for key in keys:
+            if key in remote_config:
+                return remote_config[key]
+        return None
+
+    return (
+        _string_list(remote_value("Env", "env")),
+        _string_list(remote_value("Cmd", "cmd")),
+        _string_list(remote_value("Entrypoint", "entrypoint")),
+        _label_map(remote_value("Labels", "labels")),
+        _text(remote_value("User", "user")),
+        _text(remote_value("WorkingDir", "working_dir")),
+        _mapping_signature(remote_value("ExposedPorts", "exposed_ports")),
+        _mapping_signature(remote_value("Volumes", "volumes")),
+        _text(remote_value("StopSignal", "stop_signal")),
+        _health_signature(remote_value("Healthcheck", "healthcheck")),
+    )
+
+
+def _layer_ids(value: object, *keys: str) -> list[str] | None:
+    if not isinstance(value, dict):
+        return None
+    layers: object | None = None
+    for key in keys:
+        if key in value:
+            layers = value[key]
+            break
+    if not isinstance(layers, list) or not layers:
+        return None
+    if not all(isinstance(item, str) and item for item in layers):
+        return None
+    return list(layers)
+
+
+def image_content_matches(
+    local: ImageInspectResult,
+    blob: dict[str, Any],
+) -> bool | None:
+    """
+    True when the local image and the registry config blob are the same image.
+
+    None when the local inspect has no rootfs diff ids to compare.
+    Created timestamps and history are not part of the comparison: containerd
+    records the index digest locally while the registry returns the platform
+    manifest digest for the same config.
+    """
+    local_layers = _layer_ids(local.root_fs, "Layers", "layers", "diff_ids")
+    if local_layers is None:
+        return None
+    remote_root = blob.get("rootfs") or blob.get("RootFS")
+    remote_layers = _layer_ids(remote_root, "diff_ids", "DiffIDs", "Layers", "layers")
+    if remote_layers is None or local_layers != remote_layers:
+        return False
+    remote_config = blob.get("config") or blob.get("Config")
+    return _local_config_signature(local.config) == _remote_config_signature(
+        remote_config
+    )
+
+
+def image_is_local_build(image: ImageInspectResult | None) -> bool:
+    """Tagged image with no registry digest: built locally, not an untagged pull.
+
+    A ``<none>`` repo, including ``<none>:<none>``, is not a tag.
+    """
+    if image is None:
+        return False
+    tags = image.repo_tags
+    if not isinstance(tags, list):
+        return False
+    has_tag = any(
+        isinstance(tag, str) and tag.split(":", 1)[0] != "<none>" for tag in tags
+    )
+    if not has_tag:
+        return False
+    return not image.repo_digests
+
+
+async def assess_image_update(
+    spec: str,
+    local_image: ImageInspectResult | None,
+    local_digests: list[str],
+) -> tuple[list[str], bool | None]:
+    """
+    Decide whether the registry tag differs from the local image.
+
+    The digest is enough when it already appears in RepoDigests. Otherwise the
+    platform config blob is compared. None means the registry could not be
+    read, or the local image has no rootfs to compare after a digest miss.
+    A service pinned only by digest (no local inspect) is compared as a string.
+    A tagged image with no RepoDigests and no known digest is a local build
+    and is not checked. A known digest, such as a pinned service digest, is
+    still compared.
+    """
+    logger: Final = logging.getLogger("assess_image_update")
+    if image_is_local_build(local_image) and not local_digests:
+        logger.debug(
+            "Local image %s has tags and no repo digests; skipping registry",
+            spec,
+        )
+        return [], False
+    delay: Final = SettingsStorage.get(ESettingKey.REGISTRY_REQ_DELAY)
+    candidates: list[str | None] = list(local_digests) or [None]
+    remote: str | None = None
+    for digest in candidates:
+        try:
+            found = await get_image_remote_digest(spec, digest)
+            if found:
+                remote = found
+                break
+        except RegistryBasicAuthError:
+            break
+        except Exception:
+            logger.exception(f"Failed to get remote digest for {spec} {digest}")
+        finally:
+            await asyncio.sleep(jitter(delay))
+    if not remote:
+        return [], None
+    if digest_in_repo_digests(remote, local_digests):
+        return [remote], False
+    if local_image is None:
+        if not local_digests:
+            return [remote], None
+        return [remote], True
+    try:
+        blob = await fetch_remote_config_blob(spec, platform_from_image(local_image))
+    except RegistryBasicAuthError:
+        return [remote], None
+    except Exception:
+        logger.exception(f"Failed to read image config for {spec}")
+        return [remote], None
+    same = image_content_matches(local_image, blob)
+    if same is None:
+        logger.warning(f"Local image {spec} has no rootfs diff ids to compare")
+        return [remote], None
+    return [remote], not same

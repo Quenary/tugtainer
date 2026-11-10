@@ -1,6 +1,5 @@
 # Stage 1 - Frontend build
-# 22 is the last version with support of linux/arm/v7
-FROM node:22 AS frontend-builder
+FROM node:24 AS frontend-builder
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -19,11 +18,10 @@ RUN uv sync --locked --no-dev
 # Stage 3 — Runtime image
 FROM python:3.13-slim AS runtime
 WORKDIR /
-ARG VERSION
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx supervisor curl docker-cli \
+    nginx supervisor curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -49,6 +47,7 @@ RUN chmod +x /app/entrypoint.sh
 
 # Environment
 COPY .env* /app/
+ARG VERSION
 RUN echo "$VERSION" > /app/version
 
 # Dir for sqlite and other files

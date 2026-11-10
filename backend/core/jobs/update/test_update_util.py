@@ -2,9 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
 
 from backend.core.agent_client import AgentClient, AgentClientNetwork
 from backend.core.jobs.jobs_results import (
@@ -18,6 +15,9 @@ from backend.core.jobs.update.update_util import (
 )
 from backend.modules.containers.containers_model import ContainersModel
 from backend.modules.hosts.hosts_model import HostsModel
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+)
 from shared.schemas.network_schemas import NetworkDisconnectBodySchema
 
 

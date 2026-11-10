@@ -108,6 +108,10 @@ export class ContainerActionsComponent {
       (settings[ESettingKey.UPDATE_ONLY_RUNNING]?.value as boolean) ?? true
     );
   });
+  /** Swarm task containers are checked with the service, not here. */
+  protected readonly cantCheck = computed<boolean>(() => {
+    return !!this.item()?.swarm_service;
+  });
   /**
    * Container cannot be updated
    */
@@ -118,6 +122,7 @@ export class ContainerActionsComponent {
     return (
       !item.update_available ||
       item.protected ||
+      !!item.swarm_service ||
       (item.status != 'running' && updateOnlyRunning)
     );
   });
@@ -130,7 +135,9 @@ export class ContainerActionsComponent {
     if (!item) return false;
     return (
       item.update_available &&
-      ((item.status != 'running' && updateOnlyRunning) || item.protected)
+      ((item.status != 'running' && updateOnlyRunning) ||
+        item.protected ||
+        !!item.swarm_service)
     );
   });
 }

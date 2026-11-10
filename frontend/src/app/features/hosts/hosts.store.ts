@@ -31,6 +31,7 @@ import {
   IHostState,
   isHostBusy,
   shouldIncludeHostToJobsDialog,
+  TJobKind,
 } from '@shared/interfaces/jobs.interface';
 import { ContainersApiService } from '../containers/containers-api.service';
 import { IHostSummary } from '../public/public-interface';
@@ -75,6 +76,21 @@ export interface IHostEntity extends IHostInfo {
 
 export type THostsLoading = 'loading' | 'check' | 'update' | 'prune' | null;
 
+export function hostJobIsCheck(kind: TJobKind | null | undefined): boolean {
+  return kind === 'check' || kind === 'check_services';
+}
+
+export function hostJobIsUpdate(kind: TJobKind | null | undefined): boolean {
+  return kind === 'update' || kind === 'update_services';
+}
+
+/** Loading flag for the host row while a check or update job is current. */
+export function hostJobLoading(
+  kind: TJobKind | null | undefined,
+): 'check' | 'update' {
+  return hostJobIsUpdate(kind) ? 'update' : 'check';
+}
+
 export const HostsStore = signalStore(
   { providedIn: 'root' },
   withEntities<IHostEntity>(),
@@ -89,14 +105,16 @@ export const HostsStore = signalStore(
     const globalCheckActive = computed<boolean>(() => {
       const hosts = store.entities();
       return hosts.some(
-        (h) => h.loading === 'check' || h.jobState?.current?.kind === 'check',
+        (h) =>
+          h.loading === 'check' || hostJobIsCheck(h.jobState?.current?.kind),
       );
     });
 
     const globalUpdateActive = computed<boolean>(() => {
       const hosts = store.entities();
       return hosts.some(
-        (h) => h.loading === 'update' || h.jobState?.current?.kind === 'update',
+        (h) =>
+          h.loading === 'update' || hostJobIsUpdate(h.jobState?.current?.kind),
       );
     });
 
@@ -339,7 +357,7 @@ export const HostsStore = signalStore(
       let loading = entity.loading;
       if (loading !== 'prune') {
         if (nextActive) {
-          loading = jobState?.current?.kind === 'update' ? 'update' : 'check';
+          loading = hostJobLoading(jobState?.current?.kind);
         } else if (jobState && (loading === 'check' || loading === 'update')) {
           loading = null;
         }

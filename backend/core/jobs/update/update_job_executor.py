@@ -2,15 +2,9 @@ import asyncio
 import logging
 from typing import Final, cast
 
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
-
 from backend.config import Config
 from backend.core.agent_client import AgentClient
+from backend.core.agent_protocol import agent_protocol_error
 from backend.core.container_util.container_config import (
     diff_container_config_with_image,
     get_container_config,
@@ -40,7 +34,12 @@ from backend.modules.hosts.hosts_model import HostsModel
 from backend.modules.settings.settings_enum import ESettingKey
 from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.jitter import jitter
-from shared.schemas.command_schemas import RunCommandRequestBodySchema
+from shared.runtime.capabilities import RuntimeCapabilities
+from shared.runtime.container_create_payload import build_create_request
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.schemas.container_schemas import (
     CreateContainerRequestBodySchema,
 )
@@ -90,6 +89,24 @@ async def execute_update_job(
     ]
     items_map: Final = {item.name: item for item in items}
 
+    mismatch = await agent_protocol_error(client)
+    if mismatch:
+        refused: list[ContainerJobResult] = []
+        for item in items:
+            if item.name not in plan.to_update:
+                continue
+            item.result = "failed"
+            item.error = mismatch
+            item_result = ContainerJobResult(
+                container=item.container,
+                image_spec=item.image_spec,
+                result="failed",
+                error=mismatch,
+            )
+            refused.append(item_result)
+            _slot(item.name, EJobStatus.ERROR, item_result)
+        return refused
+
     hooks_map: Final = (
         await get_hooks_map(host.id, list(items_map.keys()))
         if Config.ALLOW_HOOKS
@@ -128,22 +145,34 @@ async def execute_update_job(
                 )
                 item.remote_image = remote_image
             except Exception as e:
-                logger.exception(f"Failed to pull image for {item.name}")
+                logger.exception(f"Failed to pull image for {item.name}: {e}")
                 item.errors.append(e)
 
-            # Prepare config
+            # Prepare config and reject it before any container is stopped.
             try:
                 logger.info(f"Getting config for {item.name}")
-                config, commands = get_container_config(
+                config, network_connects = get_container_config(
                     item.container,
                     item.local_image,
                     docker_version,
                 )
+                merged = None
+                if item.remote_image is not None:
+                    merged = diff_container_config_with_image(config, item.remote_image)
+                    capabilities = RuntimeCapabilities.from_version(docker_version)
+                    build_create_request(config, capabilities=capabilities)
+                    build_create_request(merged, capabilities=capabilities)
                 item.config = config
-                item.commands = commands
+                item.merged_config = merged
+                item.network_connects = network_connects
             except Exception as e:
                 logger.exception(f"Failed to get config for {item.name}")
                 item.errors.append(e)
+                # Any failure while preparing the recreate config keeps the
+                # container out of the stop loop, whatever the exception type.
+                item.prepare_failed = True
+                item.result = "failed"
+                item.error = str(e)
 
             await asyncio.sleep(jitter(delay))
 
@@ -153,13 +182,30 @@ async def execute_update_job(
             and item.local_image
             and item.remote_image
             and item.config
+            and item.merged_config
             and not item.errors
         )
+
+    proceeding = [
+        other
+        for other in items
+        if other.name in plan.to_update and not other.prepare_failed
+    ]
 
     # Stopping containers in order
     # from most dependent to most dependable
     for name in reversed(plan.order):
         item = items_map.get(name)
+        if item and item.prepare_failed:
+            logger.warning(
+                f"Skipping stop of {name} because recreate config was rejected"
+            )
+            continue
+        if item and name not in plan.to_update and not proceeding:
+            logger.warning(
+                f"Skipping stop of {name} because no container will be recreated"
+            )
+            continue
         if item and item.was_running:
             hooks = hooks_map.get(name)
             hook_errors = await run_hooks(client, name, hooks, EHookName.PRE_STOP)
@@ -208,20 +254,16 @@ async def execute_update_job(
             return
         raise Exception(f"{item.name} is unhealthy!")
 
-    async def _run_commands(item: UpdateJobPlanItem):
-        """Run commands after container started"""
-        for c in item.commands:
+    async def _connect_secondary_networks(item: UpdateJobPlanItem):
+        """Connect secondary networks before starting container"""
+        for conn in item.network_connects:
             try:
-                logger.info(f"Running command: {c}")
-                out, err = await client.command.run(
-                    RunCommandRequestBodySchema(command=c)
-                )
-                if out:
-                    logger.info(out)
-                if err:
-                    logger.error(err)
+                logger.info(f"Connecting {item.name} to network: {conn.network}")
+                await client.network.connect(conn)
             except Exception as e:
-                logger.exception(f"Error while running command {c}")
+                logger.exception(
+                    f"Error while connecting {item.name} to network {conn.network}"
+                )
                 item.errors.append(e)
 
     # Updating and/or starting containers in order
@@ -234,13 +276,14 @@ async def execute_update_job(
             if name in plan.to_update:
                 if not _can_update(item):
                     logger.warning(f"Cannot update {item.name} due to prior errors")
-                    try:
-                        await _attempt_start_with_health(item)
-                    except Exception as e:
-                        logger.exception(
-                            f"Error while starting {item.name}. Continue..."
-                        )
-                        item.errors.append(e)
+                    if not item.prepare_failed:
+                        try:
+                            await _attempt_start_with_health(item)
+                        except Exception as e:
+                            logger.exception(
+                                f"Error while starting {item.name}. Continue..."
+                            )
+                            item.errors.append(e)
                     continue
 
                 logger.info(f"Starting update of {item.name}")
@@ -261,12 +304,14 @@ async def execute_update_job(
                     await client.container.remove(item.name)
 
                     logger.info("Merging configs")
-                    merged_config = diff_container_config_with_image(
-                        config, remote_image
+                    merged_config = (
+                        item.merged_config
+                        or diff_container_config_with_image(config, remote_image)
                     )
 
                     logger.info("Recreating container...")
                     item.container = await client.container.create(merged_config)
+                    await _connect_secondary_networks(item)
                     if not item.was_running:
                         logger.info(
                             "Container recreated. It wasn't running before update, consider as success and continue..."
@@ -276,7 +321,6 @@ async def execute_update_job(
 
                     logger.info("Starting container...")
                     await client.container.start(item.name)
-                    await _run_commands(item)
                     item.container = await client.container.inspect(item.name)
 
                     logger.info("Waiting for healthchecks...")
@@ -355,10 +399,10 @@ async def execute_update_job(
                 try:
                     logger.warning("Creating container with previous configuration...")
                     item.container = await client.container.create(config)
+                    await _connect_secondary_networks(item)
 
                     logger.warning("Starting container...")
                     await client.container.start(item.name)
-                    await _run_commands(item)
                     item.container = await client.container.inspect(item.name)
                     item.result = "rolled_back"
                     hook_errors = await run_hooks(
@@ -385,8 +429,8 @@ async def execute_update_job(
                     item.errors.append(e)
                     item.result = "failed"
 
-            # Starting non-updatable containers
-            if name in plan.affected:
+            # Starting non-updatable containers that were stopped for an update.
+            if name in plan.affected and proceeding:
                 try:
                     await _attempt_start_with_health(item)
                 except Exception as e:
@@ -409,6 +453,7 @@ async def execute_update_job(
             previous_image_digests=previous.digests,
             previous_image_tags=previous.tags,
             previous_image_version=previous.version,
+            error=item.error,
         )
 
     results = [_to_job_result(item) for item in items]

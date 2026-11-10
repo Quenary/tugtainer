@@ -1,8 +1,9 @@
+from collections.abc import Mapping
 from pathlib import Path
 
 
 def map_tmpfs_dict_to_list(
-    tmpfs: dict[Path, str] | None,
+    tmpfs: Mapping[str, str] | Mapping[Path, str] | None,
 ) -> list[str]:
     """
     Map docker inspect tmpfs dict to list of valid strs.

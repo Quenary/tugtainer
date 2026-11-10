@@ -18,9 +18,7 @@ dependencies = [
     "fastapi~=0.141.1",
     "jinja2~=3.1.6",
     "packaging~=26.3",
-    "paho-mqtt~=2.1.0",
     "PyJWT[crypto]~=2.15.1",
-    "python-on-whales~=0.80.0",
     "python-socketio>=5.16.4",
     "uvicorn~=0.40.0",
 ]
@@ -59,7 +57,7 @@ upload_to_repository = false
 commit_version_number = false
 tag_format = "v{version}"
 
-[semantic_release.commit_parser_options]
+[tool.semantic_release.commit_parser_options]
 minor_tags = ["feat"]
 patch_tags = ["fix", "perf"]
 other_allowed_tags = ["build", "chore", "ci", "docs", "style", "refactor", "test"]

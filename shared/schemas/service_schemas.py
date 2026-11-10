@@ -33,6 +33,6 @@ class ServiceUpdateRequestBody(BaseModel):
     image: str
 
 
-class ServicePatchBodySchema(BaseModel):
-    check_enabled: bool | None = None
-    update_enabled: bool | None = None
+class ServiceUpdateResponse(BaseModel):
+    service_id: str
+    applied: bool

@@ -34,4 +34,37 @@ def test_ignores_other_container_paths(tmp_path: Path) -> None:
 
 
 def test_returns_none_outside_container(tmp_path: Path) -> None:
-    assert get_self_container_id(tmp_path / "missing") is None
+    assert (
+        get_self_container_id(
+            tmp_path / "missing", tmp_path / "missing", tmp_path / "missing"
+        )
+        is None
+    )
+
+
+def test_finds_id_in_containerenv(tmp_path: Path) -> None:
+    containerenv = tmp_path / "containerenv"
+    containerenv.write_text(f'engine="podman"\nid="{ID}"\nimage="quay.io/test"\n')
+
+    assert (
+        get_self_container_id(
+            mountinfo_path=tmp_path / "missing",
+            containerenv_path=containerenv,
+            cgroup_path=tmp_path / "missing",
+        )
+        == ID
+    )
+
+
+def test_finds_id_in_cgroup(tmp_path: Path) -> None:
+    cgroup = tmp_path / "cgroup"
+    cgroup.write_text(f"0::/system.slice/docker-{ID}.scope\n")
+
+    assert (
+        get_self_container_id(
+            mountinfo_path=tmp_path / "missing",
+            containerenv_path=tmp_path / "missing",
+            cgroup_path=cgroup,
+        )
+        == ID
+    )

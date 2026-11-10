@@ -2,7 +2,6 @@ import logging
 from collections.abc import Iterable
 from datetime import datetime
 
-from python_on_whales.components.image.models import ImageInspectResult
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +15,7 @@ from backend.core.jobs.check.check_util import (
 )
 from backend.modules.images.image_digest_model import ImageDigestModel
 from backend.util.now import now
+from shared.runtime.runtime_models import ImageInspectResult
 
 
 def normalize_image_digest(digest: str) -> str:

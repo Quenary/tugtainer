@@ -1,7 +1,7 @@
 export type JobStatus =
   'PREPARING' | 'CHECKING' | 'UPDATING' | 'PRUNING' | 'DONE' | 'ERROR';
 
-export type JobKind = 'check' | 'update';
+export type JobKind = 'check' | 'update' | 'check_services' | 'update_services';
 
 export type ContainerJobOutcome =
   | 'not_available'
@@ -15,6 +15,7 @@ export type ContainerJobOutcome =
 export interface ContainerJobResult {
   result?: ContainerJobOutcome;
   image_spec?: string | null;
+  error?: string | null;
 }
 
 export interface ContainerJob {
@@ -71,7 +72,16 @@ export function jobResults(
   names?: string[],
 ): ContainerJobResult[] {
   const job = names?.length ? jobByNames(state, names) : latestJob(state);
-  return Object.values(job?.containers ?? {})
+  const containers = job?.containers ?? {};
+  // A host job can hold every container it touched. Callers that name a
+  // container need that slot: the first value may be a different container.
+  const slots = names?.length
+    ? names.flatMap((name) => {
+        const slot = containers[name];
+        return slot ? [slot] : [];
+      })
+    : Object.values(containers);
+  return slots
     .map((slot) => slot.result)
     .filter((result): result is ContainerJobResult => result != null);
 }

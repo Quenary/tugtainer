@@ -17,7 +17,7 @@ browsers or a display.
 ## Prerequisites
 
 - Docker with Compose v2 (`docker compose`)
-- Node.js `^22.12 || ^24` (same as frontend) for `npm ci` in this directory
+- Node.js `^24` (same as frontend) for `npm ci` in this directory
 
 ## Setup
 
@@ -86,3 +86,58 @@ upgrading.
 - The Playwright runner mounts `/var/run/docker.sock` so tests can create
   containers via `dockerode` on the same engine the app reaches through
   socket-proxy.
+- `fixtures/outdated-alpine-extra-network.fixture.ts` starts an outdated
+  container with the host and network settings recreate has to keep: static
+  addresses, ports, an exec-form healthcheck with nanosecond durations and
+  `StartInterval`, resources, long-syntax mount options, a read-only bind with
+  a SELinux flag, and `GwPriority` when the daemon API is 1.48 or newer.
+  `VolumeOptions.Subpath` and `TmpfsOptions.Options` are set only when the
+  daemon API allows them. `shared/util/container-config.util.ts`
+  `pickPreservedConfig` compares those fields before and after an update, and
+  `pickHostMounts` compares `HostConfig.Mounts`. Image id, runtime state,
+  image labels, and addresses assigned by Docker are not part of that
+  comparison.
+- `integration/prune-images.spec.ts` prunes only images labeled
+  `dev.quenary.tugtainer.prune=<suffix>`, so a dangling prune and a
+  `prune_all` prune do not delete alpine or registry images used by other
+  tests.
+- Registry scenarios push to `registry:2` on `localhost:5000`. The daemon
+  pulls that name from the published port. The app container forwards its own
+  `localhost:5000` to the registry service so digest checks use the same name.
+  Those tests set `INSECURE_REGISTRIES` to the local registry hosts and leave
+  it there for the rest of the run.
+- `private-registry` (`localhost:5001`) requires HTTP basic auth. The test
+  user is `tugtest` and the password is `tugtest-secret`. The app mounts
+  `fixtures/private-registry/config.json` at `/root/.docker/config.json`.
+  `unauthorized-registry` (`localhost:5002`) uses the same password file and
+  is absent from that config, so a pull is rejected.
+
+## Swarm
+
+`integration/swarm-services.spec.ts` creates short-lived services on the
+engine the app reaches through socket-proxy. The proxy allows `SERVICES`,
+`TASKS`, `NODES`, `SWARM`, and `DISTRIBUTION`. Specs pin and wait on the
+digest from `GET /distribution/{name}/json`, the same value service update
+writes. RepoDigests can be a different manifest on the containerd image
+store. Each test service uses
+`RestartPolicy.Condition=none` and `FailureAction=pause`, and is removed in
+`finally`. Specs call `GET /api/hosts/{id}/status` and skip when
+`TUGTAINER_SWARM=0` or the host is not a manager.
+
+`integration/swarm-schedule.spec.ts` is the `swarm-schedule` project. It runs
+after `integration` and before `self-update`, because global check and update
+touch every container and service that already has an update. The spec skips
+when the engine has services or containers outside this stack. The test stack,
+including the Playwright runner, is labeled `dev.quenary.tugtainer.protected`
+so that update leaves it in place.
+
+CI inits Swarm on `127.0.0.1` before `npm run test:all` and runs
+`docker swarm leave --force` afterwards. A failed init sets `TUGTAINER_SWARM=0`
+and does not fail the job. Locally:
+
+```bash
+npm run test:all:swarm
+```
+
+That script inits Swarm only when the engine is not already a node, and it
+leaves the swarm only when it performed that init.

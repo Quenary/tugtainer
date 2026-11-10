@@ -1,8 +1,7 @@
-from python_on_whales.components.image.models import (
+from backend.util.now import now
+from shared.runtime.runtime_models import (
     ImageInspectResult,
 )
-
-from backend.util.now import now
 
 from .images_schemas import ImageGetResponseBody
 

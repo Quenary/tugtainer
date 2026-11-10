@@ -2,20 +2,16 @@ import asyncio
 import logging
 from typing import Final
 
-from python_on_whales.components.container.models import (
-    ContainerInspectResult,
-)
-from python_on_whales.components.image.models import (
-    ImageInspectResult,
-)
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
 from backend.core.container_util.get_container_image_spec import (
     get_container_image_spec,
 )
+from backend.core.container_util.swarm_managed import swarm_managed_reason
 from backend.core.jobs.check.check_util import (
-    get_image_remote_digest,
+    assess_image_update,
+    image_is_local_build,
 )
 from backend.core.jobs.jobs_results import (
     ContainerJobOutcome,
@@ -40,6 +36,10 @@ from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_version_from_labels import get_version_from_labels
 from backend.util.jitter import jitter
 from backend.util.now import now
+from shared.runtime.runtime_models import (
+    ContainerInspectResult,
+    ImageInspectResult,
+)
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
     PullImageRequestBodySchema,
@@ -72,6 +72,25 @@ async def run_check_container_job(
             logger.info("Checking container update availability")
             _slot(EJobStatus.PREPARING)
 
+            labels = container.config.labels if container.config else None
+            if swarm_managed_reason(labels):
+                logger.info("Swarm task container; skipping registry check")
+                c_db_swarm: Final = (
+                    await session.execute(
+                        select(ContainersModel)
+                        .where(
+                            ContainersModel.host_id == host.id,
+                            ContainersModel.name == container.name,
+                        )
+                        .limit(1)
+                    )
+                ).scalar_one_or_none()
+                if c_db_swarm and c_db_swarm.update_available:
+                    c_db_swarm.update_available = False
+                    await session.commit()
+                _slot(EJobStatus.DONE)
+                return result
+
             image_spec: Final = get_container_image_spec(container)
             if not image_spec:
                 logger.warning("Missing image spec. Exiting.")
@@ -92,15 +111,8 @@ async def run_check_container_job(
                 )
             result.local_image = local_image
 
-            if not local_image.repo_digests:
-                logger.warning(
-                    "Missing repo digests. Presumably a local image. Exiting."
-                )
-                _slot(EJobStatus.DONE, result)
-                return result
-
-            local_digests: Final = local_image.repo_digests
-            result.local_digests = local_image.repo_digests
+            local_digests: Final[list[str]] = list(local_image.repo_digests or [])
+            result.local_digests = local_digests
             logger.info(f"Local digests is {local_digests}")
 
             c_db: Final = (
@@ -118,7 +130,9 @@ async def run_check_container_job(
 
             # pull image before digests
             # https://github.com/Quenary/tugtainer/issues/114
-            if SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK):
+            if not image_is_local_build(local_image) and SettingsStorage.get(
+                ESettingKey.PULL_BEFORE_CHECK
+            ):
                 logger.info("Pulling image before remote digests")
                 remote_image: Final = await client.image.pull(
                     PullImageRequestBodySchema(image=image_spec)
@@ -126,21 +140,9 @@ async def run_check_container_job(
                 result.remote_image = remote_image
                 await asyncio.sleep(jitter(delay))
 
-            # get remote digests
-            remote_digests: list[str] = []
-            for d in local_digests:
-                try:
-                    rd = await get_image_remote_digest(image_spec, d)
-                    if rd:
-                        remote_digests = [rd]
-                        break
-                except Exception:
-                    logger.exception(
-                        f"Failed to get remote digest for {image_spec} {d}"
-                    )
-                finally:
-                    await asyncio.sleep(jitter(delay))
-
+            remote_digests, update_known = await assess_image_update(
+                image_spec, local_image, local_digests
+            )
             result.remote_digests = remote_digests
             logger.info(f"Remote digests is {remote_digests}")
             result.current_version = get_version_from_labels(
@@ -149,17 +151,14 @@ async def run_check_container_job(
 
             result_lit: ContainerJobOutcome
             update_available: bool
-            if not remote_digests:
+            if update_known is None:
                 # Failed lookup must not be reported as "up to date"
                 logger.warning(
-                    "No remote digests obtained; skipping availability conclusion"
+                    "No registry comparison; skipping availability conclusion"
                 )
                 result_lit = None
                 update_available = bool(c_db.update_available) if c_db else False
-            elif any(
-                all(rd not in ld for ld in local_digests) for rd in remote_digests
-            ):
-                # Remote digest missing from local digests → update available
+            elif update_known:
                 if c_db and c_db.remote_digests == remote_digests:
                     result_lit = "available(notified)"
                 else:

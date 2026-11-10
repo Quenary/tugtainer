@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.agent_client import AgentClientManager
+from backend.core.agent_protocol import agent_protocol_error
 from backend.db.session import get_async_session
 from backend.exception import TugAgentClientError
 from backend.modules.auth.auth_util import is_authorized_req
@@ -159,6 +160,9 @@ async def get_status(
     try:
         _ = await client.public.health()
         _ = await client.public.access()
+        mismatch = await agent_protocol_error(client)
+        if mismatch:
+            return HostStatusResponseBody(id=id, ok=False, err=mismatch)
         try:
             swarm_info = await client.common.swarm_info()
             if (

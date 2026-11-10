@@ -4,6 +4,7 @@ from typing import Final
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
+from backend.core.agent_protocol import agent_protocol_error
 from backend.core.jobs.jobs_results import ServiceJobResult
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.db.session import async_session_maker
@@ -39,8 +40,15 @@ async def run_update_service_job(
             logger.info("Starting swarm service update")
             _slot(EJobStatus.PREPARING)
 
+            mismatch = await agent_protocol_error(client)
+            if mismatch:
+                result.result = "failed"
+                result.error = mismatch
+                _slot(EJobStatus.ERROR, result)
+                return result
+
             _slot(EJobStatus.UPDATING)
-            await client.service.update(
+            response = await client.service.update(
                 ServiceUpdateRequestBody(
                     service_id=service.id,
                     image=service.image,
@@ -61,15 +69,21 @@ async def run_update_service_job(
 
             if s_db:
                 s_db.update_available = False
-                s_db.updated_at = now()
+                if response.applied:
+                    s_db.updated_at = now()
                 await session.commit()
 
-            result.result = "updated"
-            logger.info(f"Service {service.name} successfully updated")
+            if response.applied:
+                result.result = "updated"
+                logger.info(f"Service {service.name} successfully updated")
+            else:
+                result.result = "not_available"
+                logger.info(f"Service {service.name} is already up to date")
             _slot(EJobStatus.DONE, result)
             return result
-        except Exception:
+        except Exception as e:
             logger.exception("Failed to update swarm service")
             result.result = "failed"
+            result.error = str(e)
             _slot(EJobStatus.ERROR, result)
             return result

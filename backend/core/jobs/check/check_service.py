@@ -2,11 +2,13 @@ import asyncio
 import logging
 from typing import Final
 
-from python_on_whales.components.image.models import ImageInspectResult
 from sqlalchemy import select
 
 from backend.core.agent_client import AgentClient
-from backend.core.jobs.check.check_util import get_image_remote_digest
+from backend.core.jobs.check.check_util import (
+    assess_image_update,
+    image_is_local_build,
+)
 from backend.core.jobs.jobs_results import ContainerJobOutcome, ServiceJobResult
 from backend.core.jobs.jobs_tracker import HostJobTracker
 from backend.db.session import async_session_maker
@@ -21,6 +23,7 @@ from backend.modules.settings.settings_storage import SettingsStorage
 from backend.util.get_version_from_labels import get_version_from_labels
 from backend.util.jitter import jitter
 from backend.util.now import now
+from shared.runtime.runtime_models import ImageInspectResult
 from shared.schemas.image_schemas import (
     InspectImageRequestBodySchema,
     PullImageRequestBodySchema,
@@ -87,8 +90,13 @@ async def run_check_service_job(
                 logger.info(f"Using pinned digest from service image: {pinned_digest}")
                 local_digests = [pinned_digest]
 
-            # 3. Pull image only if PULL_BEFORE_CHECK setting is explicitly enabled
-            if not local_digests and SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK):
+            # 3. Pull image only if PULL_BEFORE_CHECK setting is explicitly enabled.
+            # A tagged local build has no registry digest; pulling would fetch a foreign tag.
+            if (
+                not local_digests
+                and not image_is_local_build(local_image)
+                and SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK)
+            ):
                 try:
                     logger.info(
                         f"Pulling image {spec_base} because PULL_BEFORE_CHECK is enabled"
@@ -102,10 +110,10 @@ async def run_check_service_job(
                 except Exception:
                     logger.exception(f"Failed to pull image {spec_base}")
 
-            # 4. Protection against local-only images (built without registry digests)
-            if not local_digests:
+            if local_image is None and not local_digests:
                 logger.warning(
-                    "Missing repo digests. Presumably a local image or image not found on manager. Exiting."
+                    "Missing local image and digests. Presumably a local image "
+                    "or image not found on manager. Exiting."
                 )
                 _slot(EJobStatus.DONE, result)
                 return result
@@ -129,7 +137,8 @@ async def run_check_service_job(
 
             # Pull image before digests if PULL_BEFORE_CHECK is enabled and not already pulled
             if (
-                SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK)
+                not image_is_local_build(local_image)
+                and SettingsStorage.get(ESettingKey.PULL_BEFORE_CHECK)
                 and not result.remote_image
             ):
                 try:
@@ -142,19 +151,9 @@ async def run_check_service_job(
                 except Exception:
                     logger.exception(f"Failed to pull image {spec_base}")
 
-            # Query remote registry for updated digest
-            remote_digests: list[str] = []
-            for d in local_digests:
-                try:
-                    rd = await get_image_remote_digest(spec_base, d)
-                    if rd:
-                        remote_digests = [rd]
-                        break
-                except Exception:
-                    logger.exception(f"Failed to get remote digest for {spec_base} {d}")
-                finally:
-                    await asyncio.sleep(jitter(delay))
-
+            remote_digests, update_known = await assess_image_update(
+                spec_base, local_image, local_digests
+            )
             result.remote_digests = remote_digests
             logger.info(f"Remote digests is {remote_digests}")
             if local_image is not None:
@@ -164,15 +163,13 @@ async def run_check_service_job(
 
             result_lit: ContainerJobOutcome
             update_available: bool
-            if not remote_digests:
+            if update_known is None:
                 logger.warning(
-                    "No remote digests obtained; skipping availability conclusion"
+                    "No registry comparison; skipping availability conclusion"
                 )
                 result_lit = None
                 update_available = bool(s_db.update_available) if s_db else False
-            elif any(
-                all(rd not in ld for ld in local_digests) for rd in remote_digests
-            ):
+            elif update_known:
                 if s_db and s_db.remote_digests == remote_digests:
                     result_lit = "available(notified)"
                 else:
@@ -198,6 +195,11 @@ async def run_check_service_job(
                     result.available_created = meta.created
 
             # Save state to database
+            previous_remote = (
+                list(s_db.remote_digests)
+                if s_db is not None and s_db.remote_digests is not None
+                else None
+            )
             if s_db is None:
                 s_db = SwarmServicesModel(
                     host_id=host.id,
@@ -213,6 +215,8 @@ async def run_check_service_job(
             s_db.checked_at = now()
             s_db.local_digests = local_digests
             s_db.remote_digests = remote_digests
+            if result_lit is not None and previous_remote != list(remote_digests):
+                s_db.remote_digests_changed_at = now()
             if local_image and local_image.id:
                 s_db.image_id = str(local_image.id)
 

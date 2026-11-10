@@ -1,7 +1,6 @@
 from typing import Final
 
 from fastapi import APIRouter, Depends
-from python_on_whales.components.image.models import ImageInspectResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.agent_client import AgentClientManager
@@ -9,6 +8,7 @@ from backend.db.session import get_async_session
 from backend.modules.auth.auth_util import is_authorized_req
 from backend.modules.hosts.hosts_util import get_host
 from backend.modules.images.images_util import map_image_schema
+from shared.runtime.runtime_models import ImageInspectResult
 from shared.schemas.container_schemas import (
     GetContainerListBodySchema,
 )
