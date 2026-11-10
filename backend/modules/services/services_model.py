@@ -55,6 +55,9 @@ class SwarmServicesModel(BaseModel):
 
     checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    remote_digests_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

@@ -100,6 +100,8 @@ async def test_check_service_local_image_digest_outcome(
     assert result.local_digests == [local_digest]
     assert result.remote_digests == [remote_digest]
     assert mock_session.commit.called
+    added = mock_session.add.call_args.args[0]
+    assert added.remote_digests_changed_at is not None
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { HostsStore } from './hosts.store';
+import {
+  hostJobIsCheck,
+  hostJobIsUpdate,
+  hostJobLoading,
+  HostsStore,
+} from './hosts.store';
 import { HostsApiService } from './hosts-api.service';
 import { ToastService } from 'src/app/core/services/toast.service';
 import { provideTranslateService } from '@ngx-translate/core';
@@ -373,5 +378,21 @@ describe('HostsStore', () => {
       store.openJobProgressDialog({ hostId: 1 });
       expect(dialogServiceMock.open).toHaveBeenCalled();
     });
+  });
+});
+
+describe('host job kinds', () => {
+  it('treats a service check as a check', () => {
+    expect(hostJobIsCheck('check')).toBe(true);
+    expect(hostJobIsCheck('check_services')).toBe(true);
+    expect(hostJobIsCheck('update')).toBe(false);
+    expect(hostJobLoading('check_services')).toBe('check');
+  });
+
+  it('treats a service update as an update', () => {
+    expect(hostJobIsUpdate('update')).toBe(true);
+    expect(hostJobIsUpdate('update_services')).toBe(true);
+    expect(hostJobIsUpdate('check_services')).toBe(false);
+    expect(hostJobLoading('update_services')).toBe('update');
   });
 });

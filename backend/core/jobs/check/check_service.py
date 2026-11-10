@@ -195,6 +195,11 @@ async def run_check_service_job(
                     result.available_created = meta.created
 
             # Save state to database
+            previous_remote = (
+                list(s_db.remote_digests)
+                if s_db is not None and s_db.remote_digests is not None
+                else None
+            )
             if s_db is None:
                 s_db = SwarmServicesModel(
                     host_id=host.id,
@@ -210,6 +215,8 @@ async def run_check_service_job(
             s_db.checked_at = now()
             s_db.local_digests = local_digests
             s_db.remote_digests = remote_digests
+            if result_lit is not None and previous_remote != list(remote_digests):
+                s_db.remote_digests_changed_at = now()
             if local_image and local_image.id:
                 s_db.image_id = str(local_image.id)
 

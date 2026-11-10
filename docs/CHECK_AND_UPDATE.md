@@ -66,7 +66,7 @@ Container recreation sends the Engine API create body:
 
 ## Update delay
 
-`DELAY_UPDATE_FOR` (seconds, default `0`) waits after a new digest is detected before a scheduled update applies it. A per-container `delay_update_for` replaces the global value when set. The clock starts at the last digest change. If that time was never recorded, the wait is not applied. A manual update does not wait. Check notifications are not delayed.
+`DELAY_UPDATE_FOR` (seconds, default `0`) waits after a new digest is detected before a scheduled update applies it. A per-container `delay_update_for` replaces the global value when set. The clock starts at the last digest change. If that time was never recorded, the wait is not applied. A manual update does not wait. Check notifications are not delayed. Scheduled Swarm service updates use the global value only. They have no per-service override.
 
 ## Previous image
 
@@ -86,6 +86,6 @@ Adding a host, and later status checks, set the Swarm flag when the agent is a m
 
 A check inspects the image on the manager first. If that yields no repo digest, a digest already pinned in the service image (`repo:tag@sha256:…`) is used, including when that manager copy has tags and no RepoDigests. If there is still none, the image is pulled only when `PULL_BEFORE_CHECK` is on; otherwise the service is skipped. When `PULL_BEFORE_CHECK` is on and the image was not pulled in that step, it is pulled again before the remote digest is read. A differing remote digest marks the service available. A failed lookup keeps the previous conclusion. Version and build time follow the container rules.
 
-A scheduled check includes services with check enabled. A scheduled update includes services with update enabled and an available image. A manual check or update ignores those switches. A manual update does not require an available image.
+A scheduled check runs for every enabled host, then checks services on a Swarm manager when `check_enabled` is on. A scheduled update does the same for services with `update_enabled` and an available image, after `DELAY_UPDATE_FOR`. Both flags stay off by default. The services page check or update ignores those switches, and that update does not require an available image. Global "Update all" updates only services that already have an update available, and it does not wait. Container and service results for one host are one notification. If the Swarm flag is stale and the agent answers 503, the service step logs a warning and the container result is kept.
 
 An update of a tagged service (`repo:tag` or `repo:tag@sha256:old`) asks the engine for the current registry digest (`GET /distribution/{name}/json`, with `X-Registry-Auth` when the registry has credentials) and writes `repo:tag@sha256:new`. The socket proxy needs `DISTRIBUTION=1` for that call. An unchanged digest is not submitted, and that update is reported as `not_available`. A digest-only reference is sent as it is. A registry or decode failure is reported and the service spec is left alone. The update reports `updated` only when Swarm accepts the call. Swarm applies the service's own rolling update and health configuration. The table then shows that status (`updating`, `completed`, `rollback_completed`) and the service logs. There is no app-level rollback and no previous-image record.

@@ -103,3 +103,27 @@ def job_to_notification_result(job: Job) -> JobNotificationResult:
         items=items,
         prune_result=job.get("prune_result"),
     )
+
+
+def merge_notification_results(
+    results: Sequence[JobNotificationResult],
+) -> list[JobNotificationResult]:
+    """One notification row per host, combining container and service items."""
+    merged: list[JobNotificationResult] = []
+    by_host: dict[int, JobNotificationResult] = {}
+    for result in results:
+        current = by_host.get(result.host_id)
+        if current is None:
+            current = JobNotificationResult(
+                host_id=result.host_id,
+                host_name=result.host_name,
+                items=list(result.items),
+                prune_result=result.prune_result,
+            )
+            by_host[result.host_id] = current
+            merged.append(current)
+            continue
+        current.items = [*current.items, *result.items]
+        if result.prune_result:
+            current.prune_result = result.prune_result
+    return merged
