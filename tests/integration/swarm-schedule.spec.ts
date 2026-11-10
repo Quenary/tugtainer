@@ -7,7 +7,7 @@ import { getHostState } from './progress.util';
 import { allowLocalRegistry } from './settings.util';
 import {
   createService,
-  digestPart,
+  engineImageDigest,
   ensureSwarmHost,
   listServices,
   patchService,
@@ -66,10 +66,10 @@ test.describe('swarm scheduled check and update', () => {
     const host = await ensureSwarmHost(request);
     const suffix = `sched-${testInfo.workerIndex}-${testInfo.parallelIndex}`;
     const image = imageName(`tugtainer-test/swarm-${suffix}`, 'app');
-    const published = await publishFrom(docker, 'alpine:3.20', image);
+    await publishFrom(docker, 'alpine:3.20', image);
     const created = await createService({
       suffix,
-      image: pinnedImage(image, published),
+      image: pinnedImage(image, await engineImageDigest(docker, image)),
     });
     try {
       await waitServiceRunning(docker, created.name);
@@ -77,9 +77,9 @@ test.describe('swarm scheduled check and update', () => {
         check_enabled: true,
         update_enabled: true,
       });
-      const next = await publishFrom(docker, 'alpine:3.21', image);
+      await publishFrom(docker, 'alpine:3.21', image);
       await removeImageTagIfExists(docker, image);
-      const nextDigest = digestPart(next);
+      const nextDigest = await engineImageDigest(docker, image);
 
       const before = await getHostState(request, host.id);
       const since = before?.completed?.length ?? 0;

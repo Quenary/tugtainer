@@ -12,7 +12,7 @@ import { allowLocalRegistry } from './settings.util';
 import {
   checkServices,
   createService,
-  digestPart,
+  engineImageDigest,
   ensureSwarmHost,
   listServices,
   pinnedImage,
@@ -65,10 +65,11 @@ test.describe('swarm services', () => {
     const host = await ensureSwarmHost(request);
     const suffix = `pin-${testInfo.workerIndex}-${testInfo.parallelIndex}`;
     const image = imageName(`tugtainer-test/swarm-${suffix}`, 'app');
-    const published = await publishFrom(getDocker(), 'alpine:3.20', image);
+    const docker = getDocker();
+    await publishFrom(docker, 'alpine:3.20', image);
     const created = await createService({
       suffix,
-      image: pinnedImage(image, published),
+      image: pinnedImage(image, await engineImageDigest(docker, image)),
     });
     try {
       await waitServiceRunning(created.docker, created.name);
@@ -96,16 +97,16 @@ test.describe('swarm services', () => {
     const suffix = `upd-${testInfo.workerIndex}-${testInfo.parallelIndex}`;
     const image = imageName(`tugtainer-test/swarm-${suffix}`, 'app');
     const docker = getDocker();
-    const published = await publishFrom(docker, 'alpine:3.20', image);
+    await publishFrom(docker, 'alpine:3.20', image);
     const created = await createService({
       suffix,
-      image: pinnedImage(image, published),
+      image: pinnedImage(image, await engineImageDigest(docker, image)),
     });
     try {
       await waitServiceRunning(created.docker, created.name);
-      const next = await publishFrom(docker, 'alpine:3.21', image);
+      await publishFrom(docker, 'alpine:3.21', image);
       await removeImageTagIfExists(docker, image);
-      const nextDigest = digestPart(next);
+      const nextDigest = await engineImageDigest(docker, image);
       const watch = await watchHostJobs(request, host.id);
       await checkServices(request, host.id, [created.name]);
       await watch.waitUntilSettled({ names: [created.name] });
@@ -145,8 +146,8 @@ test.describe('swarm services', () => {
     const suffix = `tag-${testInfo.workerIndex}-${testInfo.parallelIndex}`;
     const image = imageName(`tugtainer-test/swarm-${suffix}`, 'app');
     const docker = getDocker();
-    const published = await publishFrom(docker, 'alpine:3.20', image);
-    const digest = digestPart(published);
+    await publishFrom(docker, 'alpine:3.20', image);
+    const digest = await engineImageDigest(docker, image);
     const created = await createService({ suffix, image });
     try {
       await waitServiceRunning(created.docker, created.name);
@@ -236,10 +237,10 @@ test.describe('swarm services', () => {
     const suffix = `noop-${testInfo.workerIndex}-${testInfo.parallelIndex}`;
     const image = imageName(`tugtainer-test/swarm-${suffix}`, 'app');
     const docker = getDocker();
-    const published = await publishFrom(docker, 'alpine:3.20', image);
+    await publishFrom(docker, 'alpine:3.20', image);
     const created = await createService({
       suffix,
-      image: pinnedImage(image, published),
+      image: pinnedImage(image, await engineImageDigest(docker, image)),
     });
     try {
       await waitServiceRunning(created.docker, created.name);

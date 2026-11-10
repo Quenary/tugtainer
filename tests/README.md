@@ -116,7 +116,10 @@ upgrading.
 
 `integration/swarm-services.spec.ts` creates short-lived services on the
 engine the app reaches through socket-proxy. The proxy allows `SERVICES`,
-`TASKS`, `NODES`, `SWARM`, and `DISTRIBUTION`. Each test service uses
+`TASKS`, `NODES`, `SWARM`, and `DISTRIBUTION`. Specs pin and wait on the
+digest from `GET /distribution/{name}/json`, the same value service update
+writes. RepoDigests can be a different manifest on the containerd image
+store. Each test service uses
 `RestartPolicy.Condition=none` and `FailureAction=pause`, and is removed in
 `finally`. Specs call `GET /api/hosts/{id}/status` and skip when
 `TUGTAINER_SWARM=0` or the host is not a manager.

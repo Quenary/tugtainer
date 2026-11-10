@@ -27,6 +27,25 @@ export function digestPart(repoDigest: string): string {
   return at === -1 ? repoDigest : repoDigest.slice(at + 1);
 }
 
+/**
+ * Digest the engine reports for a tag (`GET /distribution/{ref}/json`).
+ *
+ * Service update pins this value. RepoDigests can be the multi-arch index
+ * while this endpoint returns the platform manifest, so the two differ on
+ * the containerd image store.
+ */
+export async function engineImageDigest(
+  docker: Docker,
+  reference: string,
+): Promise<string> {
+  const info = await docker.getImage(reference).distribution();
+  const digest = info.Descriptor?.digest;
+  if (!digest?.startsWith('sha256:')) {
+    throw new Error(`Engine returned no registry digest for ${reference}`);
+  }
+  return digest;
+}
+
 export function pinnedImage(image: string, repoDigest: string): string {
   return `${image}@${digestPart(repoDigest)}`;
 }
@@ -201,7 +220,11 @@ export async function waitServiceConverged(
         if (image.includes(digest) && runningOnDigest && statusOk) {
           return 'ok';
         }
-        return state || 'pending';
+        const running = tasks
+          .filter((task) => task.Status?.State === 'running')
+          .map((task) => task.Spec?.ContainerSpec?.Image ?? '')
+          .join(',');
+        return `${state || 'pending'} spec=${image} running=${running}`;
       },
       { timeout: 90_000, intervals: [1000, 2000] },
     )
