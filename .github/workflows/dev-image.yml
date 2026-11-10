@@ -11,14 +11,44 @@ permissions:
   contents: read
   packages: write
 
+env:
+  IMAGE_NAME: tugtainer
+  AGENT_IMAGE_NAME: tugtainer-agent
+  TAG: ${{ github.event.inputs.tag }}
+
 jobs:
-  build-and-push:
+  build:
+    name: Build dev image (${{ matrix.image }}, ${{ matrix.arch }})
     if: github.event.inputs.tag != 'latest' && !startsWith(github.event.inputs.tag, 'v')
-    runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: tugtainer
-      AGENT_IMAGE_NAME: tugtainer-agent
-      TAG: ${{ github.event.inputs.tag }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - image: app
+            dockerfile: Dockerfile.app
+            image_name: tugtainer
+            platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-24.04
+          - image: app
+            dockerfile: Dockerfile.app
+            image_name: tugtainer
+            platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - image: agent
+            dockerfile: Dockerfile.agent
+            image_name: tugtainer-agent
+            platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-24.04
+          - image: agent
+            dockerfile: Dockerfile.agent
+            image_name: tugtainer-agent
+            platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout repository
@@ -26,11 +56,97 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/${{ matrix.image_name }}
+            ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ matrix.image_name }}
+          labels: |
+            dev.quenary.tugtainer.protected=true
+            ${{ matrix.image == 'agent' && 'org.opencontainers.image.title=Tugtainer Agent' || '' }}
+            ${{ matrix.image == 'agent' && 'org.opencontainers.image.description=Agent part of Tugtainer app, providing secure remote access to Docker hosts' || '' }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            VERSION=${{ env.TAG }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: 'type=image,"name=docker.io/${{ secrets.DOCKER_USERNAME }}/${{ matrix.image_name }},ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ matrix.image_name }}",push-by-digest=true,name-canonical=true,push=true'
+          cache-from: type=gha,scope=dev-image-${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=dev-image-${{ matrix.image }}-${{ matrix.arch }}
+
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge and push multi-platform dev images
+    runs-on: ubuntu-24.04
+    needs: build
+
+    steps:
+      - name: Download app digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests-app
+          pattern: digests-app-*
+          merge-multiple: true
+
+      - name: Download agent digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests-agent
+          pattern: digests-agent-*
+          merge-multiple: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker Metadata App
         id: app-meta
@@ -52,49 +168,40 @@ jobs:
           tags: |
             type=raw,value=${{ env.TAG }}
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Create app manifest list and push
+        working-directory: ${{ runner.temp }}/digests-app
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.app-meta.outputs.json }}
+          DOCKER_REPO: docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          GHCR_REPO: ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+        run: |
+          for image in "$DOCKER_REPO" "$GHCR_REPO"; do
+            docker buildx imagetools create \
+              $(jq -cr --arg img "$image:" '.tags | map(select(startswith($img)) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+              $(printf "$image@sha256:%s " *)
+          done
 
-      - name: Login to GHCR
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create agent manifest list and push
+        working-directory: ${{ runner.temp }}/digests-agent
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.agent-meta.outputs.json }}
+          DOCKER_REPO: docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+          GHCR_REPO: ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+        run: |
+          for image in "$DOCKER_REPO" "$GHCR_REPO"; do
+            docker buildx imagetools create \
+              $(jq -cr --arg img "$image:" '.tags | map(select(startswith($img)) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+              $(printf "$image@sha256:%s " *)
+          done
 
-      - name: Build and push app image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile.app
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.app-meta.outputs.tags }}
-          build-args: |
-            VERSION=${{ env.TAG }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            ${{ steps.app-meta.outputs.labels }}
-            dev.quenary.tugtainer.protected=true
-
-      - name: Build and push agent image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile.agent
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.agent-meta.outputs.tags }}
-          build-args: |
-            VERSION=${{ env.TAG }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            ${{ steps.agent-meta.outputs.labels }}
-            org.opencontainers.image.title=Tugtainer Agent
-            org.opencontainers.image.description=Agent part of Tugtainer app, providing secure remote access to Docker hosts
-            dev.quenary.tugtainer.protected=true
+      - name: Inspect images
+        env:
+          DOCKER_REPO: docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          GHCR_REPO: ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          AGENT_DOCKER_REPO: docker.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+          AGENT_GHCR_REPO: ghcr.io/${{ secrets.DOCKER_USERNAME }}/${{ env.AGENT_IMAGE_NAME }}
+        run: |
+          docker buildx imagetools inspect "$DOCKER_REPO:${{ env.TAG }}"
+          docker buildx imagetools inspect "$GHCR_REPO:${{ env.TAG }}"
+          docker buildx imagetools inspect "$AGENT_DOCKER_REPO:${{ env.TAG }}"
+          docker buildx imagetools inspect "$AGENT_GHCR_REPO:${{ env.TAG }}"

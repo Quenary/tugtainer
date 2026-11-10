@@ -17,7 +17,7 @@ browsers or a display.
 ## Prerequisites
 
 - Docker with Compose v2 (`docker compose`)
-- Node.js `^22.12 || ^24` (same as frontend) for `npm ci` in this directory
+- Node.js `^24` (same as frontend) for `npm ci` in this directory
 
 ## Setup
 

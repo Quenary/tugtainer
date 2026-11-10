@@ -10,7 +10,9 @@ Automatic updates are disabled by default.
 
 > [!WARNING] 
 > A 1.x container cannot update itself to 2.x. Self-update does not perform this upgrade: recreate the app container from `ghcr.io/quenary/tugtainer:2` and keep the `/tugtainer` volume. The database in that volume stays compatible.
+
 > Update every remote agent to `ghcr.io/quenary/tugtainer-agent:2` in the same change. The 2.x agent API is not compatible with 1.x.
+> 2.x images are published for `linux/amd64` and `linux/arm64` only. `linux/arm/v7` is no longer published.
 
 ## Table of contents
 
