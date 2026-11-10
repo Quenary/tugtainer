@@ -1,12 +1,42 @@
 # CHANGELOG
 
 
+## v2.0.0 (2026-11-10)
+
+### Build System
+
+- Build multi-arch images natively and drop linux/arm/v7
+  ([`f5999aa`](https://github.com/Quenary/tugtainer/commit/f5999aa0ab4b4312e8625009eaf018192b0340b1))
+
+### Breaking Changes
+
+- Published images no longer include linux/arm/v7. 2.x images are linux/amd64 and linux/arm64 only.
+
+
 ## v1.45.3 (2026-11-10)
 
 ### Bug Fixes
 
 - **security**: Require verified email for OIDC email allowlist
   ([`f190b67`](https://github.com/Quenary/tugtainer/commit/f190b67f9b6cdd8b8056d5463e848564957b1c3d))
+
+- **swarm**: Don't report a no-op service update as updated
+  ([`de7ee37`](https://github.com/Quenary/tugtainer/commit/de7ee37f35e71e36d8f26363623a7d71bf8a2347))
+
+- **swarm**: Exclude service task containers from container check and update
+  ([`e8a3f2d`](https://github.com/Quenary/tugtainer/commit/e8a3f2dfbbf3a02fc3cab297c75db8d988e8e0ee))
+
+- **swarm**: Report the error when a service update fails
+  ([`73d19ce`](https://github.com/Quenary/tugtainer/commit/73d19ce214efde65c9018d9c19018781b9b3e1a4))
+
+### Features
+
+- Replace python-on-whales with async Docker/Podman Engine API client
+  ([#271](https://github.com/Quenary/tugtainer/pull/271),
+  [`1481464`](https://github.com/Quenary/tugtainer/commit/14814643b8728fcb96d52ccbb2d371b532122747))
+
+- **swarm**: Include services in scheduled and global check/update
+  ([`83bf753`](https://github.com/Quenary/tugtainer/commit/83bf7530cfa88bf58793f6ef65eb93dbcff82aa4))
 
 
 ## v1.45.2 (2026-11-08)
