@@ -29,6 +29,13 @@ services:
       ALLOW_PAUSE: 1
       ALLOW_UNPAUSE: 1
       EXEC: 1
+      SERVICES: 1
+      TASKS: 1
+      NODES: 1
+      SWARM: 1
+      DISTRIBUTION: 1
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
@@ -47,6 +54,8 @@ services:
     container_name: tests-registry
     ports:
       - '5000:5000'
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     networks:
       - tugtainer-tests
 
@@ -64,6 +73,8 @@ services:
       - ./fixtures/private-registry/htpasswd:/auth/htpasswd:ro
     ports:
       - '5001:5000'
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     networks:
       - tugtainer-tests
 
@@ -80,6 +91,8 @@ services:
       - ./fixtures/private-registry/htpasswd:/auth/htpasswd:ro
     ports:
       - '5002:5000'
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     networks:
       - tugtainer-tests
 
@@ -121,6 +134,8 @@ services:
       timeout: 5s
       retries: 30
       start_period: 15s
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     depends_on:
       - socket-proxy
       - registry

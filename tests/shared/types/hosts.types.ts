@@ -3,4 +3,5 @@ export interface HostInfo {
   id: number;
   name: string;
   enabled: boolean;
+  is_swarm?: boolean;
 }

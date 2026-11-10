@@ -11,6 +11,9 @@ services:
       BASE_URL: http://app.tugtainer.test
       CI: 'true'
       DOCKER_SOCKET: /var/run/docker.sock
+      TUGTAINER_SWARM: ${TUGTAINER_SWARM:-}
+    labels:
+      dev.quenary.tugtainer.protected: 'true'
     ipc: host
     networks:
       - tugtainer-tests

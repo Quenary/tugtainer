@@ -111,3 +111,30 @@ upgrading.
   `fixtures/private-registry/config.json` at `/root/.docker/config.json`.
   `unauthorized-registry` (`localhost:5002`) uses the same password file and
   is absent from that config, so a pull is rejected.
+
+## Swarm
+
+`integration/swarm-services.spec.ts` creates short-lived services on the
+engine the app reaches through socket-proxy. The proxy allows `SERVICES`,
+`TASKS`, `NODES`, `SWARM`, and `DISTRIBUTION`. Each test service uses
+`RestartPolicy.Condition=none` and `FailureAction=pause`, and is removed in
+`finally`. Specs call `GET /api/hosts/{id}/status` and skip when
+`TUGTAINER_SWARM=0` or the host is not a manager.
+
+`integration/swarm-schedule.spec.ts` is the `swarm-schedule` project. It runs
+after `integration` and before `self-update`, because global check and update
+touch every container and service that already has an update. The spec skips
+when the engine has services or containers outside this stack. The test stack,
+including the Playwright runner, is labeled `dev.quenary.tugtainer.protected`
+so that update leaves it in place.
+
+CI inits Swarm on `127.0.0.1` before `npm run test:all` and runs
+`docker swarm leave --force` afterwards. A failed init sets `TUGTAINER_SWARM=0`
+and does not fail the job. Locally:
+
+```bash
+npm run test:all:swarm
+```
+
+That script inits Swarm only when the engine is not already a node, and it
+leaves the swarm only when it performed that init.

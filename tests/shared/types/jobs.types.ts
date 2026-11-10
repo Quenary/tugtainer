@@ -1,7 +1,7 @@
 export type JobStatus =
   'PREPARING' | 'CHECKING' | 'UPDATING' | 'PRUNING' | 'DONE' | 'ERROR';
 
-export type JobKind = 'check' | 'update';
+export type JobKind = 'check' | 'update' | 'check_services' | 'update_services';
 
 export type ContainerJobOutcome =
   | 'not_available'
