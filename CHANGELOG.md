@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.45.3 (2026-11-10)
+
+### Bug Fixes
+
+- **security**: Require verified email for OIDC email allowlist
+  ([`f190b67`](https://github.com/Quenary/tugtainer/commit/f190b67f9b6cdd8b8056d5463e848564957b1c3d))
+
+
 ## v1.45.2 (2026-11-08)
 
 ### Bug Fixes
