@@ -69,6 +69,14 @@ def _verify_access_token_hash(
         raise InvalidTokenError("ID token at_hash does not match the access token")
 
 
+def _oidc_email_is_verified(claims: dict[str, Any]) -> bool:
+    """True only for boolean True or the string "true" (any case)."""
+    verified = claims.get("email_verified")
+    if verified is True:
+        return True
+    return isinstance(verified, str) and verified.casefold() == "true"
+
+
 class AuthOidcProvider(AuthProvider):
     async def is_enabled(self) -> bool:
         return not Config.DISABLE_AUTH and Config.OIDC_ENABLED
@@ -254,6 +262,13 @@ class AuthOidcProvider(AuthProvider):
 
             return response
 
+        except HTTPException as exc:
+            if exc.status_code == status.HTTP_403_FORBIDDEN:
+                raise
+            raise HTTPException(
+                status_code=400,
+                detail=f"Error processing OIDC callback: {str(exc)}",
+            ) from exc
         except Exception as e:
             raise HTTPException(
                 status_code=400,
@@ -506,7 +521,7 @@ class AuthOidcProvider(AuthProvider):
         self,
         user_claims: dict[str, Any],
     ) -> None:
-        """Allow the identity when either its email or subject is allowlisted."""
+        """Allow the identity when its verified email or its subject is allowlisted."""
         allowed_emails = Config.OIDC_ALLOWED_EMAILS
         allowed_subjects = Config.OIDC_ALLOWED_SUBJECTS
         if not allowed_emails and not allowed_subjects:
@@ -514,10 +529,17 @@ class AuthOidcProvider(AuthProvider):
 
         email = user_claims.get("email")
         subject = user_claims.get("sub")
-        email_allowed = isinstance(email, str) and email.casefold() in allowed_emails
+        email_matches = isinstance(email, str) and email.casefold() in allowed_emails
+        email_allowed = email_matches and _oidc_email_is_verified(user_claims)
         subject_allowed = isinstance(subject, str) and subject in allowed_subjects
-        if not email_allowed and not subject_allowed:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="OIDC identity is not allowed",
+        if email_allowed or subject_allowed:
+            return
+
+        if email_matches:
+            logging.warning(
+                "OIDC identity rejected because the matching email is not verified"
             )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="OIDC identity is not allowed",
+        )
