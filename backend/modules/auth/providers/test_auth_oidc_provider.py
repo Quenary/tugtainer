@@ -1,7 +1,9 @@
 import base64
 import hashlib
+import logging
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
+from urllib.parse import urlencode
 
 import jwt
 import pytest
@@ -11,8 +13,9 @@ from cryptography.hazmat.primitives.serialization import (
     NoEncryption,
     PrivateFormat,
 )
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Response, status
 from jwt.exceptions import InvalidTokenError
+from starlette.requests import Request
 
 from backend.config import Config
 from backend.modules.auth.providers.auth_oidc_provider import AuthOidcProvider
@@ -153,11 +156,18 @@ async def test_verify_oidc_id_token_checks_access_token_hash(
         )
 
 
+_MISSING = object()
+
+
 @pytest.mark.parametrize(
     "allowed_emails, allowed_subjects, claims",
     [
         (set(), set(), {"email": "anyone@example.com", "sub": "anyone"}),
-        ({"admin@example.com"}, set(), {"email": "ADMIN@example.com", "sub": "x"}),
+        (
+            {"admin@example.com"},
+            set(),
+            {"email": "ADMIN@example.com", "sub": "x", "email_verified": True},
+        ),
         (set(), {"subject-123"}, {"email": "other@example.com", "sub": "subject-123"}),
     ],
 )
@@ -170,13 +180,146 @@ def test_oidc_identity_allowlist_accepts_matching_identity(
     AuthOidcProvider()._enforce_oidc_identity_allowlist(claims)
 
 
-def test_oidc_identity_allowlist_rejects_unlisted_identity(monkeypatch):
+def test_oidc_identity_allowlist_rejects_unlisted_identity(monkeypatch, caplog):
     monkeypatch.setattr(Config, "OIDC_ALLOWED_EMAILS", {"admin@example.com"})
     monkeypatch.setattr(Config, "OIDC_ALLOWED_SUBJECTS", {"subject-123"})
 
-    with pytest.raises(HTTPException) as exc_info:
-        AuthOidcProvider()._enforce_oidc_identity_allowlist(
-            {"email": "user@example.com", "sub": "subject-456"}
-        )
+    with caplog.at_level(logging.WARNING):
+        with pytest.raises(HTTPException) as exc_info:
+            AuthOidcProvider()._enforce_oidc_identity_allowlist(
+                {"email": "user@example.com", "sub": "subject-456"}
+            )
 
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "OIDC identity is not allowed"
+    assert not any("not verified" in record.message for record in caplog.records)
+
+
+@pytest.mark.parametrize("email_verified", [True, "true", "TRUE", "True"])
+def test_oidc_identity_allowlist_accepts_verified_email(monkeypatch, email_verified):
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_EMAILS", {"admin@example.com"})
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_SUBJECTS", set())
+
+    AuthOidcProvider()._enforce_oidc_identity_allowlist(
+        {
+            "email": "admin@example.com",
+            "sub": "not-listed",
+            "email_verified": email_verified,
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "email_verified",
+    [False, "false", "FALSE", None, 0, 1, "yes", " true", _MISSING],
+)
+def test_oidc_identity_allowlist_rejects_unverified_email(
+    monkeypatch, caplog, email_verified
+):
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_EMAILS", {"admin@example.com"})
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_SUBJECTS", set())
+    claims: dict[str, object] = {
+        "email": "admin@example.com",
+        "sub": "not-listed",
+        "access_token": "secret-token-value",
+        "id_token": "header.payload.signature",
+    }
+    if email_verified is not _MISSING:
+        claims["email_verified"] = email_verified
+
+    with caplog.at_level(logging.WARNING):
+        with pytest.raises(HTTPException) as exc_info:
+            AuthOidcProvider()._enforce_oidc_identity_allowlist(claims)
+
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "OIDC identity is not allowed"
+    assert any("not verified" in record.message for record in caplog.records)
+    logged = " ".join(record.message for record in caplog.records)
+    assert "secret-token-value" not in logged
+    assert "header.payload.signature" not in logged
+
+
+def test_oidc_identity_allowlist_allows_unverified_email_with_listed_subject(
+    monkeypatch, caplog
+):
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_EMAILS", {"admin@example.com"})
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_SUBJECTS", {"subject-123"})
+
+    with caplog.at_level(logging.WARNING):
+        AuthOidcProvider()._enforce_oidc_identity_allowlist(
+            {
+                "email": "admin@example.com",
+                "sub": "subject-123",
+                "email_verified": False,
+            }
+        )
+
+    assert not any("not verified" in record.message for record in caplog.records)
+
+
+def test_oidc_identity_allowlist_allows_unverified_email_when_lists_are_empty(
+    monkeypatch,
+):
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_EMAILS", set())
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_SUBJECTS", set())
+
+    AuthOidcProvider()._enforce_oidc_identity_allowlist(
+        {
+            "email": "admin@example.com",
+            "sub": "anyone",
+            "email_verified": False,
+        }
+    )
+
+
+def _oidc_callback_request(state: str = "state-value") -> Request:
+    query = urlencode({"code": "auth-code", "state": state})
+    scope = {
+        "type": "http",
+        "asgi": {"spec_version": "2.3", "version": "3.0"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/auth/oidc/callback",
+        "raw_path": b"/auth/oidc/callback",
+        "query_string": query.encode(),
+        "headers": [(b"cookie", f"oidc_state={state}".encode())],
+        "client": ("127.0.0.1", 50000),
+        "server": ("testserver", 80),
+    }
+    return Request(scope)
+
+
+@pytest.mark.asyncio
+async def test_oidc_callback_rejects_unverified_email_without_session_cookies(
+    monkeypatch,
+):
+    monkeypatch.setattr(Config, "OIDC_ENABLED", True)
+    monkeypatch.setattr(Config, "DISABLE_AUTH", False)
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_EMAILS", {"admin@example.com"})
+    monkeypatch.setattr(Config, "OIDC_ALLOWED_SUBJECTS", set())
+
+    provider = AuthOidcProvider()
+    provider._fetch_oidc_discovery = AsyncMock(return_value={})
+    provider._exchange_oidc_code = AsyncMock(
+        return_value={
+            "access_token": "idp-access-token",
+            "id_token_claims": {
+                "email": "admin@example.com",
+                "sub": "user-123",
+                "email_verified": False,
+            },
+        }
+    )
+    provider._set_cookies = Mock()
+    response = Response()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await provider.callback(_oidc_callback_request(), response)
+
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "OIDC identity is not allowed"
+    provider._set_cookies.assert_not_called()
+    set_cookie = " ".join(response.headers.getlist("set-cookie"))
+    assert "access_token=" not in set_cookie
+    assert "refresh_token=" not in set_cookie
