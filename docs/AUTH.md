@@ -6,4 +6,6 @@ On the first start, when password auth is enabled and that file does not exist, 
 
 `OIDC_ENABLED` replaces the password with an OpenID Connect provider.
 
+`OIDC_ALLOWED_EMAILS` and `OIDC_ALLOWED_SUBJECTS` are optional allowlists. An identity is accepted when its email or subject matches either list. Both lists are empty by default, which allows every authenticated identity. An email match counts only when the IdP claim `email_verified` is true. When the IdP does not verify emails, `OIDC_ALLOWED_SUBJECTS` selects the account. Subject matching is exact; email matching is case-insensitive.
+
 Auth cookies are not bound to a domain and are not HTTPS-only until `DOMAIN` and `HTTPS` say otherwise. `DISABLE_AUTH` turns the check off.
