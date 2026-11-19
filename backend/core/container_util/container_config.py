@@ -234,6 +234,7 @@ def get_container_config(
         "storage_options": _storage_options(host_config.storage_opt),
         "sysctl": host_config.sysctls,
         "tty": config.tty,
+        "interactive": config.open_stdin,
         "expose": _exposed_tcp_ports(config.exposed_ports),
         "tmpfs": map_tmpfs_dict_to_list(host_config.tmpfs),
         "ulimit": map_ulimits_to_arg(host_config.ulimits),
