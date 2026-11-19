@@ -39,6 +39,19 @@ def test_gw_priority_below_1_48_fails(api_version: str | None) -> None:
         build_endpoint_settings(gateway_priority=1, api_version=api_version)
 
 
+def test_connect_keeps_mac_on_docker_1_43() -> None:
+    # Engine 24.0.9 applies EndpointConfig.MacAddress on network connect.
+    body = _connect(
+        ipv4_address="172.20.0.9",
+        mac_address="02:42:ac:14:00:09",
+    )
+    connected = endpoint_config_from_connect(body, "1.43")
+
+    assert connected is not None
+    assert connected["MacAddress"] == "02:42:ac:14:00:09"
+    assert connected["IPAMConfig"]["IPv4Address"] == "172.20.0.9"
+
+
 def test_connect_and_create_share_gw_priority_mapping() -> None:
     body = _connect(
         ipv4_address="172.20.0.9",

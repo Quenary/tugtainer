@@ -12,9 +12,13 @@ from packaging.version import Version
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.runtime.runtime_models import RuntimeVersion
 
+# Docker 24 (API 1.43) accepts ReadOnlyNonRecursive and ReadOnlyForceRecursive
+# in JSON and then drops them. StartInterval is dropped the same way.
+# The gates stay so those values are refused instead of discarded.
 _DOCKER_API: dict[str, str] = {
     "BindOptions.ReadOnlyNonRecursive": "1.44",
     "BindOptions.ReadOnlyForceRecursive": "1.44",
+    "Healthcheck.StartInterval": "1.44",
     "VolumeOptions.Subpath": "1.45",
     "TmpfsOptions.Options": "1.46",
     "Image mounts": "1.48",
@@ -50,6 +54,20 @@ class RuntimeCapabilities:
             engine_version=info.version,
             libpod_api_version=info.libpod_api_version,
         )
+
+    def docker_api_before(self, minimum: str) -> bool:
+        """True for Docker whose negotiated API is older than ``minimum``.
+
+        Podman is never included. An unknown Docker API is not either:
+        callers keep the current payload until a version is known.
+        ``require`` still fails closed when a gated field has no version.
+        """
+        if self.runtime_type == "podman":
+            return False
+        parsed = _parse(self.api_version)
+        if parsed is None:
+            return False
+        return parsed < version.parse(minimum)
 
     def require(self, feature: str) -> None:
         """Fail closed when this daemon cannot accept ``feature``."""

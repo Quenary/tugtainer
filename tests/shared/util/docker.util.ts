@@ -3,6 +3,18 @@ import Docker from 'dockerode';
 const SOCKET_PATH = process.env.DOCKER_SOCKET ?? '/var/run/docker.sock';
 
 export function getDocker(): Docker {
+  const host = process.env.DOCKER_HOST;
+  if (host?.startsWith('tcp://') || host?.startsWith('http://')) {
+    const url = new URL(host);
+    return new Docker({
+      protocol: 'http',
+      host: url.hostname,
+      port: url.port ? Number(url.port) : 2375,
+    });
+  }
+  if (host?.startsWith('unix://')) {
+    return new Docker({ socketPath: host.slice('unix://'.length) });
+  }
   return new Docker({ socketPath: SOCKET_PATH });
 }
 

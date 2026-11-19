@@ -122,6 +122,64 @@ def test_secondary_endpoint_links_are_preserved_as_connect_args():
     ]
 
 
+def test_container_id_aliases_are_not_recreated():
+    full_id = "a" * 64
+    short_id = full_id[:12]
+    container = ContainerInspectResult(
+        id=full_id,
+        name="app",
+        host_config=ContainerHostConfig(network_mode="primary"),
+        network_settings=NetworkSettings(
+            networks={
+                "primary": NetworkInspectResult(
+                    aliases=["web", short_id, full_id, "WEB"],
+                ),
+                "extra": NetworkInspectResult(aliases=[short_id.upper(), "alt"]),
+            }
+        ),
+    )
+
+    kwargs, connects = get_container_net_kwargs(container)
+
+    assert kwargs["network_aliases"] == ["web", "WEB"]
+    assert connects == [
+        NetworkConnectBodySchema(
+            network="extra",
+            container="app",
+            aliases=["alt"],
+        )
+    ]
+
+
+def test_static_ip_keeps_mac_on_primary_and_secondary():
+    container = _container(
+        networks={
+            "primary": NetworkInspectResult(
+                ipam_config=ContainerEndpointIPAMConfig(ipv4_address="172.31.0.5"),
+                mac_address="02:42:ac:14:00:05",
+            ),
+            "extra": NetworkInspectResult(
+                ipam_config=ContainerEndpointIPAMConfig(ipv4_address="172.31.1.5"),
+                mac_address="02:42:ac:14:00:06",
+            ),
+        },
+        network_mode="primary",
+    )
+
+    kwargs, connects = get_container_net_kwargs(container)
+
+    assert kwargs["mac_address"] == "02:42:ac:14:00:05"
+    assert kwargs["networks"] == ["primary"]
+    assert connects == [
+        NetworkConnectBodySchema(
+            network="extra",
+            container="app",
+            ipv4_address="172.31.1.5",
+            mac_address="02:42:ac:14:00:06",
+        )
+    ]
+
+
 def test_legacy_host_config_links_still_used_without_endpoint_links():
     container = _container(
         networks={"bridge": NetworkInspectResult()},

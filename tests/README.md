@@ -112,6 +112,19 @@ upgrading.
   `unauthorized-registry` (`localhost:5002`) uses the same password file and
   is absent from that config, so a pull is rejected.
 
+## Docker 24
+
+`scripts/run-docker24.sh` starts `docker:24.0.9-dind` and runs check, update
+(including rollback, static IP and MAC, and a second network), and self-update
+against that daemon. Compose uses that daemon. The Playwright image from
+`docker-compose.test.yml` joins `tugtainer-tests` and calls the app at
+`http://app.tugtainer.test`, with the daemon socket mounted the same way as
+`test:all`. The default `test:all` job keeps using the host engine.
+
+```bash
+npm run test:docker24
+```
+
 ## Swarm
 
 `integration/swarm-services.spec.ts` creates short-lived services on the

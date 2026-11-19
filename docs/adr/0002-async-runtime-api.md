@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-11-09.
+Superseded by [ADR 0003](0003-support-docker-api-1.43.md) — 2026-11-20.
 
 ## Context
 

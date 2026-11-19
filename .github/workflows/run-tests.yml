@@ -136,3 +136,30 @@ jobs:
       - name: Run Prettier check
         if: always() && steps.install.outcome == 'success'
         run: npm run prettier-check
+
+  # Separate from app-tests: that job stays on the runner's current Engine.
+  docker-24:
+    name: Docker 24
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ./tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        id: install
+        run: npm ci
+
+      - name: Run Docker 24 tests
+        if: always() && steps.install.outcome == 'success'
+        run: npm run test:docker24

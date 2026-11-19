@@ -289,7 +289,7 @@ async def test_get_version_docker_too_old_raises(mocker: MockerFixture):
     mock_resp = mocker.MagicMock()
     mock_resp.status = 200
     mock_resp.headers = {}
-    # Daemon older than 1.44 (e.g. 1.41)
+    # Daemon older than 1.43 (e.g. 1.41)
     mock_resp.json = mocker.AsyncMock(
         return_value={
             "Version": "20.10.0",
@@ -303,7 +303,32 @@ async def test_get_version_docker_too_old_raises(mocker: MockerFixture):
 
     with pytest.raises(IncompatibleRuntimeError) as exc_info:
         await client.get_version()
-    assert "below minimum supported 1.44" in str(exc_info.value)
+    assert "below minimum supported 1.43" in str(exc_info.value)
+    assert "Docker 24.0+" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_get_version_docker_1_43_negotiates(mocker: MockerFixture):
+    client = RuntimeClient()
+    mock_resp = mocker.MagicMock()
+    mock_resp.status = 200
+    mock_resp.headers = {}
+    mock_resp.json = mocker.AsyncMock(
+        return_value={
+            "Version": "24.0.9",
+            "ApiVersion": "1.43",
+            "MinAPIVersion": "1.12",
+            "Components": [{"Name": "Engine", "Version": "24.0.9"}],
+        }
+    )
+    mock_resp.close = mocker.MagicMock()
+    mocker.patch.object(client, "_request", return_value=mock_resp)
+
+    version_info = await client.get_version()
+
+    assert version_info.runtime_type == "docker"
+    assert version_info.negotiated_api == "1.43"
+    assert client._negotiated_api_prefix == "/v1.43"
 
 
 @pytest.mark.asyncio
@@ -325,7 +350,7 @@ async def test_get_version_podman_detection(mocker: MockerFixture):
     version_info = await client.get_version()
     assert version_info.runtime_type == "podman"
     assert version_info.libpod_api_version == "5.2.0"
-    # Podman does NOT raise for ApiVersion < 1.44
+    # Podman does NOT raise for ApiVersion < 1.43
     assert client._negotiated_api_prefix == "/v1.41"
 
 
@@ -585,6 +610,112 @@ async def test_container_create_sends_engine_body(mocker: MockerFixture) -> None
         "name": "web",
         "platform": "linux/amd64",
     }
+
+
+@pytest.mark.asyncio
+async def test_container_create_connects_extra_networks_on_api_1_43(
+    mocker: MockerFixture,
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.43"
+    client._runtime_type = "docker"
+    response = mocker.MagicMock()
+    response.json = AsyncMock(return_value={"Id": "created"})
+    request = mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=response),
+    )
+    mocker.patch.object(
+        client,
+        "container_inspect",
+        new=AsyncMock(return_value=ContainerInspectResult(id="created")),
+    )
+    connect = mocker.patch.object(client, "network_connect", new=AsyncMock())
+
+    await client.container_create(
+        CreateContainerRequestBodySchema(
+            image="nginx",
+            name="web",
+            networks=["main", "extra", "main"],
+            ip="172.20.0.8",
+        )
+    )
+
+    sent = request.await_args.kwargs["json_data"]
+    assert list(sent["NetworkingConfig"]["EndpointsConfig"]) == ["main"]
+    assert "extra" not in sent["NetworkingConfig"]["EndpointsConfig"]
+    connect.assert_awaited_once_with("extra", "created")
+
+
+@pytest.mark.asyncio
+async def test_container_create_removes_container_when_extra_connect_fails(
+    mocker: MockerFixture,
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.43"
+    client._runtime_type = "docker"
+    response = mocker.MagicMock()
+    response.json = AsyncMock(return_value={"Id": "created"})
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=response),
+    )
+    inspect = mocker.patch.object(client, "container_inspect", new=AsyncMock())
+    mocker.patch.object(
+        client,
+        "network_connect",
+        new=AsyncMock(side_effect=RuntimeClientError("address already in use")),
+    )
+    remove = mocker.patch.object(client, "container_remove", new=AsyncMock())
+
+    with pytest.raises(RuntimeClientError, match="address already in use"):
+        await client.container_create(
+            CreateContainerRequestBodySchema(
+                image="nginx",
+                name="web",
+                networks=["main", "extra"],
+            )
+        )
+
+    remove.assert_awaited_once_with("created", force=True)
+    inspect.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_container_create_reraises_connect_error_when_cleanup_fails(
+    mocker: MockerFixture,
+) -> None:
+    client = RuntimeClient()
+    client._negotiated_api_prefix = "/v1.43"
+    client._runtime_type = "docker"
+    response = mocker.MagicMock()
+    response.json = AsyncMock(return_value={"Id": "created"})
+    mocker.patch.object(
+        client,
+        "_request",
+        new=AsyncMock(return_value=response),
+    )
+    mocker.patch.object(
+        client,
+        "network_connect",
+        new=AsyncMock(side_effect=RuntimeClientError("address already in use")),
+    )
+    mocker.patch.object(
+        client,
+        "container_remove",
+        new=AsyncMock(side_effect=RuntimeClientError("remove failed")),
+    )
+
+    with pytest.raises(RuntimeClientError, match="address already in use"):
+        await client.container_create(
+            CreateContainerRequestBodySchema(
+                image="nginx",
+                name="web",
+                networks=["main", "extra"],
+            )
+        )
 
 
 class _Response:

@@ -32,6 +32,9 @@ def build_endpoint_settings(
         endpoint["IPAMConfig"] = ipam
     _set(endpoint, "Aliases", aliases)
     _set(endpoint, "Links", links)
+    # Engine 24.0.9 (API 1.43) applies MacAddress on POST /networks/{id}/connect.
+    # Primary-network MACs on API < 1.44 are Config.MacAddress; create omits
+    # this argument there. Podman keeps the endpoint field.
     _set(endpoint, "MacAddress", mac_address)
     _set(endpoint, "DriverOpts", driver_opts)
     _set(endpoint, "GwPriority", gateway_priority)

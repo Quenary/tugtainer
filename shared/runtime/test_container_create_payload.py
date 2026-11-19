@@ -1,6 +1,10 @@
 import pytest
 
-from shared.runtime.container_create_payload import build_create_request
+from shared.runtime.capabilities import RuntimeCapabilities
+from shared.runtime.container_create_payload import (
+    build_create_request,
+    networks_connected_after_create,
+)
 from shared.runtime.runtime_errors import RuntimePreflightError
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
 
@@ -37,14 +41,12 @@ def _host(payload: dict) -> dict:
                 "health_test": ["CMD", "echo", "hello world"],
                 "health_interval": 500_000_000,
                 "health_retries": 3,
-                "health_start_interval": 250_000_000,
             },
             {
                 "Healthcheck": {
                     "Test": ["CMD", "echo", "hello world"],
                     "Interval": 500_000_000,
                     "Retries": 3,
-                    "StartInterval": 250_000_000,
                 }
             },
         ),
@@ -201,6 +203,65 @@ def test_create_payload_primary_network_endpoint() -> None:
     assert endpoint["Links"] == ["db"]
     assert endpoint["DriverOpts"] == {"com.docker.network.endpoint.ifname": "eth0"}
     assert endpoint["IPAMConfig"]["LinkLocalIPs"] == ["169.254.1.1"]
+
+
+def test_create_payload_docker_1_43_puts_mac_on_config() -> None:
+    payload, _ = build_create_request(
+        _body(
+            networks=["appnet"],
+            ip="172.20.0.8",
+            mac_address="02:42:ac:14:00:08",
+            network_aliases=["web"],
+        ),
+        api_version="1.43",
+    )
+
+    assert payload["MacAddress"] == "02:42:ac:14:00:08"
+    endpoint = payload["NetworkingConfig"]["EndpointsConfig"]["appnet"]
+    assert "MacAddress" not in endpoint
+    assert endpoint["IPAMConfig"]["IPv4Address"] == "172.20.0.8"
+    assert endpoint["Aliases"] == ["web"]
+
+
+def test_create_payload_docker_1_44_keeps_mac_on_endpoint() -> None:
+    payload, _ = build_create_request(
+        _body(networks=["appnet"], mac_address="02:42:ac:14:00:08"),
+        api_version="1.44",
+    )
+
+    assert "MacAddress" not in payload
+    endpoint = payload["NetworkingConfig"]["EndpointsConfig"]["appnet"]
+    assert endpoint["MacAddress"] == "02:42:ac:14:00:08"
+
+
+def test_create_payload_docker_1_43_defers_extra_networks() -> None:
+    body = _body(
+        networks=["main", "extra", "main"],
+        ip="172.20.0.8",
+        network_aliases=["web"],
+    )
+    caps = RuntimeCapabilities.docker("1.43")
+    payload, _ = build_create_request(body, capabilities=caps)
+
+    assert payload["HostConfig"]["NetworkMode"] == "main"
+    endpoints = payload["NetworkingConfig"]["EndpointsConfig"]
+    assert list(endpoints) == ["main"]
+    assert endpoints["main"]["Aliases"] == ["web"]
+    assert networks_connected_after_create(body, caps) == ["extra"]
+
+
+def test_create_payload_rejects_start_interval_before_1_44() -> None:
+    body = _body(
+        health_test=["CMD", "true"],
+        health_start_interval=250_000_000,
+    )
+    with pytest.raises(RuntimePreflightError, match="Healthcheck.StartInterval"):
+        build_create_request(body, api_version="1.43")
+    with pytest.raises(RuntimePreflightError, match="Healthcheck.StartInterval"):
+        build_create_request(body)
+
+    payload, _ = build_create_request(body, api_version="1.44")
+    assert payload["Healthcheck"]["StartInterval"] == 250_000_000
 
 
 def test_create_payload_single_network_has_no_empty_endpoint() -> None:
