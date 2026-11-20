@@ -26,14 +26,23 @@ cd tests
 npm ci
 ```
 
-## Run all tests (app + Playwright in Docker)
+## Run
 
-Builds and starts the app stack, waits until it is healthy, runs the full
-Playwright suite in a container, then tears the stack down (including volumes):
+`scripts/run-suite.sh` builds and starts the app stack, waits until it is
+healthy, runs the full Playwright suite in a container, then tears the stack
+down (including volumes).
 
 ```bash
-npm run test:all
+npm run test:all       # host engine; Swarm specs skip unless it is a manager
+npm run test:swarm     # host engine, init Swarm for this run
+npm run test:docker24  # Docker 24.0.9; Swarm specs skip
 ```
+
+`TUGTAINER_ENGINE=24` starts `docker:24.0.9-dind` and points Compose at it, so
+the app and Playwright share `tugtainer-tests` on that daemon. The host engine
+is left alone. `TUGTAINER_SWARM=1` runs `swarm init` when the target daemon is
+not already a node, and `swarm leave` only when this run performed that init.
+A failed init sets `TUGTAINER_SWARM=0` and does not fail the run.
 
 ## Manual steps
 
@@ -131,13 +140,16 @@ when the engine has services or containers outside this stack. The test stack,
 including the Playwright runner, is labeled `dev.quenary.tugtainer.protected`
 so that update leaves it in place.
 
-CI inits Swarm on `127.0.0.1` before `npm run test:all` and runs
-`docker swarm leave --force` afterwards. A failed init sets `TUGTAINER_SWARM=0`
-and does not fail the job. Locally:
+CI sets `TUGTAINER_SWARM=1` on the current engine only. Docker 24 does not
+init Swarm, so those specs skip there. Swarm behavior does not depend on API
+1.43.
 
-```bash
-npm run test:all:swarm
-```
+## CI
 
-That script inits Swarm only when the engine is not already a node, and it
-leaves the swarm only when it performed that init.
+One matrix runs `scripts/run-suite.sh` twice: the current engine with Swarm,
+and Docker 24 without it. Compose builds the app image. On the current engine
+that build reads and writes the GitHub Actions cache (`scope=tests-app`).
+Docker 24 builds inside its own daemon, whose BuildKit cannot use that cache.
+Playwright `npm ci` uses the npm cache from `actions/setup-node`
+(`TUGTAINER_NPM_CACHE`) and does not download browsers. Lint runs on the
+current-engine leg.

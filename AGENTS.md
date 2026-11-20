@@ -63,7 +63,7 @@ No AI attribution anywhere: commit messages, PR titles, and descriptions must no
 ## Resources
 
 - [Docker Engine API and version compatibility](https://docs.docker.com/reference/api/engine/)
-- [Docker Engine API v1.44 reference — minimum supported API](https://docs.docker.com/reference/api/engine/version/v1.44/)
+- [Docker Engine API v1.43 reference — minimum supported API](https://docs.docker.com/reference/api/engine/version/v1.43/)
 - [Docker Engine API version history](https://docs.docker.com/reference/api/engine/version-history/)
 - [Docker Engine deprecated features and APIs](https://docs.docker.com/engine/deprecated/)
 - [Docker daemon access, Unix sockets and TLS](https://docs.docker.com/engine/security/protect-access/)

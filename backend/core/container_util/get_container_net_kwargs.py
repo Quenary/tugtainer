@@ -12,6 +12,23 @@ from shared.schemas.network_schemas import NetworkConnectBodySchema
 from .map_port_bindings_to_list import map_port_bindings_to_list
 
 
+def _user_aliases(aliases: list[str] | None, container_id: str) -> list[str]:
+    """Drop aliases Docker API < 1.44 copies from the container id.
+
+    Inspect puts the short id, and sometimes the full id, in Aliases.
+    API 1.44+ moved those names to DNSNames, which this recreate path does
+    not read. Matching this container's own ids is a no-op there.
+    """
+    if not aliases:
+        return []
+    blocked: set[str] = set()
+    if container_id:
+        blocked.add(container_id.casefold())
+        if len(container_id) >= 12:
+            blocked.add(container_id[:12].casefold())
+    return [alias for alias in aliases if alias.casefold() not in blocked]
+
+
 def get_container_net_kwargs(
     container: ContainerInspectResult,
 ) -> tuple[dict[str, Any], list[NetworkConnectBodySchema]]:
@@ -57,7 +74,7 @@ def get_container_net_kwargs(
         )
         MAIN_NETWORK = NETWORK_SETTINGS.networks[MAIN_KEY]
         NETWORKS = [MAIN_KEY]
-        NETWORK_ALIASES = MAIN_NETWORK.aliases or []
+        NETWORK_ALIASES = _user_aliases(MAIN_NETWORK.aliases, ID)
         # On user-defined networks links live on the endpoint;
         # HostConfig.links is only populated for the legacy bridge.
         LINK = MAIN_NETWORK.links or LINK
@@ -74,7 +91,7 @@ def get_container_net_kwargs(
             if net == MAIN_KEY:
                 continue
             net_obj = NETWORK_SETTINGS.networks[net]
-            aliases = net_obj.aliases or []
+            aliases = _user_aliases(net_obj.aliases, ID)
             links = net_obj.links or []
             ipam = net_obj.ipam_config
             ipv4 = ipam.ipv4_address if ipam else None

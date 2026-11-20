@@ -111,6 +111,13 @@ services:
       dockerfile: Dockerfile.app
       args:
         VERSION: tests
+      # GitHub Actions layer cache. Without a token the import and export
+      # are skipped, so a local build is unchanged. Docker 24's BuildKit
+      # cannot use this cache; that build just runs.
+      cache_from:
+        - type=gha,scope=tests-app,ignore-error=true
+      cache_to:
+        - type=gha,mode=max,scope=tests-app,ignore-error=true
     environment:
       ALLOW_UNAUTHENTICATED_AGENT: 'true'
       ENABLE_PUBLIC_API: 'true'

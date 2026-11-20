@@ -102,6 +102,34 @@ def test_podman_allows_older_bind_flags(caps: RuntimeCapabilities) -> None:
     assert bind["CreateMountpoint"] is True
 
 
+def test_start_interval_is_a_docker_1_44_gate() -> None:
+    body = CreateContainerRequestBodySchema.model_validate(
+        {
+            "image": "app",
+            "health_test": ["CMD", "true"],
+            "health_start_interval": 1_000_000_000,
+        }
+    )
+    with pytest.raises(RuntimePreflightError, match="Healthcheck.StartInterval"):
+        build_create_request(body, api_version="1.43")
+
+    payload, _ = build_create_request(body, api_version="1.44")
+    assert payload["Healthcheck"]["StartInterval"] == 1_000_000_000
+
+
+@pytest.mark.parametrize("caps", [PODMAN_57, PODMAN_6])
+def test_podman_keeps_start_interval(caps: RuntimeCapabilities) -> None:
+    body = CreateContainerRequestBodySchema.model_validate(
+        {
+            "image": "app",
+            "health_test": ["CMD", "true"],
+            "health_start_interval": 1_000_000_000,
+        }
+    )
+    payload, _ = build_create_request(body, capabilities=caps)
+    assert payload["Healthcheck"]["StartInterval"] == 1_000_000_000
+
+
 def test_old_podman_rejects_nonrecursive_bind() -> None:
     body = CreateContainerRequestBodySchema.model_validate(
         {

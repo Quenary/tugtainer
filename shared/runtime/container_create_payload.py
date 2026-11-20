@@ -58,7 +58,7 @@ def build_create_request(
     exposed = _exposed_ports(body)
     if exposed:
         payload["ExposedPorts"] = exposed
-    health = _healthcheck(body)
+    health = _healthcheck(body, caps)
     if health:
         payload["Healthcheck"] = health
     if body.stop_signal is not None:
@@ -74,6 +74,8 @@ def build_create_request(
         payload["OpenStdin"] = True
         payload["AttachStdin"] = True
 
+    if body.mac_address and caps.docker_api_before("1.44"):
+        payload["MacAddress"] = body.mac_address
     host = _host_config(body, capabilities=caps)
     if host:
         payload["HostConfig"] = host
@@ -161,7 +163,10 @@ def _validate_healthcheck(body: CreateContainerRequestBodySchema) -> None:
             )
 
 
-def _healthcheck(body: CreateContainerRequestBodySchema) -> dict[str, Any] | None:
+def _healthcheck(
+    body: CreateContainerRequestBodySchema,
+    capabilities: RuntimeCapabilities,
+) -> dict[str, Any] | None:
     _validate_healthcheck(body)
     if body.health_test is not None:
         result: dict[str, Any] = {"Test": list(body.health_test)}
@@ -169,6 +174,9 @@ def _healthcheck(body: CreateContainerRequestBodySchema) -> dict[str, Any] | Non
         return {"Test": ["NONE"]}
     else:
         result = {}
+    # Zero is Docker's unset value. Podman accepts StartInterval on its own.
+    if body.health_start_interval and capabilities.runtime_type != "podman":
+        capabilities.require("Healthcheck.StartInterval")
     for attr, engine_key in _HEALTH_INT_FIELDS:
         _set(result, engine_key, getattr(body, attr))
     if body.healthcheck and "Test" not in result:
@@ -269,6 +277,31 @@ def _host_config(
     return host
 
 
+def _unique_networks(body: CreateContainerRequestBodySchema) -> list[str]:
+    networks: list[str] = []
+    seen: set[str] = set()
+    for network in body.networks or []:
+        if network and network not in seen:
+            seen.add(network)
+            networks.append(network)
+    return networks
+
+
+def networks_connected_after_create(
+    body: CreateContainerRequestBodySchema,
+    capabilities: RuntimeCapabilities,
+) -> list[str]:
+    """Networks left out of the create body on Docker API < 1.44.
+
+    That API rejects more than one EndpointsConfig entry. ``container_create``
+    connects these afterwards with an empty endpoint, matching the 1.44 payload.
+    """
+    networks = _unique_networks(body)
+    if len(networks) <= 1 or not capabilities.docker_api_before("1.44"):
+        return []
+    return networks[1:]
+
+
 def _networking_config(
     body: CreateContainerRequestBodySchema,
     *,
@@ -278,8 +311,11 @@ def _networking_config(
 
     A single network with no extra settings is expressed only as NetworkMode.
     Further networks need an EndpointsConfig entry or the daemon never connects them.
+    Docker API < 1.44 accepts only the first entry; the rest are connected later.
     """
-    networks = [network for network in (body.networks or []) if network]
+    networks = _unique_networks(body)
+    if capabilities.docker_api_before("1.44"):
+        networks = networks[:1]
     if not networks:
         return None
     endpoint = _endpoint(body, capabilities)
@@ -309,7 +345,9 @@ def _endpoint(
         link_local_ips=body.link_local_ip,
         aliases=body.network_aliases,
         links=links,
-        mac_address=body.mac_address,
+        mac_address=(
+            None if capabilities.docker_api_before("1.44") else body.mac_address
+        ),
         driver_opts=body.driver_opts,
         gateway_priority=body.gateway_priority,
         capabilities=capabilities,

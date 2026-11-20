@@ -133,6 +133,9 @@ export const test = base.extend<{
         Labels: { 'dev.quenary.tugtainer.test': TEST_LABEL },
       });
       const api = await engineApiVersion(docker);
+      const endpointMac = apiAtLeast(api, 1, 44);
+      const startInterval = apiAtLeast(api, 1, 44);
+      const readOnlyNonRecursive = apiAtLeast(api, 1, 44);
       const volumeSubpath = apiAtLeast(api, 1, 45);
       const tmpfsOptions = apiAtLeast(api, 1, 46);
       const gatewayPriority = apiAtLeast(api, 1, 48) ? 10 : null;
@@ -176,13 +179,15 @@ export const test = base.extend<{
         StopTimeout: 15,
         Tty: true,
         ExposedPorts: { '8080/tcp': {} },
+        // API 1.43 stores the primary MAC on Config. API 1.44+ uses the endpoint.
+        ...(endpointMac ? {} : { MacAddress: PRIMARY_MAC }),
         Healthcheck: {
           Test: ['CMD', 'true'],
           Interval: 1_000_000_000,
           Timeout: 1_000_000_000,
           Retries: 3,
           StartPeriod: 1_000_000_000,
-          StartInterval: 1_000_000_000,
+          ...(startInterval ? { StartInterval: 1_000_000_000 } : {}),
         },
         HostConfig: {
           NetworkMode: PRIMARY_NET,
@@ -233,7 +238,7 @@ export const test = base.extend<{
                 Propagation: 'rprivate',
                 NonRecursive: true,
                 CreateMountpoint: true,
-                ReadOnlyNonRecursive: true,
+                ...(readOnlyNonRecursive ? { ReadOnlyNonRecursive: true } : {}),
               },
             },
             {
@@ -264,7 +269,7 @@ export const test = base.extend<{
             [PRIMARY_NET]: {
               IPAMConfig: { IPv4Address: PRIMARY_IP },
               Aliases: [PRIMARY_ALIAS],
-              MacAddress: PRIMARY_MAC,
+              ...(endpointMac ? { MacAddress: PRIMARY_MAC } : {}),
               ...(gatewayPriority != null
                 ? { GwPriority: gatewayPriority }
                 : {}),
