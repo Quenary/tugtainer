@@ -3,7 +3,33 @@ import type { HostState, Job } from '../shared/types/jobs.types';
 
 export interface HostJobMatch {
   names?: string[];
-  sinceCompleted?: number;
+  knownCompletedIds?: ReadonlySet<string>;
+}
+
+/** Completed job ids present before a POST, so a later capped history can still be told apart. */
+export function snapshotCompletedJobIds(
+  state: HostState | null | undefined,
+): Set<string> {
+  return new Set(
+    (state?.completed ?? []).flatMap((job) => (job.id ? [job.id] : [])),
+  );
+}
+
+/** Completed jobs whose id was not in the pre-POST snapshot, plus the current job. */
+export function candidateJobs(
+  state: HostState | null | undefined,
+  knownCompletedIds: ReadonlySet<string>,
+): Job[] {
+  if (!state) {
+    return [];
+  }
+  const candidates = (state.completed ?? []).filter(
+    (job) => !job.id || !knownCompletedIds.has(job.id),
+  );
+  if (state.current) {
+    candidates.push(state.current);
+  }
+  return candidates;
 }
 
 function settledMatchingJob(
@@ -13,11 +39,10 @@ function settledMatchingJob(
   if (!state) {
     return undefined;
   }
-  const since = match?.sinceCompleted ?? 0;
-  const candidates = (state.completed ?? []).slice(since);
-  if (state.current) {
-    candidates.push(state.current);
-  }
+  const candidates = candidateJobs(
+    state,
+    match?.knownCompletedIds ?? new Set(),
+  );
   const names = match?.names;
   const matches = names?.length
     ? candidates.filter((job) =>
@@ -67,7 +92,7 @@ export async function waitUntilHostSettled(
   return state!;
 }
 
-/** Snapshot completed-job count before POST so a leftover DONE is not treated as this run. */
+/** Snapshot completed job ids before POST so a leftover DONE is not treated as this run. */
 export async function watchHostJobs(
   request: APIRequestContext,
   hostId: number,
@@ -75,12 +100,12 @@ export async function watchHostJobs(
   waitUntilSettled: (match?: { names?: string[] }) => Promise<HostState>;
 }> {
   const before = await getHostState(request, hostId);
-  const sinceCompleted = before?.completed?.length ?? 0;
+  const knownCompletedIds = snapshotCompletedJobIds(before);
   return {
     waitUntilSettled: (match) =>
       waitUntilHostSettled(request, hostId, {
         names: match?.names,
-        sinceCompleted,
+        knownCompletedIds,
       }),
   };
 }

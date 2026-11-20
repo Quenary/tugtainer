@@ -24,6 +24,7 @@ export interface IContainerJob {
 }
 
 export interface IJob extends IJobBase {
+  id: string;
   host_id?: number;
   host_name?: string;
   containers?: Record<string, IContainerJob>;

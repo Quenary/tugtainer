@@ -32,6 +32,7 @@ describe('HostJobsResultComponent', () => {
     it('uses the container name and id', () => {
       expect(
         itemsFor({
+          id: 'job-nginx',
           containers: {
             'slot-nginx': {
               status: EJobStatus.DONE,
@@ -50,6 +51,7 @@ describe('HostJobsResultComponent', () => {
     it('keeps the recreate error', () => {
       expect(
         itemsFor({
+          id: 'job-nginx',
           containers: {
             'slot-nginx': {
               status: EJobStatus.ERROR,
@@ -75,6 +77,7 @@ describe('HostJobsResultComponent', () => {
     it('uses the service id when it is present', () => {
       expect(
         itemsFor({
+          id: 'job-api',
           containers: {
             'slot-api': {
               status: EJobStatus.DONE,
@@ -94,6 +97,7 @@ describe('HostJobsResultComponent', () => {
     it('falls back to the service name without an id', () => {
       expect(
         itemsFor({
+          id: 'job-worker',
           containers: {
             'slot-worker': {
               status: EJobStatus.DONE,
@@ -117,6 +121,7 @@ describe('HostJobsResultComponent', () => {
     it('skips a slot without a result', () => {
       expect(
         itemsFor({
+          id: 'job-empty',
           containers: {
             'slot-empty': { status: EJobStatus.DONE },
           },
@@ -127,6 +132,7 @@ describe('HostJobsResultComponent', () => {
     it('keeps a pending outcome with a contrast tag', () => {
       expect(
         itemsFor({
+          id: 'job-pending',
           containers: {
             'slot-pending': {
               status: EJobStatus.DONE,

@@ -24,6 +24,7 @@ export interface ContainerJob {
 }
 
 export interface Job {
+  id?: string;
   kind?: JobKind | null;
   names?: string[] | null;
   status?: JobStatus;

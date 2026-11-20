@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from typing import cast
+from uuid import UUID
 
 from backend.core.jobs.jobs_tracker import COMPLETED_JOBS_MAX, HostJobTracker
 from backend.enums.job_status_enum import EJobStatus
@@ -102,3 +103,31 @@ def test_completed_keeps_only_newest():
     assert copied is not None
     assert len(copied["completed"]) == COMPLETED_JOBS_MAX
     assert [job["names"] for job in copied["completed"]] == newest
+
+
+def test_begin_sets_job_id_and_keeps_explicit_id():
+    tracker = _tracker(99015)
+    tracker.begin("check", ["a"], [])
+    current = tracker.get()
+    assert current is not None
+    assert current["current"] is not None
+    job_id = current["current"]["id"]
+    assert UUID(job_id).version == 4
+
+    finished = tracker.finish(EJobStatus.DONE)
+    assert finished["id"] == job_id
+    completed = tracker.get()
+    assert completed is not None
+    assert completed["completed"][0]["id"] == job_id
+
+    tracker.begin(
+        "update",
+        ["b"],
+        [{"id": "queued-1", "kind": "check", "names": ["c"]}],
+        job_id="started-1",
+    )
+    started = tracker.get()
+    assert started is not None
+    assert started["current"] is not None
+    assert started["current"]["id"] == "started-1"
+    assert started["queued"][0]["id"] == "queued-1"

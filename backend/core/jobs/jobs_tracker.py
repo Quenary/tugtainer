@@ -1,5 +1,6 @@
 import asyncio
 from typing import Final, cast
+from uuid import uuid4
 
 from backend.core.jobs.jobs_cache import JobStateCache
 from backend.core.jobs.jobs_results import JobItemResult
@@ -59,6 +60,7 @@ class HostJobTracker:
         kind: JobKind,
         names: list[str] | None,
         queued: list[Job],
+        job_id: str | None = None,
     ) -> None:
         existing = self._cache.get() or {}
         completed = list(existing.get("completed") or [])
@@ -69,6 +71,7 @@ class HostJobTracker:
             for name in names:
                 containers[name] = {"status": EJobStatus.PREPARING}
         current: Job = {
+            "id": job_id if job_id is not None else str(uuid4()),
             "kind": kind,
             "names": names,
             "status": EJobStatus.PREPARING,

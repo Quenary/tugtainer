@@ -22,6 +22,7 @@ class ContainerJob(TypedDict, total=False):
 class Job(JobBase, total=False):
     """One check/update unit of work."""
 
+    id: str
     host_id: int
     host_name: str
     containers: dict[str, ContainerJob]

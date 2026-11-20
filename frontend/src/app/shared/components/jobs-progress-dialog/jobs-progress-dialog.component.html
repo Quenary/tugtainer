@@ -8,12 +8,13 @@
       }
 
       @if (host.current; as current) {
+        @let accordionValue = accordionValues()[host.hostId] ?? [current.id];
         <section class="progress-section">
           <p-accordion
             [multiple]="true"
-            [value]="getAccordionValue(host.hostId)"
+            [value]="accordionValue"
             (valueChange)="setAccordionValue(host.hostId, $event)">
-            <p-accordion-panel value="current">
+            <p-accordion-panel [value]="current.id">
               <p-accordion-header>
                 <div class="job-header">
                   @if (current.kind; as kind) {
@@ -57,8 +58,8 @@
       @if (host.queued.length) {
         <section class="progress-section">
           <p-accordion [multiple]="true">
-            @for (q of host.queued; track $index) {
-              <p-accordion-panel [value]="'queued-' + $index">
+            @for (q of host.queued; track q.id) {
+              <p-accordion-panel [value]="q.id">
                 <p-accordion-header>
                   <div class="job-header">
                     @if (q.kind; as kind) {
@@ -85,8 +86,8 @@
       @if (host.completed.length) {
         <section class="progress-section">
           <p-accordion [multiple]="true">
-            @for (c of host.completed; track $index) {
-              <p-accordion-panel [value]="'completed-' + $index">
+            @for (c of host.completed; track c.id) {
+              <p-accordion-panel [value]="c.id">
                 <p-accordion-header>
                   <div class="job-header">
                     @if (c.kind; as kind) {

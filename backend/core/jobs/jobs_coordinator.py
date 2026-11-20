@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from dataclasses import dataclass, field
+from uuid import uuid4
 
 from backend.core.agent_client import AgentClientManager
 from backend.core.jobs.jobs_log import capture_job_logs
@@ -19,6 +20,7 @@ class HostJobRuntime:
     kind: JobKind
     names: set[str] | None
     manual: bool
+    id: str = field(default_factory=lambda: str(uuid4()))
     done: asyncio.Event = field(default_factory=asyncio.Event)
     job: Job | None = None
     error: BaseException | None = None
@@ -28,6 +30,7 @@ class HostJobRuntime:
 
 def _preview_job(runtime: HostJobRuntime) -> Job:
     return {
+        "id": runtime.id,
         "kind": runtime.kind,
         "names": None if runtime.names is None else sorted(runtime.names),
     }
@@ -188,7 +191,7 @@ class HostJobCoordinator:
                     queued = [_preview_job(j) for j in pending[1:]]
 
                 names_list = None if runtime.names is None else sorted(runtime.names)
-                tracker.begin(runtime.kind, names_list, queued)
+                tracker.begin(runtime.kind, names_list, queued, job_id=runtime.id)
                 try:
                     async with capture_job_logs(tracker):
                         if runtime.kind == "check":

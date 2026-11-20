@@ -36,6 +36,7 @@ describe('JobsProgressDialogComponent', () => {
           jobState: {
             status: EJobStatus.CHECKING,
             current: {
+              id: 'job-current',
               kind: 'check' as const,
               names: ['a'],
               status: EJobStatus.CHECKING,
@@ -47,9 +48,12 @@ describe('JobsProgressDialogComponent', () => {
                 'BACKEND - INFO - run_check_container_job.a: Checking container',
               ],
             },
-            queued: [{ kind: 'update' as const, names: ['c', 'd'] }],
+            queued: [
+              { id: 'job-queued', kind: 'update' as const, names: ['c', 'd'] },
+            ],
             completed: [
               {
+                id: 'job-completed',
                 kind: 'check' as const,
                 names: ['x'],
                 status: EJobStatus.DONE,
@@ -87,6 +91,17 @@ describe('JobsProgressDialogComponent', () => {
     expect(fixture.debugElement.query(By.css('p-accordion'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('pre'))).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('c, d');
+    const panelValues = fixture.debugElement
+      .queryAll(By.css('p-accordion-panel'))
+      .map((panel) => panel.componentInstance.value());
+    expect(panelValues).toEqual(
+      expect.arrayContaining(['job-current', 'job-queued', 'job-completed']),
+    );
+    expect(
+      fixture.debugElement
+        .query(By.css('p-accordion'))
+        .componentInstance.value(),
+    ).toEqual(['job-current']);
   });
 
   it('updates when the store source changes', () => {
@@ -102,6 +117,7 @@ describe('JobsProgressDialogComponent', () => {
             status: EJobStatus.DONE,
             completed: [
               {
+                id: 'job-new',
                 kind: 'update',
                 names: ['new-container'],
                 status: EJobStatus.DONE,
@@ -144,8 +160,18 @@ describe('toJobsProgressDialogData', () => {
       {
         status: EJobStatus.DONE,
         completed: [
-          { kind: 'check', names: ['a', 'b'], status: EJobStatus.DONE },
-          { kind: 'update', names: ['c', 'd'], status: EJobStatus.DONE },
+          {
+            id: 'job-a',
+            kind: 'check',
+            names: ['a', 'b'],
+            status: EJobStatus.DONE,
+          },
+          {
+            id: 'job-b',
+            kind: 'update',
+            names: ['c', 'd'],
+            status: EJobStatus.DONE,
+          },
         ],
       },
       null,
