@@ -75,6 +75,11 @@ target/
 .venv/
 venv/
 
+# Installed on the host or inside the image. Sending them invalidates nothing
+# the Dockerfile copies and only slows the context upload.
+**/.npm
+**/node_modules
+
 # PyCharm
 .idea
 

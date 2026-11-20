@@ -49,12 +49,12 @@ jobs:
         id: python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
-          python-version: '3.13'
+          python-version: "3.13"
           activate-environment: true
 
       - name: Cache venv + uv cache
@@ -85,18 +85,34 @@ jobs:
         if: always() && steps.install.outcome == 'success'
         run: mypy agent backend shared
 
-  # GitHub-hosted ubuntu-latest already provides Docker Engine + Compose and
-  # exposes /var/run/docker.sock on the VM. No DinD / privileged job container
-  # is required — compose starts sibling containers and mounts the runner
-  # socket into socket-proxy (same as local). Avoid ubuntu-slim: it is
-  # unprivileged and does not support Docker-in-Docker / docker.sock use cases.
+  # The host leg uses the runner's Docker engine. The Docker 24 leg starts
+  # a nested daemon from run-suite.sh. ubuntu-latest already exposes
+  # /var/run/docker.sock; avoid ubuntu-slim, which cannot use it.
   app-tests:
-    name: Application tests
+    name: Application tests (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: current Docker
+            engine: host
+            swarm: "1"
+          - name: Docker 24
+            engine: "24"
+            swarm: "0"
     defaults:
       run:
         working-directory: ./tests
+    env:
+      # setup-node caches this directory. The Playwright container mounts it.
+      # On Docker 24 it has to live inside the repo: the nested daemon only
+      # sees that mount.
+      npm_config_cache: ${{ github.workspace }}/.npm
+      TUGTAINER_NPM_CACHE: ${{ github.workspace }}/.npm
+      TUGTAINER_ENGINE: ${{ matrix.engine }}
+      TUGTAINER_SWARM: ${{ matrix.swarm }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -112,54 +128,32 @@ jobs:
         id: install
         run: npm ci
 
-      - name: Enable Swarm
-        if: always() && steps.install.outcome == 'success'
-        run: |
-          state=$(docker info --format '{{.Swarm.LocalNodeState}}')
-          if [ "$state" != active ]; then
-            docker swarm init --advertise-addr 127.0.0.1 || { echo "::warning::swarm init failed, Swarm specs will be skipped"; echo "TUGTAINER_SWARM=0" >> "$GITHUB_ENV"; }
-          fi
-          docker info --format '{{.Swarm.LocalNodeState}} {{.Swarm.ControlAvailable}}'
+      # docker driver, not docker-container: a BuildKit container on the
+      # engine makes the swarm schedule spec skip. Compose build uses this
+      # Buildx and the cache declared on the app service.
+      - name: Set up Docker Buildx
+        if: steps.install.outcome == 'success'
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver: docker
 
       - name: Run application tests
-        if: always() && steps.install.outcome == 'success'
-        run: npm run test:all
-
-      - name: Leave Swarm
-        if: always()
-        run: docker swarm leave --force || true
+        if: steps.install.outcome == 'success'
+        run: bash ./scripts/run-suite.sh
 
       - name: Run lint
-        if: always() && steps.install.outcome == 'success'
+        if: always() && steps.install.outcome == 'success' && matrix.engine == 'host'
         run: npm run lint
 
       - name: Run Prettier check
-        if: always() && steps.install.outcome == 'success'
+        if: always() && steps.install.outcome == 'success' && matrix.engine == 'host'
         run: npm run prettier-check
 
-  # Separate from app-tests: that job stays on the runner's current Engine.
-  docker-24:
-    name: Docker 24
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    defaults:
-      run:
-        working-directory: ./tests
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: tests/package-lock.json
-
-      - name: Install dependencies
-        id: install
-        run: npm ci
-
-      - name: Run Docker 24 tests
+      # The Playwright container writes the npm cache as root. setup-node
+      # saves that directory after this step and cannot read root-owned files.
+      - name: Restore npm cache ownership
         if: always() && steps.install.outcome == 'success'
-        run: npm run test:docker24
+        run: |
+          if [ -d "$npm_config_cache" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$npm_config_cache"
+          fi

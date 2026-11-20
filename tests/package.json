@@ -10,9 +10,9 @@
     "app:up": "docker compose -p tugtainer-tests-app -f docker-compose.app.yml up -d --build --wait",
     "app:down": "docker compose -p tugtainer-tests-app -f docker-compose.app.yml down -v",
     "test:docker": "docker compose -p tugtainer-tests-runner -f docker-compose.test.yml run --rm playwright",
-    "test:all": "trap 'npm run app:down' EXIT; npm run app:up && npm run test:docker",
-    "test:all:swarm": "bash ./scripts/test-all-swarm.sh",
-    "test:docker24": "bash ./scripts/run-docker24.sh",
+    "test:all": "bash ./scripts/run-suite.sh",
+    "test:swarm": "TUGTAINER_SWARM=1 bash ./scripts/run-suite.sh",
+    "test:docker24": "TUGTAINER_ENGINE=24 bash ./scripts/run-suite.sh",
     "lint": "eslint .",
     "prettier-check": "prettier --check ."
   },
