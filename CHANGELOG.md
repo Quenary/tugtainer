@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v2.1.0 (2026-11-20)
+
+### Bug Fixes
+
+- Add job id and stop tracking jobs by history index
+  ([`05030b3`](https://github.com/Quenary/tugtainer/commit/05030b369dad73b73ac9fce96cda9ac9ddb6e7e9))
+
+- **backend**: Cap per-host completed job history
+  ([`3f73786`](https://github.com/Quenary/tugtainer/commit/3f737865f0e27aca6c2b519f77f9c5c1d4f77e61))
+
+- **backend**: Keep stdin_open when recreating a container
+  ([`4a0590d`](https://github.com/Quenary/tugtainer/commit/4a0590de9b0bf2b131565f6dc688f80f0d530680))
+
+### Features
+
+- Docker 24 (api 1.43) support
+  ([`be5480f`](https://github.com/Quenary/tugtainer/commit/be5480f2533f71bbfc905fed875df6a7e3b13d37))
+
+
 ## v2.0.0 (2026-11-10)
 
 ### Build System
