@@ -585,6 +585,7 @@ def test_inspect_config_round_trips_into_engine_create_body():
             hostname="app",
             user="app",
             tty=True,
+            open_stdin=True,
             exposed_ports={"80/tcp": {}},
             stop_signal="SIGTERM",
             stop_timeout=10,
@@ -641,6 +642,7 @@ def test_inspect_config_round_trips_into_engine_create_body():
     assert payload["Hostname"] == "app"
     assert payload["User"] == "app"
     assert payload["Tty"] is True
+    assert payload["OpenStdin"] is True
     assert payload["ExposedPorts"] == {"80/tcp": {}}
     assert payload["StopSignal"] == "SIGTERM"
     host = payload["HostConfig"]
