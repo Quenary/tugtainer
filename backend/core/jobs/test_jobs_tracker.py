@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from typing import cast
 
-from backend.core.jobs.jobs_tracker import HostJobTracker
+from backend.core.jobs.jobs_tracker import COMPLETED_JOBS_MAX, HostJobTracker
 from backend.enums.job_status_enum import EJobStatus
 from backend.modules.hosts.hosts_model import HostsModel
 
@@ -82,3 +82,23 @@ def test_append_log_writes_and_caps():
     finished = tracker.finish(EJobStatus.DONE)
     assert finished["log"][-1] == "line-500"
     assert tracker.get()["completed"][0]["log"][-1] == "line-500"
+
+
+def test_completed_keeps_only_newest():
+    tracker = _tracker(99014)
+    total = COMPLETED_JOBS_MAX + 3
+    for i in range(total):
+        tracker.begin("check", [f"name-{i}"], [])
+        tracker.finish(EJobStatus.DONE)
+
+    state = tracker.get()
+    assert state is not None
+    newest = [[f"name-{i}"] for i in range(total - COMPLETED_JOBS_MAX, total)]
+    assert len(state["completed"]) == COMPLETED_JOBS_MAX
+    assert [job["names"] for job in state["completed"]] == newest
+
+    tracker.begin("update", ["later"], [])
+    copied = tracker.get()
+    assert copied is not None
+    assert len(copied["completed"]) == COMPLETED_JOBS_MAX
+    assert [job["names"] for job in copied["completed"]] == newest

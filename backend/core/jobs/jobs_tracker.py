@@ -15,6 +15,7 @@ from backend.enums.job_status_enum import EJobStatus
 from backend.modules.hosts.hosts_model import HostsModel
 
 JOB_LOG_MAX_LINES = 500
+COMPLETED_JOBS_MAX = 20
 
 
 class HostJobTracker:
@@ -60,6 +61,9 @@ class HostJobTracker:
         queued: list[Job],
     ) -> None:
         existing = self._cache.get() or {}
+        completed = list(existing.get("completed") or [])
+        if len(completed) > COMPLETED_JOBS_MAX:
+            completed = completed[-COMPLETED_JOBS_MAX:]
         containers: dict[str, ContainerJob] = {}
         if names:
             for name in names:
@@ -78,7 +82,7 @@ class HostJobTracker:
                 "status": EJobStatus.PREPARING,
                 "current": current,
                 "queued": queued,
-                "completed": list(existing.get("completed") or []),
+                "completed": completed,
             }
         )
         self._broadcast()
@@ -148,6 +152,8 @@ class HostJobTracker:
         current["status"] = status
         completed = list(state.get("completed") or [])
         completed.append(current)
+        if len(completed) > COMPLETED_JOBS_MAX:
+            completed = completed[-COMPLETED_JOBS_MAX:]
         data: HostState = {"completed": completed}
         if idle:
             data["status"] = status
