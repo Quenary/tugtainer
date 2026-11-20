@@ -567,6 +567,62 @@ def test_podman_rejects_docker_only_gw_priority() -> None:
     assert "Docker API" not in str(exc.value)
 
 
+def test_docker_1_43_round_trip_uses_config_mac_and_one_network():
+    from shared.runtime.capabilities import RuntimeCapabilities
+    from shared.runtime.container_create_payload import build_create_request
+    from shared.runtime.runtime_models import (
+        NetworkEndpointSettings,
+        NetworkSettings,
+        RuntimeVersion,
+    )
+
+    full_id = "b" * 64
+    container = ContainerInspectResult(
+        id=full_id,
+        name="app",
+        config=ContainerConfig(image="app:1", mac_address="02:42:ac:14:00:08"),
+        host_config=ContainerHostConfig(network_mode="primary"),
+        network_settings=NetworkSettings(
+            networks={
+                "extra": NetworkEndpointSettings(
+                    aliases=[full_id[:12], "alt"],
+                    ipam_config={"IPv4Address": "172.31.1.5"},
+                    mac_address="02:42:ac:14:00:09",
+                ),
+                "primary": NetworkEndpointSettings(
+                    aliases=[full_id[:12], "app"],
+                    ipam_config={"IPv4Address": "172.31.0.5"},
+                    mac_address="02:42:ac:14:00:08",
+                ),
+            }
+        ),
+    )
+    version = RuntimeVersion(
+        runtime_type="docker",
+        api_version="1.43",
+        version="24.0.9",
+        negotiated_api="1.43",
+    )
+
+    schema, connects = get_container_config(
+        container, image=None, docker_version=version
+    )
+    payload, _ = build_create_request(
+        schema, capabilities=RuntimeCapabilities.from_version(version)
+    )
+
+    assert schema.mac_address == "02:42:ac:14:00:08"
+    assert schema.network_aliases == ["app"]
+    assert schema.networks == ["primary"]
+    assert payload["MacAddress"] == "02:42:ac:14:00:08"
+    endpoint = payload["NetworkingConfig"]["EndpointsConfig"]["primary"]
+    assert "MacAddress" not in endpoint
+    assert [item.network for item in connects] == ["extra"]
+    assert connects[0].aliases == ["alt"]
+    assert connects[0].mac_address == "02:42:ac:14:00:09"
+    assert connects[0].ipv4_address == "172.31.1.5"
+
+
 def test_inspect_config_round_trips_into_engine_create_body():
     from shared.runtime.container_create_payload import build_create_request
     from shared.runtime.runtime_models import (
@@ -585,6 +641,7 @@ def test_inspect_config_round_trips_into_engine_create_body():
             hostname="app",
             user="app",
             tty=True,
+            open_stdin=True,
             exposed_ports={"80/tcp": {}},
             stop_signal="SIGTERM",
             stop_timeout=10,
@@ -641,6 +698,7 @@ def test_inspect_config_round_trips_into_engine_create_body():
     assert payload["Hostname"] == "app"
     assert payload["User"] == "app"
     assert payload["Tty"] is True
+    assert payload["OpenStdin"] is True
     assert payload["ExposedPorts"] == {"80/tcp": {}}
     assert payload["StopSignal"] == "SIGTERM"
     host = payload["HostConfig"]

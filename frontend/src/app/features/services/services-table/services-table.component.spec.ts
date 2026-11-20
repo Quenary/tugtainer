@@ -147,7 +147,7 @@ describe('ServicesTableComponent', () => {
       selectedHost.set({
         jobState: {
           status: EJobStatus.DONE,
-          completed: [{ kind: 'check_services' }],
+          completed: [{ id: 'job-check', kind: 'check_services' }],
         },
         pruneResult: null,
       } as IHostEntity);

@@ -15,7 +15,10 @@ from pydantic import BaseModel
 from shared.schemas.container_schemas import CreateContainerRequestBodySchema
 
 from .capabilities import RuntimeCapabilities
-from .container_create_payload import build_create_request
+from .container_create_payload import (
+    build_create_request,
+    networks_connected_after_create,
+)
 from .runtime_errors import (
     IncompatibleRuntimeError,
     RuntimeClientError,
@@ -38,7 +41,7 @@ from .runtime_stream import (
 
 logger: Final = logging.getLogger("runtime.client")
 
-CLIENT_MIN_DOCKER_API: Final = (1, 44)
+CLIENT_MIN_DOCKER_API: Final = (1, 43)
 CLIENT_MAX_DOCKER_API: Final = (1, 48)
 LIST_INSPECT_CONCURRENCY: Final = 8
 _EXEC_SETTLE_ATTEMPTS: Final = 4
@@ -75,16 +78,22 @@ def split_image_ref(spec: str) -> tuple[str, str | None, str | None]:
     return name, tag, digest
 
 
+def _create_body(
+    payload: dict[str, Any] | BaseModel,
+) -> CreateContainerRequestBodySchema | None:
+    if isinstance(payload, CreateContainerRequestBodySchema):
+        return payload
+    if isinstance(payload, dict) and "image" in payload and "Image" not in payload:
+        return CreateContainerRequestBodySchema.model_validate(payload)
+    return None
+
+
 def _create_payload(
     payload: dict[str, Any] | BaseModel,
     name: str | None,
     capabilities: RuntimeCapabilities | None = None,
 ) -> tuple[dict[str, Any], str | None, str | None]:
-    body: CreateContainerRequestBodySchema | None = None
-    if isinstance(payload, CreateContainerRequestBodySchema):
-        body = payload
-    elif isinstance(payload, dict) and "image" in payload and "Image" not in payload:
-        body = CreateContainerRequestBodySchema.model_validate(payload)
+    body = _create_body(payload)
     if body is not None:
         data, schema_name = build_create_request(body, capabilities=capabilities)
         return data, name or schema_name, body.platform
@@ -422,7 +431,7 @@ class RuntimeClient:
 
             if daemon_tuple < CLIENT_MIN_DOCKER_API:
                 raise IncompatibleRuntimeError(
-                    f"Docker API {server_api} is below minimum supported {CLIENT_MIN_DOCKER_API[0]}.{CLIENT_MIN_DOCKER_API[1]} (Docker 25.0+)"
+                    f"Docker API {server_api} is below minimum supported {CLIENT_MIN_DOCKER_API[0]}.{CLIENT_MIN_DOCKER_API[1]} (Docker 24.0+)"
                 )
             if daemon_min_tuple > CLIENT_MAX_DOCKER_API:
                 raise IncompatibleRuntimeError(
@@ -506,10 +515,11 @@ class RuntimeClient:
     ) -> ContainerInspectResult:
         if not self._negotiated_api_prefix:
             await self.get_version()
+        caps = self.capabilities()
         data, name, platform = _create_payload(
             payload,
             name,
-            capabilities=self.capabilities(),
+            capabilities=caps,
         )
         params: dict[str, Any] = {}
         if name:
@@ -524,6 +534,26 @@ class RuntimeClient:
             new_id = res["Id"]
         finally:
             resp.close()
+        # Docker API < 1.44 rejects a second EndpointsConfig entry. The create
+        # body keeps the first network; connect the rest before returning.
+        # Update and self-update already list only the primary network here
+        # and pass the others as network_connects.
+        body = _create_body(payload)
+        if body is not None:
+            try:
+                for network in networks_connected_after_create(body, caps):
+                    await self.network_connect(network, new_id)
+            except Exception:
+                # The container already exists. Remove it so a failed create
+                # does not leave a named container the caller never received.
+                try:
+                    await self.container_remove(new_id, force=True)
+                except Exception:
+                    logger.exception(
+                        "Failed to remove container %s after a network connect error",
+                        new_id,
+                    )
+                raise
         return await self.container_inspect(new_id)
 
     async def container_start(self, name_or_id: str) -> None:

@@ -1,5 +1,6 @@
 import asyncio
 from typing import Final, cast
+from uuid import uuid4
 
 from backend.core.jobs.jobs_cache import JobStateCache
 from backend.core.jobs.jobs_results import JobItemResult
@@ -15,6 +16,7 @@ from backend.enums.job_status_enum import EJobStatus
 from backend.modules.hosts.hosts_model import HostsModel
 
 JOB_LOG_MAX_LINES = 500
+COMPLETED_JOBS_MAX = 20
 
 
 class HostJobTracker:
@@ -58,13 +60,18 @@ class HostJobTracker:
         kind: JobKind,
         names: list[str] | None,
         queued: list[Job],
+        job_id: str | None = None,
     ) -> None:
         existing = self._cache.get() or {}
+        completed = list(existing.get("completed") or [])
+        if len(completed) > COMPLETED_JOBS_MAX:
+            completed = completed[-COMPLETED_JOBS_MAX:]
         containers: dict[str, ContainerJob] = {}
         if names:
             for name in names:
                 containers[name] = {"status": EJobStatus.PREPARING}
         current: Job = {
+            "id": job_id if job_id is not None else str(uuid4()),
             "kind": kind,
             "names": names,
             "status": EJobStatus.PREPARING,
@@ -78,7 +85,7 @@ class HostJobTracker:
                 "status": EJobStatus.PREPARING,
                 "current": current,
                 "queued": queued,
-                "completed": list(existing.get("completed") or []),
+                "completed": completed,
             }
         )
         self._broadcast()
@@ -148,6 +155,8 @@ class HostJobTracker:
         current["status"] = status
         completed = list(state.get("completed") or [])
         completed.append(current)
+        if len(completed) > COMPLETED_JOBS_MAX:
+            completed = completed[-COMPLETED_JOBS_MAX:]
         data: HostState = {"completed": completed}
         if idle:
             data["status"] = status

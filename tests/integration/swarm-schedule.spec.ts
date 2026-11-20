@@ -3,7 +3,11 @@ import { test } from '../fixtures/auth-request.fixture';
 import type { Job, JobKind } from '../shared/types/jobs.types';
 import { getDocker, removeImageTagIfExists } from '../shared/util/docker.util';
 import { imageName, publishFrom } from '../shared/util/registry.util';
-import { getHostState } from './progress.util';
+import {
+  candidateJobs,
+  getHostState,
+  snapshotCompletedJobIds,
+} from './progress.util';
 import { allowLocalRegistry } from './settings.util';
 import {
   createService,
@@ -22,7 +26,7 @@ test.describe.configure({ mode: 'serial' });
 async function waitForKind(
   request: APIRequestContext,
   hostId: number,
-  sinceCompleted: number,
+  knownCompletedIds: ReadonlySet<string>,
   kind: JobKind,
   name: string,
 ): Promise<Job> {
@@ -31,10 +35,7 @@ async function waitForKind(
     .poll(
       async () => {
         const state = await getHostState(request, hostId);
-        const jobs = [...(state?.completed ?? []).slice(sinceCompleted)];
-        if (state?.current) {
-          jobs.push(state.current);
-        }
+        const jobs = candidateJobs(state, knownCompletedIds);
         matched = [...jobs]
           .reverse()
           .find(
@@ -82,13 +83,13 @@ test.describe('swarm scheduled check and update', () => {
       const nextDigest = await engineImageDigest(docker, image);
 
       const before = await getHostState(request, host.id);
-      const since = before?.completed?.length ?? 0;
+      const knownBeforeCheck = snapshotCompletedJobIds(before);
       const checkRes = await request.post('/api/containers/check');
       expect(checkRes.ok(), await checkRes.text()).toBeTruthy();
       const checkJob = await waitForKind(
         request,
         host.id,
-        since,
+        knownBeforeCheck,
         'check_services',
         created.name,
       );
@@ -101,13 +102,13 @@ test.describe('swarm scheduled check and update', () => {
       ).toBe(true);
 
       const afterCheck = await getHostState(request, host.id);
-      const sinceUpdate = afterCheck?.completed?.length ?? 0;
+      const knownBeforeUpdate = snapshotCompletedJobIds(afterCheck);
       const updateRes = await request.post('/api/containers/update');
       expect(updateRes.ok(), await updateRes.text()).toBeTruthy();
       const updateJob = await waitForKind(
         request,
         host.id,
-        sinceUpdate,
+        knownBeforeUpdate,
         'update_services',
         created.name,
       );

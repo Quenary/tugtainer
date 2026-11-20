@@ -6,18 +6,27 @@ services:
       - .:/tests
       # dockerode manages sibling containers on the host engine
       - /var/run/docker.sock:/var/run/docker.sock
+      # CI points this at the npm cache restored by setup-node. Locally it
+      # stays a throwaway directory and does not touch the user's cache.
+      - ${TUGTAINER_NPM_CACHE:-/tmp/tugtainer-npm-cache}:/npm-cache
     environment:
       # FQDN alias — Chromium refuses single-label hosts like "app"
       BASE_URL: http://app.tugtainer.test
       CI: 'true'
       DOCKER_SOCKET: /var/run/docker.sock
       TUGTAINER_SWARM: ${TUGTAINER_SWARM:-}
+      # The image already contains the browsers pinned to this Playwright
+      # version. npm ci must not download them again.
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      npm_config_cache: /npm-cache
     labels:
       dev.quenary.tugtainer.protected: 'true'
-    ipc: host
+    # Private shm. ipc: host would use the daemon host's /dev/shm, which is
+    # 64MB inside Docker 24 DinD and crashes Chromium.
+    shm_size: 2gb
     networks:
       - tugtainer-tests
-    command: sh -c "npm ci && npx playwright test"
+    command: sh -c "npm ci --no-audit --no-fund && npx playwright test"
 
 networks:
   tugtainer-tests:

@@ -185,7 +185,7 @@ describe('ContainerActionsComponent', () => {
     it('is busy while a job includes this container', () => {
       const jobState: IHostState = {
         status: EJobStatus.CHECKING,
-        current: { names: ['web'] },
+        current: { id: 'job-web', names: ['web'] },
       };
       fixture.componentRef.setInput('host', host({ jobState }));
 
@@ -198,7 +198,7 @@ describe('ContainerActionsComponent', () => {
         host({
           jobState: {
             status: EJobStatus.CHECKING,
-            current: { names: ['other'] },
+            current: { id: 'job-other', names: ['other'] },
             queued: [],
           },
         }),

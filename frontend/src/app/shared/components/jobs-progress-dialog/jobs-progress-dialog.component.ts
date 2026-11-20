@@ -91,19 +91,14 @@ export class JobsProgressDialogComponent {
   private readonly dynamicDialogConfig: DynamicDialogConfig<IJobsProgressDialogSource> =
     inject(DynamicDialogConfig);
 
-  private readonly _accordionValues = signal<Record<number, string[]>>({});
-
-  protected getAccordionValue(hostId: number): string[] {
-    const vals = this._accordionValues();
-    return vals[hostId] ?? ['current'];
-  }
+  protected readonly accordionValues = signal<Record<number, string[]>>({});
 
   protected setAccordionValue(
     hostId: number,
     value: string | string[] | number | number[] | null | undefined,
   ): void {
     const arr = Array.isArray(value) ? value : value != null ? [value] : [];
-    this._accordionValues.update((v) => ({ ...v, [hostId]: arr as string[] }));
+    this.accordionValues.update((v) => ({ ...v, [hostId]: arr as string[] }));
   }
 
   protected readonly data = computed<IJobsProgressDialogData>(() => {

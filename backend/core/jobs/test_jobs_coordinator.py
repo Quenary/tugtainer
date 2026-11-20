@@ -202,8 +202,10 @@ async def test_sequential_jobs_accumulate_completed(mocker) -> None:
     assert len(completed) == 2
     assert completed[0].get("kind") == "check"
     assert completed[0].get("names") == ["a", "b"]
+    assert completed[0].get("id") == check_job.id
     assert completed[1].get("kind") == "update"
     assert completed[1].get("names") == ["c", "d"]
+    assert completed[1].get("id") == update_job.id
 
 
 @pytest.mark.asyncio
@@ -264,8 +266,61 @@ async def test_jobs_coordinator_handles_swarm_services_jobs(mocker) -> None:
     assert len(completed) == 2
     assert completed[0].get("kind") == "check_services"
     assert completed[0].get("names") == ["svc1"]
+    assert completed[0].get("id") == check_job.id
     assert completed[1].get("kind") == "update_services"
     assert completed[1].get("names") == ["svc2", "svc3"]
+    assert completed[1].get("id") == update_job.id
+
+
+@pytest.mark.asyncio
+async def test_queued_preview_id_is_kept_when_job_starts(mocker) -> None:
+    coord = HostJobCoordinator()
+    host = cast(Any, SimpleNamespace(id=99041, name="queued-id-host"))
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def slow_check(*args, **kwargs):
+        started.set()
+        await release.wait()
+        return True
+
+    async def update(*args, **kwargs):
+        return True
+
+    mocker.patch(
+        "backend.core.jobs.check.check_host.run_check_host_job",
+        side_effect=slow_check,
+    )
+    mocker.patch(
+        "backend.core.jobs.update.update_host.run_update_host_job",
+        side_effect=update,
+    )
+    mocker.patch(
+        "backend.core.jobs.jobs_coordinator.AgentClientManager.get_host_client",
+        return_value=mocker.Mock(),
+    )
+
+    check_job = await coord.submit(host, "check", names=["a"], manual=True, wait=False)
+    await started.wait()
+    update_job = await coord.submit(
+        host, "update", names=["b"], manual=True, wait=False
+    )
+
+    queued = HostJobTracker(host).get()
+    assert queued is not None
+    assert queued["current"] is not None
+    assert queued["current"]["id"] == check_job.id
+    assert queued["queued"][0]["id"] == update_job.id
+
+    release.set()
+    await check_job.done.wait()
+    await update_job.done.wait()
+
+    state = HostJobTracker(host).get()
+    assert state is not None
+    completed = state.get("completed") or []
+    assert completed[-1]["id"] == update_job.id
+    assert completed[-1]["kind"] == "update"
 
 
 @pytest.mark.asyncio
